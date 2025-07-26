@@ -44,7 +44,7 @@ add_action("wp_head", function () {
     /* ✅ NAVIGATION */
 
     /* External Link Indicator */
-    a:not([href^='#']):not([href^='tel:']):not([href^='/']):not([href*='javascript']):not([href*='ericroth.org']):not([href*='ericroth-org']):not([href*='1drv.ms']):not([href*='paypal.com']):not([href*='librarything.com']):not([href*='themoviedb.org']):not([href*='facebook.com']):not([href*='linkedin.com']):not([href*='youtube.com']):not([href*='bsky.app']):not([href*='bsky.social']):not([href*='?cat=']):not(.wp-block-button__link, .button, .neli, .page-numbers, .subforum-link)::after {
+    a:not([href^='#']):not([href^='tel:']):not([href^='/']):not([href*='javascript']):not([href*='ericroth.org']):not([href*='ericroth-org']):not([href*='1drv.ms']):not([href*='paypal.com']):not([href*='librarything.com']):not([href*='themoviedb.org']):not([href*='facebook.com']):not([href*='github.com']):not([href*='linkedin.com']):not([href*='youtube.com']):not([href*='bsky.app']):not([href*='bsky.social']):not([href*='?cat=']):not(.wp-block-button__link, .button, .neli, .page-numbers, .subforum-link)::after {
       content: "";
       background: url("http://ericroth.org/wp-content/uploads/2024/03/external-link-greyblue.svg") no-repeat center;
       width: 0.75em;
