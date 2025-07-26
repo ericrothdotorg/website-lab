@@ -245,32 +245,78 @@ if (!function_exists('add_subscriber_admin_page')) {
 if (!function_exists('display_subscriber_list')) {
     function display_subscriber_list() {
         global $wpdb;
-        $table_name = $wpdb->prefix . "subscribers";
+        $site_table = $wpdb->prefix . "subscribers";
+        $users_table = $wpdb->prefix . "users";
+        // Bulk delete
         if (isset($_POST['bulk_delete'], $_POST['subscriber_ids'], $_POST['_wpnonce']) && check_admin_referer('subscriber_admin_action', '_wpnonce')) {
-            $ids_to_delete = implode(',', array_map('intval', $_POST['subscriber_ids']));
-            $wpdb->query("DELETE FROM $table_name WHERE id IN ($ids_to_delete)");
+            $ids = array_map('sanitize_text_field', $_POST['subscriber_ids']);
+            $site_ids = $user_ids = [];
+            foreach ($ids as $id) {
+                if (strpos($id, 'u_') === 0) {
+                    $user_ids[] = intval(substr($id, 2));
+                } else {
+                    $site_ids[] = intval($id);
+                }
+            }
+            if ($site_ids) {
+                $wpdb->query("DELETE FROM $site_table WHERE id IN (" . implode(',', $site_ids) . ")");
+            }
+            if ($site_ids) {
+                $wpdb->query("DELETE FROM {$wpdb->prefix}subscribers WHERE id IN (" . implode(',', $site_ids) . ")");
+            }
+            if ($user_ids) {
+                require_once(ABSPATH . 'wp-admin/includes/user.php');
+                foreach ($user_ids as $user_id) {
+                    wp_delete_user($user_id);
+                }
+            }
             echo '<div class="updated"><p>Selected subscribers have been deleted.</p></div>';
+
         }
+        // Search and pagination
         $search_query = isset($_POST['search_email']) ? sanitize_text_field($_POST['search_email']) : '';
         $per_page = 100;
         $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
         $offset = ($current_page - 1) * $per_page;
-        $order_by = 'subscription_date';
         $order_dir = (isset($_GET['order']) && strtolower($_GET['order']) === 'asc') ? 'ASC' : 'DESC';
         $order_toggle = ($order_dir === 'ASC') ? 'desc' : 'asc';
+        $subscribers = [];
         if (!empty($search_query)) {
-            $subscribers = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM $table_name WHERE email LIKE %s ORDER BY $order_by $order_dir LIMIT %d OFFSET %d",
-                '%' . $wpdb->esc_like($search_query) . '%', $per_page, $offset
+            $like = '%' . $wpdb->esc_like($search_query) . '%';
+            $site_results = $wpdb->get_results($wpdb->prepare(
+                "SELECT id, email, subscription_date, ip_address, user_agent, 'Site' AS source, NULL AS username
+                 FROM $site_table
+                 WHERE email LIKE %s",
+                $like
             ));
+            $user_results = $wpdb->get_results($wpdb->prepare(
+                "SELECT u.ID AS id, u.user_email AS email, u.user_registered AS subscription_date, NULL AS ip_address, NULL AS user_agent, 'Forum' AS source, u.user_login AS username
+                 FROM $users_table u
+                 WHERE u.user_email LIKE %s",
+                $like
+            ));
+            $subscribers = array_merge($site_results, $user_results);
+            usort($subscribers, function($a, $b) use ($order_dir) {
+                return ($order_dir === 'ASC')
+                    ? strtotime($a->subscription_date) - strtotime($b->subscription_date)
+                    : strtotime($b->subscription_date) - strtotime($a->subscription_date);
+            });
             $total_subscribers = count($subscribers);
+            $subscribers = array_slice($subscribers, $offset, $per_page);
         } else {
-            $subscribers = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM $table_name ORDER BY $order_by $order_dir LIMIT %d OFFSET %d",
-                $per_page, $offset
-            ));
-            $total_subscribers = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+            $site_results = $wpdb->get_results("SELECT id, email, subscription_date, ip_address, user_agent, 'Site' AS source, NULL AS username FROM $site_table");
+            $user_results = $wpdb->get_results("SELECT u.ID AS id, u.user_email AS email, u.user_registered AS subscription_date, NULL AS ip_address, NULL AS user_agent, 'Forum' AS source, u.user_login AS username FROM $users_table u");
+
+            $subscribers = array_merge($site_results, $user_results);
+            usort($subscribers, function($a, $b) use ($order_dir) {
+                return ($order_dir === 'ASC')
+                    ? strtotime($a->subscription_date) - strtotime($b->subscription_date)
+                    : strtotime($b->subscription_date) - strtotime($a->subscription_date);
+            });
+            $total_subscribers = count($subscribers);
+            $subscribers = array_slice($subscribers, $offset, $per_page);
         }
+        // Output
         echo '<div class="wrap"><h2>Subscribers</h2>';
         echo '<form method="post">';
         echo '<input type="text" name="search_email" placeholder="Search by email" value="' . esc_attr($search_query) . '">';
@@ -282,19 +328,21 @@ if (!function_exists('display_subscriber_list')) {
             echo '<table class="wp-list-table widefat fixed striped">';
             echo '<thead><tr>';
             echo '<th></th>';
+            echo '<th>Username</th>';
             echo '<th>Email</th>';
+            echo '<th>Source</th>';
             echo '<th><a href="' . esc_url(add_query_arg('order', $order_toggle)) . '">Subscription Date</a></th>';
-            echo '<th>Unsubscribe Link</th>';
             echo '<th>IP Address</th>';
             echo '<th>User Agent</th>';
             echo '</tr></thead><tbody>';
             foreach ($subscribers as $subscriber) {
-                $unsubscribe_url = esc_url(site_url("/?unsubscribe=" . $subscriber->unsubscribe_token));
+                $prefix = ($subscriber->source === 'Forum') ? 'u_' : '';
                 echo '<tr>';
-                echo '<td><input type="checkbox" name="subscriber_ids[]" value="' . esc_attr($subscriber->id) . '"></td>';
+                echo '<td><input type="checkbox" name="subscriber_ids[]" value="' . esc_attr($prefix . $subscriber->id) . '"></td>';
+                echo '<td>' . esc_html($subscriber->username ?? '—') . '</td>';
                 echo '<td>' . esc_html($subscriber->email) . '</td>';
+                echo '<td>' . esc_html($subscriber->source) . '</td>';
                 echo '<td>' . esc_html(date('F j, Y H:i', strtotime($subscriber->subscription_date))) . '</td>';
-                echo '<td><a href="' . $unsubscribe_url . '" target="_blank" rel="noopener noreferrer">Unsubscribe</a></td>';
                 echo '<td>' . esc_html($subscriber->ip_address ?? '—') . '</td>';
                 echo '<td style="max-width:300px; word-break:break-word;">' . esc_html($subscriber->user_agent ?? '—') . '</td>';
                 echo '</tr>';
