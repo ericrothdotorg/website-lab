@@ -1130,7 +1130,7 @@ function handle_forum_subscriptions() {
             'user_id'  => $user_id,
             'topic_id' => $unsubscribe_topic
         ]);
-        wp_redirect(add_query_arg(null, null) . '#topic_' . $unsubscribe_topic);
+        wp_safe_redirect(add_query_arg(null, null) . '#topic_' . $unsubscribe_topic);
         exit;
     }
     // Handle GET subscribe
@@ -1196,7 +1196,7 @@ function handle_forum_subscriptions() {
             'user_id'  => $user_id,
             'topic_id' => $unsubscribe_get
         ]);
-        wp_redirect(remove_query_arg(['unsubscribe', '_wpnonce']));
+        wp_safe_redirect(remove_query_arg(['unsubscribe', '_wpnonce']));
         exit;
     }
 }
