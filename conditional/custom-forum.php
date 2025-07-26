@@ -1234,7 +1234,21 @@ function render_forum_private_messages() {
     if (!is_user_logged_in()) return '<p>Please log in to view your messages.</p>';
     global $wpdb;
     $current_user_id = get_current_user_id();
-    $users = get_users(['exclude' => [$current_user_id]]);
+    $forum_sub_ids = $wpdb->get_col("SELECT DISTINCT user_id FROM {$wpdb->prefix}custom_forum_subscriptions");
+    $site_sub_emails = $wpdb->get_col("SELECT DISTINCT email FROM {$wpdb->prefix}subscribers");
+    $site_sub_ids = [];
+    foreach ($site_sub_emails as $email) {
+        $email = sanitize_email(strtolower($email));
+        $user = get_user_by('email', $email);
+        if ($user && strtolower($user->user_email) === $email) {
+            $site_sub_ids[] = intval($user->ID);
+        }
+    }
+    $valid_user_ids = array_unique(array_merge($forum_sub_ids, $site_sub_ids));
+    $valid_user_ids = array_diff($valid_user_ids, [$current_user_id]);
+    $users = get_users([
+        'include' => $valid_user_ids
+    ]);
     $messages = $wpdb->get_results($wpdb->prepare(
         "SELECT * FROM {$wpdb->prefix}forum_messages WHERE recipient_id = %d ORDER BY sent_at DESC",
         $current_user_id
@@ -1260,7 +1274,7 @@ function render_forum_private_messages() {
     echo '<select name="recipient_id" class="forum-recipient-select" required>';
     echo '<option value="">Select recipient</option>';
     foreach ($users as $user) {
-        echo '<option value="' . $user->ID . '">' . esc_html($user->display_name) . '</option>';
+        echo '<option value="' . esc_attr($user->ID) . '">' . esc_html($user->display_name) . ' (' . esc_html($user->user_email) . ')</option>';
     }
     echo '</select><br>';
     echo '<textarea name="message" rows="5" cols="50" placeholder="Your message..." required></textarea><br>';
