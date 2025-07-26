@@ -1102,7 +1102,11 @@ function handle_forum_subscriptions() {
                     get_permalink(FORUM_PAGE_ID),
                     $topic->id
                 );
-                wp_mail($admin_email, $subject, $message);
+                $headers = [
+                    'From: Eric Roth <' . $admin_email . '>',
+                    'Reply-To: ' . $admin_email
+                ];
+                wp_mail($admin_email, $subject, $message, $headers);
             }
         }
         wp_redirect(add_query_arg(null, null) . '#topic_' . $subscribe_topic);
