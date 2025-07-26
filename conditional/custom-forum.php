@@ -30,6 +30,13 @@ function track_online_user() {
 }
 add_action('wp', 'track_online_user');
 
+// SWAP DELETED USERS TO BE UNKNOWN USERS
+
+function get_forum_author_name($user_id) {
+    $user = get_userdata($user_id);
+    return $user ? $user->display_name : 'Unknown User';
+}
+
 // ADD CSS STYLING
 
 function get_custom_forum_css() {
@@ -745,7 +752,8 @@ function render_custom_forum() {
             if ($topic->is_solved) echo ' ✅';
             echo '</h4>';
             echo '<div class="forum-full-content">' . wp_kses_post(wp_unslash($topic->content)) . '</div>';
-            echo '<small class="forum-meta-info">' . esc_html($author->display_name) . ' · ' . date('F j, Y', strtotime($topic->created_at)) . ' · ' . intval($reply_count) . ' replies</small>';
+            $author_name = $author ? $author->display_name : 'Unknown User';
+            echo '<small class="forum-meta-info">' . esc_html($author_name) . ' · ' . date('F j, Y', strtotime($topic->created_at)) . ' · ' . intval($reply_count) . ' replies</small>';
             if (!empty($topic->tags)) {
                 $tag_list = explode(',', $topic->tags);
                 echo '<small class="forum-tags">Tags: ';
@@ -866,13 +874,14 @@ function render_custom_forum() {
                 $total_reply_pages = ceil($total_replies / $replies_per_page);
                 foreach ($replies as $reply) {
                     $user = get_userdata($reply->user_id);
-                    $avatar = get_avatar($user->ID, 40);
+                    $avatar = $user ? get_avatar($user->ID, 40) : get_avatar(0, 40);
+                    $author_name = $user ? $user->display_name : 'Unknown User';
                     echo '<div class="forum-reply-item">';
                     echo '<div style="display: flex; gap: 0.8rem;">';
                     echo '<div>' . $avatar . '</div>';
                     echo '<div>';
                     echo '<p>' . wp_kses_post($reply->content) . '</p>';
-                    echo '<small><strong>' . esc_html($user->display_name) . '</strong> replied on ' . date('F j, Y', strtotime($reply->created_at)) . '</small>';
+                    echo '<small><strong>' . esc_html($author_name) . '</strong> replied on ' . date('F j, Y', strtotime($reply->created_at)) . '</small>';
                     if ($reply->user_id == get_current_user_id() || current_user_can('manage_options')) {
                         echo '<div class="moderation-links">';
                         echo '<a href="' . wp_nonce_url('?delete=' . $reply->id, 'delete_post_' . $reply->id) . '" onclick="return confirm(\'Delete this reply?\')">Delete</a>';
