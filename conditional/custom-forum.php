@@ -1270,3 +1270,26 @@ function render_forum_private_messages() {
     return ob_get_clean();
 }
 add_shortcode('forum_messages', 'render_forum_private_messages');
+
+// UNSUBSCRIBE LOGIC
+
+add_action('wp_footer', function() {
+    if (isset($_GET['unsubscribed'])) {
+        $message = '';
+        $type = '';
+        if ($_GET['unsubscribed'] === '1') {
+            $message = 'You have successfully unsubscribed from the forum topic.';
+            $type = 'success';
+        } elseif ($_GET['unsubscribed'] === 'not_logged_in') {
+            $message = 'You must be logged in to unsubscribe from a forum topic.';
+            $type = 'error';
+        }
+        if ($message) {
+            $bg = ($type === 'success') ? '#dff0d8' : '#f2dede';
+            $color = ($type === 'success') ? '#3c763d' : '#a94442';
+            echo '<div class="notice ' . esc_attr($type) . '" style="text-align:center; padding:10px; background:' . esc_attr($bg) . '; color:' . esc_attr($color) . ';">
+                    ' . esc_html($message) . '
+                  </div>';
+        }
+    }
+});
