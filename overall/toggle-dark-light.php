@@ -84,6 +84,7 @@ add_action('wp_footer', function () {
         /* ✅ Various Elements */
         body.dark-mode .image-invert {-webkit-filter: invert(1); filter: invert(1);}
         body.dark-mode .wp-image-122531 {content: url("http://ericroth.org/wp-content/uploads/2024/07/SBB_NEG_2F_RGB_100.svg");} /*Swap SBB logo in My World*/
+	body.dark-mode .wp-image-148107 {content: url("https://ericroth.org/wp-content/uploads/2025/07/github-mark-white.png");} /*Swap Github logo in HTML, CSS, JS & Co.*/
         body.dark-mode .cat-prefix {color: #bfbfbf;} body.dark-mode .cat-links {color: #bfbfbf;}
         body.dark-mode .wp-block-separator:not(.is-style-dots) {height: 1px; background: #3A4F66;}
         body.dark-mode .card-counter {color: #f2f2f2;}
