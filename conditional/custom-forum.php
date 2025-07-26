@@ -1094,22 +1094,32 @@ function handle_forum_subscriptions() {
             ));
             if ($user && $topic && !empty($admin_email)) {
                 $subject = '📌 New Forum Topic Subscription';
+                // Add diagnostic metadata
+                $timestamp = date('Y-m-d H:i:s');
+                $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
+                $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+                // Build detailed message
                 $message = sprintf(
-                    "User %s (%s) subscribed to topic \"%s\".\n\nView topic: %s#topic_%d",
+                    "A new topic subscription has been recorded.\n\nUser: %s\nEmail: %s\nTime: %s\nIP Address: %s\nUser Agent: %s\n\nTopic: \"%s\"\nView topic:\n%s#topic_%d",
                     $user->display_name,
                     $user->user_email,
+                    $timestamp,
+                    $ip_address,
+                    $user_agent,
                     $topic->title,
                     get_permalink(FORUM_PAGE_ID),
                     $topic->id
                 );
+                // Email headers
                 $headers = [
                     'From: Eric Roth <' . $admin_email . '>',
                     'Reply-To: ' . $admin_email
                 ];
+                // Send notification
                 wp_mail($admin_email, $subject, $message, $headers);
             }
         }
-        wp_redirect(add_query_arg(null, null) . '#topic_' . $subscribe_topic);
+        wp_safe_redirect(add_query_arg(null, null) . '#topic_' . $subscribe_topic);
         exit;
     }
     // Handle POST unsubscribe
@@ -1131,7 +1141,7 @@ function handle_forum_subscriptions() {
     $referer    = $_SERVER['HTTP_REFERER'] ?? '';
     if (preg_match('/bot|crawl|spider|slurp|crawler/i', $user_agent)) return;
     if (empty($referer) || strpos($referer, home_url()) === false) return;
-    if ($subscribe_get && wp_verify_nonce($subscribe_get_nonce, 'subscribe_topic_' . $subscribe_get)) {
+    if ($subscribe_get && wp_verify_nonce($subscribe_nonce, 'subscribe_topic_' . $subscribe_get)) {
         $exists = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM wp_custom_forum_subscriptions WHERE user_id = %d AND topic_id = %d",
             $user_id, $subscribe_get
@@ -1148,11 +1158,13 @@ function handle_forum_subscriptions() {
                 "SELECT * FROM wp_custom_forum WHERE id = %d",
                 $subscribe_get
             ));
-            $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
-            $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
-            $timestamp = current_time('mysql');
             if ($user && $topic && !empty($admin_email)) {
                 $subject = '📌 New Forum Topic Subscription';
+                // Add diagnostic metadata
+                $timestamp = date('Y-m-d H:i:s');
+                $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
+                $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+                // Build detailed message
                 $message = sprintf(
                     "A new topic subscription has been recorded.\n\nUser: %s\nEmail: %s\nTime: %s\nIP Address: %s\nUser Agent: %s\n\nTopic: \"%s\"\nView topic:\n%s#topic_%d",
                     $user->display_name,
@@ -1164,17 +1176,18 @@ function handle_forum_subscriptions() {
                     get_permalink(FORUM_PAGE_ID),
                     $topic->id
                 );
+                // Email headers
                 $headers = [
                     'From: Eric Roth <' . $admin_email . '>',
                     'Reply-To: ' . $admin_email
                 ];
+                // Send notification
                 wp_mail($admin_email, $subject, $message, $headers);
             }
         }
-        wp_redirect(remove_query_arg(['subscribe', '_wpnonce']));
+        wp_safe_redirect(remove_query_arg(['subscribe', '_wpnonce']) . '#topic_' . $subscribe_get);
         exit;
     }
-
     // Handle GET unsubscribe
     $unsubscribe_get       = isset($_GET['unsubscribe']) ? intval($_GET['unsubscribe']) : 0;
     $unsubscribe_get_nonce = isset($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
