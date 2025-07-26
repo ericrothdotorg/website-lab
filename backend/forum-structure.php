@@ -91,7 +91,7 @@ function render_forum_structure() {
     }
 
     // Add Title
-    echo '<div class="wrap"><h1>🧱 Forum Structure Manager</h1>';
+    echo '<div class="wrap"><h1>Forum Structure Manager</h1>';
 
     // Add Form
     echo '<h2>Add New Entry</h2><form method="POST">';
