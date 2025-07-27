@@ -47,7 +47,7 @@ function get_custom_forum_css() {
     .forum-section {width: 100%; margin-bottom: 1rem;}
     .forum-category {margin-top: 2rem;}
     .forum-bar {display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; margin: 2rem 0; padding-top: 25px;}
-    .forum-breadcrumbs {margin-top: 1rem !important; font-size: 1.25rem;}
+    .forum-breadcrumbs {margin-top: 1rem !important; font-size: 1rem;}
     .forum-topic {background: #f4f7fa; border: 1px solid #3A4F66; padding: 1rem; border-radius: 6px; margin-bottom: 2rem;}
     .forum-reply-item {border-top: 1px dashed #3A4F66; padding-top: 0.75rem; margin-top: 1rem; background: #f2f5f7; border-radius: 4px;}
 
