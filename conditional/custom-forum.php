@@ -1283,7 +1283,7 @@ function render_forum_private_messages() {
     echo '<select name="recipient_id" class="forum-recipient-select" required>';
     echo '<option value="">Select recipient</option>';
     foreach ($users as $user) {
-        echo '<option value="' . esc_attr($user->ID) . '">' . esc_html($user->display_name) . ' (' . esc_html($user->user_email) . ')</option>';
+        echo '<option value="' . esc_attr($user->ID) . '">' . esc_html($user->display_name) . '</option>';
     }
     echo '</select><br>';
     echo '<textarea name="message" rows="5" cols="50" placeholder="Your message..." required></textarea><br>';
