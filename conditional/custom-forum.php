@@ -635,24 +635,7 @@ function render_custom_forum() {
             echo '</div>'; // .forum-section
         }
         // Private Messaging (Always last Subforum Card)
-        echo '<div class="forum-section">';
-        echo '<h5>Private Messaging</h5>';
-        echo '<div class="subforum-grid">';
-        echo '<div class="subforum-card">';
-        echo '<div class="subforum-card-flex">';
-        echo '<i class="fas fa-envelope subforum-icon"></i>';
-        echo '<div class="subforum-card-content">';
-        echo '<h5><a href="javascript:void(0);" onclick="togglePrivateMessaging()">Private Messaging</a></h5>';
-        echo '<p>Welcome to the private messaging hub! If you would like to connect with other forum members, check your inbox or send a message, this is the place to do it. Please log in first to access and use these features.</p>';
-        echo '<small>Login Required</small>';
-        echo '<div id="private-messaging-container" style="display:none; margin-top:1rem;">';
-        echo do_shortcode('[forum_messages]');
-        echo '</div>';
-        echo '</div>'; // .subforum-card-content
-        echo '</div>'; // .subforum-card-flex
-        echo '</div>'; // .subforum-card
-        echo '</div>'; // .subforum-grid
-        echo '</div>'; // .forum-section
+        echo render_private_messaging_card();
         echo '<div style="margin-bottom: 3.5rem;"></div>';
     }
 
@@ -921,7 +904,8 @@ function render_custom_forum() {
             }
             echo '</nav>';
         }
-        echo '<div style="margin-bottom: 2.5rem;"></div>';
+        // Private Messaging (Always last Subforum Card)
+        echo render_private_messaging_card();
     }
 
     // AJAX Handler for Replies
@@ -1239,8 +1223,10 @@ function handle_forum_message_submission() {
 }
 add_action('wp', 'handle_forum_message_submission');
 
-function render_forum_private_messages() {
-    if (!is_user_logged_in()) return '<p>Please log in to view your messages.</p>';
+function render_private_messaging_card() {
+    if (!is_user_logged_in()) {
+        return '<div class="forum-section"><p>Please log in to view your messages.</p></div>';
+    }
     global $wpdb;
     $current_user_id = get_current_user_id();
     $forum_sub_ids = $wpdb->get_col("SELECT DISTINCT user_id FROM {$wpdb->prefix}custom_forum_subscriptions");
@@ -1263,6 +1249,17 @@ function render_forum_private_messages() {
         $current_user_id
     ));
     ob_start();
+    echo '<div class="forum-section">';
+    echo '<h5>Private Messaging</h5>';
+    echo '<div class="subforum-grid">';
+    echo '<div class="subforum-card">';
+    echo '<div class="subforum-card-flex">';
+    echo '<i class="fas fa-envelope subforum-icon"></i>';
+    echo '<div class="subforum-card-content">';
+    echo '<h5><a href="javascript:void(0);" onclick="togglePrivateMessaging()">Private Messaging</a></h5>';
+    echo '<p>Welcome to the private messaging hub! If you would like to connect with other forum members, check your inbox or send a message, this is the place to do it. Please log in first to access and use these features.</p>';
+    echo '<small>Login Required</small>';
+    echo '<div id="private-messaging-container" style="display:none; margin-top:1rem;">';
     echo '<h6>Your Inbox</h6>';
     if ($messages) {
         foreach ($messages as $msg) {
@@ -1289,10 +1286,15 @@ function render_forum_private_messages() {
     echo '<textarea name="message" rows="5" cols="50" placeholder="Your message..." required></textarea><br>';
     echo '<button type="submit">Send</button>';
     echo '</form>';
+    echo '</div>'; // #private-messaging-container
+    echo '</div>'; // .subforum-card-content
+    echo '</div>'; // .subforum-card-flex
+    echo '</div>'; // .subforum-card
+    echo '</div>'; // .subforum-grid
+    echo '</div>'; // .forum-section
     unset($_SESSION['honeypot_fields']['pm']);
     return ob_get_clean();
 }
-add_shortcode('forum_messages', 'render_forum_private_messages');
 
 // UNSUBSCRIBE LOGIC
 
