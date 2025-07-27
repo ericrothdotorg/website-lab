@@ -149,6 +149,8 @@ function get_custom_forum_css() {
 CSS;
 }
 
+// INJECT ABOVE CSS STYLES
+
 function enqueue_inline_forum_styles() {
     if (!is_page(FORUM_PAGE_ID)) return;
     wp_register_style('custom-forum-inline-style', false);
@@ -157,73 +159,22 @@ function enqueue_inline_forum_styles() {
 }
 add_action('wp_enqueue_scripts', 'enqueue_inline_forum_styles');
 
-// SUBMIT & REPLY (incl. NOTIFICATIONS)
+// CREATE BREADCRUMBS
 
-function handle_submit_forum_reply() {
-    check_ajax_referer('submit_reply_nonce');
-    if (get_current_user_id() === 0) {
-        wp_send_json_error('Please log in to reply.');
+function render_forum_breadcrumbs($active_structure, $active_tag) {
+    echo '<nav class="forum-breadcrumbs" aria-label="Breadcrumb">';
+    echo '<span class="breadcrumb-prefix">';
+    echo '<span class="screen-reader-text">You are here: </span>';
+    echo 'You are here: ';
+    echo '</span>';
+    echo '<a href="' . esc_url(get_permalink()) . '">Site Forum</a>';
+    if ($active_structure) {
+        echo ' &raquo; <a href="' . esc_url(add_query_arg(['cat' => $active_structure->slug], get_permalink())) . '">' . esc_html($active_structure->name) . '</a>';
+    } elseif ($active_tag) {
+        echo ' &raquo; <a href="' . esc_url(add_query_arg(['tag' => urlencode($active_tag)], get_permalink())) . '">Tag: ' . esc_html($active_tag) . '</a>';
     }
-    $parent_id = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : 0;
-    $content   = isset($_POST['content']) ? wp_kses_post($_POST['content']) : '';
-    if (!$parent_id || empty($content)) {
-        wp_send_json_error('Missing reply content or target.');
-    }
-    global $wpdb;
-    $wpdb->insert('wp_custom_forum', [
-        'post_type'  => 'reply',
-        'user_id'    => get_current_user_id(),
-        'content'    => $content,
-        'parent_id'  => $parent_id,
-        'created_at' => current_time('mysql', 1)
-    ]);
-    $forum_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM wp_custom_forum WHERE id = %d", $parent_id));
-    if ($forum_info && $forum_info->user_id != get_current_user_id()) {
-        $author = get_userdata($forum_info->user_id);
-        if ($author && !empty($author->user_email)) {
-            $replier = wp_get_current_user();
-            $subject = 'New reply to your topic: ' . $forum_info->title;
-            $message = sprintf(
-                "Hi %s,\n\n%s has replied to your topic \"%s\".\n\nView it here: %s#topic_%d\n\nReply:\n%s",
-                $author->display_name,
-                $replier->display_name,
-                $forum_info->title,
-                get_permalink(FORUM_PAGE_ID),
-                $forum_info->id,
-                $content
-            );
-            wp_mail($author->user_email, $subject, $message);
-        }
-    }
-    $subscribers = $wpdb->get_results($wpdb->prepare(
-        "SELECT user_id FROM wp_custom_forum_subscriptions WHERE topic_id = %d",
-        $forum_info->id
-    ));
-    foreach ($subscribers as $sub) {
-        $subscriber_id = intval($sub->user_id);
-        if ($subscriber_id === get_current_user_id() || $subscriber_id === intval($forum_info->user_id)) {
-            continue; // Skips the replier and author to avoid duplicates
-        }
-        $subscriber = get_userdata($subscriber_id);
-        if ($subscriber && !empty($subscriber->user_email)) {
-            $replier = wp_get_current_user();
-            $subject = 'New reply to a topic you subscribed to: ' . $forum_info->title;
-            $message = sprintf(
-                "Hi %s,\n\n%s has replied to the topic \"%s\" that you subscribed to.\n\nView it here: %s#topic_%d\n\nReply:\n%s",
-                $subscriber->display_name,
-                $replier->display_name,
-                $forum_info->title,
-                get_permalink(FORUM_PAGE_ID),
-                $forum_info->id,
-                $content
-            );
-            wp_mail($subscriber->user_email, $subject, $message);
-        }
-    }
-    wp_send_json_success('Reply posted.');
+    echo '</nav>';
 }
-add_action('wp_ajax_submit_forum_reply', 'handle_submit_forum_reply');
-add_action('wp_ajax_nopriv_submit_forum_reply', 'handle_submit_forum_reply');
 
 // RENDER CUSTOM FORUM
 
@@ -514,14 +465,12 @@ function render_custom_forum() {
 
     // Forum Bar: Search Form and Statistics Block
     echo '<div class="forum-bar">';
-
     // Search Form
     echo '<form method="GET" class="forum-search">';
     echo '<input type="text" name="search" placeholder="Search topics..." value="' . esc_attr($search) . '" />';
     if ($active_slug) echo '<input type="hidden" name="cat" value="' . esc_attr($active_slug) . '" />';
     echo '<button type="submit" class="forum-button" aria-label="' . esc_attr('Search topics') . '">Search</button>';
     echo '</form>';
-
     // Statistics Block
     $stats = get_transient('forum_stats_block');
     if (!$stats) {
@@ -572,12 +521,13 @@ function render_custom_forum() {
     echo '<li>🟢 Currently Online: <strong>' . $current_online . '</strong></li>';
     echo '</ul>';
     echo '</div>';
-
     echo '</div>'; // End .forum-bar
+
+    render_forum_breadcrumbs($active_structure, $active_tag);
 
     // Forum Directory
     if (!$active_structure || $active_tag) {
-        echo '<h4>Forum Directory</h4>';
+        echo '<h4 style="padding-top: 25px;">Forum Directory</h4>';
         foreach ($forums[NULL] as $forum) {
             $subforums = $forums[$forum->id] ?? [];
             $filtered_subs = [];
@@ -634,9 +584,8 @@ function render_custom_forum() {
             echo '</div>'; // .subforum-grid
             echo '</div>'; // .forum-section
         }
-        // Private Messaging (Always last Subforum Card)
         echo render_private_messaging_card();
-        echo '<div style="margin-bottom: 3.5rem;"></div>';
+        echo '<div style="margin-bottom: 3rem;"></div>';
     }
 
     // Topic Listing Loop
@@ -904,8 +853,8 @@ function render_custom_forum() {
             }
             echo '</nav>';
         }
-        // Private Messaging (Always last Subforum Card)
         echo render_private_messaging_card();
+        echo '<div style="margin-bottom: 3rem;"></div>';
     }
 
     // AJAX Handler for Replies
@@ -1042,22 +991,79 @@ function render_custom_forum() {
     </script>';
 
     echo '</section>';
-
-        // Breadcrumbs
-        if ($active_structure || $active_tag) {
-            echo '<nav class="forum-breadcrumbs" aria-label="Forum breadcrumbs">';
-            echo '<a href="' . esc_url(get_permalink()) . '">Site Forum</a>';
-            if ($active_structure) {
-                echo ' &raquo; <a href="' . esc_url(add_query_arg(['cat' => $active_structure->slug], get_permalink())) . '">' . esc_html($active_structure->name) . '</a>';
-            } elseif ($active_tag) {
-                echo ' &raquo; <a href="' . esc_url(add_query_arg(['tag' => urlencode($active_tag)], get_permalink())) . '">Tag: ' . esc_html($active_tag) . '</a>';
-            }
-            echo '</nav>';
-        }
+    render_forum_breadcrumbs($active_structure, $active_tag);
 
     return ob_get_clean();
 }
 add_shortcode('custom_forum', 'render_custom_forum');
+
+// SUBMIT & REPLY (incl. NOTIFICATIONS)
+
+function handle_submit_forum_reply() {
+    check_ajax_referer('submit_reply_nonce');
+    if (get_current_user_id() === 0) {
+        wp_send_json_error('Please log in to reply.');
+    }
+    $parent_id = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : 0;
+    $content   = isset($_POST['content']) ? wp_kses_post($_POST['content']) : '';
+    if (!$parent_id || empty($content)) {
+        wp_send_json_error('Missing reply content or target.');
+    }
+    global $wpdb;
+    $wpdb->insert('wp_custom_forum', [
+        'post_type'  => 'reply',
+        'user_id'    => get_current_user_id(),
+        'content'    => $content,
+        'parent_id'  => $parent_id,
+        'created_at' => current_time('mysql', 1)
+    ]);
+    $forum_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM wp_custom_forum WHERE id = %d", $parent_id));
+    if ($forum_info && $forum_info->user_id != get_current_user_id()) {
+        $author = get_userdata($forum_info->user_id);
+        if ($author && !empty($author->user_email)) {
+            $replier = wp_get_current_user();
+            $subject = 'New reply to your topic: ' . $forum_info->title;
+            $message = sprintf(
+                "Hi %s,\n\n%s has replied to your topic \"%s\".\n\nView it here: %s#topic_%d\n\nReply:\n%s",
+                $author->display_name,
+                $replier->display_name,
+                $forum_info->title,
+                get_permalink(FORUM_PAGE_ID),
+                $forum_info->id,
+                $content
+            );
+            wp_mail($author->user_email, $subject, $message);
+        }
+    }
+    $subscribers = $wpdb->get_results($wpdb->prepare(
+        "SELECT user_id FROM wp_custom_forum_subscriptions WHERE topic_id = %d",
+        $forum_info->id
+    ));
+    foreach ($subscribers as $sub) {
+        $subscriber_id = intval($sub->user_id);
+        if ($subscriber_id === get_current_user_id() || $subscriber_id === intval($forum_info->user_id)) {
+            continue; // Skips the replier and author to avoid duplicates
+        }
+        $subscriber = get_userdata($subscriber_id);
+        if ($subscriber && !empty($subscriber->user_email)) {
+            $replier = wp_get_current_user();
+            $subject = 'New reply to a topic you subscribed to: ' . $forum_info->title;
+            $message = sprintf(
+                "Hi %s,\n\n%s has replied to the topic \"%s\" that you subscribed to.\n\nView it here: %s#topic_%d\n\nReply:\n%s",
+                $subscriber->display_name,
+                $replier->display_name,
+                $forum_info->title,
+                get_permalink(FORUM_PAGE_ID),
+                $forum_info->id,
+                $content
+            );
+            wp_mail($subscriber->user_email, $subject, $message);
+        }
+    }
+    wp_send_json_success('Reply posted.');
+}
+add_action('wp_ajax_submit_forum_reply', 'handle_submit_forum_reply');
+add_action('wp_ajax_nopriv_submit_forum_reply', 'handle_submit_forum_reply');
 
 // HANDLE SUBSCRIPTIONS
 
