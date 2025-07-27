@@ -183,6 +183,8 @@ function render_custom_forum() {
     if (!is_page(FORUM_PAGE_ID)) {
         return '';
     }
+    $redirect_to = null;
+
     ob_start();
 
     if (!session_id()) session_start();
@@ -309,26 +311,37 @@ function render_custom_forum() {
     }
 
     // Create Topic
+    $redirect_to = null;
     $forum_action = isset($_POST['forum_action']) ? sanitize_text_field($_POST['forum_action']) : '';
     if ($forum_action === 'new_topic' && get_current_user_id() > 0) {
         $forum_nonce = isset($_POST['forum_nonce']) ? sanitize_text_field($_POST['forum_nonce']) : '';
         $trap = $_SESSION['honeypot_fields']['topic'] ?? [];
         if (!empty($trap['name']) && !empty($_POST[$trap['name']])) {
-            exit; // Bot detected: honeypot filled
+            set_transient('forum_topic_error', 'Bot detection triggered. Please try again.', 30);
+            unset($_SESSION['honeypot_fields']['topic']);
+            wp_redirect(get_permalink(FORUM_PAGE_ID));
+            exit;
         }
-        if (!empty($trap['start']) && (time() - $trap['start'] < 5)) {
-            exit; // Bot detected: submitted too fast
+        $honeypot_start = isset($_POST['honeypot_start']) ? intval($_POST['honeypot_start']) : 0;
+        if ($honeypot_start && (time() - $honeypot_start < 5)) {
+            set_transient('forum_topic_error', 'Form submitted too quickly. Please wait a few seconds.', 30);
+            unset($_SESSION['honeypot_fields']['topic']);
+            wp_redirect(get_permalink(FORUM_PAGE_ID));
+            exit;
         }
         if (!wp_verify_nonce($forum_nonce, 'new_topic_action')) {
-            return;
+            set_transient('forum_topic_error', 'Security check failed. Please refresh and try again.', 30);
+            unset($_SESSION['honeypot_fields']['topic']);
+            wp_redirect(get_permalink(FORUM_PAGE_ID));
+            exit;
         }
         $title   = isset($_POST['title']) ? sanitize_text_field($_POST['title']) : '';
         $content = isset($_POST['content']) ? wp_kses_post(wp_unslash($_POST['content'])) : '';
+
         if (empty($title) || empty($content)) {
             set_transient('forum_topic_error', 'Title and content are required.', 30);
-            $inserted_id = $wpdb->insert_id;
             unset($_SESSION['honeypot_fields']['topic']);
-            wp_redirect(add_query_arg(null, null) . '#topic_' . $inserted_id);
+            wp_redirect(get_permalink(FORUM_PAGE_ID));
             exit;
         }
         $parent_id  = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : 0;
@@ -341,38 +354,55 @@ function render_custom_forum() {
             'content'     => $content,
             'parent_id'   => $parent_id,
             'tags'        => $tags,
-            'is_private'  => $is_private
+            'is_private'  => $is_private,
+            'is_solved'   => 0,
+            'is_sticky'   => 0,
+            'vote_count'  => 0,
+            'reactions'   => '',
+            'views'       => 0,
+            'category'    => '',
+            'created_at'  => current_time('mysql', 1),
+            'updated_at'  => current_time('mysql', 1)
         ]);
         $inserted_id = $wpdb->insert_id;
-        if (isset($_POST['subscribe_topic'])) {
-            $wpdb->insert('wp_custom_forum_subscriptions', [
-                'user_id'  => get_current_user_id(),
-                'topic_id' => $inserted_id
-            ]);
+        if ($inserted_id > 0) {
+            if (isset($_POST['subscribe_topic'])) {
+                $wpdb->insert('wp_custom_forum_subscriptions', [
+                    'user_id'  => get_current_user_id(),
+                    'topic_id' => $inserted_id
+                ]);
+            }
+            unset($_SESSION['honeypot_fields']['topic']);
+            wp_redirect(add_query_arg(null, null) . '#topic_' . $inserted_id);
+            exit;
+        } else {
+            set_transient('forum_topic_error', 'Failed to create topic. Please try again.', 30);
+            unset($_SESSION['honeypot_fields']['topic']);
+            wp_redirect(get_permalink(FORUM_PAGE_ID));
+            exit;
         }
-        wp_redirect(add_query_arg(null, null) . '#topic_' . $inserted_id);
-        exit;
     }
 
     // Create Reply
     $forum_action = isset($_POST['forum_action']) ? sanitize_text_field($_POST['forum_action']) : '';
     if ($forum_action === 'new_reply' && get_current_user_id() > 0) {
-        $forum_nonce = isset($_POST['forum_nonce']) ? sanitize_text_field($_POST['forum_nonce']) : '';
-        $trap = $_SESSION['honeypot_fields']['reply'] ?? [];
-        if (!empty($trap['name']) && !empty($_POST[$trap['name']])) {
+        $forum_nonce = sanitize_text_field($_POST['forum_nonce'] ?? '');
+        $trap_name   = $_POST['honeypot_name'] ?? '';
+        $trap_start  = intval($_POST['honeypot_start'] ?? 0);
+        if (!empty($trap_name) && !empty($_POST[$trap_name])) {
             exit; // Bot detected: honeypot filled
         }
-        if (!empty($trap['start']) && (time() - $trap['start'] < 5)) {
+        if ($trap_start && (time() - $trap_start < 5)) {
             exit; // Bot detected: submitted too fast
         }
         if (!wp_verify_nonce($forum_nonce, 'new_reply_action')) {
             return;
         }
-        $parent_id = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : 0;
-        $content_key = 'content_' . $topic->id;
+        $parent_id = intval($_POST['parent_id'] ?? 0);
+        $content_key = 'content_' . $parent_id;
         $reply_content = isset($_POST[$content_key]) ? wp_kses_post(wp_unslash($_POST[$content_key])) : '';
         if (empty($reply_content)) {
-            set_transient('forum_reply_error_' . $topic->id, 'Reply content cannot be empty.', 30);
+            set_transient('forum_reply_error_' . $parent_id, 'Reply content cannot be empty.', 30);
             unset($_SESSION['honeypot_fields']['reply']);
             wp_redirect(add_query_arg(null, null) . '#topic_' . $parent_id);
             exit;
@@ -383,36 +413,10 @@ function render_custom_forum() {
             'content'   => $reply_content,
             'parent_id' => $parent_id
         ]);
-        unset($_SESSION['honeypot_name']);
+        unset($_SESSION['honeypot_fields']['reply']);
         $inserted_id = $wpdb->insert_id;
         wp_redirect(add_query_arg(null, null) . '#topic_' . $parent_id);
         exit;
-    }
-
-    // Delete Topic
-    if (isset($_GET['delete']) && get_current_user_id() > 0) {
-        $target_id = intval($_GET['delete']);
-        $nonce     = isset($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
-        if (!$nonce || !wp_verify_nonce($nonce, 'delete_post_' . $target_id)) {
-            exit;
-        }
-        $post = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM wp_custom_forum WHERE id = %d",
-            $target_id
-        ));
-        if ($post && ($post->user_id == get_current_user_id() || current_user_can('manage_options'))) {
-            if ($post->post_type === 'topic') {
-                $wpdb->delete('wp_custom_forum', [
-                    'parent_id' => $target_id,
-                    'post_type' => 'reply'
-                ]);
-            } elseif ($post->post_type === 'reply') {
-                do_action('forum_reply_deleted', $target_id);
-            }
-            $wpdb->delete('wp_custom_forum', ['id' => $target_id]);
-            wp_redirect(remove_query_arg('delete'));
-            exit;
-        }
     }
 
     // Update Topic
@@ -459,6 +463,32 @@ function render_custom_forum() {
         if ($post && ($post->user_id == get_current_user_id() || current_user_can('manage_options'))) {
             $wpdb->update('wp_custom_forum', ['is_solved' => 1], ['id' => $solve_id]);
             wp_redirect(remove_query_arg('solve'));
+            exit;
+        }
+    }
+
+    // Delete Topic
+    if (isset($_GET['delete']) && get_current_user_id() > 0) {
+        $target_id = intval($_GET['delete']);
+        $nonce     = isset($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
+        if (!$nonce || !wp_verify_nonce($nonce, 'delete_post_' . $target_id)) {
+            exit;
+        }
+        $post = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM wp_custom_forum WHERE id = %d",
+            $target_id
+        ));
+        if ($post && ($post->user_id == get_current_user_id() || current_user_can('manage_options'))) {
+            if ($post->post_type === 'topic') {
+                $wpdb->delete('wp_custom_forum', [
+                    'parent_id' => $target_id,
+                    'post_type' => 'reply'
+                ]);
+            } elseif ($post->post_type === 'reply') {
+                do_action('forum_reply_deleted', $target_id);
+            }
+            $wpdb->delete('wp_custom_forum', ['id' => $target_id]);
+            wp_redirect(remove_query_arg('delete'));
             exit;
         }
     }
@@ -767,12 +797,19 @@ function render_custom_forum() {
                 if (!session_id()) {
                     session_start();
                 }
+                $honeypot_name = 'hp_' . wp_generate_password(5, false);
+                $_SESSION['honeypot_fields']['reply']['name'] = $honeypot_name;
+                $_SESSION['honeypot_fields']['reply']['start'] = time();
                 echo '<form method="POST">';
                 echo '<input type="hidden" name="forum_action" value="new_reply">';
                 echo wp_nonce_field('new_reply_action', 'forum_nonce');
-                echo '<input type="text" name="' . esc_attr($_SESSION['honeypot_fields']['reply']['name']) . '" class="bot-trap" autocomplete="off">';
+                echo '<input type="hidden" name="honeypot_name" value="' . esc_attr($honeypot_name) . '">';
+                echo '<input type="hidden" name="honeypot_start" value="' . esc_attr($_SESSION['honeypot_fields']['reply']['start']) . '">';
+                echo '<div style="display:none;">';
+                echo '<label for="' . esc_attr($honeypot_name) . '">Leave this field empty</label>';
+                echo '<input type="text" name="' . esc_attr($honeypot_name) . '" id="' . esc_attr($honeypot_name) . '" value="" autocomplete="off">';
+                echo '</div>';
                 echo '<input type="hidden" name="parent_id" value="' . $topic->id . '">';
-                ob_start();
                 wp_editor('', 'reply_content_' . $topic->id, [
                     'textarea_name' => 'content_' . $topic->id,
                     'media_buttons' => false,
@@ -780,7 +817,6 @@ function render_custom_forum() {
                     'teeny' => false,
                     'quicktags' => true
                 ]);
-                echo ob_get_clean();
                 echo '<div class="forum-button-row">';
                 echo '<button type="submit" class="forum-button" aria-label="' . esc_attr('Submit reply to topic') . '">Reply</button>';
                 echo '<button type="button" class="forum-button cancel-reply" onclick="document.getElementById(\'reply_form_' . $topic->id . '\').classList.add(\'hidden\')" aria-label="' . esc_attr('Cancel reply to topic') . '">Cancel</button>';
@@ -937,7 +973,7 @@ function render_custom_forum() {
                         return;
                     }
                     const textarea = form.querySelector("textarea");
-                    const editorId = textarea ? textarea.name : "";
+                    const editorId = textarea ? textarea.id : "";
                     const editor = tinymce.get(editorId);
                     const content = editor ? editor.getContent() : "";
                     if (!content.trim()) {
@@ -993,7 +1029,12 @@ function render_custom_forum() {
     echo '</section>';
     render_forum_breadcrumbs($active_structure, $active_tag);
 
-    return ob_get_clean();
+    $output = ob_get_clean();
+    if ($redirect_to) {
+        wp_redirect($redirect_to);
+        exit;
+    }
+    return $output;
 }
 add_shortcode('custom_forum', 'render_custom_forum');
 
