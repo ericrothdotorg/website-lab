@@ -36,8 +36,6 @@ add_action("wp_head", function () {
     html {text-size-adjust: 100%; scroll-behavior: smooth;}
     /* Clearfix Hack */
     .clearfix::after {content: ""; clear: both; display: table;}
-    /* Country Icons */
-    .flex-item-country-icons {flex: 0 0 60px;}
     /* CSS Quirks (Anti-Patterns) */
     code {background: none; border: none; padding: 0;}
 
@@ -134,6 +132,23 @@ add_action("wp_footer", function () {
     .octagon-text-outside:hover {-webkit-animation-play-state: paused; animation-play-state: paused;}
     @-webkit-keyframes rotate-image-frontpage {0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
     @keyframes rotate-image-frontpage {0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
+
+    /* ✅ SOME MISC STUFF */
+
+    /* Country Icons */
+    .flex-item-country-icons {flex: 0 0 60px;}
+    /* Asgaros Forum */
+    #af-wrapper a {color: #1e73be;}
+    #af-wrapper a:hover {color: #c53030; text-decoration: none;}
+    #af-wrapper #forum-header {background: #3A4F66; font-weight: bold;}
+    #af-wrapper #forum-breadcrumbs {color: #3A4F66 !important; padding-top: 10px;}
+    #af-wrapper #forum-breadcrumbs a {color: #1e73be !important;}
+    #af-wrapper #forum-breadcrumbs a:hover {color: #c53030 !important;}
+    #af-wrapper #forum-navigation a, #af-wrapper #forum-navigation-mobile a {border-left: none;}
+    #af-wrapper .title-element {background: #3A4F66; border-bottom: none; border-radius: 0px 0px 0px 0px;}
+    #af-wrapper .read {color: #3A4F66;}
+    #af-wrapper .forum-title {font-weight: bold !important;}
+    #af-wrapper .forum-stats {background: none !important; border: none !important}
 
     /* ✅ NAVIGATION */
 
