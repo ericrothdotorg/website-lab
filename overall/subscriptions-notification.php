@@ -6,6 +6,7 @@ function subscribe_form_shortcode($atts) {
     $atts = shortcode_atts([
         'layout' => ''
     ], $atts);
+
     if (!in_array($atts['layout'], ['vertical', 'horizontal'])) {
         return '<p style="color: red;">Error: Please specify layout="vertical" or layout="horizontal" in the shortcode.</p>';
     }
@@ -14,19 +15,23 @@ function subscribe_form_shortcode($atts) {
     $confirmation_style = '
     <style>
     .subscription-form-wrapper { display: flex; width: 100%; }
-    .subscription-form {display: flex; flex-direction: ' . ($is_horizontal ? 'row' : 'column') . '; align-items: flex-start; max-width: 600px; width: 100%; gap: ' . ($is_horizontal ? '10px' : '0') . ';}
-    .subscription-form input[type="email"] {width: 100%; max-width: 300px; padding: 8px;}
-    .subscription-form button {padding: 8px 12px; white-space: nowrap; min-width: 90px;' . ($is_horizontal ? '' : ' margin-top: 15px;') . '}
-    .subscription-message {border: none; background: none; padding: 0; margin-top: 10px; font-size: 16px; font-family: inherit;}
+    .subscription-form { display: flex; flex-direction: ' . ($is_horizontal ? 'row' : 'column') . '; align-items: flex-start; max-width: 600px; width: 100%; gap: ' . ($is_horizontal ? '10px' : '0') . '; }
+    .subscription-form input[type="email"] { width: 100%; max-width: 300px; padding: 8px; }
+    .subscription-form button { padding: 8px 12px; white-space: nowrap; min-width: 90px;' . ($is_horizontal ? '' : ' margin-top: 15px;') . ' }
+    .subscription-message { border: none; background: none; padding: 0; margin-top: 10px; font-size: 16px; font-family: inherit; }
     .subscription-message.success { color: #2e7d32; }
     .subscription-message.error { color: #c62828; }
-    @media (max-width: 600px) {.subscription-form {flex-direction: column !important; gap: 0 !important;} .subscription-form button {margin-top: 15px !important; width: auto !important;}}
+    @media (max-width: 600px) {
+        .subscription-form { flex-direction: column !important; gap: 0 !important; }
+        .subscription-form button { margin-top: 15px !important; width: auto !important; }
+    }
     </style>';
     return $confirmation_style . '
     <div class="subscription-form-wrapper">
         <form method="post" id="subscription-form" class="subscription-form" novalidate>
             <label for="subscriber_email" class="screen-reader-text">Email address</label>
             <input type="email" id="subscriber_email" name="subscriber_email" required placeholder="Enter your E-mail" autocomplete="email">
+            <input type="text" name="contact_time" value="" style="display:none !important;" autocomplete="off">
             <input type="hidden" name="middle_name" value="">
             <input type="hidden" name="math_check" value="7">
             <input type="hidden" name="nonce" value="' . wp_create_nonce('subscribe_form_action') . '">
@@ -46,6 +51,7 @@ function subscribe_form_shortcode($atts) {
                     body: new URLSearchParams({
                         action: "subscribe_user",
                         subscriber_email: formData.get("subscriber_email"),
+                        contact_time: formData.get("contact_time"),
                         middle_name: formData.get("middle_name"),
                         math_check: formData.get("math_check"),
                         nonce: formData.get("nonce")
