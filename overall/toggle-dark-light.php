@@ -47,14 +47,6 @@ add_action('wp_footer', function () {
         body.dark-mode .display-posts-trending .listing-item {background: none; border: none;}
         body.dark-mode .image-bedps {background: #1a1a1a; border: 1px solid #1a1a1a;}
         body.dark-mode .image-bedps:hover {background: #0d0d0d;}
-        /* ✅ Custom Forum */
-        body.dark-mode .forum-new-topic {background-color: #1a1a1a; border: 1px solid #262626;}
-        body.dark-mode .forum-reply {background-color: #1a1a1a; border: 1px solid #262626;}
-        body.dark-mode .forum-edit-form {background-color: #1a1a1a; border: 1px solid #262626;}
-        body.dark-mode .forum-stats {background-color: #1a1a1a; border: 1px solid #262626;}
-        body.dark-mode .subforum-card {background-color: #1a1a1a; border: 1px solid #262626;}
-        body.dark-mode .forum-topic {background-color: #1a1a1a; border: 1px solid #262626;}
-        body.dark-mode .forum-search input[type=text] {background: #1a1a1a; color: #bfbfbf; border: 1px solid #404040;}
         /* ✅ Accordions */
         body.dark-mode .details-accordion summary {border-top: 1px solid #404040; border-bottom: 1px solid #404040;}
         body.dark-mode .details-accordion summary:hover, body.dark-mode .details-accordion summary:focus {background: #1a1a1a;}
