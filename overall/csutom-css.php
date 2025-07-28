@@ -140,11 +140,12 @@ add_action("wp_footer", function () {
     /* Asgaros Forum */
     #af-wrapper a {color: #1e73be;}
     #af-wrapper a:hover {color: #c53030; text-decoration: none;}
-    #af-wrapper #forum-header {background: #3A4F66; font-weight: bold;}
+    #af-wrapper #forum-header {background: #3A4F66;}
+    #af-wrapper #forum-navigation a, #af-wrapper #forum-navigation-mobile a {border-left: none; font-weight: bold;}
+    #af-wrapper #forum-navigation .home-link:hover, .profile-link:hover, .members-link:hover, .subscriptions-link:hover, .activity-link:hover, .logout-link:hover {background: #192a3d;}
     #af-wrapper #forum-breadcrumbs {color: #3A4F66 !important; padding-top: 10px;}
     #af-wrapper #forum-breadcrumbs a {color: #1e73be !important;}
     #af-wrapper #forum-breadcrumbs a:hover {color: #c53030 !important;}
-    #af-wrapper #forum-navigation a, #af-wrapper #forum-navigation-mobile a {border-left: none;}
     #af-wrapper .title-element {background: #3A4F66; border-bottom: none; border-radius: 0px 0px 0px 0px;}
     #af-wrapper .read {color: #3A4F66;}
     #af-wrapper .forum-title {font-weight: bold !important;}
