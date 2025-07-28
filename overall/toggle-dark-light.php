@@ -16,28 +16,28 @@ add_action('wp_footer', function () {
         body.dark-mode :is(h1, h2, h3, h4, h5, h6) {color: #bfbfbf;}
         /* ✅ Theme related: Blocksy */
         body.dark-mode[data-header*="type-1"] .ct-header [data-row*="middle"] {background: rgba(0,0,0,0.75);}
-		body.dark-mode[data-header*="type-1"] .ct-header [data-id="logo"] .site-title {--linkInitialColor: #ffffff; --linkHoverColor: #bfbfbf;}
-		body.dark-mode[data-header*="type-1"] .ct-header [data-id="logo"] .site-description {color: #bfbfbf;}
-		body.dark-mode[data-header*="type-1"] .ct-header [data-id="menu"] > ul > li > a {--linkInitialColor: #ffffff; --linkHoverColor: #bfbfbf;}
-		body.dark-mode .ct-header-search {--linkInitialColor: #ffffff; --linkHoverColor: #bfbfbf;}
-		body.dark-mode .ct-search-results {background: rgba(0, 0, 0, 0.9); -webkit-box-shadow: none; box-shadow: none;}
-		body.dark-mode[data-header*="type-1"] [data-id="trigger"] {--icon-color: #ffffff; --icon-hover-color: #bfbfbf;}
-		body.dark-mode aside[data-type='type-4']:after {background: #0d0d0d;}
+	body.dark-mode[data-header*="type-1"] .ct-header [data-id="logo"] .site-title {--linkInitialColor: #ffffff; --linkHoverColor: #bfbfbf;}
+	body.dark-mode[data-header*="type-1"] .ct-header [data-id="logo"] .site-description {color: #bfbfbf;}
+	body.dark-mode[data-header*="type-1"] .ct-header [data-id="menu"] > ul > li > a {--linkInitialColor: #ffffff; --linkHoverColor: #bfbfbf;}
+	body.dark-mode .ct-header-search {--linkInitialColor: #ffffff; --linkHoverColor: #bfbfbf;}
+	body.dark-mode .ct-search-results {background: rgba(0, 0, 0, 0.9); -webkit-box-shadow: none; box-shadow: none;}
+	body.dark-mode[data-header*="type-1"] [data-id="trigger"] {--icon-color: #ffffff; --icon-hover-color: #bfbfbf;}
+	body.dark-mode aside[data-type='type-4']:after {background: #0d0d0d;}
         body.dark-mode .single-query .ct-query-template-grid {background: #1a1a1a; border: 1px solid #1a1a1a;}
-		body.dark-mode .single-query .ct-query-template-grid:hover {background: #0d0d0d;}
+	body.dark-mode .single-query .ct-query-template-grid:hover {background: #0d0d0d;}
         body.dark-mode .single-query .ct-query-template.is-layout-slider {background: #1a1a1a; border: 1px solid #1a1a1a;}
         body.dark-mode .single-query .ct-query-template.is-layout-slider:hover {background: #0d0d0d;}
         body.dark-mode .wp-block-term.is-layout-flow {background: #1a1a1a; border: 1px solid #1a1a1a;}
         body.dark-mode .wp-block-term.is-layout-flow:hover {background: #0d0d0d;}
-		body.dark-mode .ct-related-posts-container {border-top: 1px solid #3A4F66 !important;}
-		body.dark-mode article>.ct-related-posts {border-top: 1px solid #3A4F66;}
-		body.dark-mode .nav-item-prev {color: #bfbfbf;}
-		body.dark-mode .nav-item-next {color: #bfbfbf;}
-		body.dark-mode .post-navigation [class*='nav-item'] {color: #1e73be;}
-		body.dark-mode .post-navigation [class*='nav-item']:hover {color: #c53030;}
-		body.dark-mode .post-navigation:after {background: #3A4F66;}
-		body.dark-mode .ct-popup-inner > article {background: #0d0d0d;}
-		body.dark-mode .ct-popup-inner > article p {color: #bfbfbf;}
+	body.dark-mode .ct-related-posts-container {border-top: 1px solid #3A4F66 !important;}
+	body.dark-mode article>.ct-related-posts {border-top: 1px solid #3A4F66;}
+	body.dark-mode .nav-item-prev {color: #bfbfbf;}
+	body.dark-mode .nav-item-next {color: #bfbfbf;}
+	body.dark-mode .post-navigation [class*='nav-item'] {color: #1e73be;}
+	body.dark-mode .post-navigation [class*='nav-item']:hover {color: #c53030;}
+	body.dark-mode .post-navigation:after {background: #3A4F66;}
+	body.dark-mode .ct-popup-inner > article {background: #0d0d0d;}
+	body.dark-mode .ct-popup-inner > article p {color: #bfbfbf;}
         body.dark-mode .ct-sidebar p {color: #bfbfbf;}
         /* ✅ Display Posts Shortcode */
         body.dark-mode .display-posts-listing .listing-item {background: #1a1a1a; border: 1px solid #1a1a1a;}
@@ -47,6 +47,9 @@ add_action('wp_footer', function () {
         body.dark-mode .display-posts-trending .listing-item {background: none; border: none;}
         body.dark-mode .image-bedps {background: #1a1a1a; border: 1px solid #1a1a1a;}
         body.dark-mode .image-bedps:hover {background: #0d0d0d;}
+	/* ✅ Asgaros Forum */
+        body.dark-mode #af-wrapper .main-title {color: #bfbfbf;}
+        body.dark-mode #af-wrapper .indicator-label {color: #bfbfbf;}
         /* ✅ Accordions */
         body.dark-mode .details-accordion summary {border-top: 1px solid #404040; border-bottom: 1px solid #404040;}
         body.dark-mode .details-accordion summary:hover, body.dark-mode .details-accordion summary:focus {background: #1a1a1a;}
