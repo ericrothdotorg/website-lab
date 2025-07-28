@@ -261,9 +261,6 @@ if (!function_exists('display_subscriber_list')) {
             if ($site_ids) {
                 $wpdb->query("DELETE FROM $site_table WHERE id IN (" . implode(',', $site_ids) . ")");
             }
-            if ($site_ids) {
-                $wpdb->query("DELETE FROM {$wpdb->prefix}subscribers WHERE id IN (" . implode(',', $site_ids) . ")");
-            }
             if ($user_ids) {
                 require_once(ABSPATH . 'wp-admin/includes/user.php');
                 foreach ($user_ids as $user_id) {
