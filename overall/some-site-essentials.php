@@ -200,6 +200,10 @@ add_filter('blocksy_typography_font_sources', function($sources) {
 // Blocksy – Enqueue Flexy Styles
 add_action('wp_enqueue_scripts', fn() => wp_enqueue_style('ct-flexy-styles'));
 
+// Shortcodes: Enable in Widgets
+add_filter('widget_text', 'do_shortcode');
+add_filter('widget_block_content', 'do_shortcode');
+
 // Shortcodes: Retrieve IDs and return Content
 add_shortcode('reusable', 'get_reusable_block');
 add_shortcode('blocksy_content_block', 'get_reusable_block');
