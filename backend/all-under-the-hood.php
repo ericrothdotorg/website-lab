@@ -1,5 +1,8 @@
 <?php
 
+// Remove "Edit" link for viewing as non-logged-in user
+add_filter('edit_post_link', '__return_false');
+
 if (is_admin()) {
 
     // Remove tags support from posts
@@ -12,9 +15,6 @@ if (is_admin()) {
     add_filter('xmlrpc_enabled', '__return_false');
     add_filter('pings_open', '__return_false');
     add_filter('pre_ping', '__return_empty_array');
-
-    // Remove "Edit" link for viewing as non-logged-in user
-    add_filter('edit_post_link', '__return_false');
 
     // Stay logged in to WordPress longer
     function er_stay_logged_in($expires) {
