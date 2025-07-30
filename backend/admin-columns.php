@@ -25,7 +25,7 @@ function initialize_custom_admin_columns() {
             $columns['types'] = __('Types');
         }
 
-        $columns['excerpt'] = __('Excerpt');
+        $columns['custom_excerpt'] = __('Excerpt');
         $columns['word_count'] = __('Word Count');
         $columns['read_time'] = __('Read Time');
         $columns['date'] = __('Date');
@@ -47,7 +47,7 @@ function initialize_custom_admin_columns() {
             case 'featured_image':
                 echo get_the_post_thumbnail($post_id, [65, 65], ['style' => 'border-radius:4px;']);
                 break;
-            case 'excerpt':
+            case 'custom_excerpt':
                 echo wp_trim_words(get_the_excerpt($post_id), 35);
                 break;
             case 'word_count':
@@ -121,55 +121,51 @@ function initialize_custom_admin_columns() {
         $styles = [
             'page' => '
                 .post-type-page .column-id { width: 5%; }
-                .post-type-page .column-featured_image { width: 7%; }
-                .post-type-page .column-title { width: 13%; }
-                .post-type-page .column-things { width: 12%; }
+                .post-type-page .column-featured_image { width: 8%; }
+                .post-type-page .column-title { width: 12%; }
+                .post-type-page .column-things { width: 9%; }
                 .post-type-page .column-depth { width: 3%; }
-                .post-type-page .column-parent { width: 10%; }
-                .post-type-page .column-excerpt { width: 28%; }
+                .post-type-page .column-parent { width: 7%; }
+                .post-type-page .column-excerpt { width: 20%; }
                 .post-type-page .column-word_count { width: 6%; }
-                .post-type-page .column-read_time { width: 6%; }
+                .post-type-page .column-read_time { width: 5%; }
                 .post-type-page .column-date { width: 10%; }
             ',
             'post' => '
                 .post-type-post .column-id { width: 5%; }
                 .post-type-post .column-featured_image { width: 8%; }
-                .post-type-post .column-title { width: 13%; }
-                .post-type-post .column-categories { width: 12%; }
-                .post-type-post .column-excerpt { width: 40%; }
+                .post-type-post .column-title { width: 12%; }
+                .post-type-post .column-post_categories { width: 10%; }
+                .post-type-post .column-excerpt { width: 30%; }
                 .post-type-post .column-word_count { width: 6%; }
-                .post-type-post .column-read_time { width: 6%; }
+                .post-type-post .column-read_time { width: 5%; }
                 .post-type-post .column-date { width: 10%; }
             ',
             'my-interests' => '
                 .post-type-my-interests .column-id { width: 5%; }
                 .post-type-my-interests .column-featured_image { width: 8%; }
-                .post-type-my-interests .column-title { width: 13%; }
-                .post-type-my-interests .column-topics { width: 12%; }
-                .post-type-my-interests .column-excerpt { width: 40%; }
+                .post-type-my-interests .column-title { width: 12%; }
+                .post-type-my-interests .column-topics { width: 10%; }
+                .post-type-my-interests .column-excerpt { width: 30%; }
                 .post-type-my-interests .column-word_count { width: 6%; }
-                .post-type-my-interests .column-read_time { width: 6%; }
+                .post-type-my-interests .column-read_time { width: 5%; }
                 .post-type-my-interests .column-date { width: 10%; }
             ',
             'my-traits' => '
                 .post-type-my-traits .column-id { width: 5%; }
                 .post-type-my-traits .column-featured_image { width: 8%; }
-                .post-type-my-traits .column-title { width: 13%; }
-                .post-type-my-traits .column-types { width: 12%; }
-                .post-type-my-traits .column-excerpt { width: 40%; }
+                .post-type-my-traits .column-title { width: 12%; }
+                .post-type-my-traits .column-types { width: 10%; }
+                .post-type-my-traits .column-excerpt { width: 30%; }
                 .post-type-my-traits .column-word_count { width: 6%; }
-                .post-type-my-traits .column-read_time { width: 6%; }
+                .post-type-my-traits .column-read_time { width: 5%; }
                 .post-type-my-traits .column-date { width: 10%; }
             '
         ];
         echo '<style>' . ($styles[$typenow] ?? '') . '
-            .wp-list-table { table-layout: auto !important; }
-            .wp-list-table th, .wp-list-table td {
-                word-wrap: break-word;
-                white-space: normal;
-            }
-            @media screen and (max-width: 782px) {
-                .wp-list-table { display: block; overflow-x: auto; }
+            .wp-list-table {
+                table-layout: auto !important;
+                width: 100%;
             }
         </style>';
     });
