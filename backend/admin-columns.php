@@ -178,7 +178,7 @@ function initialize_custom_admin_columns() {
         $new['id'] = __('ID');
         $new['icon'] = $columns['icon'];
         $new['title'] = $columns['title'];
-        $new['uploaded_to'] = __('Uploaded To'); // We’ll fully control output
+        $new['uploaded_to'] = __('Uploaded To');
         $new['dimensions'] = __('Dimensions');
         $new['file_size'] = __('File Size');
         $new['available_sizes'] = __('Available Sizes');
