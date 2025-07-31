@@ -1,6 +1,10 @@
 <?php
 
-// Remove query strings from static resources
+// ----------------------------------------
+//  PERFORMANCE OPTIMIZATIONS
+// ----------------------------------------
+
+// Remove Query Strings from static Resources
 function remove_cssjs_ver($src) {
     if (strpos($src, '?ver=')) {
         $src = remove_query_arg('ver', $src);
@@ -10,13 +14,7 @@ function remove_cssjs_ver($src) {
 add_filter('style_loader_src', 'remove_cssjs_ver', 10, 2);
 add_filter('script_loader_src', 'remove_cssjs_ver', 10, 2);
 
-// Enable Dashicons on frontend
-function load_dashicons_front_end() {
-    wp_enqueue_style('dashicons');
-}
-add_action('wp_enqueue_scripts', 'load_dashicons_front_end');
-
-// Disable emojis
+// Disable Emojis
 function disable_emojis() {
     remove_action('wp_head', 'print_emoji_detection_script', 7);
     remove_action('admin_print_scripts', 'print_emoji_detection_script');
@@ -40,98 +38,6 @@ function disable_emojis_remove_dns_prefetch($urls, $relation_type) {
     }
     return $urls;
 }
-
-// Preconnect & DNS Prefetch
-add_action('wp_head', function () {
-    echo '
-    <link rel="preconnect" href="https://www.clarity.ms" crossorigin>
-    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
-    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
-    <link rel="dns-prefetch" href="https://secure.gravatar.com">
-    ';
-});
-
-// Scripts & UI Features in Footer
-add_action('wp_footer', function () {
-    ?>
-    <!-- Microsoft Clarity -->
-    <script>
-        (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-        })(window, document, "clarity", "script", "eic7b2e9o1");
-    </script>
-    <!-- Google Tag Manager -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-X88D2RT23H"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-X88D2RT23H');
-    </script>
-    <!-- Scroll Indicator -->
-    <style>
-        .scroll-indicator-container { width: 100%; }
-        .scroll-indicator-bar {
-            will-change: width; width: 0%; position: fixed; bottom: 0; height: 5px;
-            background: #c53030; z-index: 99999;
-        }
-    </style>
-    <script>
-        function scrollIndicator() {
-            requestAnimationFrame(() => {
-                const scroll = document.documentElement.scrollTop || document.body.scrollTop;
-                const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-                document.getElementById("my_scroll_indicator").style.width = (scroll / height) * 100 + "%";
-            });
-        }
-        window.addEventListener("scroll", scrollIndicator);
-    </script>
-    <div class="scroll-indicator-container">
-        <div class="scroll-indicator-bar" id="my_scroll_indicator"></div>
-    </div>
-    <!-- Auto Insert Current Year -->
-    <script>
-        const yearEl = document.getElementById("current-year");
-        if (yearEl) yearEl.textContent = new Date().getFullYear();
-    </script>
-    <!-- Accordion Toggle -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const details = document.querySelectorAll("details.details-accordion");
-            details.forEach((detail) => {
-                detail.addEventListener("toggle", () => {
-                    if (detail.open) {
-                        details.forEach((other) => {
-                            if (other !== detail) other.removeAttribute("open");
-                        });
-                    }
-                });
-                const summary = detail.querySelector("summary");
-                if (summary) {
-                    summary.setAttribute("tabindex", "0");
-                    summary.addEventListener("keydown", (e) => {
-                        if (["Enter", " "].includes(e.key)) {
-                            e.preventDefault();
-                            detail.open = !detail.open;
-                        }
-                    });
-                }
-            });
-        });
-    </script>
-    <!-- Flexy Animation (Blocksy) -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            document.querySelectorAll('.flexy-container').forEach(el => {
-                el.classList.add('daneden-slideInUp');
-            });
-        });
-    </script>
-    <!-- Instant Page -->
-    <script src="https://instant.page/5.2.0" type="module" integrity="sha384-jnZyxPjiipYXnSU0ygqeac2q7CVYMbh84q0uHVRRxEtvFPiQYbXWUorga2aqZJ0z"></script>
-    <?php
-}, 10);
 
 // Improve Largest Contentful Paint (LCP)
 add_action('template_redirect', function () {
@@ -158,6 +64,71 @@ add_action('template_redirect', function () {
     });
 });
 
+// ----------------------------------------
+//  FRONTEND ASSETS
+// ----------------------------------------
+
+// Enable Dashicons on Frontend
+function load_dashicons_front_end() {
+    wp_enqueue_style('dashicons');
+}
+add_action('wp_enqueue_scripts', 'load_dashicons_front_end');
+
+// Blocksy – Disable Google Fonts
+add_filter('blocksy:typography:google:use-remote', '__return_false');
+add_filter('blocksy_typography_font_sources', function($sources) {
+    unset($sources['google']);
+    return $sources;
+});
+
+// Blocksy – Enqueue Flexy Styles
+add_action('wp_enqueue_scripts', fn() => wp_enqueue_style('ct-flexy-styles'));
+
+// Preconnect & DNS Prefetch
+add_action('wp_head', function () {
+    echo '
+    <link rel="preconnect" href="https://www.clarity.ms" crossorigin>
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://secure.gravatar.com">
+    ';
+});
+
+// ----------------------------------------
+//  SHORTCODES
+// ----------------------------------------
+
+// Enable Shortcodes in Widgets
+add_filter('widget_text', 'do_shortcode');
+add_filter('widget_block_content', 'do_shortcode');
+
+// Shortcode: [reusable id="123"]
+add_shortcode('reusable', 'get_reusable_block');
+add_shortcode('blocksy_content_block', 'get_reusable_block');
+function get_reusable_block($atts) {
+    $atts = shortcode_atts(['id' => ''], $atts);
+    $post_id = intval($atts['id']);
+    $post = get_post($post_id);
+    return $post ? apply_filters('the_content', $post->post_content) : '';
+}
+
+// Shortcodes: [total_post], [total_page], etc.
+function total_posts($post_type) {
+    return wp_count_posts($post_type)->publish;
+}
+function register_shortcodes() {
+    foreach (['post', 'page', 'my-interests', 'my-traits'] as $type) {
+        add_shortcode('total_' . str_replace('-', '_', $type), fn() => total_posts($type));
+    }
+}
+if (!is_admin()) {
+    add_action('init', 'register_shortcodes');
+}
+
+// ----------------------------------------
+//  SEO / UX & ACCESSIBILITY ENHANCEMENTS
+// ----------------------------------------
+
 // Automatically add ALT Text to Images
 add_action('init', function() {
     add_filter('wp_get_attachment_image', function($html, $attachment_id) {
@@ -178,7 +149,7 @@ add_action('init', function() {
     }, 10, 2);
 });
 
-// Automatically add title to <a> with target="_blank"
+// Automatically add Title to <a> with target="_blank"
 add_filter('the_content', function($content) {
     return preg_replace_callback(
         '/<a\s+([^>]*?)target="_blank"([^>]*)>(.*?)<\/a>/i',
@@ -189,42 +160,6 @@ add_filter('the_content', function($content) {
         $content
     );
 });
-
-// Blocksy – Disable Google Fonts
-add_filter('blocksy:typography:google:use-remote', '__return_false');
-add_filter('blocksy_typography_font_sources', function($sources) {
-    unset($sources['google']);
-    return $sources;
-});
-
-// Blocksy – Enqueue Flexy Styles
-add_action('wp_enqueue_scripts', fn() => wp_enqueue_style('ct-flexy-styles'));
-
-// Shortcodes: Enable in Widgets
-add_filter('widget_text', 'do_shortcode');
-add_filter('widget_block_content', 'do_shortcode');
-
-// Shortcodes: Retrieve IDs and return Content
-add_shortcode('reusable', 'get_reusable_block');
-add_shortcode('blocksy_content_block', 'get_reusable_block');
-function get_reusable_block($atts) {
-    $atts = shortcode_atts(['id' => ''], $atts);
-    $post = get_post($atts['id']);
-    return $post ? apply_filters('the_content', $post->post_content) : '';
-}
-
-// Shortcodes: [total_post], [total_page], etc.
-function total_posts($post_type) {
-    return wp_count_posts($post_type)->publish;
-}
-function register_shortcodes() {
-    foreach (['post', 'page', 'my-interests', 'my-traits'] as $type) {
-        add_shortcode('total_' . str_replace('-', '_', $type), fn() => total_posts($type));
-    }
-}
-if (!is_admin()) {
-    add_action('init', 'register_shortcodes');
-}
 
 // Custom Redirects (SEO-friendly)
 add_action('init', function() {
@@ -241,4 +176,98 @@ add_action('init', function() {
         exit;
     }
 });
+
+// ----------------------------------------
+//  UI ENHANCEMENTS / FOOTER SCRIPTS
+// ----------------------------------------
+
+add_action('wp_footer', function () {
+    ?>
+
+    <!-- Microsoft Clarity -->
+    <script>
+        (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "eic7b2e9o1");
+    </script>
+
+    <!-- Google Tag Manager -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-X88D2RT23H"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-X88D2RT23H');
+    </script>
+
+    <!-- Scroll Indicator -->
+    <style>
+        .scroll-indicator-container { width: 100%; }
+        .scroll-indicator-bar {
+            will-change: width; width: 0%; position: fixed; bottom: 0; height: 5px;
+            background: #c53030; z-index: 99999;
+        }
+    </style>
+    <script>
+        function scrollIndicator() {
+            requestAnimationFrame(() => {
+                const scroll = document.documentElement.scrollTop || document.body.scrollTop;
+                const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                document.getElementById("my_scroll_indicator").style.width = (scroll / height) * 100 + "%";
+            });
+        }
+        window.addEventListener("scroll", scrollIndicator);
+    </script>
+    <div class="scroll-indicator-container">
+        <div class="scroll-indicator-bar" id="my_scroll_indicator"></div>
+    </div>
+
+    <!-- Auto Insert Current Year -->
+    <script>
+        const yearEl = document.getElementById("current-year");
+        if (yearEl) yearEl.textContent = new Date().getFullYear();
+    </script>
+
+    <!-- Accordion Toggle -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const details = document.querySelectorAll("details.details-accordion");
+            details.forEach((detail) => {
+                detail.addEventListener("toggle", () => {
+                    if (detail.open) {
+                        details.forEach((other) => {
+                            if (other !== detail) other.removeAttribute("open");
+                        });
+                    }
+                });
+                const summary = detail.querySelector("summary");
+                if (summary) {
+                    summary.setAttribute("tabindex", "0");
+                    summary.addEventListener("keydown", (e) => {
+                        if (["Enter", " "].includes(e.key)) {
+                            e.preventDefault();
+                            detail.open = !detail.open;
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+
+    <!-- Flexy Animation (Blocksy) -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll('.flexy-container').forEach(el => {
+                el.classList.add('daneden-slideInUp');
+            });
+        });
+    </script>
+
+    <!-- Instant Page -->
+    <script src="https://instant.page/5.2.0" type="module" integrity="sha384-jnZyxPjiipYXnSU0ygqeac2q7CVYMbh84q0uHVRRxEtvFPiQYbXWUorga2aqZJ0z"></script>
+
+    <?php
+}, 10);
+
 ?>
