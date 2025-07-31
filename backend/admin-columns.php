@@ -178,11 +178,13 @@ function initialize_custom_admin_columns() {
         $new['id'] = __('ID');
         $new['icon'] = $columns['icon'];
         $new['title'] = $columns['title'];
-        $new['uploaded_to'] = __('Uploaded To');
+        $new['uploaded_to'] = __('Uploaded To'); // We’ll fully control output
         $new['dimensions'] = __('Dimensions');
         $new['file_size'] = __('File Size');
         $new['available_sizes'] = __('Available Sizes');
+        $new['file_format'] = __('File Format');
         $new['date'] = $columns['date'];
+
         return $new;
     });
 
@@ -192,13 +194,18 @@ function initialize_custom_admin_columns() {
                 echo $post_id;
                 break;
             case 'uploaded_to':
-                $parent = wp_get_post_parent_id($post_id);
-                if ($parent) {
-                    $title = get_the_title($parent);
-                    $url = get_edit_post_link($parent);
-                    echo '<a href="' . esc_url($url) . '" target="_blank" rel="noopener noreferrer">' . esc_html($title) . '</a>';
+                $parent_id = wp_get_post_parent_id($post_id);
+                if ($parent_id) {
+                    $title = _draft_or_post_title($parent_id);
+                    $url = get_edit_post_link($parent_id);
+                    echo '<strong><a href="' . esc_url($url) . '" target="_blank" rel="noopener noreferrer">' . esc_html($title) . '</a></strong>';
                 } else {
-                    echo __('(Unattached)');
+                    echo '<em>' . __('(Unattached)') . '</em>';
+                    // Native "Attach" link
+                    if (current_user_can('edit_post', $post_id)) {
+                        $url = admin_url('upload.php?attach=' . $post_id);
+                        echo '<br><a class="hide-if-no-js" onclick="findPosts.open(\'media[]\', \'' . esc_attr($post_id) . '\');return false;" href="' . esc_url($url) . '">' . __('Attach') . '</a>';
+                    }
                 }
                 break;
             case 'dimensions':
@@ -213,6 +220,23 @@ function initialize_custom_admin_columns() {
                 $meta = wp_get_attachment_metadata($post_id);
                 echo !empty($meta['sizes']) ? implode(', ', array_keys($meta['sizes'])) : '—';
                 break;
+            case 'file_format':
+                $file = get_attached_file($post_id);
+                if (!$file || !file_exists($file)) {
+                    echo '—';
+                    break;
+                }
+                $formats = [];
+                $original_ext = strtoupper(pathinfo($file, PATHINFO_EXTENSION));
+                if ($original_ext) {
+                    $formats[] = $original_ext;
+                }
+                $webp_file = $file . '.webp';
+                if (file_exists($webp_file)) {
+                    $formats[] = 'WEBP';
+                }
+                echo $formats ? implode(', ', $formats) : '—';
+                break;
         }
     }, 10, 2);
 
@@ -225,21 +249,19 @@ function initialize_custom_admin_columns() {
     add_action('admin_head-upload.php', function () {
         echo '<style>
             .upload-php .column-id { width: 5%; }
-            .upload-php .column-icon { width: 10%; }
-            .upload-php .column-title { width: 25%; }
-            .upload-php .column-uploaded_to { width: 15%; }
+            .upload-php .column-icon { width: 8%; }
+            .upload-php .column-title { width: 22%; }
+            .upload-php .column-uploaded_to { width: 12%; }
             .upload-php .column-dimensions { width: 10%; }
-            .upload-php .column-file_size { width: 10%; }
+            .upload-php .column-file_size { width: 8%; }
             .upload-php .column-available_sizes { width: 15%; }
+            .upload-php .column-file_format { width: 10%; }
             .upload-php .column-date { width: 10%; }
-            .wp-list-table { table-layout: auto !important; }
-            .wp-list-table th, .wp-list-table td {
-                word-wrap: break-word;
-                white-space: normal;
-            }
-            @media screen and (max-width: 782px) {
-                .wp-list-table { display: block; overflow-x: auto; }
+            .wp-list-table {
+                table-layout: auto !important;
+                width: 100%;
             }
         </style>';
     });
+
 }
