@@ -184,7 +184,6 @@ function initialize_custom_admin_columns() {
         $new['available_sizes'] = __('Available Sizes');
         $new['file_format'] = __('File Format');
         $new['date'] = $columns['date'];
-
         return $new;
     });
 
