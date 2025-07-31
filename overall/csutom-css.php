@@ -4,7 +4,7 @@ add_action("wp_head", function () {
     ?>
     <style>
 
-    /* ✅ THEME (Blocksy) */
+    /* THEME (Blocksy) */
 
     /* Hero Section: Background */
     [data-prefix="single_page"] .hero-section[data-type="type-2"] {background: none !important;}
@@ -23,7 +23,7 @@ add_action("wp_head", function () {
     /* Content: Adjust Layout Flow - Why? */
     [data-prefix="single_page"] [class*="ct-container"] > article[class*="post"] {--has-boxed: var(--true);}
 
-    /* ✅ SOME MISC STUFF */
+    /* SOME MISC STUFF */
 
     /* Hide Stuff depending on VW */
     @media (max-width: 768px) {.hide-on-small {display: none;}}
@@ -39,10 +39,10 @@ add_action("wp_head", function () {
     /* CSS Quirks (Anti-Patterns) */
     code {background: none; border: none; padding: 0;}
 
-    /* ✅ NAVIGATION */
+    /* NAVIGATION */
 
     /* External Link Indicator */
-    a:not([href^='#']):not([href^='tel:']):not([href^='/']):not([href*='javascript']):not([href*='ericroth.org']):not([href*='ericroth-org']):not([href*='1drv.ms']):not([href*='paypal.com']):not([href*='librarything.com']):not([href*='themoviedb.org']):not([href*='facebook.com']):not([href*='github.com']):not([href*='linkedin.com']):not([href*='youtube.com']):not([href*='bsky.app']):not([href*='bsky.social']):not([href*='?cat=']):not(.wp-block-button__link, .button, .neli, .page-numbers, .subforum-link)::after {
+    a:not([href^='#']):not([href^='tel:']):not([href^='/']):not([href*='javascript']):not([href*='ericroth.org']):not([href*='ericroth-org']):not([href*='1drv.ms']):not([href*='paypal.com']):not([href*='librarything.com']):not([href*='themoviedb.org']):not([href*='facebook.com']):not([href*='github.com']):not([href*='linkedin.com']):not([href*='youtube.com']):not([href*='bsky.app']):not([href*='bsky.social']):not([href*='?cat=']):not(.wp-block-button__link, .button, .neli, .page-numbers)::after {
       content: "";
       background: url("http://ericroth.org/wp-content/uploads/2024/03/external-link-greyblue.svg") no-repeat center;
       width: 0.75em;
@@ -54,7 +54,7 @@ add_action("wp_head", function () {
     a:link {font-weight: bold; color: #1e73be;}
     a:link:hover {color: #c53030;}
 
-    /* ✅ TEXT & COLORS */
+    /* TEXT & COLORS */
 
     /* Align Text */
     p {text-align: justify;}
@@ -66,7 +66,7 @@ add_action("wp_head", function () {
     .font-color-black {color: #192a3d;}
     @media (max-width: 992px) {.font-size-75 {font-size: 75%;}}
 
-    /* ✅ MOTION PREFERENCES */
+    /* MOTION PREFERENCES */
 
     /* Respecting User's Motion Preferences */
     @media (prefers-reduced-motion: reduce) {
@@ -84,7 +84,7 @@ add_action("wp_footer", function () {
     ?>
     <style>
 
-    /* ✅ THEME (Blocksy) */
+    /* THEME (Blocksy) */
 
     /* Format Search Results */
     .ct-search-results a {color: #1e73be;}
@@ -113,7 +113,7 @@ add_action("wp_footer", function () {
     .footer-breadcrumbs {background: none;margin-left: -20px;}
     @media (min-width: 992px) {.footer-breadcrumbs {margin-top: -25px;}}
 
-    /* ✅ BRANDING */
+    /* BRANDING */
 
     /* Site Logo (Without Text and rotate 3D) */
     .site-logo {-webkit-animation: rotate3d 5s linear infinite; animation: rotate3d 5s linear infinite;}
@@ -133,7 +133,7 @@ add_action("wp_footer", function () {
     @-webkit-keyframes rotate-image-frontpage {0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
     @keyframes rotate-image-frontpage {0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
 
-    /* ✅ SOME MISC STUFF */
+    /* SOME MISC STUFF */
 
     /* Country Icons */
     .flex-item-country-icons {flex: 0 0 60px;}
@@ -151,7 +151,7 @@ add_action("wp_footer", function () {
     #af-wrapper .forum-title {font-weight: bold !important;}
     #af-wrapper .forum-stats {background: none !important; border: none !important}
 
-    /* ✅ NAVIGATION */
+    /* NAVIGATION */
 
     /* Exclude from Page List Block */
     .wp-block-page-list > li:nth-child(2),
@@ -167,7 +167,7 @@ add_action("wp_footer", function () {
     .page-links .current {border-color: #1e73be; background: #1e73be;}
     .post-pages-label {text-transform: uppercase;}
 
-    /* ✅ COLUMNS */
+    /* COLUMNS */
 
     /*Set the BASIC*/
     .row::after {content: ""; display: table; clear: both;}
@@ -199,18 +199,18 @@ add_action("wp_footer", function () {
     .three-columns-text {column-count: 3;}
     .four-columns-text {column-count: 4;}
 
-    /* ✅ FLEXBOX */
+    /* FLEXBOX */
 
     .flex-container {display: -webkit-box; display: flex; align-items: center; flex-flow: row wrap;}
     .flex-container.left-align {justify-content: flex-start;}
     .flex-container.center-align {justify-content: center;}
 
-    /* ✅ TABLES */
+    /* TABLES */
 
     .wp-block-table thead {background-color: #f2f5f7;}
     .wp-block-table tr:hover {background-color: #f2f5f7;}
 
-    /* ✅ DETAILS & SUMMARY */
+    /* DETAILS & SUMMARY */
 
     summary {color: #1e73be; font-weight: bold; cursor: pointer;}
     summary:hover {color: #c53030;}
@@ -227,7 +227,7 @@ add_action("wp_footer", function () {
     .details-accordion summary:hover,.details-accordion summary:focus {background: #f2f5f7;}
     .details-accordion>:where(:not(summary)) {margin-left: 1.25rem; margin-right: 1.25rem;}
 
-    /* ✅ TEXT & COLORS */
+    /* TEXT & COLORS */
 
     /* Emphasized Design Blocks */
     .emphasized-design-green,
@@ -237,7 +237,7 @@ add_action("wp_footer", function () {
     .emphasized-design-red {color: #990033;}
     .emphasized-design-orange {color: #ed7d31;}
 
-    /* ✅ BLOCKQUOTES */
+    /* BLOCKQUOTES */
 
     .wp-block-quote {
       position: relative;
@@ -257,7 +257,7 @@ add_action("wp_footer", function () {
     .wp-block-pullquote blockquote p {text-align: left; font-family: Georgia, 'Times New Roman', Times, serif; font-weight: normal; color: #339966;}
     .wp-block-pullquote blockquote cite {position: absolute; right: 25px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 1rem;}
 
-    /* ✅ TAG CLOUDS */
+    /* TAG CLOUDS */
 
     .tag-cloud a {
       background: #F2F5F7;
@@ -271,7 +271,7 @@ add_action("wp_footer", function () {
     .tag-cloud a:hover {background: none;}
     .left-align {text-align: left;}
 
-    /* ✅ IMAGE STYLES & EFFECTS */
+    /* IMAGE STYLES & EFFECTS */
 
     /* Zoom */
     .zoom {width: 35%; transition: width 1.5s ease-in-out;}
@@ -300,7 +300,7 @@ add_action("wp_footer", function () {
     .image-bedps img {aspect-ratio: 16/9;}
     .image-bedps figcaption {margin-top: 14px; margin-bottom: 14px; font-size: 1.125rem; font-weight: bold;}
 
-    /* ✅ EMBEDS & VIDEO */
+    /* EMBEDS & VIDEO */
 
     .embed-responsively {position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;}
     .embed-responsively iframe,
@@ -311,7 +311,7 @@ add_action("wp_footer", function () {
     .is-provider-vimeo.wp-embed-aspect-4-3 .wp-block-embed__wrapper::before {padding-top: 56.25%;}
     .wp-block-video-osho video {vertical-align: middle; width: 75%;}
 
-    /* ✅ BUTTONS */
+    /* BUTTONS */
 
     .button {
       color: #ffffff !important;
@@ -337,7 +337,7 @@ add_action("wp_footer", function () {
     }
     .smaller-button a:hover {background-color: #c53030;}
 
-    /* ✅ BOXES */
+    /* BOXES */
 
     .text-box {overflow: hidden; padding: 25px; margin-bottom: 25px;}
     .resizable-box {height: 333px; resize: vertical; overflow: auto; padding: 25px; border: 0.5px solid #808080;}
@@ -345,7 +345,7 @@ add_action("wp_footer", function () {
     .box-background:hover {background: #f2f5f7;}
     .box-shadow {-webkit-box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.25); box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.25);}
 
-    /* ✅ FORMS & INPUTS */
+    /* FORMS & INPUTS */
 
     select {border: 1px solid #bfbfbf;}
     select:focus {border: 1px solid #bfbfbf;}
@@ -356,7 +356,7 @@ add_action("wp_footer", function () {
     input[type=search].modal-field {border: none; border-bottom: 1px solid #bfbfbf;}
     input[type=search].modal-field:is(:visited,:hover,:focus,:active) {border: none; border-bottom: 1px solid #bfbfbf;}
 
-    /* ✅ FOOTER */
+    /* FOOTER */
 
     /* Footer: Radius on Hover */
     #footer {transition: 1s ease;}
