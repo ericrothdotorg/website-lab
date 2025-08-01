@@ -108,6 +108,14 @@ add_action('wp_footer', function () {
             ],
             [
                 "@type" => "Question",
+                "name" => "Site Personalisations?",
+                "acceptedAnswer" => [
+                    "@type" => "Answer",
+                    "text" => "Of course, possible: Toggle dark | light mode, voice reading and language translation using the icons in the page footer - your preferences are remembered automatically."
+                ]
+            ],
+            [
+                "@type" => "Question",
                 "name" => "The site policies?",
                 "acceptedAnswer" => [
                     "@type" => "Answer",
