@@ -4,8 +4,8 @@ add_action('wp_footer', function () {
 ?>
 <div id="google_translate_element_wrapper" class="closed">
     <div id="language-flags">
-        <span title="Reset Language">
-        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="#ffffff" viewBox="0 0 24 24" onclick="resetTranslation()" style="cursor: pointer;">
+        <span title="Reset Language" style="margin-right: 10px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="#FFFFFF" viewBox="0 0 24 24" onclick="resetTranslation()" style="cursor: pointer;">
             <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6a6.003 6.003 0 0 1-5.65-4H4.26a8.003 8.003 0 0 0 15.47-2c0-4.42-3.58-8-8-8z"/>
         </svg>
         </span>
@@ -25,8 +25,12 @@ add_action('wp_footer', function () {
         <img src="https://flagcdn.com/w40/tr.png" alt="Türkçe" title="Türkçe" onclick="handleFlagClick('tr')">
     </div>
     <div id="language-toggle" onclick="toggleLanguageFlags()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#fff" viewBox="0 0 24 24">
-            <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm7.93 9h-2.02c-.19-1.77-.78-3.4-1.67-4.73A8.04 8.04 0 0 1 19.93 11ZM12 4c.76 0 2.27 1.91 2.76 6h-5.52C9.73 5.91 11.24 4 12 4ZM7.76 6.27C6.87 7.6 6.28 9.23 6.09 11H4.07a8.04 8.04 0 0 1 3.69-4.73Zm-3.69 6h2.02c.19 1.77.78 3.4 1.67 4.73A8.04 8.04 0 0 1 4.07 12Zm7.93 8c-.76 0-2.27-1.91-2.76-6h5.52c-.49 4.09-2 6-2.76 6Zm4.24-2.27c.89-1.33 1.48-2.96 1.67-4.73h2.02a8.04 8.04 0 0 1-3.69 4.73Z"/>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#FFFFFF"
+            stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 0 20M12 2a15.3 15.3 0 0 0 0 20"/>
         </svg>
     </div>
 </div>
