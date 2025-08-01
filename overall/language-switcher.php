@@ -9,20 +9,20 @@ add_action('wp_footer', function () {
             <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6a6.003 6.003 0 0 1-5.65-4H4.26a8.003 8.003 0 0 0 15.47-2c0-4.42-3.58-8-8-8z"/>
         </svg>
         </span>
-        <img src="https://flagcdn.com/w40/us.png" alt="English" title="English" onclick="handleFlagClick('en')">
-        <img src="https://flagcdn.com/w40/de.png" alt="Deutsch" title="Deutsch" onclick="handleFlagClick('de')">
-        <img src="https://flagcdn.com/w40/fr.png" alt="Français" title="Français" onclick="handleFlagClick('fr')">
-        <img src="https://flagcdn.com/w40/it.png" alt="Italiano" title="Italiano" onclick="handleFlagClick('it')">
-        <img src="https://flagcdn.com/w40/pt.png" alt="Português" title="Português" onclick="handleFlagClick('pt')">
-        <img src="https://flagcdn.com/w40/es.png" alt="Español" title="Español" onclick="handleFlagClick('es')">
-        <img src="https://flagcdn.com/w40/tr.png" alt="Türkçe" title="Türkçe" onclick="handleFlagClick('tr')">
         <img src="https://flagcdn.com/w40/sa.png" alt="العربية" title="العربية" onclick="handleFlagClick('ar')">
-        <img src="https://flagcdn.com/w40/th.png" alt="ไทย" title="ไทย" onclick="handleFlagClick('th')">
+        <img src="https://flagcdn.com/w40/id.png" alt="Bahasa" title="Bahasa" onclick="handleFlagClick('id')">
         <img src="https://flagcdn.com/w40/cn.png" alt="中文" title="中文" onclick="handleFlagClick('zh-CN')">
+        <img src="https://flagcdn.com/w40/de.png" alt="Deutsch" title="Deutsch" onclick="handleFlagClick('de')">
+        <img src="https://flagcdn.com/w40/us.png" alt="English" title="English" onclick="handleFlagClick('en')">
+        <img src="https://flagcdn.com/w40/es.png" alt="Español" title="Español" onclick="handleFlagClick('es')">
+        <img src="https://flagcdn.com/w40/fr.png" alt="Français" title="Français" onclick="handleFlagClick('fr')">
+        <img src="https://flagcdn.com/w40/in.png" alt="हिन्दी" title="हिन्दी" onclick="handleFlagClick('hi')">
+        <img src="https://flagcdn.com/w40/it.png" alt="Italiano" title="Italiano" onclick="handleFlagClick('it')">
         <img src="https://flagcdn.com/w40/jp.png" alt="日本語" title="日本語" onclick="handleFlagClick('ja')">
         <img src="https://flagcdn.com/w40/kr.png" alt="한국어" title="한국어" onclick="handleFlagClick('ko')">
         <img src="https://flagcdn.com/w40/ph.png" alt="Tagalog" title="Tagalog" onclick="handleFlagClick('tl')">
-        <img src="https://flagcdn.com/w40/id.png" alt="Bahasa" title="Bahasa" onclick="handleFlagClick('id')">
+        <img src="https://flagcdn.com/w40/th.png" alt="ไทย" title="ไทย" onclick="handleFlagClick('th')">
+        <img src="https://flagcdn.com/w40/tr.png" alt="Türkçe" title="Türkçe" onclick="handleFlagClick('tr')">
     </div>
     <div id="language-toggle" onclick="toggleLanguageFlags()">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#fff" viewBox="0 0 24 24">
