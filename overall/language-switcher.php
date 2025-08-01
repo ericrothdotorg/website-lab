@@ -2,29 +2,35 @@
 
 add_action('wp_footer', function () {
 ?>
-<div id="google_translate_element_wrapper" class="closed">
+<div id="google_translate_element_wrapper" class="closed" role="region" aria-label="Language Switcher" aria-hidden="true">
     <div id="language-flags">
-        <span title="Reset Language" style="margin-right: 10px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="#FFFFFF" viewBox="0 0 24 24" onclick="resetTranslation()" style="cursor: pointer;">
-            <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6a6.003 6.003 0 0 1-5.65-4H4.26a8.003 8.003 0 0 0 15.47-2c0-4.42-3.58-8-8-8z"/>
-        </svg>
+        <span id="reset-language" title="Reset Language" role="button" aria-label="Reset Language" tabindex="0"
+            onclick="resetTranslation()" 
+            onkeydown="if(event.key === 'Enter' || event.key === ' ') resetTranslation();" 
+            style="margin-right: 7.5px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="#FFFFFF" viewBox="0 0 24 24" style="cursor: pointer;">
+                <title>Reset Language</title>
+                <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6a6.003 6.003 0 0 1-5.65-4H4.26a8.003 8.003 0 0 0 15.47-2c0-4.42-3.58-8-8-8z"/>
+            </svg>
         </span>
-        <img src="https://flagcdn.com/w40/sa.png" alt="العربية" title="العربية" onclick="handleFlagClick('ar')">
-        <img src="https://flagcdn.com/w40/id.png" alt="Bahasa" title="Bahasa" onclick="handleFlagClick('id')">
-        <img src="https://flagcdn.com/w40/cn.png" alt="中文" title="中文" onclick="handleFlagClick('zh-CN')">
-        <img src="https://flagcdn.com/w40/de.png" alt="Deutsch" title="Deutsch" onclick="handleFlagClick('de')">
-        <img src="https://flagcdn.com/w40/us.png" alt="English" title="English" onclick="handleFlagClick('en')">
-        <img src="https://flagcdn.com/w40/es.png" alt="Español" title="Español" onclick="handleFlagClick('es')">
-        <img src="https://flagcdn.com/w40/fr.png" alt="Français" title="Français" onclick="handleFlagClick('fr')">
-        <img src="https://flagcdn.com/w40/in.png" alt="हिन्दी" title="हिन्दी" onclick="handleFlagClick('hi')">
-        <img src="https://flagcdn.com/w40/it.png" alt="Italiano" title="Italiano" onclick="handleFlagClick('it')">
-        <img src="https://flagcdn.com/w40/jp.png" alt="日本語" title="日本語" onclick="handleFlagClick('ja')">
-        <img src="https://flagcdn.com/w40/kr.png" alt="한국어" title="한국어" onclick="handleFlagClick('ko')">
-        <img src="https://flagcdn.com/w40/ph.png" alt="Tagalog" title="Tagalog" onclick="handleFlagClick('tl')">
-        <img src="https://flagcdn.com/w40/th.png" alt="ไทย" title="ไทย" onclick="handleFlagClick('th')">
-        <img src="https://flagcdn.com/w40/tr.png" alt="Türkçe" title="Türkçe" onclick="handleFlagClick('tr')">
+        <img src="https://flagcdn.com/w40/sa.png" alt="العربية" title="العربية" role="button" tabindex="0" lang="ar" onclick="handleFlagClick('ar')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('ar');">
+        <img src="https://flagcdn.com/w40/id.png" alt="Bahasa" title="Bahasa" role="button" tabindex="0" lang="id" onclick="handleFlagClick('id')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('id');">
+        <img src="https://flagcdn.com/w40/cn.png" alt="中文" title="中文" role="button" tabindex="0" lang="zh-CN" onclick="handleFlagClick('zh-CN')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('zh-CN');">
+        <img src="https://flagcdn.com/w40/de.png" alt="Deutsch" title="Deutsch" role="button" tabindex="0" lang="de" onclick="handleFlagClick('de')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('de');">
+        <img src="https://flagcdn.com/w40/us.png" alt="English" title="English" role="button" tabindex="0" lang="en" onclick="handleFlagClick('en')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('en');">
+        <img src="https://flagcdn.com/w40/es.png" alt="Español" title="Español" role="button" tabindex="0" lang="es" onclick="handleFlagClick('es')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('es');">
+        <img src="https://flagcdn.com/w40/fr.png" alt="Français" title="Français" role="button" tabindex="0" lang="fr" onclick="handleFlagClick('fr')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('fr');">
+        <img src="https://flagcdn.com/w40/in.png" alt="हिन्दी" title="हिन्दी" role="button" tabindex="0" lang="hi" onclick="handleFlagClick('hi')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('hi');">
+        <img src="https://flagcdn.com/w40/it.png" alt="Italiano" title="Italiano" role="button" tabindex="0" lang="it" onclick="handleFlagClick('it')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('it');">
+        <img src="https://flagcdn.com/w40/jp.png" alt="日本語" title="日本語" role="button" tabindex="0" lang="ja" onclick="handleFlagClick('ja')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('ja');">
+        <img src="https://flagcdn.com/w40/kr.png" alt="한국어" title="한국어" role="button" tabindex="0" lang="ko" onclick="handleFlagClick('ko')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('ko');">
+        <img src="https://flagcdn.com/w40/ph.png" alt="Tagalog" title="Tagalog" role="button" tabindex="0" lang="tl" onclick="handleFlagClick('tl')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('tl');">
+        <img src="https://flagcdn.com/w40/th.png" alt="ไทย" title="ไทย" role="button" tabindex="0" lang="th" onclick="handleFlagClick('th')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('th');">
+        <img src="https://flagcdn.com/w40/tr.png" alt="Türkçe" title="Türkçe" role="button" tabindex="0" lang="tr" onclick="handleFlagClick('tr')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('tr');">
     </div>
-    <div id="language-toggle" onclick="toggleLanguageFlags()">
+    <div id="language-toggle" role="button" aria-label="Open Language Switcher" tabindex="0"
+        onclick="toggleLanguageFlags()"
+        onkeydown="if(event.key === 'Enter' || event.key === ' ') toggleLanguageFlags();">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#FFFFFF"
             stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
             stroke-linejoin="round" viewBox="0 0 24 24">
@@ -40,7 +46,7 @@ add_action('wp_footer', function () {
 #google_translate_element_wrapper { position: fixed; bottom: 25px; right: 75px; z-index: 9999; background: #3A4F66; border-radius: 50%; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex; align-items: center; justify-content: flex-end; overflow: hidden; }
 /* === Wrapper States === */
 #google_translate_element_wrapper.closed { width: 40px; height: 40px; padding: 0; border-radius: 50%; justify-content: center; }
-#google_translate_element_wrapper.open { border-radius: 30px; padding: 6px 10px 6px 10px; width: auto; height: auto; }
+#google_translate_element_wrapper.open { border-radius: 30px; padding: 3px 10px 3px 10px; width: auto; height: auto; }
 #google_translate_element_wrapper.closed #language-flags { max-width: 0; opacity: 0; pointer-events: none; }
 #google_translate_element_wrapper.open #language-flags { max-width: 999px; padding-right: 10px; opacity: 1; pointer-events: auto; }
 /* === Toggle Button === */
@@ -51,19 +57,22 @@ add_action('wp_footer', function () {
 #language-flags img { width: 24px; height: auto; cursor: pointer; }
 #language-flags img:hover { transform: scale(1.15); }
 #language-flags span { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
+/* === Reset Language === */
+#reset-language:hover { transform: scale(1.15); }
 /* === Media Query (Responsive) === */
-@media (max-width: 600px) {
-  #google_translate_element_wrapper.open { padding: 6px 10px 10px 20px !important; }
-}
+@media (max-width: 600px) { #google_translate_element_wrapper.open { padding: 6px 10px 10px 20px !important; } }
+#google_translate_element_wrapper [tabindex="0"]:focus-visible {outline: 2px solid #FFD700; outline-offset: 2px; border-radius: 4px;}
 </style>
 
 <script type="text/javascript">
     // Toggle open/close state of language switcher
     function toggleLanguageFlags() {
         const wrapper = document.getElementById('google_translate_element_wrapper');
+        const isOpen = !wrapper.classList.contains('open');
         wrapper.classList.toggle('open');
         wrapper.classList.toggle('closed');
-        // Lazy-load Google Translate on first open
+        wrapper.setAttribute('aria-hidden', !isOpen); // Set for screen readers
+        // Lazy-load Translate
         if (!translateScriptLoaded) {
             loadGoogleTranslate();
             translateScriptLoaded = true;
@@ -114,6 +123,8 @@ add_action('wp_footer', function () {
         const gtDiv = document.createElement('div');
         gtDiv.id = 'google_translate_element';
         gtDiv.style.display = 'none';
+        gtDiv.setAttribute('aria-hidden', 'true');
+        gtDiv.setAttribute('tabindex', '-1');
         document.body.appendChild(gtDiv);
         const gtScript = document.createElement('script');
         gtScript.src = "//translate.google.com/translate_a/element.js?cb=injectGoogleTranslate";
