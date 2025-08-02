@@ -100,14 +100,29 @@ add_action('wp_footer', function () {
             console.warn('LocalStorage unavailable');
             }
         };
+        const applyAccessibility = (el) => {
+            if (!el) return;
+            el.setAttribute('role', 'switch');
+            el.setAttribute('aria-checked', document.body.classList.contains('dark-mode'));
+            el.setAttribute('tabindex', '0');
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    el.click();
+                }
+            });
+            el.addEventListener('click', () => {
+                el.setAttribute('aria-checked', document.body.classList.contains('dark-mode'));
+            });
+        };
+        applyAccessibility(changeModeSwitch);
+        applyAccessibility(changeModeButton);
         if (changeModeSwitch) changeModeSwitch.addEventListener('click', changeMode);
         if (changeModeButton) changeModeButton.addEventListener('click', changeMode);
         const storedPreference = localStorage.getItem('changeMode');
-        // Auto-enable Dark Mode if System prefers it and no Preference is stored
         if (storedPreference === null && window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
             document.body.classList.add('dark-mode');
         }
-        // Apply stored Preference
         if (storedPreference === 'true') {
             document.body.classList.add('dark-mode');
         }
@@ -116,5 +131,4 @@ add_action('wp_footer', function () {
 
     <?php
 });
-
 ?>
