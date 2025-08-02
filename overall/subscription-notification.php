@@ -1,7 +1,5 @@
 <?php
 
-defined('ABSPATH') || exit;
-
 /* Shortcode: [subscribe_form layout="vertical | horizontal"] */
 function subscribe_form_shortcode($atts) {
     $atts = shortcode_atts(['layout' => ''], $atts);
@@ -83,7 +81,7 @@ add_action('user_register', function($user_id) {
     }
 });
 
-/* AJAX handler for subscriptions */
+/* AJAX Handler for Subscriptions */
 function ajax_subscribe_user() {
     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'subscribe_form_action')) {
         wp_send_json_error(['message' => 'Security check failed.']);
