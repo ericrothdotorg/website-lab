@@ -201,7 +201,7 @@ add_action("wp_footer", function () {
 
     /* FLEXBOX */
 
-    .flex-container {display: -webkit-box; display: flex; align-items: center; flex-flow: row wrap;}
+    .flex-container {display: flex; align-items: center; flex-flow: row wrap;}
     .flex-container.left-align {justify-content: flex-start;}
     .flex-container.center-align {justify-content: center;}
 
@@ -361,11 +361,10 @@ add_action("wp_footer", function () {
     /* Footer: Radius on Hover */
     #footer {transition: 1s ease;}
     #footer:hover {border-top-right-radius: 15vw; transition: 1s ease;}
+    /* Footer: Style the Flex Columns */
     .flex-item-footer-left,
     .flex-item-footer-middle,
-    .flex-item-footer-right {-webkit-flex: 1 1 auto; flex: 1 1 auto; align-items: center;}
-    .flex-item-footer-middle,
-    .flex-item-footer-right {padding-top: 25px;}
+    .flex-item-footer-right {-webkit-flex: 1 1 auto; flex: 1 1 auto;}
     /* Footer: Hoverable Dropdown Menu */
     .dropdown {display: inline-block; position: relative;}
     .dropdown-content {
@@ -383,24 +382,24 @@ add_action("wp_footer", function () {
     /* Animate Footer Text */
     .content-text::before {content: "content"; -webkit-animation: content-words 9s linear infinite; animation: content-words 9s linear infinite;}
     @-webkit-keyframes content-words {
-      11.11% { content: "posts"; }
-      22.22% { content: "traits"; }
-      33.33% { content: "projects"; }
-      44.44% { content: "topics"; }
-      55.55% { content: "galleries"; }
-      66.66% { content: "merch"; }
-      77.77% { content: "pages"; }
-      88.88% { content: "things"; }
+      11.11% { content: " posts"; }
+      22.22% { content: " traits"; }
+      33.33% { content: " projects"; }
+      44.44% { content: " topics"; }
+      55.55% { content: " galleries"; }
+      66.66% { content: " merch"; }
+      77.77% { content: " pages"; }
+      88.88% { content: " things"; }
     }
     @keyframes content-words {
-      11.11% { content: "posts"; }
-      22.22% { content: "traits"; }
-      33.33% { content: "projects"; }
-      44.44% { content: "topics"; }
-      55.55% { content: "galleries"; }
-      66.66% { content: "feeds"; }
-      77.77% { content: "pages"; }
-      88.88% { content: "things"; }
+      11.11% { content: " posts"; }
+      22.22% { content: " traits"; }
+      33.33% { content: " projects"; }
+      44.44% { content: " topics"; }
+      55.55% { content: " galleries"; }
+      66.66% { content: " feeds"; }
+      77.77% { content: " pages"; }
+      88.88% { content: " things"; }
     }
 
     </style>
