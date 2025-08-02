@@ -1,100 +1,109 @@
 <?php
 
-// Remove "Edit" link for viewing as non-logged-in user
+defined('ABSPATH') || exit;
+
+// === GLOBAL STUFF ===
+
+// Remove "Edit" Link for non-logged-in Users
 add_filter('edit_post_link', '__return_false');
 
-if (is_admin()) {
+// Disable Pingbacks and Trackbacks
+add_filter('xmlrpc_enabled', '__return_false');
+add_filter('pings_open', '__return_false');
+add_filter('pre_ping', '__return_empty_array');
 
-    // Remove tags support from posts
-    function er_unregister_tags() {
-        unregister_taxonomy_for_object_type('post_tag', 'post');
-    }
-    add_action('init', 'er_unregister_tags');
+// Limit Post Revisions
+if (!defined('WP_POST_REVISIONS')) {
+    define('WP_POST_REVISIONS', 1);
+}
 
-    // Disable pingbacks and trackbacks
-    add_filter('xmlrpc_enabled', '__return_false');
-    add_filter('pings_open', '__return_false');
-    add_filter('pre_ping', '__return_empty_array');
+// Stay logged in longer
+function er_stay_logged_in($expires) {
+    if (!is_admin()) return $expires;
+    return 25 * YEAR_IN_SECONDS;
+}
+add_filter('auth_cookie_expiration', 'er_stay_logged_in', 10);
 
-    // Stay logged in to WordPress longer
-    function er_stay_logged_in($expires) {
-        return 25 * YEAR_IN_SECONDS;
-    }
-    add_filter('auth_cookie_expiration', 'er_stay_logged_in', 10);
+// === ADMIN-ONLY HOOKS ===
 
-    // Limit post revisions
-    if (!defined('WP_POST_REVISIONS')) {
-        define('WP_POST_REVISIONS', 1);
-    }
+// Unregister Tags
+function er_unregister_tags() {
+    if (!is_admin()) return;
+    unregister_taxonomy_for_object_type('post_tag', 'post');
+}
+add_action('init', 'er_unregister_tags');
 
-    // Sort post types alphabetically in admin
-    function custom_post_order($query) {
-        $post_types = array_merge(
-            get_post_types(['_builtin' => true], 'names'),
-            ['my-interests']
-        );
-        $post_type = $query->get('post_type');
-        if (in_array($post_type, $post_types)) {
-            if ($query->get('orderby') === '') {
-                $query->set('orderby', 'title');
-            }
-            if ($query->get('order') === '') {
-                $query->set('order', 'ASC');
-            }
+// Change Post Order
+function er_custom_post_order($query) {
+    if (!is_admin() || !$query->is_main_query()) return;
+    $post_types = array_merge(
+        get_post_types(['_builtin' => true], 'names'),
+        ['my-interests']
+    );
+    $post_type = $query->get('post_type');
+    if (in_array($post_type, $post_types)) {
+        if ($query->get('orderby') === '') {
+            $query->set('orderby', 'title');
+        }
+        if ($query->get('order') === '') {
+            $query->set('order', 'ASC');
         }
     }
-    add_action('pre_get_posts', 'custom_post_order');
-
-    // Use classic widget editor
-    add_filter('use_widgets_block_editor', '__return_false');
-
-    // Custom admin editor styles
-    function er_gutenberg_admin_styles() {
-        echo '<style type="text/css">
-            .wp-block { max-width: 1024px !important; }
-            .blocks-widgets-container .editor-styles-wrapper { max-width: 1024px; }
-            .block-editor-block-list__block.wp-block:hover { background-color: #e6f2ff; }
-            .wp-block-group.block-editor-block-list__block.wp-block:hover { background-color: #e6f2ff; }
-            .components-button:not(.is-primary):hover,
-            .components-button:not(.is-primary):focus,
-            .components-button:not(.is-primary):active {
-                background-color: #f2f2f2;
-            }
-        </style>';
-    }
-    add_action("admin_head", "er_gutenberg_admin_styles");
-
-    // Adjust admin menu order
-    add_filter('custom_menu_order', '__return_true');
-    add_filter('menu_order', function ($menu_order) {
-        return [
-            'hostinger',
-            'index.php',
-            'ct-dashboard',
-            'edit.php?post_type=page',
-            'edit.php',
-            'edit.php?post_type=my-interests',
-            'edit.php?post_type=my-traits',
-            'upload.php',
-            'themes.php',
-            'plugins.php',
-            'users.php',
-            'tools.php',
-            'options-general.php',
-            'subscriber-list',
-            'contact-form',
-            'asgarosforum-structure',
-            'theseoframework-settings',
-            'wpcodebox2',
-            'litespeed',
-        ];
-    });
-
-    // Remove comments menu item
-    add_action('admin_menu', function () {
-        remove_menu_page('edit-comments.php');
-    });
-
-    // Remove Site Health access
-    remove_filter('user_has_cap', 'wp_maybe_grant_site_health_caps', 1, 4);
 }
+add_action('pre_get_posts', 'er_custom_post_order');
+
+// Style Gutenberg UI
+function er_gutenberg_admin_styles() {
+    if (!is_admin()) return;
+    echo '<style type="text/css">
+        .wp-block { max-width: 1024px !important; }
+        .blocks-widgets-container .editor-styles-wrapper { max-width: 1024px; }
+        .block-editor-block-list__block.wp-block:hover { background-color: #e6f2ff; }
+        .wp-block-group.block-editor-block-list__block.wp-block:hover { background-color: #e6f2ff; }
+        .components-button:not(.is-primary):hover,
+        .components-button:not(.is-primary):focus,
+        .components-button:not(.is-primary):active {
+            background-color: #f2f2f2;
+        }
+    </style>';
+}
+add_action("admin_head", "er_gutenberg_admin_styles");
+
+// Keep old Widgets Editor
+add_filter('use_widgets_block_editor', '__return_false');
+
+// Custom Admin-Menu Order
+add_filter('custom_menu_order', '__return_true');
+add_filter('menu_order', function ($menu_order) {
+    return [
+        'hostinger',
+        'index.php',
+        'ct-dashboard',
+        'edit.php?post_type=page',
+        'edit.php',
+        'edit.php?post_type=my-interests',
+        'edit.php?post_type=my-traits',
+        'upload.php',
+        'themes.php',
+        'plugins.php',
+        'users.php',
+        'tools.php',
+        'options-general.php',
+        'subscriber-list',
+        'contact-form',
+        'asgarosforum-structure',
+        'theseoframework-settings',
+        'wpcodebox2',
+        'litespeed',
+    ];
+});
+
+// Remove Comments from Menu
+function er_remove_comments_menu() {
+    if (!is_admin()) return;
+    remove_menu_page('edit-comments.php');
+}
+add_action('admin_menu', 'er_remove_comments_menu');
+
+// Remove Site Health Access
+remove_filter('user_has_cap', 'wp_maybe_grant_site_health_caps', 1, 4);
