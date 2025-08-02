@@ -94,6 +94,30 @@ add_action('wp_head', function () {
     ';
 });
 
+// Asgaros Forum - Self-limit its Effect to Forum-related Uploads on Forum Page only
+add_filter('upload_dir', function ($dirs) {
+    if (is_asgaros_forum_upload()) {
+        $dirs['subdir'] = '/asgaros' . $dirs['subdir'];
+        $dirs['path'] = $dirs['basedir'] . $dirs['subdir'];
+        $dirs['url']  = $dirs['baseurl'] . $dirs['subdir'];
+    }
+    return $dirs;
+});
+add_action('add_attachment', function ($attachment_id) {
+    if (is_asgaros_forum_upload()) {
+        wp_set_object_terms($attachment_id, 63, 'rml-folder'); // Real Media Library Folder ID 63
+    }
+});
+function is_asgaros_forum_upload() {
+    $referer = $_SERVER['HTTP_REFERER'] ?? '';
+    $request = $_SERVER['REQUEST_URI'] ?? '';
+    return (
+        strpos($referer, 'asgarosforum') !== false ||
+        strpos($request, 'asgarosforum') !== false ||
+        (defined('DOING_AJAX') && DOING_AJAX && !empty($_POST['action']) && strpos($_POST['action'], 'asgaros') !== false)
+    );
+}
+
 // ----------------------------------------
 //  SHORTCODES
 // ----------------------------------------
