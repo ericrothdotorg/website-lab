@@ -1,14 +1,14 @@
-<?php 
+<?php
 
 /* ADD LIKE / DISLIKE BUTTONS TO POSTS & CPTs */
 
-// ✅ Shortcode to manually insert like / dislike buttons anywhere
+// Shortcode to manually insert Like / Dislike Buttons anywhere
 function custom_like_dislike_shortcode() {
     if (!is_singular()) {
         return '';
     }
     $post_id = get_the_ID();
-    // Assign initial random values if not set
+    // Assign initial random Values if not set
     $likes = get_post_meta($post_id, 'likes', true);
     if (!$likes || $likes < 500) {
         $likes = rand(500, 1000);
@@ -19,7 +19,7 @@ function custom_like_dislike_shortcode() {
         $dislikes = rand(5, 10);
         update_post_meta($post_id, 'dislikes', $dislikes);
     }
-    // Inline CSS styles
+    // Inline CSS Styles
     $style = '<style>
         .like-dislike-container {
             margin-top: -25px;
@@ -35,15 +35,30 @@ function custom_like_dislike_shortcode() {
         .like-dislike-container button:hover {
             color: #c53030;
         }
+        .like-dislike-container button:focus-visible {
+            outline: 2px dashed #1e73be;
+            outline-offset: 3px;
+        }
+        .visually-hidden {
+            position: absolute !important;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+            border: 0;
+        }
     </style>';
-    // Output buttons and prevent voting again before xxx time passed using localStorage
+    // Output Buttons and prevent Voting again before xxx Time passed using localStorage
     $buttons = '<div class="like-dislike-container" style="padding-bottom: 5px;">
         <button id="like-btn-' . $post_id . '" onclick="updateLikes(' . $post_id . ')" aria-label="Like this post">
-            👍 Like (<span id="like-count-' . $post_id . '" aria-live="polite">' . $likes . '</span>)
+            👍 <span class="visually-hidden">Like</span> Like (<span id="like-count-' . $post_id . '" aria-live="polite">' . $likes . '</span>)
         </button>
         <button id="dislike-btn-' . $post_id . '" onclick="updateDislikes(' . $post_id . ')" aria-label="Dislike this post">
-            👎 Dislike (<span id="dislike-count-' . $post_id . '" aria-live="polite">' . $dislikes . '</span>)
+            👎 <span class="visually-hidden">Dislike</span> Dislike (<span id="dislike-count-' . $post_id . '" aria-live="polite">' . $dislikes . '</span>)
         </button>
+        <div id="vote-feedback" class="visually-hidden" aria-live="assertive"></div>
     </div>
     <script>
         var reactionNonce = "' . wp_create_nonce("update_post_reaction") . '";
@@ -61,18 +76,22 @@ function custom_like_dislike_shortcode() {
             const expiryKey = "voteExpiry_" + postId;
             const lastVoteTime = localStorage.getItem(voteKey);
             const expiryTime = localStorage.getItem(expiryKey);
+            const btn = document.getElementById("like-btn-" + postId);
             if (lastVoteTime && Date.now() < expiryTime) {
-                document.getElementById("like-btn-" + postId).innerHTML = "👍 Already Voted";
-                document.getElementById("like-btn-" + postId).disabled = true;
-                document.getElementById("like-btn-" + postId).style.opacity = "0.75";
+                btn.innerHTML = "👍 Already Voted";
+                btn.disabled = true;
+                btn.setAttribute("aria-disabled", "true");
+                btn.setAttribute("tabindex", "0");
+                btn.setAttribute("title", "You have already voted. Try again later.");
                 return;
             }
             fetch("/wp-admin/admin-ajax.php?action=update_likes&post_id=" + postId + "&nonce=" + reactionNonce)
             .then(response => response.text())
             .then(newLikes => {
                 document.getElementById("like-count-" + postId).innerText = newLikes;
+                document.getElementById("vote-feedback").innerText = "Your like has been recorded.";
                 localStorage.setItem(voteKey, Date.now());
-                localStorage.setItem(expiryKey, Date.now() + 300000); // Expire vote after 5 min
+                localStorage.setItem(expiryKey, Date.now() + 300000); // 5 minutes
             });
         }
         function updateDislikes(postId) {
@@ -81,24 +100,30 @@ function custom_like_dislike_shortcode() {
             const expiryKey = "voteExpiry_" + postId;
             const lastVoteTime = localStorage.getItem(voteKey);
             const expiryTime = localStorage.getItem(expiryKey);
+            const btn = document.getElementById("dislike-btn-" + postId);
             if (lastVoteTime && Date.now() < expiryTime) {
-                document.getElementById("dislike-btn-" + postId).innerHTML = "👎 Already Voted";
-                document.getElementById("dislike-btn-" + postId).disabled = true;
-                document.getElementById("dislike-btn-" + postId).style.opacity = "0.75";
+                btn.innerHTML = "👎 Already Voted";
+                btn.disabled = true;
+                btn.setAttribute("aria-disabled", "true");
+                btn.setAttribute("tabindex", "0");
+                btn.setAttribute("title", "You have already voted. Try again later.");
                 return;
             }
             fetch("/wp-admin/admin-ajax.php?action=update_dislikes&post_id=" + postId + "&nonce=" + reactionNonce)
             .then(response => response.text())
             .then(newDislikes => {
-                document.getElementById("dislike-count-" + postId).innerText = newDislikes; // ✅ Update dislike count immediately
+                document.getElementById("dislike-count-" + postId).innerText = newDislikes;
+                document.getElementById("vote-feedback").innerText = "Your dislike has been recorded.";
                 localStorage.setItem(voteKey, Date.now());
-                localStorage.setItem(expiryKey, Date.now() + 300000); // Expire vote after 5 min
+                localStorage.setItem(expiryKey, Date.now() + 300000); // 5 minutes
             });
         }
     </script>';
     return $style . $buttons;
 }
 add_shortcode('like_dislike_buttons', 'custom_like_dislike_shortcode');
+
+// Update Likes
 function update_likes() {
     if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'update_post_reaction')) {
         wp_die('Invalid request');
@@ -115,6 +140,8 @@ function update_likes() {
 }
 add_action('wp_ajax_update_likes', 'update_likes');
 add_action('wp_ajax_nopriv_update_likes', 'update_likes');
+
+// Update Dislikes
 function update_dislikes() {
     if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'update_post_reaction')) {
         wp_die('Invalid request');
@@ -132,7 +159,7 @@ function update_dislikes() {
 add_action('wp_ajax_update_dislikes', 'update_dislikes');
 add_action('wp_ajax_nopriv_update_dislikes', 'update_dislikes');
 
-// ✅ Introduce increments for likes
+// Introduce Increments for Likes
 function increment_likes() {
     $args = array('post_type' => get_post_types(['public' => true]), 'posts_per_page' => -1);
     $posts = get_posts($args);
@@ -144,7 +171,7 @@ function increment_likes() {
     }
 }
 
-// ✅ Introduce increments for dislikes
+// Introduce Increments for Dislikes
 function increment_dislikes() {
     $args = array('post_type' => get_post_types(['public' => true]), 'posts_per_page' => -1);
     $posts = get_posts($args);
@@ -156,11 +183,12 @@ function increment_dislikes() {
     }
 }
 
-// ✅ Schedule automatic increments
+// Schedule automatic Increments
 if (!wp_next_scheduled('increment_likes_event')) {
     wp_schedule_event(time(), 'weekly', 'increment_likes_event');
 }
 add_action('increment_likes_event', 'increment_likes');
+
 if (!wp_next_scheduled('increment_dislikes_event')) {
     wp_schedule_event(time(), 'monthly', 'increment_dislikes_event');
 }
