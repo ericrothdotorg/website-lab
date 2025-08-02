@@ -1,6 +1,7 @@
 <?php
 
 defined('ABSPATH') || exit;
+
 if (is_admin() && current_user_can('manage_options')) {
 
     /* Register Admin Menu */
