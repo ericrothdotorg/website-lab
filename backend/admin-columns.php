@@ -1,8 +1,11 @@
 <?php
 
-add_action('admin_init', 'initialize_custom_admin_columns');
+defined('ABSPATH') || exit;
 
 function initialize_custom_admin_columns() {
+    if (!is_admin() || !current_user_can('manage_options')) {
+    return;
+    }
 
     // === CUSTOM ADMIN COLUMNS ===
 
@@ -264,3 +267,5 @@ function initialize_custom_admin_columns() {
     });
 
 }
+
+add_action('admin_init', 'initialize_custom_admin_columns');
