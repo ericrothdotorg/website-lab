@@ -29,14 +29,14 @@ function subscribe_form_shortcode($atts) {
         <form method="post" id="subscription-form" class="subscription-form" novalidate>
             <label for="subscriber_email" class="screen-reader-text">Email address</label>
             <input type="email" id="subscriber_email" name="subscriber_email" required placeholder="Enter your E-mail" autocomplete="email">
-            <input type="text" name="contact_time" value="" style="display:none !important;" autocomplete="off">
+            <input type="text" name="contact_time" value="" style="display:none !important;" autocomplete="off" aria-hidden="true" tabindex="-1">
             <input type="hidden" name="middle_name" value="">
             <input type="hidden" name="math_check" value="7">
             <input type="hidden" name="nonce" value="' . wp_create_nonce('subscribe_form_action') . '">
-            <button type="submit">Subscribe</button>
+            <button type="submit" aria-label="Subscribe to email updates">Subscribe</button>
         </form>
     </div>
-    <div id="subscription-message" tabindex="-1" aria-live="polite"></div>
+    <div id="subscription-message" role="alert" aria-live="assertive" tabindex="-1"></div>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const form = document.getElementById("subscription-form");
@@ -188,7 +188,7 @@ function notify_subscribers_on_new_content($post_ID) {
         $unsubscribe_url = esc_url(site_url("/?unsubscribe=" . $subscriber->unsubscribe_token));
         ob_start();
         ?>
-        <html><body>
+        <html lang="en"><body>
         <p>Dear Subscriber,</p>
         <p>New content has just been published:</p>
         <?php if ($post_thumbnail_url): ?>
