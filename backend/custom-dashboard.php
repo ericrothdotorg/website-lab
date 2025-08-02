@@ -1,7 +1,11 @@
 <?php 
 
-add_action('admin_init', 'initialize_custom_dashboard');
+defined('ABSPATH') || exit;
+
 function initialize_custom_dashboard() {
+    if (!is_admin() || !current_user_can('manage_options')) {
+    return;
+    }
 
     // 📇 Add emoji icons for core widgets
     add_action('wp_dashboard_setup', function() {
@@ -429,3 +433,5 @@ HTML;
     });
 
 }
+
+add_action('admin_init', 'initialize_custom_dashboard');
