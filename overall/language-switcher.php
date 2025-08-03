@@ -70,25 +70,21 @@ add_action('wp_footer', function () {
 </style>
 
 <script type="text/javascript">
-    // Toggle open/close state of language switcher
     function toggleLanguageFlags() {
         const wrapper = document.getElementById('google_translate_element_wrapper');
         const isOpen = !wrapper.classList.contains('open');
         wrapper.classList.toggle('open');
         wrapper.classList.toggle('closed');
-        wrapper.setAttribute('aria-hidden', !isOpen); // Set for screen readers
-        // Lazy-load Translate
+        wrapper.setAttribute('aria-hidden', !isOpen);
         if (!translateScriptLoaded) {
             loadGoogleTranslate();
             translateScriptLoaded = true;
         }
     }
-    // Handle click on a flag, trigger translation and close switcher
     function handleFlagClick(lang) {
         translatePage(lang);
         toggleLanguageFlags();
     }
-    // Translate the page using Google Translate combo box
     function translatePage(lang) {
         const frame = document.querySelector('iframe.goog-te-banner-frame');
         if (frame) frame.remove();
@@ -101,14 +97,12 @@ add_action('wp_footer', function () {
             localStorage.setItem('preferredLang', lang);
         }
     }
-    // Inject hidden Google Translate dropdown
     function injectGoogleTranslate() {
         new google.translate.TranslateElement({
             pageLanguage: 'en',
             autoDisplay: false
         }, 'google_translate_element');
     }
-    // Restore preferred language from localStorage on load
     function restoreLanguage() {
         const lang = localStorage.getItem('preferredLang');
         if (lang) {
@@ -122,7 +116,6 @@ add_action('wp_footer', function () {
             }, 500);
         }
     }
-    // Lazy load Google Translate when needed
     let translateScriptLoaded = false;
     function loadGoogleTranslate() {
         const gtDiv = document.createElement('div');
@@ -136,7 +129,6 @@ add_action('wp_footer', function () {
         document.body.appendChild(gtScript);
         restoreLanguage();
     }
-    // Reset language preference and clear all translation effects
     function resetTranslation() {
         localStorage.removeItem('preferredLang');
         document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
@@ -151,17 +143,28 @@ add_action('wp_footer', function () {
         sessionStorage.setItem('scrollToTopAfterReload', 'true');
         location.reload();
     }
-    // Scroll to top after reset, if triggered
     if (sessionStorage.getItem('scrollToTopAfterReload')) {
         window.scrollTo(0, 0);
         sessionStorage.removeItem('scrollToTopAfterReload');
     }
-    // Close language switcher when clicking outside of it
     document.addEventListener('click', function (event) {
         const wrapper = document.getElementById('google_translate_element_wrapper');
         if (!wrapper.contains(event.target)) {
             wrapper.classList.remove('open');
             wrapper.classList.add('closed');
+            wrapper.setAttribute('aria-hidden', 'true');
+        }
+    });
+    document.addEventListener("DOMContentLoaded", function () {
+        const wrapper = document.getElementById('google_translate_element_wrapper');
+        if (wrapper) {
+            wrapper.classList.add('closed');
+            wrapper.classList.remove('open');
+            wrapper.setAttribute('aria-hidden', 'true');
+        }
+        if (localStorage.getItem('preferredLang')) {
+            loadGoogleTranslate();
+            translateScriptLoaded = true;
         }
     });
 </script>
