@@ -30,6 +30,7 @@ add_action('wp_enqueue_scripts', function () {
 add_action('wp_footer', function () {
     ?>
     <script>
+    setTimeout(() => {
         jQuery(document).ready(function($) {
             $('.slideshow-single-item').slick({
                 lazyLoad: 'ondemand',
@@ -69,6 +70,7 @@ add_action('wp_footer', function () {
                 slidesToShow: 4,
                 slidesToScroll: 1,
                 swipeToSlide: true,
+                mobileFirst: true,
                 responsive: [
                     { breakpoint: 1200, settings: { slidesToShow: 4 } },
                     { breakpoint: 992, settings: { slidesToShow: 3 } },
@@ -104,6 +106,7 @@ add_action('wp_footer', function () {
                 swipeToSlide: true,
                 centerMode: true,
                 centerPadding: '175px',
+                mobileFirst: true,
                 responsive: [
                     { breakpoint: 1200, settings: { centerPadding: '125px' } },
                     { breakpoint: 992, settings: { centerPadding: '75px' } },
@@ -111,6 +114,7 @@ add_action('wp_footer', function () {
                 ]
             });
         });
+    }, 200);
     </script>
     <style>
         .slick-slider img {margin: 0 auto;}
