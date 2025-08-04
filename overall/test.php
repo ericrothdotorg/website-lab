@@ -127,22 +127,6 @@ function ajax_subscribe_user() {
         'user_agent' => $user_agent
     ]);
     if ($inserted) {
-        $admin_email = get_option('admin_email');
-        $timestamp = current_time('mysql');
-        $subject = '📬 New Site Subscription Received';
-        $message = sprintf(
-            "A new site-wide subscription has been recorded.\n\nEmail: %s\nTime: %s\nIP Address: %s\nUser Agent: %s\n\nView subscriber list:\n%s/wp-admin/admin.php?page=subscriber-list",
-            $email,
-            $timestamp,
-            $ip_address,
-            $user_agent,
-            site_url()
-        );
-        $headers = [
-            'From: Eric Roth <' . $admin_email . '>',
-            'Reply-To: ' . $admin_email
-        ];
-        wp_mail($admin_email, $subject, $message, $headers);
         wp_send_json_success(['message' => 'Thank you for subscribing!']);
     } else {
         wp_send_json_error(['message' => 'Subscription failed. Please try again.']);
@@ -229,4 +213,3 @@ function notify_subscribers_on_new_content($post_ID) {
 }
 add_action('publish_post', 'notify_subscribers_on_new_content');
 add_action('publish_my-interests', 'notify_subscribers_on_new_content');
-
