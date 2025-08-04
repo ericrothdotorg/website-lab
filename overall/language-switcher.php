@@ -3,35 +3,38 @@
 add_action('wp_footer', function () {
 ?>
 <div id="google_translate_element_wrapper" class="closed" role="region" aria-label="Language Switcher" aria-hidden="true">
-    <div id="language-flags">
-        <span id="reset-language" title="Reset Language" role="button" aria-label="Reset Language" tabindex="0"
-            onclick="resetTranslation()" 
-            onkeydown="if(event.key === 'Enter' || event.key === ' ') resetTranslation();" 
-            style="margin-right: 8px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="#FFFFFF" viewBox="0 0 24 24" style="cursor: pointer;">
-                <title>Reset Language</title>
-                <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6a6.003 6.003 0 0 1-5.65-4H4.26a8.003 8.003 0 0 0 15.47-2c0-4.42-3.58-8-8-8z"/>
-            </svg>
-        </span>
-        <img src="https://flagcdn.com/w40/sa.webp" alt="العربية" title="العربية" width="40" height="30" role="button" tabindex="0" lang="ar" onclick="handleFlagClick('ar')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('ar');">
-        <img src="https://flagcdn.com/w40/id.webp" alt="Bahasa" title="Bahasa" width="40" height="30" role="button" tabindex="0" lang="id" onclick="handleFlagClick('id')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('id');">
-        <img src="https://flagcdn.com/w40/cn.webp" alt="中文" title="中文" width="40" height="30" role="button" tabindex="0" lang="zh-CN" onclick="handleFlagClick('zh-CN')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('zh-CN');">
-        <img src="https://flagcdn.com/w40/dk.webp" alt="Dansk" title="Danish" width="40" height="30" role="button" tabindex="0" lang="da" onclick="handleFlagClick('da')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('da');">
-        <img src="https://flagcdn.com/w40/de.webp" alt="Deutsch" title="Deutsch" width="40" height="30" role="button" tabindex="0" lang="de" onclick="handleFlagClick('de')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('de');">
-        <img src="https://flagcdn.com/w40/es.webp" alt="Español" title="Español" width="40" height="30" role="button" tabindex="0" lang="es" onclick="handleFlagClick('es')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('es');">
-        <img src="https://flagcdn.com/w40/fr.webp" alt="Français" title="Français" width="40" height="30" role="button" tabindex="0" lang="fr" onclick="handleFlagClick('fr')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('fr');">
-        <img src="https://flagcdn.com/w40/in.webp" alt="हिन्दी" title="हिन्दी" width="40" height="30" role="button" tabindex="0" lang="hi" onclick="handleFlagClick('hi')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('hi');">
-        <img src="https://flagcdn.com/w40/it.webp" alt="Italiano" title="Italiano" width="40" height="30" role="button" tabindex="0" lang="it" onclick="handleFlagClick('it')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('it');">
-        <img src="https://flagcdn.com/w40/jp.webp" alt="日本語" title="日本語" width="40" height="30" role="button" tabindex="0" lang="ja" onclick="handleFlagClick('ja')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('ja');">
-        <img src="https://flagcdn.com/w40/kr.webp" alt="한국어" title="한국어" width="40" height="30" role="button" tabindex="0" lang="ko" onclick="handleFlagClick('ko')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('ko');">
-        <img src="https://flagcdn.com/w40/no.webp" alt="Norsk" title="Norwegian" width="40" height="30" role="button" tabindex="0" lang="no" onclick="handleFlagClick('no')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('no');">
-        <img src="https://flagcdn.com/w40/ru.webp" alt="Русский" title="Russian" width="40" height="30" role="button" tabindex="0" lang="ru" onclick="handleFlagClick('ru')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('ru');">
-        <img src="https://flagcdn.com/w40/fi.webp" alt="Suomi" title="Finnish" width="40" height="30" role="button" tabindex="0" lang="fi" onclick="handleFlagClick('fi')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('fi');">
-        <img src="https://flagcdn.com/w40/se.webp" alt="Svenska" title="Swedish" width="40" height="30" role="button" tabindex="0" lang="sv" onclick="handleFlagClick('sv')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('sv');">
-        <img src="https://flagcdn.com/w40/ph.webp" alt="Tagalog" title="Tagalog" width="40" height="30" role="button" tabindex="0" lang="tl" onclick="handleFlagClick('tl')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('tl');">
-        <img src="https://flagcdn.com/w40/th.webp" alt="ไทย" title="ไทย" width="40" height="30" role="button" tabindex="0" lang="th" onclick="handleFlagClick('th')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('th');">
-        <img src="https://flagcdn.com/w40/tr.webp" alt="Türkçe" title="Türkçe" width="40" height="30" role="button" tabindex="0" lang="tr" onclick="handleFlagClick('tr')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('tr');">
-        <img src="https://flagcdn.com/w40/vn.webp" alt="Tiếng Việt" title="Vietnamese" width="40" height="30" role="button" tabindex="0" lang="vi" onclick="handleFlagClick('vi')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('vi');">
+    <div id="flags-container">
+        <div class="reset-and-flags">
+            <span class="reset" title="Reset Language" role="button" aria-label="Reset Language" tabindex="0"
+                onclick="resetTranslation()" 
+                onkeydown="if(event.key === 'Enter' || event.key === ' ') resetTranslation();" >Reset
+                <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="#FFFFFF" viewBox="0 0 24 24" style="cursor: pointer;">
+                    <title>Reset Language</title>
+                    <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6a6.003 6.003 0 0 1-5.65-4H4.26a8.003 8.003 0 0 0 15.47-2c0-4.42-3.58-8-8-8z"/>
+                </svg>
+            </span>
+            <span class="flags">
+                <img src="https://flagcdn.com/w40/sa.webp" alt="العربية" title="العربية" width="40" height="30" role="button" tabindex="0" lang="ar" onclick="handleFlagClick('ar')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('ar');">
+                <img src="https://flagcdn.com/w40/id.webp" alt="Bahasa" title="Bahasa" width="40" height="30" role="button" tabindex="0" lang="id" onclick="handleFlagClick('id')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('id');">
+                <img src="https://flagcdn.com/w40/cn.webp" alt="中文" title="中文" width="40" height="30" role="button" tabindex="0" lang="zh-CN" onclick="handleFlagClick('zh-CN')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('zh-CN');">
+                <img src="https://flagcdn.com/w40/dk.webp" alt="Dansk" title="Danish" width="40" height="30" role="button" tabindex="0" lang="da" onclick="handleFlagClick('da')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('da');">
+                <img src="https://flagcdn.com/w40/de.webp" alt="Deutsch" title="Deutsch" width="40" height="30" role="button" tabindex="0" lang="de" onclick="handleFlagClick('de')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('de');">
+                <img src="https://flagcdn.com/w40/es.webp" alt="Español" title="Español" width="40" height="30" role="button" tabindex="0" lang="es" onclick="handleFlagClick('es')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('es');">
+                <img src="https://flagcdn.com/w40/fr.webp" alt="Français" title="Français" width="40" height="30" role="button" tabindex="0" lang="fr" onclick="handleFlagClick('fr')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('fr');">
+                <img src="https://flagcdn.com/w40/in.webp" alt="हिन्दी" title="हिन्दी" width="40" height="30" role="button" tabindex="0" lang="hi" onclick="handleFlagClick('hi')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('hi');">
+                <img src="https://flagcdn.com/w40/it.webp" alt="Italiano" title="Italiano" width="40" height="30" role="button" tabindex="0" lang="it" onclick="handleFlagClick('it')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('it');">
+                <img src="https://flagcdn.com/w40/jp.webp" alt="日本語" title="日本語" width="40" height="30" role="button" tabindex="0" lang="ja" onclick="handleFlagClick('ja')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('ja');">
+                <img src="https://flagcdn.com/w40/kr.webp" alt="한국어" title="한국어" width="40" height="30" role="button" tabindex="0" lang="ko" onclick="handleFlagClick('ko')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('ko');">
+                <img src="https://flagcdn.com/w40/no.webp" alt="Norsk" title="Norwegian" width="40" height="30" role="button" tabindex="0" lang="no" onclick="handleFlagClick('no')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('no');">
+                <img src="https://flagcdn.com/w40/ru.webp" alt="Русский" title="Russian" width="40" height="30" role="button" tabindex="0" lang="ru" onclick="handleFlagClick('ru')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('ru');">
+                <img src="https://flagcdn.com/w40/fi.webp" alt="Suomi" title="Finnish" width="40" height="30" role="button" tabindex="0" lang="fi" onclick="handleFlagClick('fi')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('fi');">
+                <img src="https://flagcdn.com/w40/se.webp" alt="Svenska" title="Swedish" width="40" height="30" role="button" tabindex="0" lang="sv" onclick="handleFlagClick('sv')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('sv');">
+                <img src="https://flagcdn.com/w40/ph.webp" alt="Tagalog" title="Tagalog" width="40" height="30" role="button" tabindex="0" lang="tl" onclick="handleFlagClick('tl')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('tl');">
+                <img src="https://flagcdn.com/w40/th.webp" alt="ไทย" title="ไทย" width="40" height="30" role="button" tabindex="0" lang="th" onclick="handleFlagClick('th')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('th');">
+                <img src="https://flagcdn.com/w40/tr.webp" alt="Türkçe" title="Türkçe" width="40" height="30" role="button" tabindex="0" lang="tr" onclick="handleFlagClick('tr')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('tr');">
+                <img src="https://flagcdn.com/w40/vn.webp" alt="Tiếng Việt" title="Vietnamese" width="40" height="30" role="button" tabindex="0" lang="vi" onclick="handleFlagClick('vi')" onkeydown="if(event.key === 'Enter' || event.key === ' ') handleFlagClick('vi');">
+            </span>
+        </div>
     </div>
     <div id="language-toggle" role="button" aria-label="Open Language Switcher" tabindex="0"
         onclick="toggleLanguageFlags()"
@@ -48,25 +51,25 @@ add_action('wp_footer', function () {
 
 <style>
 /* === Wrapper === */
-#google_translate_element_wrapper { position: fixed; bottom: 25px; right: 75px; z-index: 9999; background: #3A4F66; border-radius: 50%; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex; align-items: center; justify-content: flex-end; overflow: hidden; }
+#google_translate_element_wrapper {position: fixed; bottom: 25px; right: 75px; z-index: 9999; background: #3A4F66; border-radius: 50%; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex; align-items: center; justify-content: flex-end; overflow: hidden;}
+#google_translate_element_wrapper [tabindex="0"]:focus-visible {outline: 2px solid #FFD700; outline-offset: 2px; border-radius: 4px;} /*For Accessibility*/
 /* === Wrapper States === */
-#google_translate_element_wrapper.closed { width: 40px; height: 40px; padding: 0; border-radius: 50%; justify-content: center; }
-#google_translate_element_wrapper.open { border-radius: 30px; padding: 3px 10px 3px 10px; width: auto; height: auto; }
-#google_translate_element_wrapper.closed #language-flags { max-width: 0; opacity: 0; pointer-events: none; }
-#google_translate_element_wrapper.open #language-flags { max-width: 999px; padding-right: 10px; opacity: 1; pointer-events: auto; }
-/* === Toggle Button === */
-#language-toggle { background: transparent; border: none; cursor: pointer; padding: 6px; }
-#language-toggle svg { display: block; }
-/* === Language Flags === */
-#language-flags { display: flex; flex-wrap: wrap; flex-direction: row; align-items: center; gap: 6px; overflow: hidden; }
-#language-flags img { width: 24px; height: auto; cursor: pointer; }
-#language-flags img:hover { transform: scale(1.15); }
-#language-flags span { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
-/* === Reset Language === */
-#reset-language:hover { transform: scale(1.15); }
-/* === Media Query (Responsive) === */
-@media (max-width: 600px) { #google_translate_element_wrapper.open { padding: 6px 10px 10px 20px !important; } }
-#google_translate_element_wrapper [tabindex="0"]:focus-visible {outline: 2px solid #FFD700; outline-offset: 2px; border-radius: 4px;}
+#google_translate_element_wrapper.closed {width: 40px; height: 40px; padding: 0; border-radius: 50%; justify-content: center;}
+#google_translate_element_wrapper.open {border-radius: 30px; padding: 3px 10px 3px 10px; width: auto; height: auto;}
+#google_translate_element_wrapper.closed #flags-container {max-width: 0; opacity: 0; pointer-events: none;}
+#google_translate_element_wrapper.open #flags-container {max-width: 999px; padding-right: 10px; opacity: 1; pointer-events: auto;}
+/* === Toggle Button (Icon) === */
+#language-toggle {background: transparent; border: none; cursor: pointer; padding: 6px;}
+#language-toggle svg {display: block;}
+/* === Flags Container === */
+#flags-container {display: flex; align-items: center; flex-wrap: wrap;}
+#flags-container .reset-and-flags {display: flex; align-items: center; flex-wrap: nowrap;}
+#flags-container .reset {display: flex; align-items: center; flex-wrap: nowrap; gap: 4px; margin: 0 10px; color: white; font-size: 14px; cursor: pointer;}
+#flags-container .flags {display: flex; align-items: center; flex-wrap: wrap; gap: 6px;}
+#flags-container .flags img {width: 24px; height: auto; cursor: pointer;}
+#flags-container .flags img:hover {transform: scale(1.15);}
+/* === Media Query === */
+@media (max-width: 600px) {#google_translate_element_wrapper.open {padding: 6px 10px 10px 20px !important;} #flags-container .reset {margin-right: 20px;}}
 </style>
 
 <script type="text/javascript">
