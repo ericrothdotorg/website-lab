@@ -8,6 +8,8 @@ function subscribe_form_shortcode($atts) {
     }
     $is_horizontal = $atts['layout'] === 'horizontal';
     $ajax_url = admin_url('admin-ajax.php');
+    $nonce = wp_create_nonce('subscribe_form_action');
+
     $confirmation_style = '
     <style>
     .subscription-form-wrapper { display: flex; width: 100%; }
@@ -15,14 +17,15 @@ function subscribe_form_shortcode($atts) {
     .subscription-form input[type="email"] { width: 100%; max-width: 300px; padding: 8px; }
     .subscription-form button { padding: 8px 12px; white-space: nowrap; min-width: 90px;' . ($is_horizontal ? '' : ' margin-top: 15px;') . ' }
     .subscription-message { border: none; background: none; padding: 0; margin-top: 10px; font-size: 16px; font-family: inherit; }
-    .subscription-message.success { color: #2e7d32; }
-    .subscription-message.error { color: #c62828; }
+    .subscription-message.success { color: #339966; }
+    .subscription-message.error { color: #c53030; }
     @media (max-width: 600px) {
         .subscription-form { flex-direction: column !important; gap: 0 !important; }
         .subscription-form button { margin-top: 15px !important; width: auto !important; }
     }
     </style>';
-    return $confirmation_style . '
+
+    $html = $confirmation_style . '
     <div class="subscription-form-wrapper">
         <form method="post" id="subscription-form" class="subscription-form" novalidate>
             <label for="subscriber_email" class="screen-reader-text">Email address</label>
@@ -30,44 +33,51 @@ function subscribe_form_shortcode($atts) {
             <input type="text" name="contact_time" value="" style="display:none !important;" autocomplete="off" aria-hidden="true" tabindex="-1">
             <input type="hidden" name="middle_name" value="">
             <input type="hidden" name="math_check" value="7">
-            <input type="hidden" name="nonce" value="' . wp_create_nonce('subscribe_form_action') . '">
+            <input type="hidden" name="nonce" value="' . esc_attr($nonce) . '">
             <button type="submit" aria-label="Subscribe to email updates">Subscribe</button>
         </form>
     </div>
     <div id="subscription-message" role="alert" aria-live="assertive" tabindex="-1"></div>
+
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const form = document.getElementById("subscription-form");
-            const messageBox = document.getElementById("subscription-message");
-            form.addEventListener("submit", function(e) {
-                e.preventDefault();
-                const formData = new FormData(form);
-                fetch("' . esc_url($ajax_url) . '", {
-                    method: "POST",
-                    body: new URLSearchParams({
-                        action: "subscribe_user",
-                        subscriber_email: formData.get("subscriber_email"),
-                        contact_time: formData.get("contact_time"),
-                        middle_name: formData.get("middle_name"),
-                        math_check: formData.get("math_check"),
-                        nonce: formData.get("nonce")
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    messageBox.textContent = data.data.message;
-                    messageBox.className = data.success ? "success" : "error";
-                    messageBox.classList.add("subscription-message");
-                    messageBox.focus();
-                    if (data.success) form.reset();
-                })
-                .catch(() => {
-                    messageBox.textContent = "An unexpected error occurred.";
-                    messageBox.className = "error subscription-message";
-                });
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById("subscription-form");
+        const messageBox = document.getElementById("subscription-message");
+
+        form.addEventListener("submit", function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const data = new URLSearchParams();
+            for (const pair of formData) {
+                data.append(pair[0], pair[1]);
+            }
+            data.append("action", "subscribe_user");
+
+            fetch("' . esc_url($ajax_url) . '", {
+                method: "POST",
+                credentials: "same-origin",
+                body: data
+            })
+            .then(res => res.json())
+            .then(data => {
+                messageBox.textContent = data.data.message || "No message from server";
+                messageBox.className = data.success ? "subscription-message success" : "subscription-message error";
+                messageBox.focus();
+                if (data.success) {
+                    form.reset();
+                }
+            })
+            .catch(() => {
+                messageBox.textContent = "An unexpected error occurred.";
+                messageBox.className = "subscription-message error";
+                messageBox.focus();
             });
         });
+    });
     </script>';
+
+    return $html;
 }
 add_shortcode('subscribe_form', 'subscribe_form_shortcode');
 
@@ -117,22 +127,6 @@ function ajax_subscribe_user() {
         'user_agent' => $user_agent
     ]);
     if ($inserted) {
-        $admin_email = get_option('admin_email');
-        $timestamp = current_time('mysql');
-        $subject = '📬 New Site Subscription Received';
-        $message = sprintf(
-            "A new site-wide subscription has been recorded.\n\nEmail: %s\nTime: %s\nIP Address: %s\nUser Agent: %s\n\nView subscriber list:\n%s/wp-admin/admin.php?page=subscriber-list",
-            $email,
-            $timestamp,
-            $ip_address,
-            $user_agent,
-            site_url()
-        );
-        $headers = [
-            'From: Eric Roth <' . $admin_email . '>',
-            'Reply-To: ' . $admin_email
-        ];
-        wp_mail($admin_email, $subject, $message, $headers);
         wp_send_json_success(['message' => 'Thank you for subscribing!']);
     } else {
         wp_send_json_error(['message' => 'Subscription failed. Please try again.']);
