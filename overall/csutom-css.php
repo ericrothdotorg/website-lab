@@ -313,7 +313,7 @@ add_action("wp_footer", function () {
 
     /* BUTTONS */
 
-    .button {
+    .button a {
       color: #ffffff !important;
       background-color: #1e73be;
       display: flex;
@@ -325,8 +325,6 @@ add_action("wp_footer", function () {
       text-align: center;
       max-width: fit-content;
     }
-    .wp-block-button__link {color: #ffffff !important;}
-    .button:hover {background-color: #c53030;}
     .smaller-button a {
       cursor: pointer;
       color: #ffffff !important;
@@ -335,7 +333,9 @@ add_action("wp_footer", function () {
       padding: 5px 10px 7.5px 10px;
       border-radius: 3px;
     }
+    .button a:hover {background-color: #c53030;}
     .smaller-button a:hover {background-color: #c53030;}
+    .wp-block-button__link {color: #ffffff !important;}
 
     /* BOXES */
 
