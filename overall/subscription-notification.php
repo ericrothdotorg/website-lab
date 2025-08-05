@@ -127,6 +127,12 @@ function ajax_subscribe_user() {
         'user_agent' => $user_agent
     ]);
     if ($inserted) {
+        // Send admin notification
+        $admin_email = get_option('admin_email');
+        $subject = 'New Subscriber Alert';
+        $message = "A new subscriber has joined:\n\nEmail: $email\nIP: $ip_address\nUser Agent: $user_agent";
+        wp_mail($admin_email, $subject, $message);
+
         wp_send_json_success(['message' => 'Thank you for subscribing!']);
     } else {
         wp_send_json_error(['message' => 'Subscription failed. Please try again.']);
