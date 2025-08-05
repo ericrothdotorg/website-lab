@@ -127,16 +127,6 @@ function ajax_subscribe_user() {
         'user_agent' => $user_agent
     ]);
     if ($inserted) {
-        // Send admin notification
-        $admin_email = get_option('admin_email');
-        $subject = 'New Subscriber Alert';
-        $message = "A new subscriber has joined:\n\nEmail: $email\nIP: $ip_address\nUser Agent: $user_agent";
-        $headers = "From: Eric Roth <info@ericroth.org>\r\nReply-To: info@ericroth.org";
-
-        if (!wp_mail($admin_email, $subject, $message, $headers)) {
-            error_log('Admin notification email failed to send.');
-        }
-
         wp_send_json_success(['message' => 'Thank you for subscribing!']);
     } else {
         wp_send_json_error(['message' => 'Subscription failed. Please try again.']);
