@@ -1,4 +1,6 @@
 <?php
+
+/* Convert DPS into a grouped dropdown menu */
 function be_dps_select_open( $output, $atts ) {
 	if ( ! empty( $atts['wrapper'] ) && 'select' === $atts['wrapper'] ) {
 		$output  = '<select class="display-posts-listing" aria-label="Select a post" onchange="if (this.value) window.location.href=this.value">';
@@ -94,7 +96,7 @@ function be_dps_option_output_grouped( $output, $atts ) {
 }
 add_filter( 'display_posts_shortcode_output', 'be_dps_option_output_grouped', 10, 2 );
 
-/* ✅ Add posts count per category (in .ct-sidebar) */
+/* Add posts count per category (in .ct-sidebar) */
 function posts_count_per_category($output, $atts) {
     if (isset($atts['show_category_count']) && $atts['show_category_count'] === 'true') {
         global $post;
@@ -115,7 +117,7 @@ function posts_count_per_category($output, $atts) {
 }
 add_filter('display_posts_shortcode_output', 'posts_count_per_category', 10, 2);
 
-/* ✅ JS for font resizing (in .ct-sidebar) */
+/* JS for font resizing (in .ct-sidebar) */
 add_action('wp_footer', function () {
     echo '<style>select.display-posts-listing { cursor: pointer; }</style>';
     ?>
