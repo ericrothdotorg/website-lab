@@ -1,5 +1,5 @@
 <?php
-// ✅ Load jQuery from CDN if not already enqueued
+// Load jQuery from CDN if not already enqueued
 if (!is_admin()) {
     add_action('wp_enqueue_scripts', function () {
         add_action('wp_head', function () {
@@ -18,15 +18,13 @@ if (!is_admin()) {
         }
     }, 11);
 }
-
-// ✅ Enqueue Slick Slider assets after jQuery
+// Enqueue Slick Slider assets after jQuery
 add_action('wp_enqueue_scripts', function () {
     wp_enqueue_style('slick-css', 'https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.css');
     wp_enqueue_style('slick-theme-css', 'https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick-theme.min.css');
     wp_enqueue_script('slick-js', 'https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.js', ['jquery'], null, true);
 }, 20);
-
-// ✅ Initialize Slick sliders and add custom styles in the footer
+// Initialize Slick sliders and add custom styles in the footer
 add_action('wp_footer', function () {
     ?>
     <script>
@@ -72,9 +70,9 @@ add_action('wp_footer', function () {
                 swipeToSlide: true,
                 mobileFirst: true,
                 responsive: [
-                    { breakpoint: 1200, settings: { slidesToShow: 4 } },
-                    { breakpoint: 992, settings: { slidesToShow: 3 } },
-                    { breakpoint: 600, settings: { slidesToShow: 2 } }
+                    { breakpoint: 992, settings: { slidesToShow: 4 } },
+                    { breakpoint: 768, settings: { slidesToShow: 3 } },
+                    { breakpoint: 400, settings: { slidesToShow: 2 } }
                 ]
             });
             $('.slideshow-multiple-items-vertical').slick({
@@ -108,9 +106,9 @@ add_action('wp_footer', function () {
                 centerPadding: '175px',
                 mobileFirst: true,
                 responsive: [
-                    { breakpoint: 1200, settings: { centerPadding: '125px' } },
-                    { breakpoint: 992, settings: { centerPadding: '75px' } },
-                    { breakpoint: 600, settings: { centerPadding: '0px' } }
+                    { breakpoint: 992, settings: { centerPadding: '125px' } },
+                    { breakpoint: 768, settings: { centerPadding: '75px' } },
+                    { breakpoint: 400, settings: { centerPadding: '0px' } }
                 ]
             });
         });
