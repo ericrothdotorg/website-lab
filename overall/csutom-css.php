@@ -116,21 +116,16 @@ add_action("wp_footer", function () {
     /* BRANDING */
 
     /* Site Logo (Without Text and rotate 3D) */
-    .site-logo {-webkit-animation: rotate3d 5s linear infinite; animation: rotate3d 5s linear infinite;}
-    .site-logo:hover {-webkit-animation-play-state: paused; animation-play-state: paused;}
-    @-webkit-keyframes rotate3d {from { transform: rotate3d(0,0,0,0deg); } to { transform: rotate3d(1,1,1,360deg); }}
+    .site-logo {animation: rotate3d 5s linear infinite;}
+    .site-logo:hover {animation-play-state: paused;}
     @keyframes rotate3d {from { transform: rotate3d(0,0,0,0deg); } to { transform: rotate3d(1,1,1,360deg); }}
     /* Site Logo (With Text and rotate 2D) */
     .octagon-text-outside {
-      -webkit-animation-name: rotate-image-frontpage;
       animation-name: rotate-image-frontpage;
-      -webkit-animation-duration: 15s;
       animation-duration: 15s;
-      -webkit-animation-iteration-count: 1;
       animation-iteration-count: 1;
     }
-    .octagon-text-outside:hover {-webkit-animation-play-state: paused; animation-play-state: paused;}
-    @-webkit-keyframes rotate-image-frontpage {0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
+    .octagon-text-outside:hover {animation-play-state: paused;}
     @keyframes rotate-image-frontpage {0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
 
     /* SOME MISC STUFF */
@@ -277,16 +272,10 @@ add_action("wp_footer", function () {
     .zoom {width: 35%; transition: width 1.5s ease-in-out;}
     .zoom:hover {width: 100% !important;}
     .zoom-x2 {transition: all 1.5s ease-in-out;}
-    .zoom-x2:hover {-webkit-transform: scale(2); transform: scale(2);}
+    .zoom-x2:hover {transform: scale(2);}
     /* Blob Animation */
-    .blob-animation img {-webkit-animation: animate-blob 7.5s ease-in-out infinite alternate; animation: animate-blob 7.5s ease-in-out infinite alternate;}
-    .blob-animation img:hover {-webkit-animation-play-state: paused; animation-play-state: paused;}
-    @-webkit-keyframes animate-blob {
-      0%, 100% {border-radius: 20% 80% 70% 30% / 60% 40% 60% 40%;}
-      25% {border-radius: 60% 40% 30% 70% / 40% 60% 40% 60%;}
-      50% {border-radius: 60% 40% 30% 70% / 60% 40% 60% 40%;}
-      75% {border-radius: 20% 80% 70% 30% / 40% 60% 40% 60%;}
-    }
+    .blob-animation img {animation: animate-blob 7.5s ease-in-out infinite alternate;}
+    .blob-animation img:hover {animation-play-state: paused;}
     @keyframes animate-blob {
       0%, 100% {border-radius: 20% 80% 70% 30% / 60% 40% 60% 40%;}
       25% {border-radius: 60% 40% 30% 70% / 40% 60% 40% 60%;}
@@ -343,7 +332,7 @@ add_action("wp_footer", function () {
     .resizable-box {height: 333px; resize: vertical; overflow: auto; padding: 25px; border: 0.5px solid #808080;}
     .box-background {background: #fafbfc; border: 1px solid #e1e8ed;}
     .box-background:hover {background: #f2f5f7;}
-    .box-shadow {-webkit-box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.25); box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.25);}
+    .box-shadow {box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.25);}
 
     /* FORMS & INPUTS */
 
@@ -364,7 +353,7 @@ add_action("wp_footer", function () {
     /* Footer: Style the Flex Columns */
     .flex-item-footer-left,
     .flex-item-footer-middle,
-    .flex-item-footer-right {-webkit-flex: 1 1 auto; flex: 1 1 auto;}
+    .flex-item-footer-right {max-width: 430px; flex: 1 1 auto;}
     /* Footer: Hoverable Dropdown Menu */
     .dropdown {display: inline-block; position: relative;}
     .dropdown-content {
@@ -379,18 +368,8 @@ add_action("wp_footer", function () {
       z-index: 1;
       }
     .dropdown:hover .dropdown-content, .dropdown:focus-within .dropdown-content {display: block;}
-    /* Animate Footer Text */
-    .content-text::before {content: "content"; -webkit-animation: content-words 9s linear infinite; animation: content-words 9s linear infinite;}
-    @-webkit-keyframes content-words {
-      11.11% { content: " posts"; }
-      22.22% { content: " traits"; }
-      33.33% { content: " projects"; }
-      44.44% { content: " topics"; }
-      55.55% { content: " galleries"; }
-      66.66% { content: " merch"; }
-      77.77% { content: " pages"; }
-      88.88% { content: " things"; }
-    }
+    /* Footer: Animate Footer Text */
+    .content-text::before {content: "content"; animation: content-words 9s linear infinite;}
     @keyframes content-words {
       11.11% { content: " posts"; }
       22.22% { content: " traits"; }
