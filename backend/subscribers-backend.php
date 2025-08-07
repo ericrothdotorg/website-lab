@@ -55,12 +55,11 @@ if (is_admin() && current_user_can('manage_options')) {
         $offset = ($current_page - 1) * $per_page;
         $order_dir = (isset($_GET['order']) && strtolower($_GET['order']) === 'asc') ? 'ASC' : 'DESC';
         $order_toggle = ($order_dir === 'ASC') ? 'desc' : 'asc';
-
         $subscribers = [];
         if (!empty($search_query)) {
             $like = '%' . $wpdb->esc_like($search_query) . '%';
             $site_results = $wpdb->get_results($wpdb->prepare(
-                "SELECT id, email, subscription_date, ip_address, user_agent
+                "SELECT id, email, unsubscribe_token, subscription_date, ip_address, user_agent
                 FROM $subscribers_table
                 WHERE email LIKE %s",
                 $like
@@ -68,7 +67,7 @@ if (is_admin() && current_user_can('manage_options')) {
             $subscribers = $site_results;
         } else {
             $site_results = $wpdb->get_results("
-                SELECT id, email, subscription_date, ip_address, user_agent
+                SELECT id, email, unsubscribe_token, subscription_date, ip_address, user_agent
                 FROM $subscribers_table
             ");
             $subscribers = $site_results;
@@ -81,44 +80,40 @@ if (is_admin() && current_user_can('manage_options')) {
             $valB = strtotime($b->subscription_date);
             return ($order_dir === 'ASC') ? $valA <=> $valB : $valB <=> $valA;
         });
-
         $total_subscribers = count($subscribers);
         $subscribers = array_slice($subscribers, $offset, $per_page);
 
         // Display
         echo '<div class="wrap"><h2>Subscribers</h2>';
-
         echo '<form method="post">';
         echo '<input type="text" name="search_email" placeholder="Search by email" value="' . esc_attr($search_query) . '"> ';
         echo '<button type="submit" class="button-primary">Search</button>';
         echo '</form><br>';
-
         if ($subscribers) {
             echo '<form method="post">';
             wp_nonce_field('subscriber_admin_action');
-
             echo '<table class="wp-list-table widefat fixed striped">';
             echo '<thead><tr>';
             echo '<th><input type="checkbox" onclick="jQuery(\'.sub-check\').prop(\'checked\', this.checked);"></th>';
             echo '<th>Email</th>';
+            echo '<th>Unsubscribe Token</th>';
             echo '<th><a href="' . esc_url(add_query_arg(['orderby' => 'subscription_date', 'order' => $order_toggle])) . '">Subscription Date' 
                 . ($orderby === 'subscription_date' ? ($order_dir === 'ASC' ? ' ↑' : ' ↓') : '') 
                 . '</a></th>';
             echo '<th>IP Address</th>';
             echo '<th>User Agent</th>';
             echo '</tr></thead><tbody>';
-
             foreach ($subscribers as $subscriber) {
                 echo '<tr>';
                 echo '<td><input type="checkbox" class="sub-check" name="subscriber_ids[]" value="' . esc_attr($subscriber->id) . '"></td>';
                 echo '<td>' . esc_html($subscriber->email) . '</td>';
+                echo '<td>' . esc_html($subscriber->unsubscribe_token ?? '—') . '</td>';
                 echo '<td>' . esc_html(date('F j, Y H:i', strtotime($subscriber->subscription_date))) . '</td>';
                 echo '<td>' . esc_html($subscriber->ip_address ?? '—') . '</td>';
                 echo '<td style="max-width: 300px; word-break: break-word;">' . esc_html($subscriber->user_agent ?? '—') . '</td>';
                 echo '</tr>';
             }
             echo '</tbody></table>';
-
             echo '<div style="margin-top: 10px;">';
             echo '<button type="submit" name="bulk_delete" class="button-primary">Delete Selected</button>';
             echo '<a href="' . admin_url('users.php') . '" class="button" style="margin-left: 10px;">Forum Users</a>';
@@ -138,7 +133,6 @@ if (is_admin() && current_user_can('manage_options')) {
         } else {
             echo '<p>No subscribers found.</p>';
         }
-
         echo '</div>';
     }
 }
