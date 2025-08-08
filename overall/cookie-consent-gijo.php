@@ -1,7 +1,7 @@
 <?php 
 add_action('wp_footer', function() {
     ?>
-    <p id="cookie-notice" role="region" aria-live="polite" aria-label="Cookie notice" style="display: none;">
+    <p id="cookie-notice" role="region" aria-live="polite" aria-label="Cookie notice" aria-hidden="true" style="visibility: hidden;">
         We serve <strong>cookies</strong> to enhance your browsing experience. Learn more about it in our 
         <a href="https://ericroth.org/this-site/site-policies/">Site Policies</a><br>
         <span style="display: block; text-align: center;">
@@ -20,11 +20,15 @@ add_action('wp_footer', function() {
     <script>
         function acceptCookie() {
             document.cookie = "cookieaccepted=1; max-age=86400; path=/";
-            document.getElementById("cookie-notice").style.display = "none";
+            const notice = document.getElementById("cookie-notice");
+            notice.style.visibility = "hidden";
+            notice.setAttribute("aria-hidden", "true");
         }
         document.addEventListener('DOMContentLoaded', function() {
             if (document.cookie.indexOf("cookieaccepted") < 0) {
-                document.getElementById("cookie-notice").style.display = "block";
+                const notice = document.getElementById("cookie-notice");
+                notice.style.visibility = "visible";
+                notice.setAttribute("aria-hidden", "false");
             }
         });
     </script>
