@@ -1,16 +1,21 @@
 <?php
 
 /* Convert DPS into a grouped dropdown menu */
+
 function be_dps_select_open( $output, $atts ) {
     if ( ! empty( $atts['wrapper'] ) && 'select' === $atts['wrapper'] ) {
-        $output  = '<p id="dps-desc" class="screen-reader-text">Selecting an option will take you to that post.</p>';
-        $output .= '<p id="dps-live" aria-live="polite" class="screen-reader-text"></p>';
-        $output .= '<select class="display-posts-listing" aria-label="Select a post" aria-describedby="dps-desc" onchange="if (this.value) window.location.href=this.value">';
+        $unique_id = uniqid('dps_', true);
+        $desc_id = $unique_id . '_desc';
+        $live_id = $unique_id . '_live';
+        $output  = '<p id="' . esc_attr($desc_id) . '" class="screen-reader-text">Selecting an option will take you to that post.</p>';
+        $output .= '<p id="' . esc_attr($live_id) . '" aria-live="polite" class="screen-reader-text"></p>';
+        $output .= '<select class="display-posts-listing" aria-label="Select a post" aria-describedby="' . esc_attr($desc_id) . '" onchange="if (this.value) window.location.href=this.value">';
         $output .= '<option value="" selected disabled>Make Your Choice</option>';
     }
     return $output;
 }
 add_filter( 'display_posts_shortcode_wrapper_open', 'be_dps_select_open', 10, 2 );
+
 class DPS_Grouped_Collector {
     public static $instances = [];
     public static function add_post( $atts, $post ) {
@@ -78,6 +83,7 @@ class DPS_Grouped_Collector {
         return $output;
     }
 }
+
 function be_dps_select_close_grouped( $output, $atts ) {
     if ( ! empty( $atts['wrapper'] ) && 'select' === $atts['wrapper'] ) {
         $output = DPS_Grouped_Collector::render_grouped( $atts ) . '</select>';
@@ -85,6 +91,7 @@ function be_dps_select_close_grouped( $output, $atts ) {
     return $output;
 }
 add_filter( 'display_posts_shortcode_wrapper_close', 'be_dps_select_close_grouped', 10, 2 );
+
 function be_dps_option_output_grouped( $output, $atts ) {
     if ( empty( $atts['wrapper'] ) || 'select' !== $atts['wrapper'] ) {
         return $output;
@@ -99,6 +106,7 @@ function be_dps_option_output_grouped( $output, $atts ) {
 add_filter( 'display_posts_shortcode_output', 'be_dps_option_output_grouped', 10, 2 );
 
 /* Add posts count per category (in .ct-sidebar) */
+
 function posts_count_per_category($output, $atts) {
     if (isset($atts['show_category_count']) && $atts['show_category_count'] === 'true') {
         global $post;
@@ -120,6 +128,7 @@ function posts_count_per_category($output, $atts) {
 add_filter('display_posts_shortcode_output', 'posts_count_per_category', 10, 2);
 
 /* JS for font resizing (in .ct-sidebar) */
+
 add_action('wp_footer', function () {
     echo '<style>select.display-posts-listing { cursor: pointer; }</style>';
     ?>
@@ -168,14 +177,17 @@ add_action('wp_footer', function () {
     .display-posts-listing .title {display: block; margin-top: 16px; margin-bottom: 16px; text-align: center; font-size: 1.125rem; width: 100%;}
     .listing-item .excerpt-dash {display: none;}
     .display-posts-listing .excerpt {clear: right; display: block; text-align: center; margin: 0 16px 20px 16px;}
+
     /* Category - Styling */
     .display-posts-listing .category-display, .display-posts-listing.grid .category-display {display: block; font-size: 0.85rem; text-align: center; margin-top: -8px; margin-bottom: 16px; opacity: 0.75;}
+
     /* Grids - General with 2 columns */
     .display-posts-listing.grid {grid-template-columns: repeat( 2, 1fr ); display: grid; grid-gap: 1.75rem 1.5rem;}
     .display-posts-listing.grid img {display: block;  max-width: 100%; height: auto;}
     .display-posts-listing.grid .title {margin-top: 12px; margin-bottom: 12px; font-size: 1.125rem;}
     @media (max-width: 600px) {.display-posts-listing.grid .excerpt {padding-left: 8px; padding-right: 8px; font-size: 0.75rem;}}
     @media (min-width: 600px) {.display-posts-listing.grid .excerpt {padding-left: 16px; padding-right: 16px;}}
+
     /* Grids - More than 2 columns */
     @media (min-width: 768px) {.display-posts-listing.grid#three-columns {grid-template-columns: repeat( 3, 1fr );}}
     @media (min-width: 600px) and (max-width: 992px) {.display-posts-listing.grid#four-columns {grid-template-columns: repeat( 2, 1fr );}}
@@ -184,18 +196,21 @@ add_action('wp_footer', function () {
     .display-posts-listing.grid#six-columns .title {margin-top: 8px; margin-bottom: 8px; font-size: 0.75rem;}
     @media (min-width: 600px) and (max-width: 992px) {.display-posts-listing.grid#six-columns {grid-template-columns: repeat( 3, 1fr );}}
     @media (min-width: 992px) {.display-posts-listing.grid#six-columns {grid-template-columns: repeat( 6, 1fr );}}
+
     /* Grids - Particular IDs */
     .display-posts-listing.grid#small-version .listing-item {margin-bottom: 0px;}
     .display-posts-listing.grid#small-version .title {margin-top: 10px; margin-bottom: 10px; font-size: 0.75rem;}
     .display-posts-listing#notorious-big .title, .display-posts-listing.grid#notorious-big .title {font-size: 1.5rem; margin-top: 7.5px; margin-bottom: 2.5px;}
     .display-posts-listing.grid#notorious-big .excerpt {font-size: 1rem;}
     @media (max-width: 768px) {.display-posts-listing.grid#notorious-big {grid-template-columns: repeat( 1, 1fr );}}
+
     /* DPS 4 FAQs */
     .display-posts-faqs .listing-item {clear: both; overflow: hidden; margin-bottom: 20px;}
     .display-posts-faqs .image {float: left; margin: 0 16px 0 0;}
     .display-posts-faqs .title {display: block; text-align: justify; font-size: 1rem; margin-top: -4px;}
     @media (max-width: 600px) {.display-posts-faqs .title {font-size: 1rem;}}
     .display-posts-faqs .excerpt {display: block; text-align: justify;}
+
     /* DPS 4 TRENDING */
     .display-posts-trending {display: flex; flex-wrap: wrap; gap: 20px;}
     .display-posts-trending .listing-item {display: flex; align-items: center; justify-content: space-between; flex: 1 1 calc(16.66% - 20px); box-sizing: border-box; margin-bottom: 20px; background: none; border: none;}
@@ -205,9 +220,11 @@ add_action('wp_footer', function () {
     .display-posts-trending .title {text-align: left; font-size: 1rem; margin: 0; flex: 1; overflow-wrap: anywhere;}
     @media (min-width: 768px) and (max-width: 1200px) {.display-posts-trending .listing-item {flex: 1 1 calc(33.33% - 20px);}}
     @media (max-width: 768px) {.display-posts-trending .listing-item {flex: 1 1 calc(50% - 20px);}}
+
     /* DPS 4 WIDGETS (in .ct-sidebar) */
     .display-posts-widgets .listing-item .category-display a {font-weight: normal;}
     .ct-sidebar .display-posts-widgets {list-style-type: disc !important; padding-left: 20px;}
+
     /* DPS 4 TRAITS CONCLUSION */
     .display-posts-listing.grid.traits-conclusion {display: grid; grid-gap: 0.25rem;}
     .display-posts-listing.grid.traits-conclusion .title {font-size: 0.85rem !important;}
