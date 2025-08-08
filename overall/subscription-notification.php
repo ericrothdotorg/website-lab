@@ -28,9 +28,9 @@ function subscribe_form_shortcode($atts) {
     $html = $confirmation_style . '
     <div class="subscription-form-wrapper">
         <form method="post" id="subscription-form" class="subscription-form" novalidate>
-            <label for="subscriber_email" class="screen-reader-text">Email address</label>
-            <input type="email" id="subscriber_email" name="subscriber_email" required placeholder="Enter your E-mail" autocomplete="email">
-            <input type="text" name="contact_time" value="" style="display:none !important;" autocomplete="off" aria-hidden="true" tabindex="-1">
+            <label for="subscriber_email" class="screen-reader-text">E-mail Address</label>
+            <input type="email" id="subscriber_email" name="subscriber_email" required placeholder="Enter your E-mail" autocomplete="email" aria-label="E-mail Address">
+            <input type="hidden" name="contact_time" value="" autocomplete="off">
             <input type="hidden" name="middle_name" value="">
             <input type="hidden" name="math_check" value="7">
             <input type="hidden" name="nonce" value="' . esc_attr($nonce) . '">
