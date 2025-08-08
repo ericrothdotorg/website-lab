@@ -2,11 +2,13 @@
 
 /* Convert DPS into a grouped dropdown menu */
 function be_dps_select_open( $output, $atts ) {
-	if ( ! empty( $atts['wrapper'] ) && 'select' === $atts['wrapper'] ) {
-		$output  = '<select class="display-posts-listing" aria-label="Select a post" onchange="if (this.value) window.location.href=this.value">';
-		$output .= '<option value="" selected disabled>Make Your Choice</option>';
-	}
-	return $output;
+    if ( ! empty( $atts['wrapper'] ) && 'select' === $atts['wrapper'] ) {
+        $output  = '<p id="dps-desc" class="screen-reader-text">Selecting an option will take you to that post.</p>';
+        $output .= '<p id="dps-live" aria-live="polite" class="screen-reader-text"></p>';
+        $output .= '<select class="display-posts-listing" aria-label="Select a post" aria-describedby="dps-desc" onchange="if (this.value) window.location.href=this.value">';
+        $output .= '<option value="" selected disabled>Make Your Choice</option>';
+    }
+    return $output;
 }
 add_filter( 'display_posts_shortcode_wrapper_open', 'be_dps_select_open', 10, 2 );
 class DPS_Grouped_Collector {
@@ -121,6 +123,7 @@ add_filter('display_posts_shortcode_output', 'posts_count_per_category', 10, 2);
 add_action('wp_footer', function () {
     echo '<style>select.display-posts-listing { cursor: pointer; }</style>';
     ?>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             function adjustFontSize() {
@@ -142,8 +145,23 @@ add_action('wp_footer', function () {
         });
     </script>
 
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const select = document.querySelector('.display-posts-listing');
+        const live = document.getElementById('dps-live');
+
+        if (select && live) {
+            select.addEventListener('change', function() {
+                const selectedText = this.options[this.selectedIndex].text;
+                live.textContent = `Navigating to ${selectedText}`;
+            });
+        }
+    });
+    </script>
+
     <style>
     /* Basics - Styling */
+    .screen-reader-text {position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden;}
     .display-posts-listing .listing-item {clear: both; overflow: hidden; background: #fafbfc; border: 1px solid #e1e8ed;}
     .display-posts-listing .listing-item:hover {background: #f2f5f7;}
     .display-posts-listing img {aspect-ratio: 16/9;}
