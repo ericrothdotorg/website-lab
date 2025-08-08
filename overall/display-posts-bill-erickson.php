@@ -1,7 +1,6 @@
 <?php
 
-/* Convert DPS into a grouped dropdown menu */
-
+/* Convert DPS into a grouped Dropdown Menu */
 function be_dps_select_open( $output, $atts ) {
     if ( ! empty( $atts['wrapper'] ) && 'select' === $atts['wrapper'] ) {
         $unique_id = uniqid('dps_', true);
@@ -9,13 +8,23 @@ function be_dps_select_open( $output, $atts ) {
         $live_id = $unique_id . '_live';
         $output  = '<p id="' . esc_attr($desc_id) . '" class="screen-reader-text">Selecting an option will take you to that post.</p>';
         $output .= '<p id="' . esc_attr($live_id) . '" aria-live="polite" class="screen-reader-text"></p>';
-        $output .= '<select class="display-posts-listing" aria-label="Select a post" aria-describedby="' . esc_attr($desc_id) . '" onchange="if (this.value) window.location.href=this.value">';
+        $output .= '<select class="display-posts-listing" data-live-id="' . esc_attr($live_id) . '" aria-label="Select a post" aria-describedby="' . esc_attr($desc_id) . '" onchange="if (this.value) window.location.href=this.value">';
         $output .= '<option value="" selected disabled>Make Your Choice</option>';
     }
     return $output;
 }
 add_filter( 'display_posts_shortcode_wrapper_open', 'be_dps_select_open', 10, 2 );
 
+// Preload Tax Terms Caches for DPS Select Wrapper
+add_action( 'pre_get_posts', function( $query ) {
+    if ( ! is_admin() && $query->is_main_query() === false && $query->get( 'wrapper' ) === 'select' ) {
+        if ( ! empty( $query->posts ) ) {
+            update_post_term_cache( $query->posts, [ 'category', 'topics' ] );
+        }
+    }
+}, 5 );
+
+// Collects and groups Posts by Taxonomy or Type
 class DPS_Grouped_Collector {
     public static $instances = [];
     public static function add_post( $atts, $post ) {
@@ -84,6 +93,7 @@ class DPS_Grouped_Collector {
     }
 }
 
+// Replaces closing Wrapper with grouped <select> Output
 function be_dps_select_close_grouped( $output, $atts ) {
     if ( ! empty( $atts['wrapper'] ) && 'select' === $atts['wrapper'] ) {
         $output = DPS_Grouped_Collector::render_grouped( $atts ) . '</select>';
@@ -92,6 +102,7 @@ function be_dps_select_close_grouped( $output, $atts ) {
 }
 add_filter( 'display_posts_shortcode_wrapper_close', 'be_dps_select_close_grouped', 10, 2 );
 
+// Collects Post Data for grouped <select> Output
 function be_dps_option_output_grouped( $output, $atts ) {
     if ( empty( $atts['wrapper'] ) || 'select' !== $atts['wrapper'] ) {
         return $output;
@@ -105,8 +116,7 @@ function be_dps_option_output_grouped( $output, $atts ) {
 }
 add_filter( 'display_posts_shortcode_output', 'be_dps_option_output_grouped', 10, 2 );
 
-/* Add posts count per category (in .ct-sidebar) */
-
+/* Add Posts Count per Category (in .ct-sidebar) */
 function posts_count_per_category($output, $atts) {
     if (isset($atts['show_category_count']) && $atts['show_category_count'] === 'true') {
         global $post;
@@ -127,50 +137,15 @@ function posts_count_per_category($output, $atts) {
 }
 add_filter('display_posts_shortcode_output', 'posts_count_per_category', 10, 2);
 
-/* JS for font resizing (in .ct-sidebar) */
-
-add_action('wp_footer', function () {
-    echo '<style>select.display-posts-listing { cursor: pointer; }</style>';
-    ?>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            function adjustFontSize() {
-                const sidebar = document.querySelector('.ct-sidebar');
-                if (!sidebar) return;
-                sidebar.style.whiteSpace = 'nowrap';
-                sidebar.style.overflow = 'hidden';
-                const maxWidth = sidebar.offsetWidth;
-                let currentFontSize = parseFloat(window.getComputedStyle(sidebar).fontSize);
-                let minFontSize = 5;
-                let step = 0.1;
-                while (sidebar.scrollWidth > maxWidth && currentFontSize > minFontSize) {
-                    currentFontSize -= step;
-                    sidebar.style.fontSize = `${currentFontSize}px`;
-                }
-            }
-            setTimeout(adjustFontSize, 100);
-            window.addEventListener('resize', adjustFontSize);
-        });
-    </script>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const select = document.querySelector('.display-posts-listing');
-        const live = document.getElementById('dps-live');
-
-        if (select && live) {
-            select.addEventListener('change', function() {
-                const selectedText = this.options[this.selectedIndex].text;
-                live.textContent = `Navigating to ${selectedText}`;
-            });
-        }
-    });
-    </script>
-
+/* CSS in wp_head for earlier Load */
+add_action('wp_head', function () { ?>
     <style>
-    /* Basics - Styling */
+
+    /* For Accessibility */
     .screen-reader-text {position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden;}
+
+    /* Basics - Styling */
+    .display-posts-listing {cursor: pointer;}
     .display-posts-listing .listing-item {clear: both; overflow: hidden; background: #fafbfc; border: 1px solid #e1e8ed;}
     .display-posts-listing .listing-item:hover {background: #f2f5f7;}
     .display-posts-listing img {aspect-ratio: 16/9;}
@@ -228,8 +203,45 @@ add_action('wp_footer', function () {
     /* DPS 4 TRAITS CONCLUSION */
     .display-posts-listing.grid.traits-conclusion {display: grid; grid-gap: 0.25rem;}
     .display-posts-listing.grid.traits-conclusion .title {font-size: 0.85rem !important;}
-    </style>
 
-    <?php
+    </style>
+    <?php });
+
+/* Place JS in Footer */
+add_action('wp_footer', function () { ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function adjustFontSize() {
+        const sidebar = document.querySelector('.ct-sidebar');
+        if (!sidebar) return;
+        sidebar.style.whiteSpace = 'nowrap';
+        sidebar.style.overflow = 'hidden';
+        const maxWidth = sidebar.offsetWidth;
+        let currentFontSize = parseFloat(window.getComputedStyle(sidebar).fontSize);
+        let minFontSize = 5;
+        let step = 0.1;
+        while (sidebar.scrollWidth > maxWidth && currentFontSize > minFontSize) {
+            currentFontSize -= step;
+            sidebar.style.fontSize = `${currentFontSize}px`;
+        }
+    }
+    setTimeout(adjustFontSize, 100);
+    window.addEventListener('resize', adjustFontSize);
 });
-?>
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.querySelector('.display-posts-listing');
+    if (select) {
+        const liveId = select.dataset.liveId;
+        const live = document.getElementById(liveId);
+        if (live) {
+            select.addEventListener('change', function() {
+                const selectedText = this.options[this.selectedIndex].text;
+                live.textContent = `Navigating to ${selectedText}`;
+            });
+        }
+    }
+});
+</script>
+
+<?php });
