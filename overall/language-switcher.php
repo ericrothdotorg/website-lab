@@ -2,7 +2,7 @@
 
 add_action('wp_footer', function () {
 ?>
-<div id="google_translate_element_wrapper" class="closed" role="region" aria-label="Language Switcher" aria-hidden="true">
+<div id="google_translate_element_wrapper" class="closed" role="region" aria-label="Language Switcher">
     <div id="flags-container">
         <div class="reset-and-flags">
             <span class="reset" title="Reset Language" role="button" aria-label="Reset Language" tabindex="0"
@@ -79,15 +79,21 @@ add_action('wp_footer', function () {
         wrapper.classList.toggle('open');
         wrapper.classList.toggle('closed');
         wrapper.setAttribute('aria-hidden', !isOpen);
+        const focusables = wrapper.querySelectorAll('[tabindex]');
+        focusables.forEach(el => {
+            el.setAttribute('tabindex', isOpen ? '0' : '-1');
+        });
         if (!translateScriptLoaded) {
             loadGoogleTranslate();
             translateScriptLoaded = true;
         }
     }
+
     function handleFlagClick(lang) {
         translatePage(lang);
         toggleLanguageFlags();
     }
+
     function translatePage(lang) {
         const frame = document.querySelector('iframe.goog-te-banner-frame');
         if (frame) frame.remove();
@@ -100,12 +106,14 @@ add_action('wp_footer', function () {
             localStorage.setItem('preferredLang', lang);
         }
     }
+
     function injectGoogleTranslate() {
         new google.translate.TranslateElement({
             pageLanguage: 'en',
             autoDisplay: false
         }, 'google_translate_element');
     }
+
     function restoreLanguage() {
         const lang = localStorage.getItem('preferredLang');
         if (lang) {
@@ -119,7 +127,9 @@ add_action('wp_footer', function () {
             }, 500);
         }
     }
+
     let translateScriptLoaded = false;
+
     function loadGoogleTranslate() {
         const gtDiv = document.createElement('div');
         gtDiv.id = 'google_translate_element';
@@ -132,6 +142,7 @@ add_action('wp_footer', function () {
         document.body.appendChild(gtScript);
         restoreLanguage();
     }
+
     function resetTranslation() {
         localStorage.removeItem('preferredLang');
         document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
@@ -146,25 +157,37 @@ add_action('wp_footer', function () {
         sessionStorage.setItem('scrollToTopAfterReload', 'true');
         location.reload();
     }
+
     if (sessionStorage.getItem('scrollToTopAfterReload')) {
         window.scrollTo(0, 0);
         sessionStorage.removeItem('scrollToTopAfterReload');
     }
+
     document.addEventListener('click', function (event) {
         const wrapper = document.getElementById('google_translate_element_wrapper');
         if (!wrapper.contains(event.target)) {
             wrapper.classList.remove('open');
             wrapper.classList.add('closed');
             wrapper.setAttribute('aria-hidden', 'true');
+
+            // Accessibility fix: disable focus
+            const focusables = wrapper.querySelectorAll('[tabindex]');
+            focusables.forEach(el => el.setAttribute('tabindex', '-1'));
         }
     });
+
     document.addEventListener("DOMContentLoaded", function () {
         const wrapper = document.getElementById('google_translate_element_wrapper');
         if (wrapper) {
             wrapper.classList.add('closed');
             wrapper.classList.remove('open');
             wrapper.setAttribute('aria-hidden', 'true');
+
+            // Accessibility fix: disable focus
+            const focusables = wrapper.querySelectorAll('[tabindex]');
+            focusables.forEach(el => el.setAttribute('tabindex', '-1'));
         }
+
         if (localStorage.getItem('preferredLang')) {
             loadGoogleTranslate();
             translateScriptLoaded = true;
