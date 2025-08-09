@@ -54,14 +54,11 @@ add_action("wp_head", function () {
     a:link {font-weight: bold; color: #1e73be;}
     a:link:hover {color: #c53030;}
 
-    /* TEXT & COLORS */
+    /* BODY TEXT BASICS */
 
-    /* Align Text */
     p {text-align: justify;}
-    /* Controlled Line Breaks */
     .br {display: none;}
     @media (max-width: 600px) {.br {display: block;}}
-    /* Font & Text Styles */
     .font-color-white {color: #d9d9d9;}
     .font-color-black {color: #192a3d;}
     @media (max-width: 992px) {.font-size-75 {font-size: 75%;}}
