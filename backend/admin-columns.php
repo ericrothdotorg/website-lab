@@ -266,6 +266,75 @@ function initialize_custom_admin_columns() {
         </style>';
     });
 
+    // === WP ALL USERS (ASGAROS FORUM IN WP) ===
+
+    // Add Columns
+    add_filter('manage_users_columns', function($columns) {
+        $columns['user_registered'] = 'Subscribed On';
+        $columns['email_domain'] = 'Email Domain';
+        return $columns;
+    });
+    add_filter('manage_users_custom_column', function($value, $column_name, $user_id) {
+        $user = get_userdata($user_id);
+        if ($column_name === 'user_registered') {
+            return date('Y-m-d H:i', strtotime($user->user_registered));
+        }
+        if ($column_name === 'email_domain') {
+            return substr(strrchr($user->user_email, "@"), 1);
+        }
+        return $value;
+    }, 10, 3);
+
+    // Make Columns sortable
+    add_filter('manage_users_sortable_columns', function($sortable_columns) {
+        $sortable_columns['user_registered'] = 'user_registered';
+        $sortable_columns['email_domain'] = 'email_domain';
+        return $sortable_columns;
+    });
+
+    // Apply Sorting
+    add_action('pre_get_users', function($query) {
+        if (!is_admin() || !$query->is_main_query()) return;
+        $orderby = $query->get('orderby');
+        if ($orderby === 'user_registered') {
+            $query->set('orderby', 'user_registered');
+        }
+        if ($orderby === 'email_domain') {
+            $query->set('meta_key', 'email_domain_sort');
+            $query->set('orderby', 'meta_value');
+        }
+    });
+
+    // Force initial Sort by latest Subscription Date
+    add_filter('users_list_table_query_args', function($args) {
+        if (!isset($_GET['orderby'])) {
+            $args['orderby'] = 'user_registered';
+            $args['order'] = 'DESC';
+        }
+        return $args;
+    });
+
+    // Use built-in Search Box to filter by E-mail Domain
+    add_action('parse_query', function($query) {
+        if (!is_admin() || !$query->is_main_query()) return;
+        if (!empty($_GET['s'])) {
+            $search = sanitize_text_field($_GET['s']);
+            $query->set('search', '*' . $search . '*');
+            $query->set('search_columns', ['user_email']);
+        }
+    });
+
+    // Store E-mail Domain for sorting
+    add_action('init', function() {
+        if (!is_admin()) return;
+
+        $users = get_users(['meta_key' => 'email_domain_sort', 'number' => -1]);
+        foreach ($users as $user) {
+            $domain = substr(strrchr($user->user_email, "@"), 1);
+            update_user_meta($user->ID, 'email_domain_sort', $domain);
+        }
+    });
+
 }
 
 add_action('admin_init', 'initialize_custom_admin_columns');
