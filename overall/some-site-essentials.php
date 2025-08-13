@@ -118,6 +118,23 @@ function is_asgaros_forum_upload() {
     );
 }
 
+// Asgaros Forum - Add HTML Code Tab for Admins only
+add_filter('wp_editor_settings', function($settings) {
+    if (current_user_can('administrator')) {
+        $settings['quicktags'] = true;
+    }
+    return $settings;
+});
+add_action('wp_head', function() {
+    if (current_user_can('administrator') && is_page('site-forum')) {
+        echo '<style>
+            .quicktags-toolbar {
+                display: none !important;
+            }
+        </style>';
+    }
+});
+
 // ----------------------------------------
 //  SHORTCODES
 // ----------------------------------------
@@ -208,21 +225,37 @@ add_action('init', function() {
 add_action('wp_footer', function () {
     ?>
 
-    <!-- Microsoft Clarity -->
+    <!-- MS Clarity & Google Tag Manager -->
     <script>
-        (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-        })(window, document, "clarity", "script", "eic7b2e9o1");
-    </script>
-
-    <!-- Google Tag Manager -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-X88D2RT23H"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-X88D2RT23H');
+    document.addEventListener('DOMContentLoaded', function () {
+        let loaded = false;
+        function loadAnalytics() {
+            if (loaded) return;
+            loaded = true;
+            // Load Microsoft Clarity
+            (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "eic7b2e9o1");
+            // Load Google Analytics
+            var s = document.createElement('script');
+            s.async = true;
+            s.src = "https://www.googletagmanager.com/gtag/js?id=G-X88D2RT23H";
+            document.head.appendChild(s);
+            s.onload = function() {
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                window.gtag = gtag;
+                gtag('js', new Date());
+                gtag('config', 'G-X88D2RT23H');
+            };
+        }
+        ['click','scroll','keydown','mousemove','touchstart'].forEach(function(event) {
+            window.addEventListener(event, loadAnalytics, { once: true, passive: true });
+        });
+        setTimeout(loadAnalytics, 5000);
+    });
     </script>
 
     <!-- Scroll Indicator -->
