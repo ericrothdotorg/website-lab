@@ -91,8 +91,82 @@ add_action('user_register', function($user_id) {
     }
 });
 
-/* AJAX Handler for Subscriptions */
+/* Reusable Function to check if an E-mail is disposable */
+function is_disposable_email($email) {
+    $domain = strtolower(substr(strrchr($email, "@"), 1));
+    $domain = trim(str_replace(['。', '․', '﹒', '｡'], '.', $domain));
+    $parts = explode('.', $domain);
+    $tld = array_pop($parts);
+    $sld = array_pop($parts);
+    $basename = $sld;
+    $full_without_tld = implode('.', array_merge($parts, [$sld]));
+    // Always enforced Custom List
+    $custom_list = [
+        "mailinator",
+        "guerrillamail",
+        "10minutemail",
+        "temp-mail",
+        "fakeinbox",
+        "perevozka24-7",
+        "registry.godaddy"
+    ];
+    $disposable_domains = get_transient('disposable_domains_list');
+    if ($disposable_domains === false) {
+        $remote_sources = [
+            'https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt',
+            'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json',
+            'https://raw.githubusercontent.com/FGRibreau/mailchecker/master/list.txt'
+        ];
+        $fetched = false;
+        foreach ($remote_sources as $source) {
+            $response = wp_remote_get($source, ['timeout' => 10]);
+            if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
+                $body = wp_remote_retrieve_body($response);
+                if (stripos($source, '.json') !== false) {
+                    $list = json_decode($body, true);
+                    if (is_array($list)) {
+                        $disposable_domains = array_map('strtolower', array_map('trim', $list));
+                        $fetched = true;
+                        break;
+                    }
+                } else {
+                    $disposable_domains = array_filter(array_map('trim', explode("\n", strtolower($body))));
+                    $fetched = true;
+                    break;
+                }
+            }
+        }
+        // If no Remote worked, use only Custom List
+        if (!$fetched) {
+            $disposable_domains = $custom_list;
+        } else {
+            // Merge Custom List with Remote List if fetched
+            $disposable_domains = array_merge($disposable_domains, $custom_list);
+        }
+        $disposable_domains = array_values(array_unique($disposable_domains));
+        set_transient('disposable_domains_list', $disposable_domains, DAY_IN_SECONDS);
+    }
+    foreach ($disposable_domains as $blocked) {
+        $pattern = '/(^|\.)' . preg_quote($blocked, '/') . '(\.|$)/i';
+        if (
+            preg_match($pattern, $domain) ||
+            preg_match($pattern, $full_without_tld) ||
+            preg_match($pattern, $basename)
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* AJAX Subscribe Handler */
 function ajax_subscribe_user() {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    $cooldown_key = 'subscribe_form_last_submit_' . md5($ip);
+    if (get_transient($cooldown_key)) {
+        wp_send_json_error(['message' => 'Please wait before trying again.']);
+    }
+    set_transient($cooldown_key, 1, 60); // 60 Seconds Cooldown
     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'subscribe_form_action')) {
         wp_send_json_error(['message' => 'Security check failed.']);
     }
@@ -106,9 +180,7 @@ function ajax_subscribe_user() {
     if (!isset($_POST['math_check']) || $_POST['math_check'] !== '7') {
         wp_send_json_error(['message' => 'Spam check failed.']);
     }
-    $domain = strtolower(substr(strrchr($email, "@"), 1));
-    $disposable_domains = ["mailinator.com", "guerrillamail.com", "10minutemail.com", "temp-mail.org", "fakeinbox.com"];
-    if (in_array($domain, $disposable_domains)) {
+    if (is_disposable_email($email)) {
         wp_send_json_error(['message' => 'Disposable E-mail addresses are not allowed.']);
     }
     global $wpdb;
@@ -134,6 +206,14 @@ function ajax_subscribe_user() {
 }
 add_action('wp_ajax_nopriv_subscribe_user', 'ajax_subscribe_user');
 add_action('wp_ajax_subscribe_user', 'ajax_subscribe_user');
+
+/* Hook into WP Registration Errors Filter (for Asgaros and WP Registrations) */
+add_filter('registration_errors', function($errors, $sanitized_user_login, $user_email) {
+    if (is_disposable_email($user_email)) {
+        $errors->add('disposable_email', __('Disposable E-mail addresses are not allowed.'));
+    }
+    return $errors;
+}, 10, 3);
 
 /* Handle Unsubscribe via Token */
 function handle_unsubscribe() {
