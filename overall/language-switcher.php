@@ -92,6 +92,7 @@ add_action('wp_footer', function () {
     function handleFlagClick(lang) {
         translatePage(lang);
         toggleLanguageFlags();
+        window.scrollTo(0, 0);
     }
 
     function translatePage(lang) {
