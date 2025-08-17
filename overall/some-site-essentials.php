@@ -119,21 +119,40 @@ function is_asgaros_forum_upload() {
 }
 
 // Asgaros Forum - Add HTML Code Tab for Admins only
+add_action('wp_enqueue_scripts', function() {
+    if (current_user_can('administrator') && is_page('site-forum')) {
+        wp_enqueue_script('jquery');
+        wp_enqueue_script('quicktags');
+        wp_enqueue_script('editor');
+        wp_enqueue_style('editor-buttons');
+    }
+});
 add_filter('wp_editor_settings', function($settings) {
-    if (current_user_can('administrator')) {
+    if (current_user_can('administrator') && is_page('site-forum')) {
         $settings['quicktags'] = true;
+        $settings['tinymce'] = true;
     }
     return $settings;
 });
-add_action('wp_head', function() {
+add_action('wp_footer', function() {
     if (current_user_can('administrator') && is_page('site-forum')) {
-        echo '<style>
-            .quicktags-toolbar {
-                display: none !important;
-            }
-        </style>';
+        echo '<script>
+            document.addEventListener("DOMContentLoaded", function() {
+                const toolbar = document.querySelector(".quicktags-toolbar");
+                if (toolbar) {
+                    toolbar.style.display = "none";
+                }
+            });
+        </script>';
     }
 });
+if (current_user_can('administrator') && is_page('site-forum')) {
+    wp_editor('', 'custom_editor_id', [
+        'textarea_name' => 'custom_editor',
+        'quicktags' => true,
+        'tinymce' => true,
+    ]);
+}
 
 // ----------------------------------------
 //  SHORTCODES
