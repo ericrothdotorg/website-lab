@@ -66,7 +66,7 @@ add_action('wp_footer', function () {
   }
 });
 
-/* ✅ HANDLE FORM SUBMISSIONS */
+/* HANDLE FORM SUBMISSIONS */
 
 add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'], $_POST['message'])) {
@@ -89,12 +89,21 @@ add_action('template_redirect', function () {
       ],
       ['%s', '%s', '%s', '%s']
     );
+  $admin_email = get_option('admin_email');
+  $subject_line = 'New Contact Form Submission';
+  $email_body = "Name: $name\n";
+  $email_body .= "Email: $email\n";
+  if (!empty($subject)) {
+    $email_body .= "Subject: $subject\n";
+  }
+  $email_body .= "Message:\n$message";
+  wp_mail($admin_email, $subject_line, $email_body);
     wp_redirect(add_query_arg('contact', 'success', wp_get_referer()));
     exit;
   }
 });
 
-/* ✅ AJAX HANDLER (for Confirmation Message) */
+/* AJAX HANDLER (for Confirmation Message) */
 
 add_action('wp_ajax_submit_contact_form_ajax', 'handle_contact_form_ajax');
 add_action('wp_ajax_nopriv_submit_contact_form_ajax', 'handle_contact_form_ajax');
@@ -122,10 +131,19 @@ function handle_contact_form_ajax() {
     ],
     ['%s', '%s', '%s', '%s']
   );
+  $admin_email = get_option('admin_email');
+  $subject_line = 'New Contact Form Submission';
+  $email_body = "Name: $name\n";
+  $email_body .= "Email: $email\n";
+  if (!empty($subject)) {
+    $email_body .= "Subject: $subject\n";
+  }
+  $email_body .= "Message:\n$message";
+  wp_mail($admin_email, $subject_line, $email_body);
   wp_send_json_success();
 }
 
-/* ✅ CREATE DATABASE TABLE TO STORE STUFF */
+/* CREATE DATABASE TABLE TO STORE STUFF */
 
 add_action('init', function () {
   if (!get_option('contact_messages_table_created')) {
@@ -147,7 +165,7 @@ add_action('init', function () {
   }
 });
 
-/* ✅ CREATE ADMIN MENU TO MANAGE MESSAGES */
+/* CREATE ADMIN MENU TO MANAGE MESSAGES */
 
 add_action('admin_menu', function () {
   add_menu_page(
