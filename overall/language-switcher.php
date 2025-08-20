@@ -37,7 +37,7 @@ add_action('wp_footer', function () {
         </div>
     </div>
     <div id="language-toggle" role="button" aria-label="Open Language Switcher" tabindex="0"
-        onclick="toggleLanguageFlags()"
+        title="Language Switcher" onclick="toggleLanguageFlags()"
         onkeydown="if(event.key === 'Enter' || event.key === ' ') toggleLanguageFlags();">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#FFFFFF"
             stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
@@ -128,7 +128,6 @@ add_action('wp_footer', function () {
             }, 500);
         }
     }
-
     let translateScriptLoaded = false;
 
     function loadGoogleTranslate() {
@@ -170,8 +169,6 @@ add_action('wp_footer', function () {
             wrapper.classList.remove('open');
             wrapper.classList.add('closed');
             wrapper.setAttribute('aria-hidden', 'true');
-
-            // Accessibility fix: disable focus
             const focusables = wrapper.querySelectorAll('[tabindex]');
             focusables.forEach(el => el.setAttribute('tabindex', '-1'));
         }
@@ -183,8 +180,6 @@ add_action('wp_footer', function () {
             wrapper.classList.add('closed');
             wrapper.classList.remove('open');
             wrapper.setAttribute('aria-hidden', 'true');
-
-            // Accessibility fix: disable focus
             const focusables = wrapper.querySelectorAll('[tabindex]');
             focusables.forEach(el => el.setAttribute('tabindex', '-1'));
         }
