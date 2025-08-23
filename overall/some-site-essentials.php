@@ -49,9 +49,9 @@ add_action('template_redirect', function () {
                 $count++;
                 $img = preg_replace('/\sloading=["\']lazy["\']/', '', $img);
                 $img = str_replace('<img', '<img fetchpriority="high"', $img);
-                $img = preg_replace('/sizes=["\'][^"\']*["\']/', 'sizes="(max-width:600px)100vw,(max-width:1024px)80vw,1000px"', $img);
+                $img = preg_replace('/sizes=["\'][^"\']*["\']/', 'sizes="(max-width: 600px)100vw,(max-width: 1024px)80vw,1000px"', $img);
                 if (!strpos($img, 'sizes=')) {
-                    $img = str_replace('<img', '<img sizes="(max-width:600px)100vw,(max-width:1024px)80vw,1000px"', $img);
+                    $img = str_replace('<img', '<img sizes="(max-width: 600px)100vw,(max-width: 1024px)80vw,1000px"', $img);
                 }
             }
             return $img;
@@ -93,66 +93,6 @@ add_action('wp_head', function () {
     <link rel="dns-prefetch" href="https://secure.gravatar.com">
     ';
 });
-
-// Asgaros Forum - Self-limit its Effect to Forum-related Uploads on Forum Page only
-add_filter('upload_dir', function ($dirs) {
-    if (is_asgaros_forum_upload()) {
-        $dirs['subdir'] = '/asgaros' . $dirs['subdir'];
-        $dirs['path'] = $dirs['basedir'] . $dirs['subdir'];
-        $dirs['url']  = $dirs['baseurl'] . $dirs['subdir'];
-    }
-    return $dirs;
-});
-add_action('add_attachment', function ($attachment_id) {
-    if (is_asgaros_forum_upload()) {
-        wp_set_object_terms($attachment_id, 63, 'rml-folder'); // Real Media Library Folder ID 63
-    }
-});
-function is_asgaros_forum_upload() {
-    $referer = $_SERVER['HTTP_REFERER'] ?? '';
-    $request = $_SERVER['REQUEST_URI'] ?? '';
-    return (
-        strpos($referer, 'asgarosforum') !== false ||
-        strpos($request, 'asgarosforum') !== false ||
-        (defined('DOING_AJAX') && DOING_AJAX && !empty($_POST['action']) && strpos($_POST['action'], 'asgaros') !== false)
-    );
-}
-
-// Asgaros Forum - Add HTML Code Tab for Admins only
-add_action('wp_enqueue_scripts', function() {
-    if (current_user_can('administrator') && is_page('site-forum')) {
-        wp_enqueue_script('jquery');
-        wp_enqueue_script('quicktags');
-        wp_enqueue_script('editor');
-        wp_enqueue_style('editor-buttons');
-    }
-});
-add_filter('wp_editor_settings', function($settings) {
-    if (current_user_can('administrator') && is_page('site-forum')) {
-        $settings['quicktags'] = true;
-        $settings['tinymce'] = true;
-    }
-    return $settings;
-});
-add_action('wp_footer', function() {
-    if (current_user_can('administrator') && is_page('site-forum')) {
-        echo '<script>
-            document.addEventListener("DOMContentLoaded", function() {
-                const toolbar = document.querySelector(".quicktags-toolbar");
-                if (toolbar) {
-                    toolbar.style.display = "none";
-                }
-            });
-        </script>';
-    }
-});
-if (current_user_can('administrator') && is_page('site-forum')) {
-    wp_editor('', 'custom_editor_id', [
-        'textarea_name' => 'custom_editor',
-        'quicktags' => true,
-        'tinymce' => true,
-    ]);
-}
 
 // ----------------------------------------
 //  SHORTCODES
@@ -225,6 +165,8 @@ add_filter('the_content', function($content) {
 add_action('init', function() {
     $redirects = [
         '/contact-me' => '/about-me/contact/',
+        '/consulting/' => '/professional/',
+        '/services/' => '/professional/',
         '/my-background' => '/professional/my-background/',
         '/my-traits/' => '/professional/my-background/my-traits/',
         '/my-blog/' => '/personal/my-blog/',
