@@ -59,26 +59,39 @@ add_action('wp', function () {
                (defined('DOING_AJAX') && DOING_AJAX && !empty($_POST['action']) && strpos($_POST['action'], 'asgaros') !== false);
     }
 
-    // Editor Configuration Based on Role
+    // Load Editor Scripts for Everyone
     add_action('wp_enqueue_scripts', function () {
         wp_enqueue_script('jquery');
         wp_enqueue_script('editor');
         wp_enqueue_style('editor-buttons');
-
-        if (current_user_can('administrator')) {
-            wp_enqueue_script('quicktags');
-        }
+        wp_enqueue_script('quicktags');
     });
 
+    // Enable TinyMCE and Quicktags for All Users
     add_filter('wp_editor_settings', function ($settings, $editor_id) {
-        $settings['tinymce'] = true;
-        $settings['quicktags'] = current_user_can('administrator');
+        $settings['tinymce']   = true;
+        $settings['quicktags'] = true;
         return $settings;
     }, 10, 2);
 
-    // Post-render Adjustments for Editor Behavior
+    // Inject Editor into Asgaros Forum Post Form
+    add_filter('asgarosforum_custom_editor', function ($content) {
+        ob_start();
+        wp_editor('', 'asgaros_editor', [
+            'textarea_name' => 'asgaros_content',
+            'media_buttons' => false,
+            'tinymce'       => true,
+            'quicktags'     => true,
+        ]);
+        return ob_get_clean();
+    });
+
+    // Role-Based UI Adjustments
     add_action('wp_footer', function () {
+        if (!is_page(140735)) return;
+
         if (current_user_can('administrator')) {
+            // Admins: Keep both Tabs, show Toolbar dynamically
             echo '<script>
                 document.addEventListener("DOMContentLoaded", function () {
                     const wrapper = document.querySelector("#af-wrapper");
@@ -96,14 +109,11 @@ add_action('wp', function () {
                 });
             </script>';
         } else {
+            // Non-admins: Remove "Code" Tab, keep Toolbar
             echo '<script>
                 document.addEventListener("DOMContentLoaded", function () {
-                    setTimeout(function () {
-                        if (typeof tinyMCE === "undefined" || !tinyMCE.activeEditor) {
-                            document.querySelectorAll("#af-wrapper .wp-editor-tabs, #af-wrapper .mce-tinymce").forEach(el => el.remove());
-                            document.querySelectorAll("#af-wrapper textarea.wp-editor-area").forEach(el => el.style.display = "block");
-                        }
-                    }, 1000);
+                    const codeTab = document.querySelector("#af-wrapper .wp-editor-tabs .switch-html");
+                    if (codeTab) codeTab.remove();
                 });
             </script>';
         }
