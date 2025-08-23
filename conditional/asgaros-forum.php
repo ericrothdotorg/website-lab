@@ -31,10 +31,8 @@ add_action('wp', function () {
             #af-wrapper .button-red {color: #FFFFFF; background: #c53030;}
             #af-wrapper .button-red:hover {color: #FFFFFF;}
             #af-wrapper .button-normal {color: #FFFFFF; background: #1e73be;}
-            #af-wrapper .button-normal:hover {background: #c53030;}
         </style>';
     });
-
     // Restrict Uploads to Asgaros Forum Context
     add_filter('upload_dir', function ($dirs) {
         if (!is_asgaros_forum_upload()) return $dirs;
@@ -44,13 +42,12 @@ add_action('wp', function () {
         $dirs['url']    = $dirs['baseurl'] . $dirs['subdir'];
         return $dirs;
     });
-
     add_action('add_attachment', function ($attachment_id) {
         if (is_asgaros_forum_upload()) {
             wp_set_object_terms($attachment_id, 63, 'rml-folder'); // Media Folder Number 63
         }
     });
-
+    // Gatekeeper to detect if the Request is forum-related to conditionally allow Uploads
     function is_asgaros_forum_upload(): bool {
         $referer = $_SERVER['HTTP_REFERER'] ?? '';
         $request = $_SERVER['REQUEST_URI'] ?? '';
@@ -58,24 +55,26 @@ add_action('wp', function () {
                strpos($request, 'asgarosforum') !== false ||
                (defined('DOING_AJAX') && DOING_AJAX && !empty($_POST['action']) && strpos($_POST['action'], 'asgaros') !== false);
     }
-
-    // Load Editor Scripts for Everyone
+    // Load Quicktags Script only for Admins — Required for "Code" Tab
     add_action('wp_enqueue_scripts', function () {
-        wp_enqueue_script('jquery');
-        wp_enqueue_script('editor');
-        wp_enqueue_style('editor-buttons');
-        wp_enqueue_script('quicktags');
+        if (current_user_can('administrator')) {
+            wp_enqueue_script('jquery');
+            wp_enqueue_script('editor');
+            wp_enqueue_style('editor-buttons');
+            wp_enqueue_script('quicktags');
+        }
     });
-
-    // Enable TinyMCE and Quicktags for All Users
+    // Enable Quicktags only for Admins — Ensures "Code" Tab appears
     add_filter('wp_editor_settings', function ($settings, $editor_id) {
-        $settings['tinymce']   = true;
-        $settings['quicktags'] = true;
+        if (current_user_can('administrator')) {
+            $settings['tinymce']   = true;
+            $settings['quicktags'] = true;
+        }
         return $settings;
     }, 10, 2);
-
-    // Inject Editor into Asgaros Forum Post Form
+    // Inject Editor only for Admins — Ensures full Editor with "Code" Tab
     add_filter('asgarosforum_custom_editor', function ($content) {
+        if (!current_user_can('administrator')) return $content;
         ob_start();
         wp_editor('', 'asgaros_editor', [
             'textarea_name' => 'asgaros_content',
@@ -85,7 +84,6 @@ add_action('wp', function () {
         ]);
         return ob_get_clean();
     });
-
     // Role-Based UI Adjustments
     add_action('wp_footer', function () {
         if (!is_page(140735)) return;
