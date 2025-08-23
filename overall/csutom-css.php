@@ -129,26 +129,12 @@ add_action("wp_footer", function () {
 
     /* Country Icons */
     .flex-item-country-icons {flex: 0 0 60px;}
-    /* Asgaros Forum */
-    #af-wrapper a {color: #1e73be;}
-    #af-wrapper a:hover {color: #c53030; text-decoration: none;}
-    #af-wrapper #forum-header {background: #3A4F66;}
-    #af-wrapper #forum-navigation a, #af-wrapper #forum-navigation-mobile a {border-left: none; font-weight: bold;}
-    #af-wrapper #forum-navigation .home-link:hover, .profile-link:hover, .members-link:hover, .subscriptions-link:hover, .activity-link:hover, .logout-link:hover {background: #192a3d;}
-    #af-wrapper #forum-breadcrumbs {color: #3A4F66 !important; padding-top: 10px;}
-    #af-wrapper #forum-breadcrumbs a {color: #1e73be !important;}
-    #af-wrapper #forum-breadcrumbs a:hover {color: #c53030 !important;}
-    #af-wrapper .title-element {background: #3A4F66; border-bottom: none; border-radius: 0px 0px 0px 0px;}
-    #af-wrapper .read {color: #3A4F66;}
-    #af-wrapper .forum-title {font-weight: bold !important;}
-    #af-wrapper .forum-stats {background: none !important; border: none !important}
 
     /* NAVIGATION */
 
     /* Exclude from Page List Block */
     .wp-block-page-list > li:nth-child(2),
-    .wp-block-page-list > li:nth-child(3),
-    .wp-block-page-list > li:nth-child(5) > ul > li:nth-child(4) > ul > li:nth-child(2) {display: none;}
+    .wp-block-page-list > li:nth-child(3) {display: none;}
     /* Navigate with Pages */
     .page-links {padding-bottom: 50px;}
     .page-links a,
@@ -168,6 +154,8 @@ add_action("wp_footer", function () {
     .two-columns {width: 49%;}
     .two-columns:first-child {margin-right: 1%;}
     .two-columns:last-child {margin-left: 1%;}
+    .column-33 { flex-basis: 33.33% !important; }
+    .column-66 { flex-basis: 66.66% !important; }
     /* MEDIA SCREEN Columns */
     @media (max-width: 600px) {.block-editor-two-columns {margin-top: 25px;}}
     @media (max-width: 768px) {
@@ -241,13 +229,16 @@ add_action("wp_footer", function () {
       border-right: 3px solid #cccccc;
       border-radius: 10px;
     }
-    .wp-block-quote p {text-align: justify; font-family: Georgia, 'Times New Roman', Times, serif; font-style: italic; color: #339966;}
+    .wp-block-quote p, .wp-block-quote ul, .wp-block-quote li {text-align: justify; font-family: Georgia, 'Times New Roman', Times, serif; font-style: italic; color: #339966;}
     .wp-block-quote cite {position: absolute; right: 25px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 1rem;}
     :root :where(.is-layout-flow) > :last-child.wp-block-quote {margin-block-end: 25px;}
     figure.wp-block-pullquote {position: relative; max-width: fit-content; margin: -25px 0 0 0; border: none;}
     .wp-block-pullquote blockquote {border-inline-start: none !important;}
     .wp-block-pullquote blockquote p {text-align: left; font-family: Georgia, 'Times New Roman', Times, serif; font-weight: normal; color: #339966;}
     .wp-block-pullquote blockquote cite {position: absolute; right: 25px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 1rem;}
+    /* Styling for My Quotes*/
+    .quote-text p, .quote-text ul, .quote-text li {font-size: clamp(1rem, 1.25vw + 0.5rem, 1.25rem);}
+    .quote-text ul, .quote-text li {margin-left: -15px;}
 
     /* TAG CLOUDS */
 
