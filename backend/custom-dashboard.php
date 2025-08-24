@@ -155,14 +155,37 @@ function initialize_custom_dashboard() {
                 SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta
                 WHERE meta_key = 'dislikes'
             ");
-
-            echo '<ul style="font-size: 14px; line-height: 1.6;">';
+            echo '<ul style="font-size: 14px; line-height: 1.5;">';
             echo '<li>🧍 Subscribers: <strong>' . intval($subs_today) . '</strong> today / <strong>' . $format_count($subs_total) . '</strong> total</li>';
             echo '<li>📬 Contact Messages: <strong>' . intval($contact_today) . '</strong> today / <strong>' . $format_count($contact_total) . '</strong> total</li>';
             echo '<li>💬 Forum Posts: <strong>' . intval($forum_today) . '</strong> today / <strong>' . $format_count($forum_total) . '</strong> total</li>';
             echo '<li>👍 Likes: <strong>' . intval($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</li>';
             echo '<li>👎 Dislikes: <strong>' . intval($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</li>';
             echo '</ul>';
+            // Today's 👍 Liked / 👎 Disliked Content
+            $recent_engagement = $wpdb->get_results("
+                SELECT post_id, meta_key, meta_value 
+                FROM {$wpdb->prefix}postmeta 
+                WHERE meta_key IN ('like_timestamp', 'dislike_timestamp') 
+                AND DATE(meta_value) = CURDATE()
+                ORDER BY meta_value DESC
+            ");
+            if ($recent_engagement) {
+                echo '<h4 style="margin-top: 25px;">Today\'s Liked / Disliked Content</h4>';
+                echo '<ul style="font-size: 14px; line-height: 1.5;">';
+                foreach ($recent_engagement as $row) {
+                    $post_id = intval($row->post_id);
+                    $post = get_post($post_id);
+                    if ($post) {
+                        $type = get_post_type($post_id);
+                        $title = esc_html(get_the_title($post_id));
+                        $action = $row->meta_key === 'like_timestamp' ? '👍 Liked' : '👎 Disliked';
+                        $view_link = get_permalink($post_id);
+                        echo "<li>{$action}: <a href='{$view_link}' target='_blank'><strong>{$title}</strong></a> <em>({$type})</em></li>";
+                    }
+                }
+                echo '</ul>';
+            }
         });
     });
 
