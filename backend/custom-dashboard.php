@@ -162,26 +162,34 @@ function initialize_custom_dashboard() {
             echo '<li>👍 Likes: <strong>' . intval($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</li>';
             echo '<li>👎 Dislikes: <strong>' . intval($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</li>';
             echo '</ul>';
-            // Today's 👍 Liked / 👎 Disliked Content
-            $recent_engagement = $wpdb->get_results("
-                SELECT post_id, meta_key, meta_value 
-                FROM {$wpdb->prefix}postmeta 
-                WHERE meta_key IN ('like_timestamp', 'dislike_timestamp') 
+            // Today's 👍 Liked / 👎 Disliked Content (Aggregated)
+            $engagement_summary = $wpdb->get_results("
+                SELECT post_id,
+                    SUM(CASE WHEN meta_key = 'like_timestamp' THEN 1 ELSE 0 END) AS likes,
+                    SUM(CASE WHEN meta_key = 'dislike_timestamp' THEN 1 ELSE 0 END) AS dislikes
+                FROM {$wpdb->prefix}postmeta
+                WHERE meta_key IN ('like_timestamp', 'dislike_timestamp')
                 AND DATE(meta_value) = CURDATE()
-                ORDER BY meta_value DESC
+                GROUP BY post_id
+                ORDER BY MAX(meta_value) DESC
             ");
-            if ($recent_engagement) {
+            if ($engagement_summary) {
                 echo '<h4 style="margin-top: 25px;">Today\'s Liked / Disliked Content</h4>';
                 echo '<ul style="font-size: 14px; line-height: 1.5;">';
-                foreach ($recent_engagement as $row) {
+                foreach ($engagement_summary as $row) {
                     $post_id = intval($row->post_id);
                     $post = get_post($post_id);
                     if ($post) {
                         $type = get_post_type($post_id);
                         $title = esc_html(get_the_title($post_id));
-                        $action = $row->meta_key === 'like_timestamp' ? '👍 Liked' : '👎 Disliked';
                         $view_link = get_permalink($post_id);
-                        echo "<li>{$action}: <a href='{$view_link}' target='_blank'><strong>{$title}</strong></a> <em>({$type})</em></li>";
+                        $likes = intval($row->likes);
+                        $dislikes = intval($row->dislikes);
+                        $summary = [];
+                        if ($likes > 0) $summary[] = "👍 <strong>{$likes}</strong>";
+                        if ($dislikes > 0) $summary[] = "👎 <strong>{$dislikes}</strong>";
+                        $summary_text = implode(' / ', $summary);
+                        echo "<li>{$summary_text} → <a href='{$view_link}' target='_blank'><strong>{$title}</strong></a> <em>({$type})</em></li>";
                     }
                 }
                 echo '</ul>';
