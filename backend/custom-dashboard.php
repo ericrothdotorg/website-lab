@@ -129,6 +129,14 @@ function initialize_custom_dashboard() {
             $contact_total = $wpdb->get_var("
                 SELECT COUNT(*) FROM {$wpdb->prefix}contact_messages
             ");
+            // 🙋 Forum Users (Asgaros)
+            $forum_users_today = $wpdb->get_var("
+                SELECT COUNT(*) FROM {$wpdb->users}
+                WHERE DATE(user_registered) = CURDATE()
+            ");
+            $forum_users_total = $wpdb->get_var("
+                SELECT COUNT(*) FROM {$wpdb->users}
+            ");
             // 💬 Forum Posts (Asgaros)
             $forum_today = $wpdb->get_var("
                 SELECT COUNT(*) FROM {$wpdb->prefix}forum_posts
@@ -158,6 +166,7 @@ function initialize_custom_dashboard() {
             echo '<ul style="font-size: 14px; line-height: 1.5;">';
             echo '<li>🧍 Subscribers: <strong>' . intval($subs_today) . '</strong> today / <strong>' . $format_count($subs_total) . '</strong> total</li>';
             echo '<li>📬 Contact Messages: <strong>' . intval($contact_today) . '</strong> today / <strong>' . $format_count($contact_total) . '</strong> total</li>';
+            echo '<li>🙋 Forum Users: <strong>' . intval($forum_users_today) . '</strong> today / <strong>' . $format_count($forum_users_total) . '</strong> total</li>';
             echo '<li>💬 Forum Posts: <strong>' . intval($forum_today) . '</strong> today / <strong>' . $format_count($forum_total) . '</strong> total</li>';
             echo '<li>👍 Likes: <strong>' . intval($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</li>';
             echo '<li>👎 Dislikes: <strong>' . intval($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</li>';
