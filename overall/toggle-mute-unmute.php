@@ -1,15 +1,15 @@
 <?php
 add_action('wp_footer', function () {
     ?>
+    <!-- Preload for faster fetch if likely to be used -->
+    <link rel="preload" href="https://unpkg.com/ttsreader-plugin/main.js" as="script">
+
     <style>
         #tts-toggle-btn {
             align-items: center;
-            padding-top: 2.5px;
-            padding-left: 2.5px;
+            padding: 2.5px 0 0 2.5px;
         }
-        #tts-toggle-btn input[type='checkbox'] {
-            display: none;
-        }
+        #tts-toggle-btn input[type='checkbox'] { display: none; }
         #tts-toggle-btn label {
             background: #3A4F66;
             border: 1px solid #192a3d;
@@ -18,96 +18,72 @@ add_action('wp_footer', function () {
             display: inline-block;
             position: relative;
             transition: all 0.3s;
-            width: 50px;
-            height: 25px;
+            width: 50px; height: 25px;
         }
         #tts-toggle-btn label::after {
             background: #192a3d;
             border-radius: 50%;
             content: '';
             position: absolute;
-            left: 1px;
-            top: 1px;
+            left: 1px; top: 1px;
             transition: all 0.3s;
-            width: 21px;
-            height: 21px;
+            width: 21px; height: 21px;
         }
-        #tts-toggle-btn input[type='checkbox']:checked ~ label {
-            background: #0f1924;
-            border-color: #3A4F66;
+        #tts-toggle-btn input:checked ~ label {
+            background: #0f1924; border-color: #3A4F66;
         }
-        #tts-toggle-btn input[type='checkbox']:checked ~ label::after {
-            background: #3A4F66;
-            transform: translateX(25px);
+        #tts-toggle-btn input:checked ~ label::after {
+            background: #3A4F66; transform: translateX(25px);
         }
-        #tts-toggle-btn label:focus-visible {
-            outline: 2px solid #fff;
-            outline-offset: 2px;
-        }
+        #tts-toggle-btn label:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
         .tts-toggle-btn-accessibility-label {
-            position: absolute;
-            left: -9999px;
-            width: 1px;
-            height: 1px;
-            overflow: hidden;
+            position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;
         }
-        .TTSPlugin-Playback-buttons-bar > span {
-            border: none;
-        }
-        .TTSPlugin-Playback-buttons-bar button:hover svg {
-            fill: #c53030;
-        }
-        .TTSPlugin .Play-btn {
-            border-left: 1px solid #3A4F66;
-            border-right: 1px solid #3A4F66;
-        }
-        .TTSPlugin .Play-btn:hover {
-            border: 1px solid #3A4F66;
-        }
+        .TTSPlugin-Playback-buttons-bar > span { border: none; }
+        .TTSPlugin-Playback-buttons-bar button:hover svg { fill: #c53030; }
+        .TTSPlugin .Play-btn { border-left: 1px solid #3A4F66; border-right: 1px solid #3A4F66; }
+        .TTSPlugin .Play-btn:hover { border: 1px solid #3A4F66; }
     </style>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', () => {
         const ttsToggleSwitch = document.getElementById('tts-toggle-switch');
         const ttsScriptUrl = "https://unpkg.com/ttsreader-plugin/main.js";
+        let cachedPauseBtn, cachedPlayBtn;
 
-        function setTTSState(state) {
-            localStorage.setItem('ttsState', state);
-        }
+        const setTTSState = state => localStorage.setItem('ttsState', state);
 
-        function loadTTSReader() {
+        const loadTTSReader = () => {
             if (document.querySelector(`script[src="${ttsScriptUrl}"]`)) return;
             const script = document.createElement('script');
             script.src = ttsScriptUrl;
             script.defer = true;
             script.onload = () => {
                 const interval = setInterval(() => {
-                    const pauseBtn = document.querySelector('.TTSPlugin .Pause-btn');
-                    const playBtn = document.querySelector('.TTSPlugin .Play-btn');
-                    const ttsState = localStorage.getItem('ttsState');
-                    if (ttsState === 'paused' && pauseBtn && window.speechSynthesis.speaking) {
-                        pauseBtn.click();
+                    cachedPauseBtn = cachedPauseBtn || document.querySelector('.TTSPlugin .Pause-btn');
+                    cachedPlayBtn  = cachedPlayBtn  || document.querySelector('.TTSPlugin .Play-btn');
+                    const state = localStorage.getItem('ttsState');
+                    if (state === 'paused' && cachedPauseBtn && window.speechSynthesis.speaking) {
+                        cachedPauseBtn.click();
                         clearInterval(interval);
                     }
-                    if (ttsState !== 'paused' && playBtn) {
+                    if (state !== 'paused' && cachedPlayBtn) {
                         clearInterval(interval);
                     }
-                }, 300);
-                setTimeout(() => clearInterval(interval), 6000);
+                }, 100);
+                setTimeout(() => clearInterval(interval), 5000);
             };
             document.body.appendChild(script);
-        }
+        };
 
-        function unloadTTSReader() {
-            const script = document.querySelector(`script[src="${ttsScriptUrl}"]`);
-            const ttsUI = document.querySelector('.TTSPlugin');
-            if (script) script.remove();
-            if (ttsUI) ttsUI.remove();
+        const unloadTTSReader = () => {
+            document.querySelector(`script[src="${ttsScriptUrl}"]`)?.remove();
+            document.querySelector('.TTSPlugin')?.remove();
             localStorage.removeItem('ttsActive');
             localStorage.removeItem('ttsState');
-        }
+        };
 
-        function toggleTTS() {
+        const toggleTTS = () => {
             if (localStorage.getItem('ttsActive')) {
                 unloadTTSReader();
                 ttsToggleSwitch.checked = false;
@@ -119,18 +95,15 @@ add_action('wp_footer', function () {
                 ttsToggleSwitch.checked = true;
                 ttsToggleSwitch.setAttribute('aria-checked', 'true');
             }
-        }
+        };
 
         window.addEventListener('beforeunload', () => {
-            try { window.speechSynthesis.cancel(); } catch (e) {}
+            try { speechSynthesis.cancel(); } catch {}
         });
 
-        document.addEventListener('click', function (e) {
-            if (e.target.closest('.TTSPlugin .Play-btn')) {
-                setTTSState('playing');
-            } else if (e.target.closest('.TTSPlugin .Pause-btn')) {
-                setTTSState('paused');
-            }
+        document.addEventListener('click', e => {
+            if (e.target.closest('.TTSPlugin .Play-btn'))  setTTSState('playing');
+            if (e.target.closest('.TTSPlugin .Pause-btn')) setTTSState('paused');
         });
 
         if (ttsToggleSwitch) {
