@@ -52,6 +52,7 @@ function tts_toggle_button_shortcode() {
       overflow: hidden;
     }
   </style>
+
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       let isSpeaking = false;
@@ -59,19 +60,27 @@ function tts_toggle_button_shortcode() {
       const statusEl = document.getElementById('tts-status');
       const labelEl = document.querySelector("label[for='tts-toggle-switch']");
 
+      labelEl.setAttribute('role', 'switch');
+      statusEl.setAttribute('aria-live', 'polite');
+
       function getReadableText() {
         const main = document.querySelector('main');
         if (!main) return '';
-
         const clone = main.cloneNode(true);
-        clone.querySelectorAll('nav, aside, footer, header, button, a, svg, img, iframe, .social-icons, .share-buttons').forEach(el => el.remove());
+        clone.querySelectorAll('nav, aside, footer, header, style, script, select, code, svg, img, iframe, .social-icons, .share-buttons, .tag-cloud, .like-dislike-container, .slick-arrow, .slick-cloned').forEach(el => el.remove());
+        clone.querySelectorAll('a, button').forEach(el => {
+          const text = document.createTextNode(el.textContent);
+          el.replaceWith(text);
+        });
         return clone.innerText.trim();
       }
 
       function speakContent() {
         const text = getReadableText();
-        if (text.length < 10) return;
-
+        if (text.length < 10) {
+          statusEl.textContent = 'No readable content found.';
+          return;
+        }
         const utterance = new SpeechSynthesisUtterance(text);
         speechSynthesis.speak(utterance);
         isSpeaking = true;
@@ -119,3 +128,4 @@ function tts_toggle_button_shortcode() {
   return ob_get_clean();
 }
 add_shortcode('tts_toggle', 'tts_toggle_button_shortcode');
+?>
