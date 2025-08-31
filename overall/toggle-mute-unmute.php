@@ -17,6 +17,7 @@ add_action('wp_footer', function() {
   ?>
   <script>
   document.addEventListener('DOMContentLoaded', function () {
+
     // === TTS Toggle Setup ===
     function setupTTSToggle() {
       const toggleSwitch = document.getElementById('tts-toggle-switch');
@@ -47,9 +48,10 @@ add_action('wp_footer', function() {
       }
       window.addEventListener('beforeunload', stopSpeaking);
     }
+
     // === TTS Content Extraction ===
     function getReadableText() {
-      const main = document.querySelector('main');
+      const main = document.querySelector('main') || document.body;
       if (!main) return '';
       const clone = main.cloneNode(true);
       clone.querySelectorAll('nav,aside,footer,header,style,script,select,code,svg,img,iframe,.social-icons,.share-buttons,.tag-cloud,.like-dislike-container,.slick-arrow,.slick-cloned').forEach(el => el.remove());
@@ -59,23 +61,91 @@ add_action('wp_footer', function() {
       });
       return clone.innerText.trim();
     }
+
     // === TTS Speak & Stop ===
-    function speakContent() {
-      const text = getReadableText();
-      const statusEl = document.getElementById('tts-status');
-      if (text.length < 10) {
-        statusEl.textContent = 'No readable content found.';
-        return;
+    (function() {
+      let voicesLoaded = false;
+      let ttsTimeout;
+      // Wait for voices to load reliably
+      function waitForVoices(callback) {
+        const voices = speechSynthesis.getVoices();
+        if (voices.length) {
+          callback(voices);
+        } else {
+          speechSynthesis.onvoiceschanged = () => {
+            const loadedVoices = speechSynthesis.getVoices();
+            if (loadedVoices.length) {
+              callback(loadedVoices);
+            }
+          };
+        }
       }
-      const utterance = new SpeechSynthesisUtterance(text);
-      speechSynthesis.speak(utterance);
-      statusEl.textContent = 'Text-to-speech started.';
-    }
-    function stopSpeaking() {
-      speechSynthesis.cancel();
-      const statusEl = document.getElementById('tts-status');
-      if (statusEl) statusEl.textContent = 'Text-to-speech stopped.';
-    }
+      // Start speaking
+      window.speakContent = function() {
+        clearTimeout(ttsTimeout);
+        ttsTimeout = setTimeout(() => {
+          const text = getReadableText();
+          const statusEl = document.getElementById('tts-status');
+          if (!statusEl) return;
+          if (text.length < 10) {
+            statusEl.textContent = 'No readable content found.';
+            return;
+          }
+          const speak = () => {
+            speechSynthesis.cancel(); // Stop any ongoing Speech
+            const utterance = new SpeechSynthesisUtterance(text);
+            // Language mapping based on Flag Selections
+            const langMap = {
+              'ar': 'ar-SA', 'id': 'id-ID', 'zh-CN': 'zh-CN', 'da': 'da-DK',
+              'de': 'de-DE', 'es': 'es-ES', 'fr': 'fr-FR', 'hi': 'hi-IN',
+              'it': 'it-IT', 'ja': 'ja-JP', 'ko': 'ko-KR', 'no': 'no-NO',
+              'ru': 'ru-RU', 'fi': 'fi-FI', 'sv': 'sv-SE', 'tl': 'tl-PH',
+              'th': 'th-TH', 'tr': 'tr-TR', 'vi': 'vi-VN', 'en': 'en-US'
+            };
+            const rawLang = localStorage.getItem('preferredLang') || 'en';
+            const langCode = langMap[rawLang] || 'en-US';
+            utterance.lang = langCode;
+            // Match voice explicitly after voices are loaded
+            waitForVoices(voices => {
+              const matchedVoice = voices.find(v => v.lang === langCode);
+              if (matchedVoice) {
+                utterance.voice = matchedVoice;
+              }
+              // Feedback Handlers
+              utterance.onstart = () => {
+                statusEl.textContent = 'Text-to-speech started.';
+              };
+              utterance.onend = () => {
+                statusEl.textContent = 'Text-to-speech finished.';
+              };
+              utterance.onerror = () => {
+                statusEl.textContent = 'Error occurred during speech.';
+              };
+              speechSynthesis.speak(utterance);
+            });
+          };
+          // Ensure Voices are loaded before speaking
+          if (!voicesLoaded && speechSynthesis.getVoices().length === 0) {
+            speechSynthesis.onvoiceschanged = () => {
+              if (!voicesLoaded && speechSynthesis.getVoices().length > 0) {
+                voicesLoaded = true;
+                speak();
+              }
+            };
+          } else {
+            voicesLoaded = true;
+            speak();
+          }
+        }, 300);
+      };
+      // Stop speaking
+      window.stopSpeaking = function() {
+        speechSynthesis.cancel();
+        const statusEl = document.getElementById('tts-status');
+        if (statusEl) statusEl.textContent = 'Text-to-speech stopped.';
+      };
+    })();
+
     // === TTS Cue for Display Posts ===
     function insertDisplayPostsCue() {
       const displayPostsBlocks = document.querySelectorAll('.display-posts-listing');
@@ -88,6 +158,7 @@ add_action('wp_footer', function() {
         displayPosts.parentNode.insertBefore(cue, displayPosts);
       });
     }
+
     // === TTS Cue for YouTube Embeds ===
     function insertYouTubeCue() {
       const youtubeEmbeds = document.querySelectorAll('.wp-block-embed-youtube');
@@ -101,6 +172,7 @@ add_action('wp_footer', function() {
         embed.parentNode.insertBefore(cue, embed);
       });
     }
+
     // === Initialize All Modules ===
     setupTTSToggle();
     insertDisplayPostsCue();
@@ -109,4 +181,5 @@ add_action('wp_footer', function() {
   </script>
   <?php
 });
+
 ?>
