@@ -242,6 +242,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+document.addEventListener('DOMContentLoaded', function() {
+    const displayPosts = document.querySelector('.display-posts-listing');
+    if (displayPosts) {
+        const ttsAnnounce = document.createElement('div');
+        ttsAnnounce.textContent = 'Queried content coming up: Click to go to that post. ';
+        ttsAnnounce.setAttribute('aria-live', 'polite');
+        ttsAnnounce.style.position = 'absolute';
+        ttsAnnounce.style.left = '-9999px';
+        displayPosts.insertBefore(ttsAnnounce, displayPosts.firstChild);
+    }
+});
 </script>
 
 <?php });
