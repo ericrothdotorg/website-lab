@@ -54,7 +54,7 @@ add_action('wp_footer', function() {
       const main = document.querySelector('main') || document.body;
       if (!main) return '';
       const clone = main.cloneNode(true);
-      clone.querySelectorAll('nav,aside,footer,header,style,script,select,code,svg,img,iframe,.social-icons,.share-buttons,.tag-cloud,.like-dislike-container,.slick-arrow,.slick-cloned').forEach(el => el.remove());
+      clone.querySelectorAll('nav,aside,footer,header,style,script,select,code,svg,img,iframe,.social-icons,.share-buttons,.tag-cloud,.like-dislike-container,.slick-arrow,.slick-dots,.slick-cloned').forEach(el => el.remove());
       clone.querySelectorAll('a,button').forEach(el => {
         const text = document.createTextNode(el.textContent);
         el.replaceWith(text);
