@@ -16,170 +16,171 @@ add_action('wp_head', function() {
 add_action('wp_footer', function() {
   ?>
   <script>
-  document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function () {
 
-    // === TTS Toggle Setup ===
-    function setupTTSToggle() {
-      const toggleSwitch = document.getElementById('tts-toggle-switch');
-      const statusEl = document.getElementById('tts-status');
-      const labelEl = document.getElementById('tts-toggle-label');
-      const visualToggle = document.querySelector('.toggle-visual');
-      if (!toggleSwitch || !statusEl || !labelEl || !visualToggle) return;
-      labelEl.setAttribute('role', 'switch');
-      statusEl.setAttribute('aria-live', 'polite');
-      visualToggle.addEventListener('click', () => {
-        toggleSwitch.checked = !toggleSwitch.checked;
-        toggleSwitch.dispatchEvent(new Event('change'));
-      });
-      toggleSwitch.addEventListener('change', () => {
-        if (toggleSwitch.checked) {
-          localStorage.setItem('ttsEnabled', 'true');
+      // === TTS Toggle Setup ===
+      function setupTTSToggle() {
+        const toggleSwitch = document.getElementById('tts-toggle-switch');
+        const statusEl = document.getElementById('tts-status');
+        const labelEl = document.getElementById('tts-toggle-label');
+        const visualToggle = document.querySelector('.toggle-visual');
+        if (!toggleSwitch || !statusEl || !labelEl || !visualToggle) return;
+        labelEl.setAttribute('role', 'switch');
+        statusEl.setAttribute('aria-live', 'polite');
+        visualToggle.addEventListener('click', () => {
+          toggleSwitch.checked = !toggleSwitch.checked;
+          toggleSwitch.dispatchEvent(new Event('change'));
+        });
+        toggleSwitch.addEventListener('change', () => {
+          if (toggleSwitch.checked) {
+            localStorage.setItem('ttsEnabled', 'true');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(speakContent, 500);
+          } else {
+            localStorage.removeItem('ttsEnabled');
+            stopSpeaking();
+          }
+        });
+        if (localStorage.getItem('ttsEnabled') === 'true') {
+          toggleSwitch.checked = true;
           window.scrollTo({ top: 0, behavior: 'smooth' });
           setTimeout(speakContent, 500);
-        } else {
-          localStorage.removeItem('ttsEnabled');
-          stopSpeaking();
         }
-      });
-      if (localStorage.getItem('ttsEnabled') === 'true') {
-        toggleSwitch.checked = true;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        setTimeout(speakContent, 500);
+        window.addEventListener('beforeunload', stopSpeaking);
       }
-      window.addEventListener('beforeunload', stopSpeaking);
-    }
 
-    // === TTS Content Extraction ===
-    function getReadableText() {
-      const main = document.querySelector('main') || document.body;
-      if (!main) return '';
-      const clone = main.cloneNode(true);
-      clone.querySelectorAll('nav,aside,footer,header,style,script,select,code,svg,img,iframe,.social-icons,.share-buttons,.tag-cloud,.like-dislike-container,.slick-arrow,.slick-dots,.slick-cloned').forEach(el => el.remove());
-      clone.querySelectorAll('a,button').forEach(el => {
-        const text = document.createTextNode(el.textContent);
-        el.replaceWith(text);
-      });
-      return clone.innerText.trim();
-    }
-
-    // === TTS Speak & Stop ===
-    (function() {
-      let voicesLoaded = false;
-      let ttsTimeout;
-      // Wait for voices to load reliably
-      function waitForVoices(callback) {
-        const voices = speechSynthesis.getVoices();
-        if (voices.length) {
-          callback(voices);
-        } else {
-          speechSynthesis.onvoiceschanged = () => {
-            const loadedVoices = speechSynthesis.getVoices();
-            if (loadedVoices.length) {
-              callback(loadedVoices);
-            }
-          };
-        }
+      // === TTS Content Extraction ===
+      function getReadableText() {
+        const main = document.querySelector('main') || document.body;
+        if (!main) return '';
+        const clone = main.cloneNode(true);
+        clone.querySelectorAll('nav,aside,footer,header,style,script,select,code,img,svg,iframe,.social-icons,.share-buttons,.tag-cloud,.like-dislike-container,.slick-arrow,.slick-dots,.slick-cloned').forEach(el => el.remove());
+        clone.querySelectorAll('a,button').forEach(el => {
+          const text = document.createTextNode(el.textContent);
+          el.replaceWith(text);
+        });
+        return clone.innerText.trim();
       }
-      // Start speaking
-      window.speakContent = function() {
-        clearTimeout(ttsTimeout);
-        ttsTimeout = setTimeout(() => {
-          const text = getReadableText();
-          const statusEl = document.getElementById('tts-status');
-          if (!statusEl) return;
-          if (text.length < 10) {
-            statusEl.textContent = 'No readable content found.';
-            return;
-          }
-          const speak = () => {
-            speechSynthesis.cancel(); // Stop any ongoing Speech
-            const utterance = new SpeechSynthesisUtterance(text);
-            // Language mapping based on Flag Selections
-            const langMap = {
-              'ar': 'ar-SA', 'id': 'id-ID', 'zh-CN': 'zh-CN', 'da': 'da-DK',
-              'de': 'de-DE', 'es': 'es-ES', 'fr': 'fr-FR', 'hi': 'hi-IN',
-              'it': 'it-IT', 'ja': 'ja-JP', 'ko': 'ko-KR', 'no': 'no-NO',
-              'ru': 'ru-RU', 'fi': 'fi-FI', 'sv': 'sv-SE', 'tl': 'tl-PH',
-              'th': 'th-TH', 'tr': 'tr-TR', 'vi': 'vi-VN', 'en': 'en-US'
-            };
-            const rawLang = localStorage.getItem('preferredLang') || 'en';
-            const langCode = langMap[rawLang] || 'en-US';
-            utterance.lang = langCode;
-            // Match voice explicitly after voices are loaded
-            waitForVoices(voices => {
-              const matchedVoice = voices.find(v => v.lang === langCode);
-              if (matchedVoice) {
-                utterance.voice = matchedVoice;
-              }
-              // Feedback Handlers
-              utterance.onstart = () => {
-                statusEl.textContent = 'Text-to-speech started.';
-              };
-              utterance.onend = () => {
-                statusEl.textContent = 'Text-to-speech finished.';
-              };
-              utterance.onerror = () => {
-                statusEl.textContent = 'Error occurred during speech.';
-              };
-              speechSynthesis.speak(utterance);
-            });
-          };
-          // Ensure Voices are loaded before speaking
-          if (!voicesLoaded && speechSynthesis.getVoices().length === 0) {
-            speechSynthesis.onvoiceschanged = () => {
-              if (!voicesLoaded && speechSynthesis.getVoices().length > 0) {
-                voicesLoaded = true;
-                speak();
-              }
-            };
+
+      // === TTS Speak & Stop ===
+      (function() {
+        let voicesLoaded = false;
+        let ttsTimeout;
+        function waitForVoices(callback) {
+          const voices = speechSynthesis.getVoices();
+          if (voices.length) {
+            callback(voices);
           } else {
-            voicesLoaded = true;
-            speak();
+            speechSynthesis.onvoiceschanged = () => {
+              const loadedVoices = speechSynthesis.getVoices();
+              if (loadedVoices.length) {
+                callback(loadedVoices);
+              }
+            };
           }
-        }, 300);
-      };
-      // Stop speaking
-      window.stopSpeaking = function() {
-        speechSynthesis.cancel();
-        const statusEl = document.getElementById('tts-status');
-        if (statusEl) statusEl.textContent = 'Text-to-speech stopped.';
-      };
-    })();
+        }
+        window.speakContent = function() {
+          clearTimeout(ttsTimeout);
+          ttsTimeout = setTimeout(() => {
+            const text = getReadableText();
+            const statusEl = document.getElementById('tts-status');
+            if (!statusEl) return;
+            if (text.length < 10) {
+              statusEl.textContent = 'No readable content found.';
+              return;
+            }
+            const speak = () => {
+              speechSynthesis.cancel();
+              const utterance = new SpeechSynthesisUtterance(text);
+              const langMap = {
+                'ar': 'ar-SA', 'id': 'id-ID', 'zh-CN': 'zh-CN', 'da': 'da-DK',
+                'de': 'de-DE', 'es': 'es-ES', 'fr': 'fr-FR', 'hi': 'hi-IN',
+                'it': 'it-IT', 'ja': 'ja-JP', 'ko': 'ko-KR', 'no': 'no-NO',
+                'ru': 'ru-RU', 'fi': 'fi-FI', 'sv': 'sv-SE', 'tl': 'tl-PH',
+                'th': 'th-TH', 'tr': 'tr-TR', 'vi': 'vi-VN', 'en': 'en-US'
+              };
+              const rawLang = localStorage.getItem('preferredLang') || 'en';
+              const langCode = langMap[rawLang] || 'en-US';
+              utterance.lang = langCode;
+              waitForVoices(voices => {
+                const matchedVoice = voices.find(v => v.lang === langCode);
+                if (matchedVoice) {
+                  utterance.voice = matchedVoice;
+                }
+                utterance.onstart = () => { statusEl.textContent = 'Text-to-speech started.'; };
+                utterance.onend = () => { statusEl.textContent = 'Text-to-speech finished.'; };
+                utterance.onerror = () => { statusEl.textContent = 'Error occurred during speech.'; };
+                speechSynthesis.speak(utterance);
+              });
+            };
+            if (!voicesLoaded && speechSynthesis.getVoices().length === 0) {
+              speechSynthesis.onvoiceschanged = () => {
+                if (!voicesLoaded && speechSynthesis.getVoices().length > 0) {
+                  voicesLoaded = true;
+                  speak();
+                }
+              };
+            } else {
+              voicesLoaded = true;
+              speak();
+            }
+          }, 300);
+        };
+        window.stopSpeaking = function() {
+          speechSynthesis.cancel();
+          const statusEl = document.getElementById('tts-status');
+          if (statusEl) statusEl.textContent = 'Text-to-speech stopped.';
+        };
+      })();
 
-    // === TTS Cue for Display Posts ===
-    function insertDisplayPostsCue() {
-      const displayPostsBlocks = document.querySelectorAll('.display-posts-listing');
-      displayPostsBlocks.forEach(displayPosts => {
-        const cue = document.createElement('div');
-        cue.textContent = 'Queried content coming up: Click to go to that post. ';
-        cue.setAttribute('aria-live', 'polite');
-        cue.style.position = 'absolute';
-        cue.style.left = '-9999px';
-        displayPosts.parentNode.insertBefore(cue, displayPosts);
-      });
-    }
+      // === TTS Cue for Display Posts ===
+      function insertDisplayPostsCue() {
+        const displayPostsBlocks = document.querySelectorAll('.display-posts-listing');
+        displayPostsBlocks.forEach(displayPosts => {
+          const cue = document.createElement('div');
+          cue.textContent = 'Queried content coming up: Click to go to that post. ';
+          cue.setAttribute('aria-live', 'polite');
+          cue.style.position = 'absolute';
+          cue.style.left = '-9999px';
+          displayPosts.parentNode.insertBefore(cue, displayPosts);
+        });
+      }
 
-    // === TTS Cue for YouTube Embeds ===
-    function insertYouTubeCue() {
-      const youtubeEmbeds = document.querySelectorAll('.wp-block-embed-youtube');
-      youtubeEmbeds.forEach(embed => {
-        const cue = document.createElement('div');
-        cue.textContent = 'Video content ahead. Click to play it. ';
-        cue.setAttribute('aria-live', 'polite');
-        cue.setAttribute('role', 'status');
-        cue.style.position = 'absolute';
-        cue.style.left = '-9999px';
-        embed.parentNode.insertBefore(cue, embed);
-      });
-    }
+      // === TTS Cue for Single Item Slideshows ===
+      function insertSlideshowCue() {
+        const slideshows = document.querySelectorAll('.slideshow-single-item');
+        slideshows.forEach(slideshow => {
+          const cue = document.createElement('div');
+          cue.textContent = 'Slideshow content ahead. You may also swipe to cycle through items. ';
+          cue.setAttribute('aria-live', 'polite');
+          cue.style.position = 'absolute';
+          cue.style.left = '-9999px';
+          slideshow.parentNode.insertBefore(cue, slideshow);
+        });
+      }
 
-    // === Initialize All Modules ===
-    setupTTSToggle();
-    insertDisplayPostsCue();
-    insertYouTubeCue();
-  });
+      // === TTS Cue for YouTube Embeds ===
+      function insertYouTubeCue() {
+        const youtubeEmbeds = document.querySelectorAll('.wp-block-embed-youtube');
+        youtubeEmbeds.forEach(embed => {
+          const cue = document.createElement('div');
+          cue.textContent = 'Video content ahead. Click to play it. ';
+          cue.setAttribute('aria-live', 'polite');
+          cue.setAttribute('role', 'status');
+          cue.style.position = 'absolute';
+          cue.style.left = '-9999px';
+          embed.parentNode.insertBefore(cue, embed);
+        });
+      }
+
+      // === Initialize All Modules ===
+      setupTTSToggle();
+      insertDisplayPostsCue();
+      insertSlideshowCue();
+      insertYouTubeCue();
+
+    });
   </script>
   <?php
 });
-
 ?>
