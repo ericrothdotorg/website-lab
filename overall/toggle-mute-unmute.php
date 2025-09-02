@@ -104,9 +104,7 @@ add_action('wp_footer', function() {
               utterance.lang = langCode;
               waitForVoices(voices => {
                 const matchedVoice = voices.find(v => v.lang === langCode);
-                if (matchedVoice) {
-                  utterance.voice = matchedVoice;
-                }
+                if (matchedVoice) utterance.voice = matchedVoice;
                 utterance.onstart = () => { statusEl.textContent = 'Text-to-speech started.'; };
                 utterance.onend = () => { statusEl.textContent = 'Text-to-speech finished.'; };
                 utterance.onerror = () => { statusEl.textContent = 'Error occurred during speech.'; };
@@ -133,43 +131,52 @@ add_action('wp_footer', function() {
         };
       })();
 
-      // === TTS Cue for Display Posts ===
+      // === Idempotent TTS Cue for Display Posts ===
       function insertDisplayPostsCue() {
-        const displayPostsBlocks = document.querySelectorAll('.display-posts-listing');
-        displayPostsBlocks.forEach(displayPosts => {
-          const cue = document.createElement('div');
-          cue.textContent = 'Queried content coming up: Click to go to that post. ';
-          cue.setAttribute('aria-live', 'polite');
-          cue.style.position = 'absolute';
-          cue.style.left = '-9999px';
-          displayPosts.parentNode.insertBefore(cue, displayPosts);
+        const blocks = document.querySelectorAll('.display-posts-listing');
+        blocks.forEach(block => {
+          if (!block.previousElementSibling || !block.previousElementSibling.classList.contains('tts-cue')) {
+            const cue = document.createElement('div');
+            cue.textContent = 'Queried content coming up: Click to go to that post. ';
+            cue.setAttribute('aria-live', 'polite');
+            cue.classList.add('tts-cue');
+            cue.style.position = 'absolute';
+            cue.style.left = '-9999px';
+            block.parentNode.insertBefore(cue, block);
+          }
         });
       }
 
-      // === TTS Cue for Single Item Slideshows ===
+      // === Idempotent TTS Cue for Single Item Slideshows ===
       function insertSlideshowCue() {
         const slideshows = document.querySelectorAll('.slideshow-single-item');
         slideshows.forEach(slideshow => {
-          const cue = document.createElement('div');
-          cue.textContent = 'Slideshow content ahead. You may also swipe to cycle through items. ';
-          cue.setAttribute('aria-live', 'polite');
-          cue.style.position = 'absolute';
-          cue.style.left = '-9999px';
-          slideshow.parentNode.insertBefore(cue, slideshow);
+          if (!slideshow.previousElementSibling || !slideshow.previousElementSibling.classList.contains('tts-cue')) {
+            const cue = document.createElement('div');
+            cue.textContent = 'Slideshow content ahead. You may also swipe to view items. ';
+            cue.setAttribute('aria-live', 'polite');
+            cue.classList.add('tts-cue');
+            cue.style.position = 'absolute';
+            cue.style.left = '-9999px';
+            slideshow.parentNode.insertBefore(cue, slideshow);
+          }
         });
       }
 
-      // === TTS Cue for YouTube Embeds ===
+      // === Idempotent TTS Cue for YouTube Embeds ===
       function insertYouTubeCue() {
-        const youtubeEmbeds = document.querySelectorAll('.wp-block-embed-youtube');
-        youtubeEmbeds.forEach(embed => {
-          const cue = document.createElement('div');
-          cue.textContent = 'Video content ahead. Click to play it. ';
-          cue.setAttribute('aria-live', 'polite');
-          cue.setAttribute('role', 'status');
-          cue.style.position = 'absolute';
-          cue.style.left = '-9999px';
-          embed.parentNode.insertBefore(cue, embed);
+        const embeds = document.querySelectorAll('.wp-block-embed-youtube');
+        embeds.forEach(embed => {
+          if (!embed.previousElementSibling || !embed.previousElementSibling.classList.contains('tts-cue')) {
+            const cue = document.createElement('div');
+            cue.textContent = 'Video content ahead. Click to play it. ';
+            cue.setAttribute('aria-live', 'polite');
+            cue.setAttribute('role', 'status');
+            cue.classList.add('tts-cue');
+            cue.style.position = 'absolute';
+            cue.style.left = '-9999px';
+            embed.parentNode.insertBefore(cue, embed);
+          }
         });
       }
 
@@ -179,8 +186,22 @@ add_action('wp_footer', function() {
       insertSlideshowCue();
       insertYouTubeCue();
 
+      // === Observe dynamically added Content safely ===
+      const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+          mutation.addedNodes.forEach(node => {
+            if (!(node instanceof HTMLElement)) return;
+            if (node.matches('.slideshow-single-item') || node.querySelector('.slideshow-single-item')) insertSlideshowCue();
+            if (node.matches('.display-posts-listing') || node.querySelector('.display-posts-listing')) insertDisplayPostsCue();
+            if (node.matches('.wp-block-embed-youtube') || node.querySelector('.wp-block-embed-youtube')) insertYouTubeCue();
+          });
+        });
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+
     });
   </script>
+
   <?php
 });
 ?>
