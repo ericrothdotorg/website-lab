@@ -10,8 +10,8 @@ add_action('wp_head', function() {
     #tts-toggle-btn input[type='checkbox']:checked + .toggle-visual {background: #0f1924; border-color: #3A4F66;}
     #tts-toggle-btn input[type='checkbox']:checked + .toggle-visual::after {background: #3A4F66; transform: translateX(25px);}
 
-    /* TTS Control Buttons */
-    #tts-controls {display: flex; align-items: center; gap: 10px; position: fixed; bottom: 25px; left: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 9999;}
+    /* TTS Controls Button */
+    #tts-controls {display: flex; align-items: center; gap: 10px; position: fixed; bottom: 27.5px; left: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 9999;}
     #tts-controls.show {opacity: 1; pointer-events: auto;}
     #tts-controls button {padding: 5px 10px; border: none; border-radius: 5px; background: #3A4F66; color: white; cursor: pointer; transition: background 0.2s;}
     #tts-controls button:hover, #tts-controls button:focus {background: #192a3d; outline: none;}
@@ -21,17 +21,19 @@ add_action('wp_head', function() {
 
 add_action('wp_footer', function() {
   ?>
-  <!-- TTS Play / Pause / Stop Controls -->
-  <div id="tts-controls">
-    <button id="tts-play" type="button" aria-label="Play text-to-speech">▶ Play</button>
-    <button id="tts-pause" type="button" aria-label="Pause text-to-speech">⏸ Pause</button>
-    <button id="tts-stop" type="button" aria-label="Stop text-to-speech">⏹ Stop</button>
+  <!-- TTS Play / Pause / Stop Controls Button -->
+  <div id="tts-controls" style="display: inline-block; padding: 0;">
+    <button id="tts-play" aria-label="Text-to-speech controls" style="display: flex; gap: 10px; padding: 5px 10px; background: #3A4F66; color: white; border: none; border-radius: 5px; cursor: pointer;">
+      <span id="tts-play-icon" aria-label="Play text-to-speech" title="Play" style="cursor: pointer;">▶</span>
+      <span id="tts-pause-icon" aria-label="Pause text-to-speech" title="Pause" style="cursor: pointer;">⏸</span>
+      <span id="tts-stop-icon" aria-label="Stop text-to-speech" title="Stop" style="cursor: pointer;">⏹</span>
+    </button>
   </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
 
-      // === Lazy-load TTS on first toggle click ===
+      // === Lazy-load TTS on first toggle Click ===
       let ttsInitialized = false;
       function initTTS() {
 
@@ -87,6 +89,7 @@ add_action('wp_footer', function() {
                   utterance.onend = () => { statusEl.textContent = 'Text-to-speech finished.'; };
                   utterance.onerror = () => { statusEl.textContent = 'Error occurred during speech.'; };
                   speechSynthesis.speak(utterance);
+                  localStorage.setItem('ttsPlaying', 'true');
                 });
               };
               if (!voicesLoaded && speechSynthesis.getVoices().length === 0) {
@@ -104,6 +107,8 @@ add_action('wp_footer', function() {
             document.querySelectorAll('#tts-toggle-switch').forEach(toggle => toggle.checked = false);
             document.getElementById('tts-controls')?.classList.remove('show');
             localStorage.removeItem('ttsEnabled');
+            localStorage.removeItem('ttsPlaying');
+
           };
         })();
 
@@ -115,6 +120,7 @@ add_action('wp_footer', function() {
               const cue = document.createElement('div');
               cue.textContent = 'Queried content coming up: Click to go to that post. ';
               cue.setAttribute('aria-live','polite');
+              cue.setAttribute('role','status');
               cue.classList.add('tts-cue');
               cue.style.position = 'absolute';
               cue.style.left = '-9999px';
@@ -174,22 +180,23 @@ add_action('wp_footer', function() {
         });
         observer.observe(document.body, { childList: true, subtree: true });
 
-        // === TTS Play / Pause / Stop Button Handlers ===
-        const btnPlay = document.getElementById('tts-play');
-        const btnPause = document.getElementById('tts-pause');
-        const btnStop = document.getElementById('tts-stop');
+        // === TTS Play / Pause / Stop Controls Button Handlers ===
+        const btnPlay = document.getElementById('tts-play-icon');
+        const btnPause = document.getElementById('tts-pause-icon');
+        const btnStop = document.getElementById('tts-stop-icon');
         btnPlay?.addEventListener('click', () => {
           if (speechSynthesis.paused) speechSynthesis.resume();
           else speakContent();
         });
         btnPause?.addEventListener('click', () => {
           if (!speechSynthesis.paused) speechSynthesis.pause();
+          localStorage.removeItem('ttsPlaying');
         });
         btnStop?.addEventListener('click', () => {
           stopSpeaking();
         });
 
-        // === Keyboard Accessibility for Controls ===
+        // === Keyboard Accessibility for TTS Controls Button ===
         document.querySelectorAll('#tts-controls button').forEach(btn => {
           btn.addEventListener('keydown', e => {
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); }
@@ -198,9 +205,34 @@ add_action('wp_footer', function() {
 
       } // End initTTS
 
+      // === Stop TTS on Navigation ===
+      window.addEventListener('beforeunload', function() {
+        speechSynthesis.cancel();
+      });
+
       // === TTS Toggle Setup with Lazy-load ===
       const toggles = document.querySelectorAll('#tts-toggle-switch');
       const controls = document.getElementById('tts-controls');
+
+      // === Show TTS Controls immediately if previously enabled ===
+      if (localStorage.getItem('ttsEnabled')) {
+        if (!ttsInitialized) { initTTS(); ttsInitialized = true; }
+        setTimeout(() => {
+          controls?.classList.add('show');
+          document.querySelectorAll('#tts-toggle-switch').forEach(toggle => toggle.checked = true);
+        }, 100);
+      }
+
+      // === Auto-resume TTS if it was playing before ===
+      if (localStorage.getItem('ttsEnabled') && localStorage.getItem('ttsPlaying')) {
+        if (!ttsInitialized) { initTTS(); ttsInitialized = true; }
+        setTimeout(() => {
+          controls?.classList.add('show');
+          document.querySelectorAll('#tts-toggle-switch').forEach(toggle => toggle.checked = true);
+          speakContent();
+        }, 100);
+      }
+
       toggles.forEach(toggleSwitch => {
         const visualToggle = document.querySelector('.toggle-visual');
         if (!toggleSwitch || !visualToggle) return;
