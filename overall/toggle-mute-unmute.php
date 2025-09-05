@@ -32,6 +32,7 @@ add_action('wp_footer', function() {
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
+      try { speechSynthesis.cancel(); } catch(e) {}
 
       // === Lazy-load TTS on first toggle Click ===
       let ttsInitialized = false;
@@ -62,44 +63,50 @@ add_action('wp_footer', function() {
               if (loadedVoices.length) callback(loadedVoices);
             };
           }
-
           window.speakContent = function() {
             clearTimeout(ttsTimeout);
             ttsTimeout = setTimeout(() => {
               const text = getReadableText();
               const statusEl = document.getElementById('tts-status');
               if (!statusEl) return;
-              if (text.length < 10) { statusEl.textContent = 'No readable content found.'; return; }
-              const speak = () => {
-                speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                const langMap = {
-                  'ar':'ar-SA','id':'id-ID','zh-CN':'zh-CN','da':'da-DK',
-                  'de':'de-DE','es':'es-ES','fr':'fr-FR','hi':'hi-IN',
-                  'it':'it-IT','ja':'ja-JP','ko':'ko-KR','no':'no-NO',
-                  'ru':'ru-RU','fi':'fi-FI','sv':'sv-SE','tl':'tl-PH',
-                  'th':'th-TH','tr':'tr-TR','vi':'vi-VN','en':'en-US'
-                };
-                const rawLang = localStorage.getItem('preferredLang') || 'en';
-                utterance.lang = langMap[rawLang] || 'en-US';
-                waitForVoices(voices => {
-                  const matchedVoice = voices.find(v => v.lang === utterance.lang);
-                  if (matchedVoice) utterance.voice = matchedVoice;
-                  utterance.onstart = () => { statusEl.textContent = 'Text-to-speech started.'; };
-                  utterance.onend = () => { statusEl.textContent = 'Text-to-speech finished.'; };
-                  utterance.onerror = () => { statusEl.textContent = 'Error occurred during speech.'; };
-                  speechSynthesis.speak(utterance);
-                  localStorage.setItem('ttsPlaying', 'true');
-                });
+              if (text.length < 10) {
+                statusEl.textContent = 'No readable content found.';
+                return;
+              }
+              const langMap = {
+                'ar':'ar-SA','id':'id-ID','zh-CN':'zh-CN','da':'da-DK',
+                'de':'de-DE','es':'es-ES','fr':'fr-FR','hi':'hi-IN',
+                'it':'it-IT','ja':'ja-JP','ko':'ko-KR','no':'no-NO',
+                'ru':'ru-RU','fi':'fi-FI','sv':'sv-SE','tl':'tl-PH',
+                'th':'th-TH','tr':'tr-TR','vi':'vi-VN','en':'en-US'
               };
-              if (!voicesLoaded && speechSynthesis.getVoices().length === 0) {
-                speechSynthesis.onvoiceschanged = () => {
-                  if (!voicesLoaded && speechSynthesis.getVoices().length > 0) { voicesLoaded = true; speak(); }
-                };
-              } else { voicesLoaded = true; speak(); }
+              const rawLang = localStorage.getItem('preferredLang') || 'en';
+              const targetLang = langMap[rawLang] || 'en-US';
+              const utterance = new SpeechSynthesisUtterance(text);
+              utterance.lang = targetLang;
+              const speak = () => {
+                const voices = speechSynthesis.getVoices();
+                const matchedVoice = voices.find(v => v.lang === targetLang);
+
+                if (!matchedVoice) {
+                  statusEl.textContent = 'No matching voice found for ' + targetLang;
+                  return;
+                }
+                utterance.voice = matchedVoice;
+                utterance.onstart = () => { statusEl.textContent = 'Text-to-speech started.'; };
+                utterance.onend = () => { statusEl.textContent = 'Text-to-speech finished.'; };
+                utterance.onerror = () => { statusEl.textContent = 'Error occurred during speech.'; };
+                speechSynthesis.cancel();
+                speechSynthesis.speak(utterance);
+                localStorage.setItem('ttsPlaying', 'true');
+              };
+              if (speechSynthesis.getVoices().length === 0) {
+                speechSynthesis.onvoiceschanged = speak;
+              } else {
+                speak();
+              }
             }, 300);
           };
-
           window.stopSpeaking = function() {
             speechSynthesis.cancel();
             const statusEl = document.getElementById('tts-status');
@@ -108,7 +115,6 @@ add_action('wp_footer', function() {
             document.getElementById('tts-controls')?.classList.remove('show');
             localStorage.removeItem('ttsEnabled');
             localStorage.removeItem('ttsPlaying');
-
           };
         })();
 
@@ -225,23 +231,24 @@ add_action('wp_footer', function() {
 
       // === Auto-resume TTS if it was playing before ===
       if (localStorage.getItem('ttsEnabled') && localStorage.getItem('ttsPlaying')) {
-        if (!ttsInitialized) { initTTS(); ttsInitialized = true; }
         setTimeout(() => {
+          if (!ttsInitialized) {
+            initTTS();
+            ttsInitialized = true;
+          }
           controls?.classList.add('show');
           document.querySelectorAll('#tts-toggle-switch').forEach(toggle => toggle.checked = true);
-          speakContent();
-        }, 100);
+          setTimeout(speakContent, 300);
+        }, 200);
       }
 
       toggles.forEach(toggleSwitch => {
-        const visualToggle = document.querySelector('.toggle-visual');
+        const visualToggle = toggleSwitch.parentNode.querySelector('.toggle-visual');
         if (!toggleSwitch || !visualToggle) return;
-
         visualToggle.addEventListener('click', () => {
           toggleSwitch.checked = !toggleSwitch.checked;
           toggleSwitch.dispatchEvent(new Event('change'));
         });
-
         toggleSwitch.addEventListener('change', () => {
           if (toggleSwitch.checked) {
             if (!ttsInitialized) { initTTS(); ttsInitialized = true; }
