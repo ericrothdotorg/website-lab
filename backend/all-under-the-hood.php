@@ -18,11 +18,14 @@ if (!defined('WP_POST_REVISIONS')) {
 }
 
 // Stay logged in longer
-function er_stay_logged_in($expires) {
-    if (!is_admin()) return $expires;
-    return 25 * YEAR_IN_SECONDS;
+function er_stay_logged_in($expiration, $user_id) {
+    $user = get_userdata($user_id);
+    if (in_array('administrator', (array) $user->roles)) {
+        return 365 * DAY_IN_SECONDS; // 1 year
+    }
+    return $expiration; // Default for others
 }
-add_filter('auth_cookie_expiration', 'er_stay_logged_in', 10);
+add_filter('auth_cookie_expiration', 'er_stay_logged_in', 99, 2);
 
 // === ADMIN-ONLY HOOKS ===
 
