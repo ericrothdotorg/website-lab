@@ -19,7 +19,7 @@ add_action('wp_footer', function () {
         .play-button-youtube:hover,
         .play-button-vimeo:hover {transform: translate(-50%, -50%) scale(1.25);}
         .play-button-youtube {background-image: url('https://ericroth.org/wp-content/uploads/2025/01/YT-Play-Button.png');}
-        .play-button-vimeo {background-image: url('https://ericroth.org/wp-content/uploads/2025/05/Vimeo-Play-Button.png');}
+        .play-button-vimeo {background-image: url('https://ericroth.org/wp-content/uploads/2025/09/Vimeo-Play-Button.png');}
         .video-placeholder:hover::before {
             content: '';
             position: absolute;
