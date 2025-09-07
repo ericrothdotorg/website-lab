@@ -57,13 +57,15 @@ function initialize_custom_dashboard() {
         });
     });
 
-    // 📊 Add Analytics Toolkit (📈📉⚡🧪🖼️♿)
+    // 📊 Add Analytics Toolkit
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget('custom_analytics_toolkit', '📊 Analytics Toolkit', function () {
+            // Define URLs for external Tools
             $site_url = 'https://ericroth.org/';
             $pagespeed_url = 'https://pagespeed.web.dev/report?url=' . urlencode($site_url);
             $webpagetest_url = 'https://www.webpagetest.org/?url=' . urlencode($site_url);
             $wave_url = 'https://wave.webaim.org/report#/' . urlencode($site_url);
+            // External Analytics Buttons
             echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
             echo '<a href="https://analytics.google.com/analytics/web/#/p438219493/reports/overview" target="_blank" class="button">📈 GoogleAnalytics</a>';
             echo '<a href="https://clarity.microsoft.com/projects/view/eic7b2e9o1/dashboard" target="_blank" class="button">📉 MS Clarity</a>';
@@ -71,6 +73,7 @@ function initialize_custom_dashboard() {
             echo '<a href="' . esc_url($webpagetest_url) . '" target="_blank" class="button">🧪 WebPageTest</a>';
             echo '<a href="' . esc_url($wave_url) . '" target="_blank" class="button">♿ Accessibility Audit</a>';
             echo '</div>';
+            // Gather Site Metrics
             $media_count = wp_count_attachments();
             $total_media = array_sum((array) $media_count);
             global $wpdb;
@@ -84,20 +87,67 @@ function initialize_custom_dashboard() {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
             $plugin_count = count(get_plugins());
+            // Metrics Display Section
             echo '<div style="margin-top:15px; display: flex; flex-wrap: wrap; gap: 20px;">';
+            // Media Files and DB Tables
             echo '<div style="width: calc(50% - 10px);">';
             echo '<p>🖼️ Media Files: <strong>' . $total_media . '</strong></p>';
             echo '<p>🧵 DB Tables: <strong>' . $db_table_count . '</strong></p>';
             echo '</div>';
+            // Visitor IP and Plugin Count
             echo '<div style="width: calc(50% - 10px);">';
             echo '<p>🧍 Your IP: <strong>' . esc_html($visitor_ip) . '</strong></p>';
             echo '<p>🔌 Active Plugins Installed: <strong>' . $plugin_count . '</strong></p>';
             echo '</div>';
+            // Broken YT Links Checker
+            echo '<div style="width: calc(50% - 10px);">';
+            echo '<form method="post">';
+            echo '<button type="submit" name="check_broken_yt" class="button" style="margin-bottom:10px;">🔍 Broken YT Links</button>';
+            echo '</form>';
+            // Run broken YT Links Checker with Button
+            if (isset($_POST['check_broken_yt'])) {
+                $broken_links = 0;
+                $broken_posts = [];
+                $args = [
+                    'post_type' => ['post', 'page', 'my-interests', 'my-traits'],
+                    'posts_per_page' => -1,
+                ];
+                $query = new WP_Query($args);
+                foreach ($query->posts as $post) {
+                    preg_match_all('/https:\/\/(www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $post->post_content, $matches);
+                    if (!empty($matches[2])) {
+                        foreach ($matches[2] as $video_id) {
+                            $url = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={$video_id}&format=json";
+                            $response = wp_remote_get($url);
+                            if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+                                $broken_links++;
+                                $broken_posts[$post->ID][] = $video_id;
+                            }
+                        }
+                    }
+                }
+                // Output broken YT Links Checker Results
+                echo '<div id="broken-yt-results" style="margin-top: 10px;">';
+                echo '<p>🔴 Broken YT Links: <strong style="color: red;">' . $broken_links . '</strong></p>';
+                if (!empty($broken_posts)) {
+                    echo '<details style="margin-top: 15px;"><summary style="cursor: pointer; margin-bottom: 15px;"><strong>Broken Links Locations</strong></summary><ul>';
+                    foreach ($broken_posts as $post_id => $video_ids) {
+                        $title = get_the_title($post_id);
+                        $edit_link = get_edit_post_link($post_id);
+                        echo '<li><a href="' . esc_url($edit_link) . '" target="_blank">' . esc_html($title) . '</a>: ';
+                        echo implode(', ', array_map('esc_html', $video_ids)) . '</li>';
+                    }
+                    echo '</ul></details>';
+                }
+                echo '</div>';
+            }
+            echo '</div>';
+
             echo '</div>';
         });
     });
 
-    // 🌀 Add Hostinger Stuff Buttons (🔐📬🧠)
+    // 🌀 Add Hostinger Stuff Buttons
     add_action('wp_dashboard_setup', function() {
         wp_add_dashboard_widget('custom_hostinger_stuff', '🌀 Hostinger Stuff', function() {
             echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
@@ -206,7 +256,7 @@ function initialize_custom_dashboard() {
         });
     });
 
-    // 🧹 Add Optimize & Clean-Up Buttons (🛢️🛠️)
+    // 🧹 Add Optimize & Clean-Up Buttons
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget(
             'custom_optimize_and_cleanup',
