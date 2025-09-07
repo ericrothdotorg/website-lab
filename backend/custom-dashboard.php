@@ -114,7 +114,7 @@ function initialize_custom_dashboard() {
                 ];
                 $query = new WP_Query($args);
                 foreach ($query->posts as $post) {
-                    preg_match_all('/https:\/\/(www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $post->post_content, $matches);
+                    preg_match_all('/https:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $post->post_content, $matches);
                     if (!empty($matches[2])) {
                         foreach ($matches[2] as $video_id) {
                             $url = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={$video_id}&format=json";
