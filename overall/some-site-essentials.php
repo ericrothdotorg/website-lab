@@ -162,12 +162,12 @@ add_filter('the_content', function($content) {
 });
 
 // Custom Redirects (SEO-friendly)
-add_action('init', function() {
+add_action('template_redirect', function() {
     $redirects = [
-        '/contact-me' => '/about-me/contact/',
+        '/contact-me/' => '/about-me/contact/',
         '/consulting/' => '/professional/',
         '/services/' => '/professional/',
-        '/my-background' => '/professional/my-background/',
+        '/my-background/' => '/professional/my-background/',
         '/my-traits/' => '/professional/my-background/my-traits/',
         '/my-blog/' => '/personal/my-blog/',
         '/my-interests/' => '/personal/my-interests/',
