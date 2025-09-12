@@ -2,11 +2,18 @@
 
 // === CONFIGURATION ===
 function get_language_pairs() {
-    return [
+    $cache_key = 'cached_language_pairs';
+    $cached = get_transient($cache_key);
+    if ($cached !== false) return $cached;
+
+    $pairs = [
         'professional' => 'beruflich',
         'professional/my-background' => 'beruflich/mein-hintergrund',
         'professional/my-compass' => 'beruflich/mein-kompass',
     ];
+
+    set_transient($cache_key, $pairs, 12 * HOUR_IN_SECONDS);
+    return $pairs;
 }
 function get_flag_meta($lang_code) {
     return [
@@ -56,8 +63,9 @@ function professional_language_switcher() {
     if (!$meta) return '';
     $target_url = home_url('/' . $target_slug . '/');
     return sprintf(
-        '<div class="lang-flag-wrapper"><img src="%s" alt="%s" title="%s" role="button" tabindex="0" lang="%s" data-target="%s" class="lang-flag"></div>',
+        '<div class="lang-flag-wrapper"><img src="%s" alt="%s" title="%s" aria-label="Switch to %s version" loading="lazy" role="button" tabindex="0" lang="%s" data-target="%s" class="lang-flag"></div>',
         esc_url($meta['flag']),
+        esc_attr($meta['label']),
         esc_attr($meta['label']),
         esc_attr($meta['label']),
         esc_attr($lang_code),
@@ -79,12 +87,11 @@ add_action('wp_head', function() {
 
     // === EARLY REDIRECT TO TARGET LANGUAGE ===
     $current_slug = get_full_slug(get_queried_object_id());
-    $pairs = get_language_pairs();
     ?>
     <script>
     (function() {
         const currentSlug = <?php echo wp_json_encode($current_slug); ?>;
-        const langPairs = <?php echo wp_json_encode($pairs); ?>;
+        const langPairs = <?php echo wp_json_encode(get_language_pairs()); ?>;
         const preferredLang = navigator.language || navigator.userLanguage || '';
         const isGerman = preferredLang.toLowerCase().startsWith('de');
         const hasSwitched = sessionStorage.getItem('langSwitched') === 'true';
@@ -102,7 +109,6 @@ add_action('wp_footer', function() {
     $post = get_post(get_queried_object_id());
     if (!$post || !has_shortcode($post->post_content ?? '', 'prof_lang_switch')) return;
     $current_slug = get_full_slug(get_queried_object_id());
-    $pairs = get_language_pairs();
     ?>
     <script>
     (function() {
@@ -110,7 +116,7 @@ add_action('wp_footer', function() {
         document.addEventListener('DOMContentLoaded', function() {
             document.body.classList.add('lang-ready');
             const currentSlug = <?php echo wp_json_encode($current_slug); ?>;
-            const langPairs = <?php echo wp_json_encode($pairs); ?>;
+            const langPairs = <?php echo wp_json_encode(get_language_pairs()); ?>;
             const preferredLang = navigator.language || navigator.userLanguage || '';
             const isGerman = preferredLang.toLowerCase().startsWith('de');
             const hasSwitched = sessionStorage.getItem('langSwitched') === 'true';
