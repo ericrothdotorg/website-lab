@@ -5,13 +5,11 @@ function get_language_pairs() {
     $cache_key = 'cached_language_pairs';
     $cached = get_transient($cache_key);
     if ($cached !== false) return $cached;
-
     $pairs = [
         'professional' => 'beruflich',
         'professional/my-background' => 'beruflich/mein-hintergrund',
         'professional/my-compass' => 'beruflich/mein-kompass',
     ];
-
     set_transient($cache_key, $pairs, 12 * HOUR_IN_SECONDS);
     return $pairs;
 }
