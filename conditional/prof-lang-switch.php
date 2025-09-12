@@ -4,20 +4,35 @@
 function get_language_pairs() {
     return [
         'professional' => 'beruflich',
-        'my-background' => 'mein-hintergrund',
-        'my-compass' => 'mein-kompass',
+        'professional/my-background' => 'beruflich/mein-hintergrund',
+        'professional/my-compass' => 'beruflich/mein-kompass',
     ];
 }
 function get_flag_meta($lang_code) {
     return [
         'de' => ['label' => 'Deutsch', 'flag' => 'https://flagcdn.com/w40/de.webp'],
-        'en' => ['label' => 'English', 'flag' => 'https://flagcdn.com/w40/us.webp'],
+        'en' => ['label' => 'English', 'flag' => 'https://flagcdn.com/w40/gb.webp'],
     ][$lang_code] ?? null;
+}
+
+// === SLUG RESOLUTION ===
+function get_full_slug($post_id) {
+    $post = get_post($post_id);
+    if (!$post) return '';
+    $slug = $post->post_name;
+    $ancestors = get_post_ancestors($post_id);
+    if ($ancestors) {
+        $ancestor_slugs = array_map(function($id) {
+            return get_post($id)->post_name;
+        }, array_reverse($ancestors));
+        $slug = implode('/', $ancestor_slugs) . '/' . $slug;
+    }
+    return $slug;
 }
 
 // === SHORTCODE ===
 function professional_language_switcher() {
-    $current_slug = get_post_field('post_name', get_queried_object_id());
+    $current_slug = get_full_slug(get_queried_object_id());
     if (!$current_slug) return '';
     $pairs = get_language_pairs();
     $target_slug = null;
@@ -51,9 +66,9 @@ function professional_language_switcher() {
 }
 add_shortcode('prof_lang_switch', 'professional_language_switcher');
 
-// === SEO HREFLANG TAGS ===
+// === SEO HREF LANG TAGS ===
 add_action('wp_head', function() {
-    $slug = get_post_field('post_name', get_queried_object_id());
+    $slug = get_full_slug(get_queried_object_id());
     $pairs = get_language_pairs();
     if (isset($pairs[$slug])) {
         echo '<link rel="alternate" hreflang="de" href="' . esc_url(home_url('/' . $pairs[$slug] . '/')) . '" />';
@@ -61,19 +76,39 @@ add_action('wp_head', function() {
         $english = array_search($slug, $pairs);
         echo '<link rel="alternate" hreflang="en" href="' . esc_url(home_url('/' . $english . '/')) . '" />';
     }
+
+    // === EARLY REDIRECT TO TARGET LANGUAGE ===
+    $current_slug = get_full_slug(get_queried_object_id());
+    $pairs = get_language_pairs();
+    ?>
+    <script>
+    (function() {
+        const currentSlug = <?php echo wp_json_encode($current_slug); ?>;
+        const langPairs = <?php echo wp_json_encode($pairs); ?>;
+        const preferredLang = navigator.language || navigator.userLanguage || '';
+        const isGerman = preferredLang.toLowerCase().startsWith('de');
+        const hasSwitched = sessionStorage.getItem('langSwitched') === 'true';
+        if (!hasSwitched && langPairs[currentSlug] && isGerman) {
+            sessionStorage.setItem('langSwitched', 'true');
+            window.location.replace('<?php echo home_url(); ?>/' + langPairs[currentSlug] + '/');
+        }
+    })();
+    </script>
+    <?php
 });
 
 // === SCRIPT + STYLE INJECTION ===
 add_action('wp_footer', function() {
     $post = get_post(get_queried_object_id());
     if (!$post || !has_shortcode($post->post_content ?? '', 'prof_lang_switch')) return;
-    $current_slug = get_post_field('post_name', get_queried_object_id());
+    $current_slug = get_full_slug(get_queried_object_id());
     $pairs = get_language_pairs();
     ?>
     <script>
     (function() {
         'use strict';
         document.addEventListener('DOMContentLoaded', function() {
+            document.body.classList.add('lang-ready');
             const currentSlug = <?php echo wp_json_encode($current_slug); ?>;
             const langPairs = <?php echo wp_json_encode($pairs); ?>;
             const preferredLang = navigator.language || navigator.userLanguage || '';
@@ -104,7 +139,8 @@ add_action('wp_footer', function() {
     </script>
     <style>
         .ct-container-full .entry-content {position: relative;}
-        .lang-flag-wrapper {position: absolute; top: 10px; right: 0px; display: flex; justify-content: flex-end; padding-right: 5px;}
+        .lang-flag-wrapper {position: absolute; top: 10px; right: 0px; display: flex; justify-content: flex-end; padding-right: 5px; visibility: hidden;}
+        body.lang-ready .lang-flag-wrapper {visibility: visible;}
         .lang-flag {cursor: pointer; width: 36px; height: 20px; object-fit: cover; border: none; outline: none; transition: transform 0.2s ease;}
         .lang-flag:focus {outline: 1px solid #1e73be; outline-offset: 1px; box-shadow: 0 0 0 0.05rem rgba(0, 123, 255, 0.25);}
         .lang-flag:hover {transform: scale(1.05);}
