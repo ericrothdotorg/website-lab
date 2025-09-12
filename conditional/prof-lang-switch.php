@@ -1,7 +1,25 @@
 <?php
 
+// === CONDITIONAL INJECTION BASED ON PATH ===
+function should_inject_lang_script() {
+    $pairs = array(
+        '/professional',
+        '/professional/my-background',
+        '/professional/my-background/my-competencies',
+        '/professional/my-compass',
+        '/beruflich',
+        '/beruflich/mein-hintergrund',
+        '/beruflich/mein-hintergrund/meine-kompetenzen',
+        '/beruflich/mein-kompass'
+    );
+    $current_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    $current_path = rtrim($current_path, '/');
+    return in_array($current_path, $pairs);
+}
+
 // === LANGUAGE REDIRECT BASED ON BROWSER SETTINGS ===
 add_action('wp_head', function() {
+    if (!should_inject_lang_script()) return;
     ?>
     <script>
     (function() {
@@ -35,6 +53,7 @@ add_action('wp_head', function() {
 
 // === SCRIPT + STYLE INJECTION ===
 add_action('wp_footer', function() {
+    if (!should_inject_lang_script()) return;
     ?>
     <script>
     (function() {
