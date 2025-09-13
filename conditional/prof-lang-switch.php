@@ -9,6 +9,7 @@ function should_inject_lang_script() {
         '/professional/my-background/my-competencies',
         '/professional/my-background/my-traits',
         '/professional/my-compass',
+        '/professional/my-publications',
         '/professional/my-availability',
         // Deutsch
         '/beruflich',
@@ -16,6 +17,7 @@ function should_inject_lang_script() {
         '/beruflich/mein-hintergrund/meine-kompetenzen',
         '/beruflich/mein-hintergrund/meine-eigenschaften',
         '/beruflich/mein-kompass',
+        '/beruflich/meine-publikationen',
         '/beruflich/meine-verfuegbarkeit'
     );
     $current_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -40,6 +42,7 @@ add_action('wp_head', function() {
             '/professional/my-background/my-competencies':      {target: '/beruflich/mein-hintergrund/meine-kompetenzen', lang: 'de'},
             '/professional/my-background/my-traits':            {target: '/beruflich/mein-hintergrund/meine-eigenschaften', lang: 'de'},
             '/professional/my-compass':                         {target: '/beruflich/mein-kompass', lang: 'de'},
+            '/professional/my-publications':                    {target: '/beruflich/meine-publikationen', lang: 'de'},
             '/professional/my-availability':                    {target: '/beruflich/meine-verfuegbarkeit', lang: 'de'},
             // Deutsch → English
             '/beruflich':                                       {target: '/professional', lang: 'en'},
@@ -47,6 +50,7 @@ add_action('wp_head', function() {
             '/beruflich/mein-hintergrund/meine-kompetenzen':    {target: '/professional/my-background/my-competencies', lang: 'en'},
             '/beruflich/mein-hintergrund/meine-eigenschaften':  {target: '/professional/my-background/my-traits', lang: 'en'},
             '/beruflich/mein-kompass':                          {target: '/professional/my-compass', lang: 'en'},
+            '/beruflich/meine-publikationen':                   {target: '/professional/my-publications', lang: 'en'},
             '/beruflich/meine-verfuegbarkeit':                  {target: '/professional/my-availability', lang: 'en'}
         };
         if (hasSwitched || !pairs[path]) return;
