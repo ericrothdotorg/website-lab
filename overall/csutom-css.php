@@ -133,8 +133,9 @@ add_action("wp_footer", function () {
     /* NAVIGATION */
 
     /* Exclude from Page List Block */
-    .wp-block-page-list > li:nth-child(2),
-    .wp-block-page-list > li:nth-child(3) {display: none;}
+    .wp-block-page-list.site-overview > li:nth-child(2),
+    .wp-block-page-list.site-overview > li:nth-child(3),
+    .wp-block-page-list.site-overview > li:nth-child(4) {display: none;}
     /* Navigate with Pages */
     .page-links {padding-bottom: 50px;}
     .page-links a,
