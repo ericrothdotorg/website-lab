@@ -20,55 +20,11 @@ function should_inject_lang_script() {
         '/berufswelt/meine-publikationen',
         '/berufswelt/meine-verfuegbarkeit'
     );
-    $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
-    $current_path = esc_url_raw(parse_url($request_uri, PHP_URL_PATH));
+    $request_uri = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '';
+    $current_path = parse_url($request_uri, PHP_URL_PATH);
     $current_path = rtrim($current_path, '/');
     return in_array($current_path, $pairs);
 }
-
-// === LANGUAGE REDIRECT BASED ON BROWSER SETTINGS ===
-add_action('wp_head', function() {
-    if (!should_inject_lang_script()) return;
-    ?>
-    <script>
-        (function() {
-            try {
-                const preferredLang = navigator.language || navigator.userLanguage || '';
-                const isGerman = /^de(-[a-z]{2})?$/.test(preferredLang.toLowerCase()); // Matches de, de-ch, de-at, de-de, etc.
-                const hasSwitched = sessionStorage.getItem('langSwitched') === 'true';
-                const path = window.location.pathname.replace(/\/$/, '');
-                const pairs = {
-                    // English → Deutsch
-                    '/professional':                                     {target: '/berufswelt', lang: 'de'},
-                    '/professional/my-background':                       {target: '/berufswelt/mein-hintergrund', lang: 'de'},
-                    '/professional/my-background/my-competencies':       {target: '/berufswelt/mein-hintergrund/meine-kompetenzen', lang: 'de'},
-                    '/professional/my-background/my-traits':             {target: '/berufswelt/mein-hintergrund/meine-eigenschaften', lang: 'de'},
-                    '/professional/my-compass':                          {target: '/berufswelt/mein-kompass', lang: 'de'},
-                    '/professional/my-publications':                     {target: '/berufswelt/meine-publikationen', lang: 'de'},
-                    '/professional/my-availability':                     {target: '/berufswelt/meine-verfuegbarkeit', lang: 'de'},
-                    // Deutsch → English
-                    '/berufswelt':                                       {target: '/professional', lang: 'en'},
-                    '/berufswelt/mein-hintergrund':                      {target: '/professional/my-background', lang: 'en'},
-                    '/berufswelt/mein-hintergrund/meine-kompetenzen':    {target: '/professional/my-background/my-competencies', lang: 'en'},
-                    '/berufswelt/mein-hintergrund/meine-eigenschaften':  {target: '/professional/my-background/my-traits', lang: 'en'},
-                    '/berufswelt/mein-kompass':                          {target: '/professional/my-compass', lang: 'en'},
-                    '/berufswelt/meine-publikationen':                   {target: '/professional/my-publications', lang: 'en'},
-                    '/berufswelt/meine-verfuegbarkeit':                  {target: '/professional/my-availability', lang: 'en'}
-                };
-                if (hasSwitched || !pairs[path]) return;
-                const target = pairs[path].target;
-                const lang = pairs[path].lang;
-                if ((isGerman && lang === 'de') || (!isGerman && lang === 'en')) {
-                    sessionStorage.setItem('langSwitched', 'true');
-                    window.location.replace(target);
-                }
-            } catch (error) {
-                console.warn('Language redirect failed:', error);
-            }
-        })();
-    </script>
-    <?php
-});
 
 // === SCRIPT + STYLE INJECTION ===
 add_action('wp_footer', function() {
