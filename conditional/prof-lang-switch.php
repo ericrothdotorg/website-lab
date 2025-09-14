@@ -12,13 +12,13 @@ function should_inject_lang_script() {
         '/professional/my-publications',
         '/professional/my-availability',
         // Deutsch
-        '/beruflich',
-        '/beruflich/mein-hintergrund',
-        '/beruflich/mein-hintergrund/meine-kompetenzen',
-        '/beruflich/mein-hintergrund/meine-eigenschaften',
-        '/beruflich/mein-kompass',
-        '/beruflich/meine-publikationen',
-        '/beruflich/meine-verfuegbarkeit'
+        '/berufswelt',
+        '/berufswelt/mein-hintergrund',
+        '/berufswelt/mein-hintergrund/meine-kompetenzen',
+        '/berufswelt/mein-hintergrund/meine-eigenschaften',
+        '/berufswelt/mein-kompass',
+        '/berufswelt/meine-publikationen',
+        '/berufswelt/meine-verfuegbarkeit'
     );
     $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
     $current_path = esc_url_raw(parse_url($request_uri, PHP_URL_PATH));
@@ -39,21 +39,21 @@ add_action('wp_head', function() {
             const path = window.location.pathname.replace(/\/$/, '');
             const pairs = {
                 // English → Deutsch
-                '/professional':                                    {target: '/beruflich', lang: 'de'},
-                '/professional/my-background':                      {target: '/beruflich/mein-hintergrund', lang: 'de'},
-                '/professional/my-background/my-competencies':      {target: '/beruflich/mein-hintergrund/meine-kompetenzen', lang: 'de'},
-                '/professional/my-background/my-traits':            {target: '/beruflich/mein-hintergrund/meine-eigenschaften', lang: 'de'},
-                '/professional/my-compass':                         {target: '/beruflich/mein-kompass', lang: 'de'},
-                '/professional/my-publications':                    {target: '/beruflich/meine-publikationen', lang: 'de'},
-                '/professional/my-availability':                    {target: '/beruflich/meine-verfuegbarkeit', lang: 'de'},
+                '/professional':                                     {target: '/berufswelt', lang: 'de'},
+                '/professional/my-background':                       {target: '/berufswelt/mein-hintergrund', lang: 'de'},
+                '/professional/my-background/my-competencies':       {target: '/berufswelt/mein-hintergrund/meine-kompetenzen', lang: 'de'},
+                '/professional/my-background/my-traits':             {target: '/berufswelt/mein-hintergrund/meine-eigenschaften', lang: 'de'},
+                '/professional/my-compass':                          {target: '/berufswelt/mein-kompass', lang: 'de'},
+                '/professional/my-publications':                     {target: '/berufswelt/meine-publikationen', lang: 'de'},
+                '/professional/my-availability':                     {target: '/berufswelt/meine-verfuegbarkeit', lang: 'de'},
                 // Deutsch → English
-                '/beruflich':                                       {target: '/professional', lang: 'en'},
-                '/beruflich/mein-hintergrund':                      {target: '/professional/my-background', lang: 'en'},
-                '/beruflich/mein-hintergrund/meine-kompetenzen':    {target: '/professional/my-background/my-competencies', lang: 'en'},
-                '/beruflich/mein-hintergrund/meine-eigenschaften':  {target: '/professional/my-background/my-traits', lang: 'en'},
-                '/beruflich/mein-kompass':                          {target: '/professional/my-compass', lang: 'en'},
-                '/beruflich/meine-publikationen':                   {target: '/professional/my-publications', lang: 'en'},
-                '/beruflich/meine-verfuegbarkeit':                  {target: '/professional/my-availability', lang: 'en'}
+                '/berufswelt':                                       {target: '/professional', lang: 'en'},
+                '/berufswelt/mein-hintergrund':                      {target: '/professional/my-background', lang: 'en'},
+                '/berufswelt/mein-hintergrund/meine-kompetenzen':    {target: '/professional/my-background/my-competencies', lang: 'en'},
+                '/berufswelt/mein-hintergrund/meine-eigenschaften':  {target: '/professional/my-background/my-traits', lang: 'en'},
+                '/berufswelt/mein-kompass':                          {target: '/professional/my-compass', lang: 'en'},
+                '/berufswelt/meine-publikationen':                   {target: '/professional/my-publications', lang: 'en'},
+                '/berufswelt/meine-verfuegbarkeit':                  {target: '/professional/my-availability', lang: 'en'}
             };
             if (hasSwitched || !pairs[path]) return;
             const target = pairs[path].target;
