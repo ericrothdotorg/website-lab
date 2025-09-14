@@ -20,10 +20,13 @@ function should_inject_lang_script() {
         '/berufswelt/meine-publikationen',
         '/berufswelt/meine-verfuegbarkeit'
     );
+    $pairs = array_map(function($p){
+        return rtrim($p, '/');
+    }, $pairs);
     $request_uri = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '';
     $current_path = parse_url($request_uri, PHP_URL_PATH);
     $current_path = rtrim($current_path, '/');
-    return in_array($current_path, $pairs);
+    return in_array($current_path, $pairs, true);
 }
 
 // === SCRIPT + STYLE INJECTION ===
