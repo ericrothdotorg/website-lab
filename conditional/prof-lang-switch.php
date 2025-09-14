@@ -31,41 +31,41 @@ add_action('wp_head', function() {
     if (!should_inject_lang_script()) return;
     ?>
     <script>
-    (function() {
-        try {
-            const preferredLang = navigator.language || navigator.userLanguage || '';
-            const isGerman = preferredLang.toLowerCase().startsWith('de');
-            const hasSwitched = sessionStorage.getItem('langSwitched') === 'true';
-            const path = window.location.pathname.replace(/\/$/, '');
-            const pairs = {
-                // English → Deutsch
-                '/professional':                                     {target: '/berufswelt', lang: 'de'},
-                '/professional/my-background':                       {target: '/berufswelt/mein-hintergrund', lang: 'de'},
-                '/professional/my-background/my-competencies':       {target: '/berufswelt/mein-hintergrund/meine-kompetenzen', lang: 'de'},
-                '/professional/my-background/my-traits':             {target: '/berufswelt/mein-hintergrund/meine-eigenschaften', lang: 'de'},
-                '/professional/my-compass':                          {target: '/berufswelt/mein-kompass', lang: 'de'},
-                '/professional/my-publications':                     {target: '/berufswelt/meine-publikationen', lang: 'de'},
-                '/professional/my-availability':                     {target: '/berufswelt/meine-verfuegbarkeit', lang: 'de'},
-                // Deutsch → English
-                '/berufswelt':                                       {target: '/professional', lang: 'en'},
-                '/berufswelt/mein-hintergrund':                      {target: '/professional/my-background', lang: 'en'},
-                '/berufswelt/mein-hintergrund/meine-kompetenzen':    {target: '/professional/my-background/my-competencies', lang: 'en'},
-                '/berufswelt/mein-hintergrund/meine-eigenschaften':  {target: '/professional/my-background/my-traits', lang: 'en'},
-                '/berufswelt/mein-kompass':                          {target: '/professional/my-compass', lang: 'en'},
-                '/berufswelt/meine-publikationen':                   {target: '/professional/my-publications', lang: 'en'},
-                '/berufswelt/meine-verfuegbarkeit':                  {target: '/professional/my-availability', lang: 'en'}
-            };
-            if (hasSwitched || !pairs[path]) return;
-            const target = pairs[path].target;
-            const lang = pairs[path].lang;
-            if ((isGerman && lang === 'de') || (!isGerman && lang === 'en')) {
-                sessionStorage.setItem('langSwitched', 'true');
-                window.location.replace(target);
+        (function() {
+            try {
+                const preferredLang = navigator.language || navigator.userLanguage || '';
+                const isGerman = /^de(-[a-z]{2})?$/.test(preferredLang.toLowerCase()); // Matches de, de-ch, de-at, de-de, etc.
+                const hasSwitched = sessionStorage.getItem('langSwitched') === 'true';
+                const path = window.location.pathname.replace(/\/$/, '');
+                const pairs = {
+                    // English → Deutsch
+                    '/professional':                                     {target: '/berufswelt', lang: 'de'},
+                    '/professional/my-background':                       {target: '/berufswelt/mein-hintergrund', lang: 'de'},
+                    '/professional/my-background/my-competencies':       {target: '/berufswelt/mein-hintergrund/meine-kompetenzen', lang: 'de'},
+                    '/professional/my-background/my-traits':             {target: '/berufswelt/mein-hintergrund/meine-eigenschaften', lang: 'de'},
+                    '/professional/my-compass':                          {target: '/berufswelt/mein-kompass', lang: 'de'},
+                    '/professional/my-publications':                     {target: '/berufswelt/meine-publikationen', lang: 'de'},
+                    '/professional/my-availability':                     {target: '/berufswelt/meine-verfuegbarkeit', lang: 'de'},
+                    // Deutsch → English
+                    '/berufswelt':                                       {target: '/professional', lang: 'en'},
+                    '/berufswelt/mein-hintergrund':                      {target: '/professional/my-background', lang: 'en'},
+                    '/berufswelt/mein-hintergrund/meine-kompetenzen':    {target: '/professional/my-background/my-competencies', lang: 'en'},
+                    '/berufswelt/mein-hintergrund/meine-eigenschaften':  {target: '/professional/my-background/my-traits', lang: 'en'},
+                    '/berufswelt/mein-kompass':                          {target: '/professional/my-compass', lang: 'en'},
+                    '/berufswelt/meine-publikationen':                   {target: '/professional/my-publications', lang: 'en'},
+                    '/berufswelt/meine-verfuegbarkeit':                  {target: '/professional/my-availability', lang: 'en'}
+                };
+                if (hasSwitched || !pairs[path]) return;
+                const target = pairs[path].target;
+                const lang = pairs[path].lang;
+                if ((isGerman && lang === 'de') || (!isGerman && lang === 'en')) {
+                    sessionStorage.setItem('langSwitched', 'true');
+                    window.location.replace(target);
+                }
+            } catch (error) {
+                console.warn('Language redirect failed:', error);
             }
-        } catch (error) {
-            console.warn('Language redirect failed:', error);
-        }
-    })();
+        })();
     </script>
     <?php
 });
@@ -75,35 +75,35 @@ add_action('wp_footer', function() {
     if (!should_inject_lang_script()) return;
     ?>
     <script>
-    (function() {
-        'use strict';
-        let isProcessing = false;
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                document.body.classList.add('lang-ready');
-                document.querySelectorAll('.lang-flag').forEach(function(flag) {
-                    flag.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        if (isProcessing) return;
-                        const target = flag.getAttribute('data-target');
-                        if (target) {
-                            isProcessing = true;
-                            sessionStorage.setItem('langSwitched', 'true');
-                            window.location.href = target;
-                        }
-                    });
-                    flag.addEventListener('keydown', function(e) {
-                        if (e.key === 'Enter' || e.key === ' ') {
+        (function() {
+            'use strict';
+            let isProcessing = false;
+            document.addEventListener('DOMContentLoaded', function() {
+                try {
+                    document.body.classList.add('lang-ready');
+                    document.querySelectorAll('.lang-flag').forEach(function(flag) {
+                        flag.addEventListener('click', function(e) {
                             e.preventDefault();
-                            flag.click();
-                        }
+                            if (isProcessing) return;
+                            const target = flag.getAttribute('data-target');
+                            if (target) {
+                                isProcessing = true;
+                                sessionStorage.setItem('langSwitched', 'true');
+                                window.location.href = target;
+                            }
+                        });
+                        flag.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                flag.click();
+                            }
+                        });
                     });
-                });
-            } catch (error) {
-                console.warn('Language switcher initialization failed:', error);
-            }
-        });
-    })();
+                } catch (error) {
+                    console.warn('Language switcher initialization failed:', error);
+                }
+            });
+        })();
     </script>
     <style>
         .ct-container-full .entry-content {position: relative;}
