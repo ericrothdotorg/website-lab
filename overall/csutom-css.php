@@ -44,7 +44,7 @@ add_action("wp_head", function () {
     /* External Link Indicator */
     a:not([href^='#']):not([href^='tel:']):not([href^='/']):not([href*='javascript']):not([href*='ericroth.org']):not([href*='ericroth-org']):not([href*='1drv.ms']):not([href*='paypal.com']):not([href*='librarything.com']):not([href*='themoviedb.org']):not([href*='facebook.com']):not([href*='github.com']):not([href*='linkedin.com']):not([href*='youtube.com']):not([href*='bsky.app']):not([href*='bsky.social']):not([href*='?cat=']):not(.wp-block-button__link, .button, .neli, .page-numbers)::after {
       content: "";
-      background: url("http://ericroth.org/wp-content/uploads/2024/03/external-link-greyblue.svg") no-repeat center;
+      background: url("https://ericroth.org/wp-content/uploads/2024/03/external-link-greyblue.svg") no-repeat center;
       width: 0.75em;
       height: 0.75em;
       margin-left: 0.25em;
@@ -133,6 +133,12 @@ add_action("wp_footer", function () {
     /* NAVIGATION */
 
     /* Exclude from Page List Block */
+    .wp-block-page-list.english > li:nth-child(1) > ul > li:nth-child(n+2):nth-child(-n+4),
+    .wp-block-page-list.english > li:not(:nth-child(1)):not(:nth-child(6)),
+    .wp-block-page-list.english > li:nth-child(6) > ul > li:nth-child(1),
+    .wp-block-page-list.english > li:nth-child(6) > ul > li:nth-child(1) > ul > li:nth-child(-n+2) {display: none;}
+    .wp-block-page-list.deutsch > li:nth-child(1),
+    .wp-block-page-list.deutsch > li:nth-child(n+3):nth-child(-n+7) {display: none;}
     .wp-block-page-list.site-overview > li:nth-child(2),
     .wp-block-page-list.site-overview > li:nth-child(3),
     .wp-block-page-list.site-overview > li:nth-child(4) {display: none;}
@@ -210,13 +216,14 @@ add_action("wp_footer", function () {
 
     /* TEXT & COLORS */
 
-    /* Emphasized Design Blocks */
+    /* (Emphasized) Design Blocks */
     .emphasized-design-green,
     .emphasized-design-red,
     .emphasized-design-orange {font-style: italic; border-left: 1px solid #808080; margin-left: 2em; padding-left: 2em;}
     .emphasized-design-green {color: #339966;}
     .emphasized-design-red {color: #990033;}
     .emphasized-design-orange {color: #ed7d31;}
+    .font-design-red {color: #990033;}
 
     /* BLOCKQUOTES */
 
