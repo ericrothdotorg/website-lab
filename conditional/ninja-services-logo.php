@@ -1,12 +1,16 @@
 <?php
 add_action('wp_footer', function() {
     if (
-        is_page(array('55867','138768','113713','123635','65752','65756')) ||
-        is_single(array('140909','127567','127484','121987','121984','141168','121985','135495','121986','121983')) ||
+        is_page(array(
+            // English Pages
+            '179','87873','59078','55867','138768','113713','123635','65752','8977','100674','83147','55706','65756','87873',
+            // German Pages
+            '150455','150449','149904','149998','150034','150120','150200','150223','150233')) ||
+        is_single(array(
+            '140909', '127567', '127484', '121987', '121984', '141168','121985', '135495', '121986', '121983')) ||
         is_tax('topics', 124)
-        ) {
+    ) {
         ?>
-
         <script>
         (function() {
             const initNinja = function() {
@@ -24,9 +28,9 @@ add_action('wp_footer', function() {
                     link.setAttribute("role", "link");
                     link.setAttribute("tabindex", "0");
                     const img = document.createElement("img");
-                    img.src = "https://ericroth.org/wp-content/uploads/2025/08/Ninja-Character-500-x-500.png";
+                    img.src = "https://ericroth.org/wp-content/uploads/2025/08/Ninja-Character-Stroke-1px.png";
                     img.alt = "Ninja Character Illustration";
-                    img.className = "custom-ninja-image";
+                    img.className = "custom-ninja-image daneden-slideInRight";
                     img.width = 100;
                     img.height = 100;
                     img.loading = "lazy";
@@ -44,7 +48,6 @@ add_action('wp_footer', function() {
             }
         })();
         </script>
-
         <style>
         .custom-ninja-wrapper {
             position: absolute;
@@ -70,7 +73,6 @@ add_action('wp_footer', function() {
         @media (max-width: 768px) {.custom-ninja-wrapper {width: 70px; height: 70px;}}
         @media (max-width: 480px) {.custom-ninja-wrapper {width: 60px; height: 60px;}}
         </style>
-
         <?php
     }
 });
