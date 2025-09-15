@@ -1,6 +1,6 @@
 <?php
 add_action('wp_footer', function () {
-  if (is_page(array('59078')) || is_single(array(''))) {
+  if (is_page(array('59078','150449')) || is_single(array(''))) {
     ?>
     <style>
       .formsubmit-wrapper {max-width: 700px; margin: 0 auto; padding: 2em; background: #3A4F66; border-radius: 25px;}
