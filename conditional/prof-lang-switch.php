@@ -4,6 +4,8 @@
 function should_inject_lang_script() {
     $pairs = array(
         // English
+        '/about-me',
+        '/about-me/contact',
         '/professional',
         '/professional/my-background',
         '/professional/my-background/my-competencies',
@@ -12,6 +14,8 @@ function should_inject_lang_script() {
         '/professional/my-publications',
         '/professional/my-availability',
         // Deutsch
+        '/ueber-mich',
+        '/ueber-mich/kontakt',
         '/berufswelt',
         '/berufswelt/mein-hintergrund',
         '/berufswelt/mein-hintergrund/meine-kompetenzen',
