@@ -210,7 +210,7 @@ add_action('wp_footer', function () {
                 setTimeout(() => {
                     const clockContainer = document.getElementById('sbb_uhr_container');
                     if (clockContainer) {
-                        window.myClock = new sbbUhr("sbb_uhr_container", true, 60);
+                        window.myClock = new sbbUhr("sbb_uhr_container", true);
                         if (window.myClock) {
                             window.myClock.start();
                         }
