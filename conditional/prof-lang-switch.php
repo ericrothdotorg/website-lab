@@ -1,39 +1,34 @@
 <?php
 
 // === CONDITIONAL INJECTION BASED ON PATH ===
+
 function should_inject_lang_script() {
-    $pairs = array(
-        // English
-        '/about-me',
-        '/about-me/contact',
-        '/professional',
-        '/professional/my-background',
-        '/professional/my-background/my-competencies',
-        '/professional/my-background/my-traits',
-        '/professional/my-compass',
-        '/professional/my-publications',
-        '/professional/my-availability',
-        // Deutsch
-        '/ueber-mich',
-        '/ueber-mich/kontakt',
-        '/berufswelt',
-        '/berufswelt/mein-hintergrund',
-        '/berufswelt/mein-hintergrund/meine-kompetenzen',
-        '/berufswelt/mein-hintergrund/meine-eigenschaften',
-        '/berufswelt/mein-kompass',
-        '/berufswelt/meine-publikationen',
-        '/berufswelt/meine-verfuegbarkeit'
+    $language_pairs = array(
+        // English -> German
+        '/about-me' => '/ueber-mich',
+        '/about-me/contact' => '/ueber-mich/kontakt',
+        '/professional' => '/berufswelt',
+        '/professional/my-background' => '/berufswelt/mein-hintergrund',
+        '/professional/my-background/my-competencies' => '/berufswelt/mein-hintergrund/meine-kompetenzen',
+        '/professional/my-background/my-traits' => '/berufswelt/mein-hintergrund/meine-eigenschaften',
+        '/professional/my-compass' => '/berufswelt/mein-kompass',
+        '/professional/my-publications' => '/berufswelt/meine-publikationen',
+        '/professional/my-availability' => '/berufswelt/meine-verfuegbarkeit'
     );
-    $pairs = array_map(function($p){
+    // Create a flat array of all valid paths (English + German)
+    $all_valid_paths = array_merge(array_keys($language_pairs), array_values($language_pairs));
+    // Remove trailing slashes from all paths
+    $all_valid_paths = array_map(function($p) {
         return rtrim($p, '/');
-    }, $pairs);
+    }, $all_valid_paths);
     $request_uri = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '';
     $current_path = parse_url($request_uri, PHP_URL_PATH);
     $current_path = rtrim($current_path, '/');
-    return in_array($current_path, $pairs, true);
+    return in_array($current_path, $all_valid_paths, true);
 }
 
 // === SCRIPT + STYLE INJECTION ===
+
 add_action('wp_footer', function() {
     if (!should_inject_lang_script()) return;
     ?>
@@ -41,8 +36,65 @@ add_action('wp_footer', function() {
         (function() {
             'use strict';
             let isProcessing = false;
+            // Auto-detect and redirect based on browser language
+            const autoDetectLanguage = () => {
+                // Check if user has already made a language choice
+                const storedLanguage = localStorage.getItem('userLanguageChoice');
+                if (storedLanguage) return; // Don't auto-redirect if user has made a choice
+                // Get browser language (first preference)
+                const browserLang = navigator.language || navigator.languages?.[0] || '';
+                const langCode = browserLang.toLowerCase().split('-')[0]; // Get just the language part
+                // Get current page info
+                const currentPath = window.location.pathname.replace(/\/$/, ''); // Remove trailing slash
+                // Define language pairs - English path maps to German path
+                const languagePairs = {
+                    // English -> German
+                    '/about-me': '/ueber-mich',
+                    '/about-me/contact': '/ueber-mich/kontakt',
+                    '/professional': '/berufswelt',
+                    '/professional/my-background': '/berufswelt/mein-hintergrund',
+                    '/professional/my-background/my-competencies': '/berufswelt/mein-hintergrund/meine-kompetenzen',
+                    '/professional/my-background/my-traits': '/berufswelt/mein-hintergrund/meine-eigenschaften',
+                    '/professional/my-compass': '/berufswelt/mein-kompass',
+                    '/professional/my-publications': '/berufswelt/meine-publikationen',
+                    '/professional/my-availability': '/berufswelt/meine-verfuegbarkeit'
+                };
+                // Create reverse mapping (German -> English)
+                const reversePairs = {};
+                Object.entries(languagePairs).forEach(([en, de]) => {
+                    reversePairs[de] = en;
+                });
+                // Determine if we're on English or German page
+                const isOnEnglishPage = languagePairs.hasOwnProperty(currentPath);
+                const isOnGermanPage = reversePairs.hasOwnProperty(currentPath);
+                // Auto-redirect logic
+                if (langCode === 'de' && isOnEnglishPage) {
+                    // Browser is German but on English page, redirect to German
+                    const germanPath = languagePairs[currentPath];
+                    if (germanPath) {
+                        window.location.href = germanPath;
+                        return;
+                    }
+                } else if (langCode === 'en' && isOnGermanPage) {
+                    // Browser is English but on German page, redirect to English
+                    const englishPath = reversePairs[currentPath];
+                    if (englishPath) {
+                        window.location.href = englishPath;
+                        return;
+                    }
+                }
+                // Fallback for unrecognized languages: default to English if on German page
+                if (!['de', 'en'].includes(langCode) && isOnGermanPage) {
+                    const englishPath = reversePairs[currentPath];
+                    if (englishPath) {
+                        window.location.href = englishPath;
+                    }
+                }
+            };
             document.addEventListener('DOMContentLoaded', function() {
                 try {
+                    // First, try auto-detection
+                    autoDetectLanguage();
                     document.body.classList.add('lang-ready');
                     document.querySelectorAll('.lang-flag').forEach(function(flag) {
                         flag.addEventListener('click', function(e) {
@@ -51,6 +103,16 @@ add_action('wp_footer', function() {
                             const target = flag.getAttribute('data-target');
                             if (target) {
                                 isProcessing = true;
+                                // Store user's manual language choice
+                                try {
+                                    // Determine language based on target URL
+                                    const germanPaths = ['/ueber-mich', '/berufswelt'];
+                                    const isGermanTarget = germanPaths.some(path => target.includes(path));
+                                    const targetLang = isGermanTarget ? 'de' : 'en';
+                                    localStorage.setItem('userLanguageChoice', targetLang);
+                                } catch (error) {
+                                    console.warn('Could not store language preference:', error);
+                                }
                                 window.location.href = target;
                             }
                         });
@@ -78,4 +140,3 @@ add_action('wp_footer', function() {
     </style>
     <?php
 });
-?>
