@@ -51,7 +51,6 @@ add_action('wp_footer', function() {
                             const target = flag.getAttribute('data-target');
                             if (target) {
                                 isProcessing = true;
-                                sessionStorage.setItem('langSwitched', 'true');
                                 window.location.href = target;
                             }
                         });
