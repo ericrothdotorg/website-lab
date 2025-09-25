@@ -115,8 +115,8 @@ function initialize_custom_dashboard() {
                 $query = new WP_Query($args);
                 foreach ($query->posts as $post) {
                     preg_match_all('/https:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $post->post_content, $matches);
-                    if (!empty($matches[2])) {
-                        foreach ($matches[2] as $video_id) {
+                    if (!empty($matches[1])) {
+                        foreach ($matches[1] as $video_id) {
                             $url = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={$video_id}&format=json";
                             $response = wp_remote_get($url);
                             if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
@@ -141,6 +141,10 @@ function initialize_custom_dashboard() {
                 }
                 echo '</div>';
             }
+            echo '</div>';
+            // Design Block Tracker Button
+            echo '<div style="width: calc(50% - 10px);">';
+            echo '<a href="https://ericroth.org/wp-admin/tools.php?page=design-block-tracker" class="button" style="margin-bottom: 10px;">🎨 Design Block Tracker</a>';
             echo '</div>';
 
             echo '</div>';
