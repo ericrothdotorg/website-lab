@@ -2,6 +2,8 @@
 
 defined('ABSPATH') || exit;
 
+if (!is_admin()) return;
+
 function initialize_custom_dashboard() {
     if (!is_admin() || !current_user_can('manage_options')) {
     return;
