@@ -2,6 +2,8 @@
 
 defined('ABSPATH') || exit;
 
+if (!is_admin()) return;
+
 function initialize_custom_admin_columns() {
     if (!is_admin() || !current_user_can('manage_options')) {
     return;
