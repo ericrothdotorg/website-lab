@@ -2,8 +2,6 @@
 
 defined('ABSPATH') || exit;
 
-if (!is_admin()) return;
-
 // Add admin menu
 add_action('admin_menu', function() {
     if (!current_user_can('manage_options')) return;
