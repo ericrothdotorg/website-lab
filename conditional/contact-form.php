@@ -1,4 +1,22 @@
 <?php
+
+/* SMTP CONFIGURATION (wp-config.php) */
+
+add_action('phpmailer_init', 'configure_smtp');
+function configure_smtp($phpmailer) {
+    $phpmailer->isSMTP();
+    $phpmailer->Host       = defined('SMTP_HOST') ? SMTP_HOST : '';
+    $phpmailer->SMTPAuth   = true;
+    $phpmailer->Port       = defined('SMTP_PORT') ? SMTP_PORT : 587;
+    $phpmailer->Username   = defined('SMTP_USER') ? SMTP_USER : '';
+    $phpmailer->Password   = defined('SMTP_PASS') ? SMTP_PASS : '';
+    $phpmailer->SMTPSecure = 'tls';
+    $phpmailer->From       = defined('SMTP_FROM') ? SMTP_FROM : '';
+    $phpmailer->FromName   = defined('SMTP_FROMNAME') ? SMTP_FROMNAME : '';
+}
+
+/* CONTACT FORM DISPLAY & SCRIPTS */
+
 add_action('wp_footer', function () {
   if (is_page(array('59078','150449')) || is_single(array(''))) {
     ?>
@@ -15,11 +33,16 @@ add_action('wp_footer', function () {
         border-radius: 5px;
         font-size: 18px;
         cursor: pointer;
-        width: 100px;
+        width: 125px;
         transition: background-color 0.3s ease;
       }
       .formsubmit-wrapper button[type="submit"]:hover {background-color: #c53030;}
-      .formsubmit-wrapper .confirmation {margin-top: 1em; margin-bottom: -1em; color: #FFFFFF;}
+      .formsubmit-wrapper .confirmation {
+        margin-top: 1em;
+        margin-bottom: -1em;
+        color: #FFFFFF;
+        display: none;
+      }
       .formsubmit-wrapper .hidden-field {position: absolute; left: -9999px; height: 1px; width: 1px; overflow: hidden;}
     </style>
     <script>
@@ -29,8 +52,16 @@ add_action('wp_footer', function () {
       const confirmation = document.getElementById("form-confirmation");
       const submitBtn = document.getElementById("submit-btn");
       const formLoadTime = Date.now();
+      let lastSubmissionTime = 0; // double-submit protection
       form.addEventListener("submit", function (e) {
         e.preventDefault();
+        const now = Date.now();
+        if (now - lastSubmissionTime < 5000) {
+          confirmation.textContent = "Please wait a few seconds before submitting again.";
+          confirmation.style.display = "block";
+          return;
+        }
+        lastSubmissionTime = now;
         const timeElapsed = (Date.now() - formLoadTime) / 1000;
         if (timeElapsed < 3) return;
         const honeypot = form.querySelector('input[name="middle_name"]');
@@ -66,7 +97,7 @@ add_action('wp_footer', function () {
   }
 });
 
-/* HANDLE FORM SUBMISSIONS */
+/* HANDLE FORM SUBMISSIONS (Legacy / Fallback) */
 
 add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'], $_POST['message'])) {
@@ -89,15 +120,29 @@ add_action('template_redirect', function () {
       ],
       ['%s', '%s', '%s', '%s']
     );
-  $admin_email = get_option('admin_email');
-  $subject_line = 'New Contact Form Submission';
-  $email_body = "Name: $name\n";
-  $email_body .= "Email: $email\n";
-  if (!empty($subject)) {
-    $email_body .= "Subject: $subject\n";
-  }
-  $email_body .= "Message:\n$message";
-  wp_mail($admin_email, $subject_line, $email_body);
+    $admin_email = get_option('admin_email');
+    $subject_line = 'New Contact Form Submission';
+    $email_body = "Name: $name\n";
+    $email_body .= "Email: $email\n";
+    if (!empty($subject)) {
+      $email_body .= "Subject: $subject\n";
+    }
+    $email_body .= "Message:\n$message";
+    wp_mail($admin_email, $subject_line, $email_body);
+    // Inline Fallback Confirmation Message
+    add_action('wp_footer', function() {
+      ?>
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          const confirmation = document.querySelector('.formsubmit-wrapper .confirmation');
+          if (confirmation) {
+            confirmation.textContent = "Thanks! Your message has been sent.";
+            confirmation.style.display = "block";
+          }
+        });
+      </script>
+      <?php
+    });
     wp_redirect(add_query_arg('contact', 'success', wp_get_referer()));
     exit;
   }
@@ -195,7 +240,6 @@ function display_contact_messages() {
   $per_page = 20;
   $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
   $offset = ($page - 1) * $per_page;
-
   if ($search) {
     $query = $wpdb->prepare("SELECT * FROM $table WHERE name LIKE %s OR email LIKE %s OR subject LIKE %s OR message LIKE %s ORDER BY submitted_at DESC LIMIT %d OFFSET %d",
       "%$search%", "%$search%", "%$search%", "%$search%", $per_page, $offset);
@@ -213,7 +257,7 @@ function display_contact_messages() {
   if ($messages) {
     echo '<form method="post">';
     wp_nonce_field('contact_messages_action');
-    echo '<table class="wp-list-table widefat fixed striped">';
+    echo '<table class="wp-list-table widefat fixed striped">'; 
     echo '<thead><tr><th></th><th>Name</th><th>Email</th><th>Subject</th><th>Message</th><th>Date</th></tr></thead><tbody>';
     foreach ($messages as $msg) {
       echo '<tr>';
