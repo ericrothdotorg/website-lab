@@ -28,7 +28,7 @@ function subscribe_form_shortcode($atts) {
     $html = $confirmation_style . '
     <div class="subscription-form-wrapper">
         <form method="post" id="subscription-form" class="subscription-form" novalidate>
-            <label for="subscriber_email" class="screen-reader-text">E-mail Address</label>
+            <label for="subscriber_email" class="screen-reader-text">Enter your E-mail</label>
             <input type="email" id="subscriber_email" name="subscriber_email" required placeholder="Enter your E-mail" autocomplete="email" aria-label="E-mail Address">
             <input type="hidden" name="contact_time" value="" autocomplete="off">
             <input type="hidden" name="middle_name" value="">
@@ -108,7 +108,8 @@ function is_disposable_email($email) {
         "temp-mail",
         "fakeinbox",
         "perevozka24-7",
-        "registry.godaddy"
+        "registry.godaddy",
+        "bonsoirmail"
     ];
     $disposable_domains = get_transient('disposable_domains_list');
     if ($disposable_domains === false) {
@@ -256,6 +257,17 @@ function notify_subscribers_on_new_content($post_ID) {
     $post_thumbnail_url = get_the_post_thumbnail_url($post_ID, 'medium');
     $subject = sanitize_text_field("$post_type_name: $post_title");
 
+    $from_email = defined('SMTP_FROM') ? SMTP_FROM : '';
+    $from_name  = defined('SMTP_FROMNAME') ? SMTP_FROMNAME : '';
+    if (empty($from_email) || empty($from_name)) return;
+
+    $headers = [
+        "From: $from_name <$from_email>",
+        "Reply-To: $from_email",
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=UTF-8'
+    ];
+
     foreach ($subscribers as $subscriber) {
         $unsubscribe_url = esc_url(site_url("/?unsubscribe=" . $subscriber->unsubscribe_token));
         ob_start();
@@ -279,12 +291,6 @@ function notify_subscribers_on_new_content($post_ID) {
         </body></html>
         <?php
         $message = ob_get_clean();
-        $headers = [
-            'From: Eric Roth <info@ericroth.org>',
-            'Reply-To: info@ericroth.org',
-            'MIME-Version: 1.0',
-            'Content-Type: text/html; charset=UTF-8'
-        ];
         $sent = wp_mail($subscriber->email, $subject, $message, $headers);
         if (!$sent) {
             error_log("Failed to send notification to: " . $subscriber->email);
