@@ -109,7 +109,21 @@ function is_disposable_email($email) {
         "fakeinbox",
         "perevozka24-7",
         "registry.godaddy",
-        "bonsoirmail"
+        "bonsoirmail",
+        "aurevoirmail",
+        "trashmail",
+        "getnada",
+        "mintemail",
+        "dispostable",
+        "yopmail",
+        "maildrop",
+        "moakt",
+        "sharklasers",
+        "spamgourmet",
+        "anonbox",
+        "throwawaymail",
+        "mailnesia",
+        "*.ru"
     ];
     $disposable_domains = get_transient('disposable_domains_list');
     if ($disposable_domains === false) {
@@ -148,11 +162,10 @@ function is_disposable_email($email) {
         set_transient('disposable_domains_list', $disposable_domains, DAY_IN_SECONDS);
     }
     foreach ($disposable_domains as $blocked) {
-        $pattern = '/(^|\.)' . preg_quote($blocked, '/') . '(\.|$)/i';
         if (
-            preg_match($pattern, $domain) ||
-            preg_match($pattern, $full_without_tld) ||
-            preg_match($pattern, $basename)
+            fnmatch($blocked, $domain) ||
+            fnmatch($blocked, $full_without_tld) ||
+            fnmatch($blocked, $basename)
         ) {
             return true;
         }
