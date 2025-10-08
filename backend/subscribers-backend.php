@@ -4,7 +4,7 @@ defined('ABSPATH') || exit;
 
 if (is_admin() && current_user_can('manage_options')) {
 
-    /* Register Admin Menu */
+    // Register Admin Menu
     function add_subscriber_admin_page() {
         add_menu_page(
             'Subscribers',
@@ -18,7 +18,7 @@ if (is_admin() && current_user_can('manage_options')) {
     }
     add_action('admin_menu', 'add_subscriber_admin_page');
 
-    /* Display Subscriber List */
+    // Display Subscriber List
     function display_subscriber_list() {
         global $wpdb;
         $subscribers_table = $wpdb->prefix . "subscribers";
