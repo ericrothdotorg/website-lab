@@ -1,6 +1,6 @@
 <?php
 
-/* CREATE SUBSCRIBERS TABLE TO STORE STUFF */
+// CREATE SUBSCRIBERS TABLE TO STORE STUFF
 
 add_action('init', function () {
     if (!get_option('subscribers_table_created')) {
@@ -25,7 +25,7 @@ add_action('init', function () {
     }
 });
 
-/* SHORTCODE: [SUBSCRIBE_FORM LAYOUT="VERTICAL | HORIZONTAL"] */
+// SHORTCODE: [SUBSCRIBE_FORM LAYOUT="VERTICAL | HORIZONTAL"]
 
 function subscribe_form_shortcode($atts) {
     $atts = shortcode_atts(['layout' => ''], $atts);
@@ -107,7 +107,7 @@ function subscribe_form_shortcode($atts) {
 }
 add_shortcode('subscribe_form', 'subscribe_form_shortcode');
 
-/* TRACK IP AND USER AGENT ON USER REGISTRATION */
+// TRACK IP AND USER AGENT ON USER REGISTRATION
 
 add_action('user_register', function($user_id) {
     if (!empty($user_id)) {
@@ -118,7 +118,7 @@ add_action('user_register', function($user_id) {
     }
 });
 
-/* REUSABLE FUNCTION TO CHECK IF AN E-MAIL IS DISPOSABLE */
+// REUSABLE FUNCTION TO CHECK IF AN E-MAIL IS DISPOSABLE
 
 function is_disposable_email($email) {
     $domain = strtolower(substr(strrchr($email, "@"), 1));
@@ -201,7 +201,7 @@ function is_disposable_email($email) {
     return false;
 }
 
-/* AJAX SUBSCRIBE HANDLER */
+// AJAX SUBSCRIBE HANDLER
 
 function ajax_subscribe_user() {
     $ip = $_SERVER['REMOTE_ADDR'] ?? '';
@@ -250,7 +250,7 @@ function ajax_subscribe_user() {
 add_action('wp_ajax_nopriv_subscribe_user', 'ajax_subscribe_user');
 add_action('wp_ajax_subscribe_user', 'ajax_subscribe_user');
 
-/* HOOK INTO WP REGISTRATION ERRORS FILTER (FOR ASGAROS AND WP REGISTRATIONS) */
+// HOOK INTO WP REGISTRATION ERRORS FILTER (FOR ASGAROS AND WP REGISTRATIONS)
 
 add_filter('registration_errors', function($errors, $sanitized_user_login, $user_email) {
     if (is_disposable_email($user_email)) {
@@ -259,7 +259,7 @@ add_filter('registration_errors', function($errors, $sanitized_user_login, $user
     return $errors;
 }, 10, 3);
 
-/* HANDLE UNSUBSCRIBE VIA TOKEN */
+// HANDLE UNSUBSCRIBE VIA TOKEN
 
 function handle_unsubscribe() {
     if (isset($_GET['unsubscribe'])) {
@@ -280,7 +280,7 @@ function handle_unsubscribe() {
 }
 add_action('init', 'handle_unsubscribe');
 
-/* NOTIFY SUBSCRIBERS WHEN NEW POSTS ARE PUBLISHED */
+// NOTIFY SUBSCRIBERS WHEN NEW POSTS ARE PUBLISHED
 
 function notify_subscribers_on_new_content($post_ID) {
     global $wpdb;
