@@ -1,5 +1,29 @@
 <?php
 
+/* CREATE DATABASE TABLE TO STORE STUFF */
+
+add_action('init', function () {
+  if (!get_option('contact_messages_table_created')) {
+    global $wpdb;
+    $table = $wpdb->prefix . 'contact_messages';
+    $charset = $wpdb->get_charset_collate();
+
+    $sql = "CREATE TABLE $table (
+      id MEDIUMINT(9) NOT NULL AUTO_INCREMENT,
+      name VARCHAR(100) NOT NULL,
+      email VARCHAR(100) NOT NULL,
+      subject VARCHAR(150) NOT NULL,
+      message TEXT NOT NULL,
+      submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id)
+    ) $charset;";
+
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    dbDelta($sql);
+    update_option('contact_messages_table_created', true);
+  }
+});
+
 /* SMTP CONFIGURATION (wp-config.php) */
 
 add_action('phpmailer_init', 'configure_smtp');
@@ -187,28 +211,6 @@ function handle_contact_form_ajax() {
   wp_mail($admin_email, $subject_line, $email_body);
   wp_send_json_success();
 }
-
-/* CREATE DATABASE TABLE TO STORE STUFF */
-
-add_action('init', function () {
-  if (!get_option('contact_messages_table_created')) {
-    global $wpdb;
-    $table = $wpdb->prefix . 'contact_messages';
-    $charset = $wpdb->get_charset_collate();
-    $sql = "CREATE TABLE $table (
-      id MEDIUMINT(9) NOT NULL AUTO_INCREMENT,
-      name VARCHAR(100) NOT NULL,
-      email VARCHAR(100) NOT NULL,
-      subject VARCHAR(150) NOT NULL,
-      message TEXT NOT NULL,
-      submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (id)
-    ) $charset;";
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql);
-    update_option('contact_messages_table_created', true);
-  }
-});
 
 /* CREATE ADMIN MENU TO MANAGE MESSAGES */
 
