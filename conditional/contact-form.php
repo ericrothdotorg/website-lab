@@ -1,6 +1,6 @@
 <?php
 
-/* CREATE DATABASE TABLE TO STORE STUFF */
+// CREATE DATABASE TABLE TO STORE STUFF
 
 add_action('init', function () {
   if (!get_option('contact_messages_table_created')) {
@@ -24,7 +24,7 @@ add_action('init', function () {
   }
 });
 
-/* SMTP CONFIGURATION (wp-config.php) */
+// SMTP CONFIGURATION (wp-config.php)
 
 add_action('phpmailer_init', 'configure_smtp');
 function configure_smtp($phpmailer) {
@@ -39,7 +39,7 @@ function configure_smtp($phpmailer) {
     $phpmailer->FromName   = defined('SMTP_FROMNAME') ? SMTP_FROMNAME : '';
 }
 
-/* CONTACT FORM DISPLAY & SCRIPTS */
+// CONTACT FORM DISPLAY & SCRIPTS
 
 add_action('wp_footer', function () {
   if (is_page(array('59078','150449')) || is_single(array(''))) {
@@ -121,7 +121,7 @@ add_action('wp_footer', function () {
   }
 });
 
-/* HANDLE FORM SUBMISSIONS (Legacy / Fallback) */
+// HANDLE FORM SUBMISSIONS (Legacy / Fallback)
 
 add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'], $_POST['message'])) {
@@ -172,7 +172,7 @@ add_action('template_redirect', function () {
   }
 });
 
-/* AJAX HANDLER (for Confirmation Message) */
+// AJAX HANDLER (for Confirmation Message)
 
 add_action('wp_ajax_submit_contact_form_ajax', 'handle_contact_form_ajax');
 add_action('wp_ajax_nopriv_submit_contact_form_ajax', 'handle_contact_form_ajax');
@@ -212,7 +212,7 @@ function handle_contact_form_ajax() {
   wp_send_json_success();
 }
 
-/* CREATE ADMIN MENU TO MANAGE MESSAGES */
+// CREATE ADMIN MENU TO MANAGE MESSAGES
 
 add_action('admin_menu', function () {
   add_menu_page(
