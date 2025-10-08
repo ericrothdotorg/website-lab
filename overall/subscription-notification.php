@@ -1,6 +1,32 @@
 <?php
 
-/* Shortcode: [subscribe_form layout="vertical | horizontal"] */
+/* CREATE SUBSCRIBERS TABLE TO STORE STUFF */
+
+add_action('init', function () {
+    if (!get_option('subscribers_table_created')) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'subscribers';
+        $charset_collate = $wpdb->get_charset_collate();
+        
+        $sql = "CREATE TABLE $table_name (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            email varchar(100) NOT NULL,
+            unsubscribe_token varchar(32) NOT NULL,
+            subscription_date datetime DEFAULT CURRENT_TIMESTAMP,
+            ip_address varchar(100),
+            user_agent text,
+            PRIMARY KEY (id),
+            UNIQUE KEY email (email)
+        ) $charset_collate;";
+        
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+        update_option('subscribers_table_created', true);
+    }
+});
+
+/* SHORTCODE: [SUBSCRIBE_FORM LAYOUT="VERTICAL | HORIZONTAL"] */
+
 function subscribe_form_shortcode($atts) {
     $atts = shortcode_atts(['layout' => ''], $atts);
     if (!in_array($atts['layout'], ['vertical', 'horizontal'])) {
@@ -81,7 +107,8 @@ function subscribe_form_shortcode($atts) {
 }
 add_shortcode('subscribe_form', 'subscribe_form_shortcode');
 
-/* Track IP and User Agent on User Registration */
+/* TRACK IP AND USER AGENT ON USER REGISTRATION */
+
 add_action('user_register', function($user_id) {
     if (!empty($user_id)) {
         $ip_address = $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
@@ -91,7 +118,8 @@ add_action('user_register', function($user_id) {
     }
 });
 
-/* Reusable Function to check if an E-mail is disposable */
+/* REUSABLE FUNCTION TO CHECK IF AN E-MAIL IS DISPOSABLE */
+
 function is_disposable_email($email) {
     $domain = strtolower(substr(strrchr($email, "@"), 1));
     $domain = trim(str_replace(['。', '․', '﹒', '｡'], '.', $domain));
@@ -173,7 +201,8 @@ function is_disposable_email($email) {
     return false;
 }
 
-/* AJAX Subscribe Handler */
+/* AJAX SUBSCRIBE HANDLER */
+
 function ajax_subscribe_user() {
     $ip = $_SERVER['REMOTE_ADDR'] ?? '';
     $cooldown_key = 'subscribe_form_last_submit_' . md5($ip);
@@ -221,7 +250,8 @@ function ajax_subscribe_user() {
 add_action('wp_ajax_nopriv_subscribe_user', 'ajax_subscribe_user');
 add_action('wp_ajax_subscribe_user', 'ajax_subscribe_user');
 
-/* Hook into WP Registration Errors Filter (for Asgaros and WP Registrations) */
+/* HOOK INTO WP REGISTRATION ERRORS FILTER (FOR ASGAROS AND WP REGISTRATIONS) */
+
 add_filter('registration_errors', function($errors, $sanitized_user_login, $user_email) {
     if (is_disposable_email($user_email)) {
         $errors->add('disposable_email', __('Disposable E-mail addresses are not allowed.'));
@@ -229,7 +259,8 @@ add_filter('registration_errors', function($errors, $sanitized_user_login, $user
     return $errors;
 }, 10, 3);
 
-/* Handle Unsubscribe via Token */
+/* HANDLE UNSUBSCRIBE VIA TOKEN */
+
 function handle_unsubscribe() {
     if (isset($_GET['unsubscribe'])) {
         global $wpdb;
@@ -249,7 +280,8 @@ function handle_unsubscribe() {
 }
 add_action('init', 'handle_unsubscribe');
 
-/* Notify Subscribers when new Posts are published */
+/* NOTIFY SUBSCRIBERS WHEN NEW POSTS ARE PUBLISHED */
+
 function notify_subscribers_on_new_content($post_ID) {
     global $wpdb;
     $post = get_post($post_ID);
