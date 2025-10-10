@@ -9,6 +9,8 @@ add_action('wp_head', function() {
     #tts-toggle-btn .toggle-visual::after {background: #192a3d; border-radius: 50%; content: ''; cursor: pointer; display: inline-block; position: absolute; left:1px; top: 1px; transition: all ease-in-out 0.3s; width: 21px; height: 21px;}
     #tts-toggle-btn input[type='checkbox']:checked + .toggle-visual {background: #0f1924; border-color: #3A4F66;}
     #tts-toggle-btn input[type='checkbox']:checked + .toggle-visual::after {background: #3A4F66; transform: translateX(25px);}
+    /*TTS Status*/
+    #tts-status, .tts-toggle-btn-accessibility-label {position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;}
     /* TTS Controls Button */
     #tts-controls {display: flex; align-items: center; gap: 10px; position: fixed; bottom: 27.5px; left: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 9999;}
     #tts-controls.show {opacity: 1; pointer-events: auto;}
@@ -31,6 +33,13 @@ add_action('wp_footer', function() {
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
+
+      if (!('speechSynthesis' in window)) {
+        console.warn('Speech synthesis not supported in this browser');
+        document.getElementById('tts-toggle-btn')?.style.setProperty('display', 'none');
+        return;
+      }
+
       try { speechSynthesis.cancel(); } catch(e) {}
 
       // TTS Manager Class
@@ -235,7 +244,9 @@ add_action('wp_footer', function() {
                 controls.classList.add('show');
                 localStorage.setItem('ttsEnabled','true');
                 window.scrollTo({top:0, behavior:'smooth'});
-                setTimeout(speakContent,500);
+                setTimeout(() => {
+                  if (window.speakContent) window.speakContent();
+                }, 500);
               } else {
                 controls.classList.remove('show');
                 if (window.stopSpeaking) window.stopSpeaking();
@@ -280,7 +291,7 @@ add_action('wp_footer', function() {
               if (!self.initialized) { self.initTTS(); }
               controls?.classList.add('show');
               document.querySelectorAll('#tts-toggle-switch').forEach(toggle => toggle.checked = true);
-              setTimeout(() => { if (window.speakContent) window.speakContent(); }, 300);
+              setTimeout(() => { if (window.speakContent) window.speakContent(); }, 500);
             }, 200);
           }
         }
