@@ -196,13 +196,6 @@ function initialize_custom_dashboard() {
         update_option('custom_broken_yt_results', $result);
         update_option('custom_last_yt_check', time());
     });
-    // Clean up the scheduled event when plugin / theme is deactivated (optional)
-    register_deactivation_hook(__FILE__, function() {
-        $timestamp = wp_next_scheduled('custom_daily_yt_check_event');
-        if ($timestamp) {
-            wp_unschedule_event($timestamp, 'custom_daily_yt_check_event');
-        }
-    });
 
     // 🌀 ADD HOSTINGER STUFF BUTTONS
 
@@ -421,13 +414,6 @@ function initialize_custom_dashboard() {
     add_action('custom_daily_cleanup_event', function() {
         custom_run_full_inno_db_cleanup();
         update_option('custom_last_automated_cleanup', time());
-    });
-    // Clean up the scheduled event when plugin / theme is deactivated (optional)
-    register_deactivation_hook(__FILE__, function() {
-        $timestamp = wp_next_scheduled('custom_daily_cleanup_event');
-        if ($timestamp) {
-            wp_unschedule_event($timestamp, 'custom_daily_cleanup_event');
-        }
     });
 
     // 📰 ADD RSS FEED READER
