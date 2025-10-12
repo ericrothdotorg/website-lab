@@ -7,7 +7,8 @@ function initialize_custom_dashboard() {
     return;
     }
 
-    // 📇 Add emoji icons for core widgets
+    // 📇 ADD EMOJI ICONS FOR CORE WIDGETS
+
     add_action('wp_dashboard_setup', function() {
         $widgets = [
             'dashboard_right_now'  => '📇 At a Glance',
@@ -20,7 +21,8 @@ function initialize_custom_dashboard() {
         }
     });
 
-    // 📇 Add CPTs to "At a Glance"
+    // 📇 ADD CPTS TO "AT A GLANCE"
+
     add_filter('dashboard_glance_items', function ($items) {
         $post_types = get_post_types(['public' => true, '_builtin' => false], 'objects');
         foreach ($post_types as $pt) {
@@ -37,7 +39,8 @@ function initialize_custom_dashboard() {
         return $items;
     });
 
-    // 🎨 Add Theme Snapshot and Buttons
+    // 🎨 ADD THEME SNAPSHOT AND BUTTONS
+
     add_action('wp_dashboard_setup', function() {
         wp_add_dashboard_widget('custom_theme_snapshot', '🎨 Theme Snapshot', function() {
             $theme = wp_get_theme();
@@ -57,7 +60,8 @@ function initialize_custom_dashboard() {
         });
     });
 
-    // 📊 Add Analytics Toolkit
+    // 📊 ADD ANALYTICS TOOLKIT
+
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget('custom_analytics_toolkit', '📊 Analytics Toolkit', function () {
             // Define URLs for external Tools
@@ -151,7 +155,8 @@ function initialize_custom_dashboard() {
         });
     });
 
-    // 🌀 Add Hostinger Stuff Buttons
+    // 🌀 ADD HOSTINGER STUFF BUTTONS
+
     add_action('wp_dashboard_setup', function() {
         wp_add_dashboard_widget('custom_hostinger_stuff', '🌀 Hostinger Stuff', function() {
             echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
@@ -162,7 +167,8 @@ function initialize_custom_dashboard() {
         });
     });
 
-    // 🗓️ Add Recent Site Activity
+    // 🗓️ ADD RECENT SITE ACTIVITY
+
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget('custom_activity_alerts', '🗓️ Recent Site Activity', function () {
             global $wpdb;
@@ -218,12 +224,12 @@ function initialize_custom_dashboard() {
                 WHERE meta_key = 'dislikes'
             ");
             echo '<ul style="font-size: 14px; line-height: 1.5;">';
-            echo '<li>🧍 Subscribers: <strong>' . intval($subs_today) . '</strong> today / <strong>' . $format_count($subs_total) . '</strong> total</li>';
-            echo '<li>📬 Contact Messages: <strong>' . intval($contact_today) . '</strong> today / <strong>' . $format_count($contact_total) . '</strong> total</li>';
-            echo '<li>🙋 Forum Users: <strong>' . intval($forum_users_today) . '</strong> today / <strong>' . $format_count($forum_users_total) . '</strong> total</li>';
-            echo '<li>💬 Forum Posts: <strong>' . intval($forum_today) . '</strong> today / <strong>' . $format_count($forum_total) . '</strong> total</li>';
-            echo '<li>👍 Likes: <strong>' . intval($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</li>';
-            echo '<li>👎 Dislikes: <strong>' . intval($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</li>';
+            echo '<li>🧍 Subscribers: <strong style="color: red;">' . intval($subs_today) . '</strong> today / <strong>' . $format_count($subs_total) . '</strong> total</li>';
+            echo '<li>📬 Contact Messages: <strong style="color: red;">' . intval($contact_today) . '</strong> today / <strong>' . $format_count($contact_total) . '</strong> total</li>';
+            echo '<li>🙋 Forum Users: <strong style="color: red;">' . intval($forum_users_today) . '</strong> today / <strong>' . $format_count($forum_users_total) . '</strong style="color: red;"> total</li>';
+            echo '<li>💬 Forum Posts: <strong style="color: red;">' . intval($forum_today) . '</strong> today / <strong>' . $format_count($forum_total) . '</strong> total</li>';
+            echo '<li>👍 Likes: <strong style="color: red;">' . intval($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</li>';
+            echo '<li>👎 Dislikes: <strong style="color: red;">' . intval($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</li>';
             echo '</ul>';
             // Today's 👍 Liked / 👎 Disliked Content (Aggregated)
             $engagement_summary = $wpdb->get_results("
@@ -260,7 +266,8 @@ function initialize_custom_dashboard() {
         });
     });
 
-    // 🧹 Add Optimize & Clean-Up Buttons
+    // 🧹 ADD OPTIMIZE & CLEAN-UP BUTTONS
+
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget(
             'custom_optimize_and_cleanup',
@@ -286,6 +293,12 @@ function initialize_custom_dashboard() {
         echo '<div style="margin-top: 10px;">';
         echo '<p style="font-size: 14px; margin: 5px 0;">Post Meta Rows: <strong>' . number_format_i18n($postmeta_count) . '</strong> ';
         echo '<span style="color:' . esc_attr($status_color) . ';">– ' . esc_html($status_note) . '</span></p>';
+        // Show last automated cleanup time
+        $last_cleanup = get_option('custom_last_automated_cleanup');
+        if ($last_cleanup) {
+            echo '<p style="font-size: 12px; color: #666; margin: 5px 0;">Last automated cleanup: ' . 
+                 esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</p>';
+        }
         echo '</div>';
     }
     function custom_run_full_inno_db_cleanup() {
@@ -349,8 +362,27 @@ function initialize_custom_dashboard() {
         }
         return "✅ Full cleanup complete. Total rows deleted: $deleted_total. Tables optimized.";
     }
+    // Schedule automated cleanup to run daily at midnight
+    add_action('wp', function() {
+        if (!wp_next_scheduled('custom_daily_cleanup_event')) {
+            wp_schedule_event(strtotime('tomorrow midnight'), 'daily', 'custom_daily_cleanup_event');
+        }
+    });
+    // Hook the cleanup function to the scheduled event
+    add_action('custom_daily_cleanup_event', function() {
+        custom_run_full_inno_db_cleanup();
+        update_option('custom_last_automated_cleanup', time());
+    });
+    // Clean up the scheduled event when plugin/theme is deactivated (optional)
+    register_deactivation_hook(__FILE__, function() {
+        $timestamp = wp_next_scheduled('custom_daily_cleanup_event');
+        if ($timestamp) {
+            wp_unschedule_event($timestamp, 'custom_daily_cleanup_event');
+        }
+    });
 
-    // 📰 Add RSS Feed Reader
+    // 📰 ADD RSS FEED READER
+
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget('custom_rss_widget', '📡 RSS Feed: Blog & Interests', 'custom_render_rss_widget');
     });
@@ -399,7 +431,8 @@ function initialize_custom_dashboard() {
         echo '</div>';
     }
 
-    // 🗂️ Pages & Traits Snapshot
+    // 🗂️ PAGES & TRAITS SNAPSHOT
+
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget('custom_snapshot_widget', '🗂️ Pages & Traits Snapshot', 'custom_render_snapshot_widget');
     });
