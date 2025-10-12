@@ -108,34 +108,36 @@ function initialize_custom_dashboard() {
             echo '<form method="post">';
             echo '<button type="submit" name="check_broken_yt" class="button" style="margin-bottom:10px;">🔍 Broken YT Links</button>';
             echo '</form>';
-            // Run broken YT Links Checker with Button
+            // Get cached results from automated check
+            $cached_results = get_option('custom_broken_yt_results');
+            $last_check = get_option('custom_last_yt_check');
+            // Run broken YT Links Checker with Button (manual check)
             if (isset($_POST['check_broken_yt'])) {
-                $broken_links = 0;
-                $broken_posts = [];
-                $args = [
-                    'post_type' => ['post', 'page', 'my-interests', 'my-traits'],
-                    'posts_per_page' => -1,
-                ];
-                $query = new WP_Query($args);
-                foreach ($query->posts as $post) {
-                    preg_match_all('/https:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $post->post_content, $matches);
-                    if (!empty($matches[1])) {
-                        foreach ($matches[1] as $video_id) {
-                            $url = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={$video_id}&format=json";
-                            $response = wp_remote_get($url);
-                            if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
-                                $broken_links++;
-                                $broken_posts[$post->ID][] = $video_id;
-                            }
-                        }
-                    }
-                }
-                // Output broken YT Links Checker Results
+                $result = custom_check_broken_yt_links();
                 echo '<div id="broken-yt-results" style="margin-top: 10px;">';
-                echo '<p>🔴 Broken YT Links: <strong style="color: red;">' . $broken_links . '</strong></p>';
-                if (!empty($broken_posts)) {
+                echo '<p>🔴 Broken YT Links: <strong style="color: red;">' . $result['broken_count'] . '</strong></p>';
+                if (!empty($result['broken_posts'])) {
                     echo '<details style="margin-top: 15px;"><summary style="cursor: pointer; margin-bottom: 15px;"><strong>Broken Links Locations</strong></summary><ul>';
-                    foreach ($broken_posts as $post_id => $video_ids) {
+                    foreach ($result['broken_posts'] as $post_id => $video_ids) {
+                        $title = get_the_title($post_id);
+                        $edit_link = get_edit_post_link($post_id);
+                        echo '<li><a href="' . esc_url($edit_link) . '" target="_blank">' . esc_html($title) . '</a>: ';
+                        echo implode(', ', array_map('esc_html', $video_ids)) . '</li>';
+                    }
+                    echo '</ul></details>';
+                }
+                echo '</div>';
+            } elseif ($cached_results) {
+                // Show cached results from automated check
+                echo '<div style="margin-top: 10px;">';
+                echo '<p>🔴 Broken YT Links: <strong style="color: red;">' . $cached_results['broken_count'] . '</strong></p>';
+                if ($last_check) {
+                    echo '<p style="font-size: 12px; color: #666;">Last checked: ' . 
+                         esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_check)) . '</p>';
+                }
+                if (!empty($cached_results['broken_posts'])) {
+                    echo '<details style="margin-top: 15px;"><summary style="cursor: pointer; margin-bottom: 15px;"><strong>Broken Links Locations</strong></summary><ul>';
+                    foreach ($cached_results['broken_posts'] as $post_id => $video_ids) {
                         $title = get_the_title($post_id);
                         $edit_link = get_edit_post_link($post_id);
                         echo '<li><a href="' . esc_url($edit_link) . '" target="_blank">' . esc_html($title) . '</a>: ';
@@ -146,6 +148,7 @@ function initialize_custom_dashboard() {
                 echo '</div>';
             }
             echo '</div>';
+
             // Design Block Tracker Button
             echo '<div style="width: calc(50% - 10px);">';
             echo '<a href="https://ericroth.org/wp-admin/tools.php?page=design-block-tracker" class="button" style="margin-bottom: 10px;">🎨 Design Block Tracker</a>';
@@ -153,6 +156,52 @@ function initialize_custom_dashboard() {
 
             echo '</div>';
         });
+    });
+    // Function to check broken YouTube links
+    function custom_check_broken_yt_links() {
+        $broken_links = 0;
+        $broken_posts = [];
+        $args = [
+            'post_type' => ['post', 'page', 'my-interests', 'my-traits'],
+            'posts_per_page' => -1,
+        ];
+        $query = new WP_Query($args);
+        foreach ($query->posts as $post) {
+            preg_match_all('/https:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $post->post_content, $matches);
+            if (!empty($matches[1])) {
+                foreach ($matches[1] as $video_id) {
+                    $url = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={$video_id}&format=json";
+                    $response = wp_remote_get($url);
+                    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+                        $broken_links++;
+                        $broken_posts[$post->ID][] = $video_id;
+                    }
+                }
+            }
+        }
+        return [
+            'broken_count' => $broken_links,
+            'broken_posts' => $broken_posts
+        ];
+    }
+    // Schedule automated YouTube link check to run daily at midnight
+    add_action('wp', function() {
+        if (!wp_next_scheduled('custom_daily_yt_check_event')) {
+            wp_schedule_event(strtotime('tomorrow midnight'), 'daily', 'custom_daily_yt_check_event');
+        }
+    });
+    // Hook the YouTube check function to the scheduled event
+    add_action('custom_daily_yt_check_event', function() {
+        $result = custom_check_broken_yt_links();
+        update_option('custom_broken_yt_results', $result);
+        update_option('custom_last_yt_check', time());
+    });
+    // Clean up the scheduled event when plugin / theme is deactivated (optional)
+    register_deactivation_hook(__FILE__, function() {
+        $timestamp = wp_next_scheduled('custom_daily_yt_check_event');
+        if ($timestamp) {
+            wp_unschedule_event($timestamp, 'custom_daily_yt_check_event');
+        }
     });
 
     // 🌀 ADD HOSTINGER STUFF BUTTONS
@@ -373,7 +422,7 @@ function initialize_custom_dashboard() {
         custom_run_full_inno_db_cleanup();
         update_option('custom_last_automated_cleanup', time());
     });
-    // Clean up the scheduled event when plugin/theme is deactivated (optional)
+    // Clean up the scheduled event when plugin / theme is deactivated (optional)
     register_deactivation_hook(__FILE__, function() {
         $timestamp = wp_next_scheduled('custom_daily_cleanup_event');
         if ($timestamp) {
