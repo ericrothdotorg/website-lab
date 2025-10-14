@@ -114,6 +114,9 @@ function initialize_custom_dashboard() {
             // Run broken YT Links Checker with Button (manual check)
             if (isset($_POST['check_broken_yt'])) {
                 $result = custom_check_broken_yt_links();
+                update_option('custom_broken_yt_results', $result);
+                update_option('custom_last_yt_check', time());
+                delete_option('custom_yt_check_type');
                 echo '<div id="broken-yt-results" style="margin-top: 10px;">';
                 echo '<p>🔴 Broken YT Links: <strong style="color: red;">' . $result['broken_count'] . '</strong></p>';
                 if (!empty($result['broken_posts'])) {
@@ -132,8 +135,11 @@ function initialize_custom_dashboard() {
                 echo '<div style="margin-top: 10px;">';
                 echo '<p>🔴 Broken YT Links: <strong style="color: red;">' . $cached_results['broken_count'] . '</strong></p>';
                 if ($last_check) {
+                    $check_type = get_option('custom_yt_check_type', '');
+                    $tag = $check_type ? ' <strong>(' . esc_html($check_type) . ' check)</strong>' : '';
                     echo '<p style="font-size: 12px; color: #666;">Last checked: ' . 
-                         esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_check)) . '</p>';
+                         esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_check)) . 
+                         $tag . '</p>';
                 }
                 if (!empty($cached_results['broken_posts'])) {
                     echo '<details style="margin-top: 15px;"><summary style="cursor: pointer; margin-bottom: 15px;"><strong>Broken Links Locations</strong></summary><ul>';
@@ -169,7 +175,11 @@ function initialize_custom_dashboard() {
         foreach ($query->posts as $post) {
             preg_match_all('/https:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $post->post_content, $matches);
             if (!empty($matches[1])) {
+                $excluded_video_ids = ['-cW']; // Add video IDs to exclude from check
                 foreach ($matches[1] as $video_id) {
+                    if (in_array($video_id, $excluded_video_ids)) {
+                        continue;
+                    }
                     $url = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={$video_id}&format=json";
                     $response = wp_remote_get($url);
                     if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
@@ -195,6 +205,7 @@ function initialize_custom_dashboard() {
         $result = custom_check_broken_yt_links();
         update_option('custom_broken_yt_results', $result);
         update_option('custom_last_yt_check', time());
+        update_option('custom_yt_check_type', 'Automatic');
     });
 
     // 🌀 ADD HOSTINGER STUFF BUTTONS
@@ -320,7 +331,8 @@ function initialize_custom_dashboard() {
     function custom_render_optimize_and_cleanup() {
         if (isset($_POST['er_run_full_cleanup']) && current_user_can('manage_options')) {
             $result = custom_run_full_inno_db_cleanup();
-            echo "<div class='notice notice-success is-dismissible'><p>$result</p></div>";
+            update_option('custom_last_automated_cleanup', time());
+            update_option('custom_last_cleanup_result', $result);
         }
         echo '<div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">';
         echo '<form method="post" style="margin: 0;">';
@@ -335,11 +347,15 @@ function initialize_custom_dashboard() {
         echo '<div style="margin-top: 10px;">';
         echo '<p style="font-size: 14px; margin: 5px 0;">Post Meta Rows: <strong>' . number_format_i18n($postmeta_count) . '</strong> ';
         echo '<span style="color:' . esc_attr($status_color) . ';">– ' . esc_html($status_note) . '</span></p>';
-        // Show last automated cleanup time
+        // Show last automated cleanup time and result
         $last_cleanup = get_option('custom_last_automated_cleanup');
+        $last_result = get_option('custom_last_cleanup_result');
         if ($last_cleanup) {
-            echo '<p style="font-size: 12px; color: #666; margin: 5px 0;">Last automated cleanup: ' . 
-                 esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</p>';
+            echo '<p style="font-size: 12px; color: #666; margin: 5px 0;">Last cleanup: ' . 
+                esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</p>';
+            if ($last_result) {
+                echo '<p style="font-size: 12px; color: #666; margin: 5px 0;">' . esc_html($last_result) . '</p>';
+            }
         }
         echo '</div>';
     }
@@ -402,7 +418,7 @@ function initialize_custom_dashboard() {
         foreach ($tables as $table) {
             $wpdb->query("OPTIMIZE TABLE {$wpdb->prefix}$table");
         }
-        return "✅ Full cleanup complete. Total rows deleted: $deleted_total. Tables optimized.";
+        return "✅ Total rows deleted: $deleted_total. Tables optimized.";
     }
     // Schedule automated cleanup to run daily at midnight
     add_action('wp', function() {
@@ -412,8 +428,9 @@ function initialize_custom_dashboard() {
     });
     // Hook the cleanup function to the scheduled event
     add_action('custom_daily_cleanup_event', function() {
-        custom_run_full_inno_db_cleanup();
+        $result = custom_run_full_inno_db_cleanup();
         update_option('custom_last_automated_cleanup', time());
+        update_option('custom_last_cleanup_result', $result . ' (Automatic run)');
     });
 
     // 📰 ADD RSS FEED READER
