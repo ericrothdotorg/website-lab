@@ -91,79 +91,69 @@ function initialize_custom_dashboard() {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
             $plugin_count = count(get_plugins());
-            // Metrics Display Section
-            echo '<div style="margin-top:15px; display: flex; flex-wrap: wrap; gap: 20px;">';
-            // Media Files and DB Tables
+            // START Metrics Display Section DIV
+            echo '<div style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px;">';
+            // Column 1: Media Files and DB Tables
             echo '<div style="width: calc(50% - 10px);">';
             echo '<p>🖼️ Media Files: <strong>' . $total_media . '</strong></p>';
             echo '<p>🧵 DB Tables: <strong>' . $db_table_count . '</strong></p>';
             echo '</div>';
-            // Visitor IP and Plugin Count
+            // Column 2: Visitor IP and Plugin Count
             echo '<div style="width: calc(50% - 10px);">';
             echo '<p>🧍 Your IP: <strong>' . esc_html($visitor_ip) . '</strong></p>';
             echo '<p>🔌 Active Plugins Installed: <strong>' . $plugin_count . '</strong></p>';
             echo '</div>';
-            // Broken YT Links Checker
-            echo '<div style="width: calc(50% - 10px);">';
-            echo '<form method="post">';
-            echo '<button type="submit" name="check_broken_yt" class="button" style="margin-bottom:10px;">🔍 Broken YT Links</button>';
+            // START Broken YT Links + Design Block Tracker Buttons DIV
+            echo '<div style="width: 100%; margin-top: 5px; display: flex; gap: 10px; flex-wrap: wrap;">';
+            // Broken YT Links Button
+            echo '<form method="post" style="margin: 0;">';
+            echo '<button type="submit" name="check_broken_yt" class="button" style="margin-bottom: 5px;">🔍 Broken YT Links</button>';
             echo '</form>';
-            // Get cached results from automated check
-            $cached_results = get_option('custom_broken_yt_results');
-            $last_check = get_option('custom_last_yt_check');
-            // Run broken YT Links Checker with Button (manual check)
+            // Design Block Tracker Button
+            echo '<a href="https://ericroth.org/wp-admin/tools.php?page=design-block-tracker" class="button" style="margin-bottom: 5px;">🎨 Design Block Tracker</a>';
+            // Always get latest cached Results
+            $cached_results = get_option('custom_broken_yt_results', []);
+            $last_check = get_option('custom_last_yt_check', 0);
+            $check_type = get_option('custom_yt_check_type', '');
+            // Run manual Check if Button pressed
             if (isset($_POST['check_broken_yt'])) {
                 $result = custom_check_broken_yt_links();
                 update_option('custom_broken_yt_results', $result);
                 update_option('custom_last_yt_check', time());
                 delete_option('custom_yt_check_type');
-                echo '<div id="broken-yt-results" style="margin-top: 10px;">';
-                echo '<p>🔴 Broken YT Links: <strong style="color: red;">' . $result['broken_count'] . '</strong></p>';
-                if (!empty($result['broken_posts'])) {
-                    echo '<details style="margin-top: 15px;"><summary style="cursor: pointer; margin-bottom: 15px;"><strong>Broken Links Locations</strong></summary><ul>';
-                    foreach ($result['broken_posts'] as $post_id => $video_ids) {
-                        $title = get_the_title($post_id);
-                        $edit_link = get_edit_post_link($post_id);
-                        echo '<li><a href="' . esc_url($edit_link) . '" target="_blank">' . esc_html($title) . '</a>: ';
-                        echo implode(', ', array_map('esc_html', $video_ids)) . '</li>';
-                    }
-                    echo '</ul></details>';
-                }
-                echo '</div>';
-            } elseif ($cached_results) {
-                // Show cached results from automated check
-                echo '<div style="margin-top: 10px;">';
-                echo '<p>🔴 Broken YT Links: <strong style="color: red;">' . $cached_results['broken_count'] . '</strong></p>';
-                if ($last_check) {
-                    $check_type = get_option('custom_yt_check_type', '');
-                    $tag = $check_type ? ' <strong>(' . esc_html($check_type) . ' check)</strong>' : '';
-                    echo '<p style="font-size: 12px; color: #666;">Last checked: ' . 
-                         esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_check)) . 
-                         $tag . '</p>';
-                }
-                if (!empty($cached_results['broken_posts'])) {
-                    echo '<details style="margin-top: 15px;"><summary style="cursor: pointer; margin-bottom: 15px;"><strong>Broken Links Locations</strong></summary><ul>';
-                    foreach ($cached_results['broken_posts'] as $post_id => $video_ids) {
-                        $title = get_the_title($post_id);
-                        $edit_link = get_edit_post_link($post_id);
-                        echo '<li><a href="' . esc_url($edit_link) . '" target="_blank">' . esc_html($title) . '</a>: ';
-                        echo implode(', ', array_map('esc_html', $video_ids)) . '</li>';
-                    }
-                    echo '</ul></details>';
-                }
-                echo '</div>';
+                $cached_results = $result;
+                $last_check = time();
             }
-            echo '</div>';
-
-            // Design Block Tracker Button
-            echo '<div style="width: calc(50% - 10px);">';
-            echo '<a href="https://ericroth.org/wp-admin/tools.php?page=design-block-tracker" class="button" style="margin-bottom: 10px;">🎨 Design Block Tracker</a>';
-            echo '</div>';
-
-            echo '</div>';
+            // START Display broken YT Links Info DIV
+            echo '<div style="width: 100%; margin-top: 5px;">';
+            $broken_count = !empty($cached_results['broken_count']) ? $cached_results['broken_count'] : 0;
+            echo '<p>🔴 Broken YT Links: <strong style="color: red;">' . $broken_count . '</strong></p>';
+            // Show last Check Timestamp if available
+            if ($last_check) {
+                $tag = $check_type ? ' <strong>(' . esc_html($check_type) . ' check)</strong>' : '';
+                echo '<p style="font-size: 12px; color: #666;">Last checked: ' . 
+                    esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_check)) . 
+                    $tag . '</p>';
+            } else {
+                echo '<p style="font-size: 12px; color: #666;">Last checked: <em>Never</em></p>';
+            }
+            // Show broken Links Details
+            if (!empty($cached_results['broken_posts'])) {
+                echo '<details style="margin-top: 15px;"><summary style="cursor: pointer; margin-bottom: 15px;"><strong>Broken Links Locations</strong></summary><ul>';
+                foreach ($cached_results['broken_posts'] as $post_id => $video_ids) {
+                    $title = get_the_title($post_id);
+                    $edit_link = get_edit_post_link($post_id);
+                    echo '<li><a href="' . esc_url($edit_link) . '" target="_blank">' . esc_html($title) . '</a>: ';
+                    echo implode(', ', array_map('esc_html', $video_ids)) . '</li>';
+                }
+                echo '</ul></details>';
+            }
+            echo '</div>'; // END Metrics Display Section DIV
+            echo '</div>'; // END Broken YT Links + Design Block Tracker Buttons DIV
+            echo '</div>'; // END Display broken YT Links Info DIV
         });
     });
-    // Function to check broken YouTube links
+    // Function to check broken YouTube Links
     function custom_check_broken_yt_links() {
         $broken_links = 0;
         $broken_posts = [];
@@ -175,7 +165,7 @@ function initialize_custom_dashboard() {
         foreach ($query->posts as $post) {
             preg_match_all('/https:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $post->post_content, $matches);
             if (!empty($matches[1])) {
-                $excluded_video_ids = ['-cW']; // Add video IDs to exclude from check
+                $excluded_video_ids = ['-cW']; // Add Video IDs to exclude from Check
                 foreach ($matches[1] as $video_id) {
                     if (in_array($video_id, $excluded_video_ids)) {
                         continue;
@@ -194,13 +184,13 @@ function initialize_custom_dashboard() {
             'broken_posts' => $broken_posts
         ];
     }
-    // Schedule automated YouTube link check to run daily at midnight
+    // Schedule automated YouTube Link Check to run daily at midnight
     add_action('wp', function() {
         if (!wp_next_scheduled('custom_daily_yt_check_event')) {
             wp_schedule_event(strtotime('tomorrow midnight'), 'daily', 'custom_daily_yt_check_event');
         }
     });
-    // Hook the YouTube check function to the scheduled event
+    // Hook the YouTube Check Function to the scheduled Event
     add_action('custom_daily_yt_check_event', function() {
         $result = custom_check_broken_yt_links();
         update_option('custom_broken_yt_results', $result);
