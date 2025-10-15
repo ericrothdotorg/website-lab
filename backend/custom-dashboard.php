@@ -337,7 +337,7 @@ function initialize_custom_dashboard() {
         echo '<div style="margin-top: 10px;">';
         echo '<p style="font-size: 14px; margin: 5px 0;">Post Meta Rows: <strong>' . number_format_i18n($postmeta_count) . '</strong> ';
         echo '<span style="color:' . esc_attr($status_color) . ';">– ' . esc_html($status_note) . '</span></p>';
-        // Show last automated cleanup time and result
+        // Show last automated Cleanup Time and Result
         $last_cleanup = get_option('custom_last_automated_cleanup');
         $last_result = get_option('custom_last_cleanup_result');
         if ($last_cleanup) {
@@ -410,13 +410,13 @@ function initialize_custom_dashboard() {
         }
         return "✅ Total rows deleted: $deleted_total. Tables optimized.";
     }
-    // Schedule automated cleanup to run daily at midnight
+    // Schedule automated Cleanup to run daily at midnight
     add_action('wp', function() {
         if (!wp_next_scheduled('custom_daily_cleanup_event')) {
             wp_schedule_event(strtotime('tomorrow midnight'), 'daily', 'custom_daily_cleanup_event');
         }
     });
-    // Hook the cleanup function to the scheduled event
+    // Hook the Cleanup Function to the scheduled Event
     add_action('custom_daily_cleanup_event', function() {
         $result = custom_run_full_inno_db_cleanup();
         update_option('custom_last_automated_cleanup', time());
@@ -433,10 +433,10 @@ function initialize_custom_dashboard() {
             ['label' => 'My Blog', 'url' => 'https://ericroth.org/feed/'],
             ['label' => 'My Interests', 'url' => 'https://ericroth.org/feed/?post_type=my-interests']
         ];
-        // Grab number of items from settings -> reading
+        // Grab Number of Items from Settings -> Reading
         $max_items = (int) get_option('posts_per_rss');
         if (!$max_items || $max_items < 1) {
-            $max_items = 10; // Fallback in case it's unset or invalid
+            $max_items = 10; // Fallback in Case it's unset or invalid
         }
         echo '<div class="rss-widget-wrapper external" style="font-size: 14px;">';
         echo '<ul class="rss-tab-nav" style="display: flex; gap: 10px; list-style: none; margin: 0 0 10px;">';
