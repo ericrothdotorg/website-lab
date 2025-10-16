@@ -92,25 +92,25 @@ function initialize_custom_dashboard() {
             }
             $plugin_count = count(get_plugins());
             // START Metrics Display Section DIV
-            echo '<div style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px;">';
+            echo '<div style="margin-top: 5px; display: flex; flex-wrap: wrap; gap: 10px;">';
             // Column 1: Media Files and DB Tables
             echo '<div style="width: calc(50% - 10px);">';
             echo '<p>🖼️ Media Files: <strong>' . $total_media . '</strong></p>';
-            echo '<p>🧵 DB Tables: <strong>' . $db_table_count . '</strong></p>';
+            echo '<p style="margin-top: -5px;">🧵 DB Tables: <strong>' . $db_table_count . '</strong></p>';
             echo '</div>';
             // Column 2: Visitor IP and Plugin Count
             echo '<div style="width: calc(50% - 10px);">';
             echo '<p>🧍 Your IP: <strong>' . esc_html($visitor_ip) . '</strong></p>';
-            echo '<p>🔌 Active Plugins Installed: <strong>' . $plugin_count . '</strong></p>';
+            echo '<p style="margin-top: -5px;">🔌 Active Plugins Installed: <strong>' . $plugin_count . '</strong></p>';
             echo '</div>';
             // START Broken YT Links + Design Block Tracker Buttons DIV
-            echo '<div style="width: 100%; margin-top: 5px; display: flex; gap: 10px; flex-wrap: wrap;">';
+            echo '<div style="width: 100%; display: flex; gap: 10px; flex-wrap: wrap;">';
             // Broken YT Links Button
             echo '<form method="post" style="margin: 0;">';
-            echo '<button type="submit" name="check_broken_yt" class="button" style="margin-bottom: 5px;">🔍 Broken YT Links</button>';
+            echo '<button type="submit" name="check_broken_yt" class="button">🔍 Broken YT Links</button>';
             echo '</form>';
             // Design Block Tracker Button
-            echo '<a href="https://ericroth.org/wp-admin/tools.php?page=design-block-tracker" class="button" style="margin-bottom: 5px;">🎨 Design Block Tracker</a>';
+            echo '<a href="https://ericroth.org/wp-admin/tools.php?page=design-block-tracker" class="button">🎨 Design Block Tracker</a>';
             // Always get latest cached Results
             $cached_results = get_option('custom_broken_yt_results', []);
             $last_check = get_option('custom_last_yt_check', 0);
@@ -125,7 +125,7 @@ function initialize_custom_dashboard() {
                 $last_check = time();
             }
             // START Display broken YT Links Info DIV
-            echo '<div style="width: 100%; margin-top: 5px;">';
+            echo '<div style="width: 100%;">';
             $broken_count = !empty($cached_results['broken_count']) ? $cached_results['broken_count'] : 0;
             echo '<p>🔴 Broken YT Links: <strong style="color: red;">' . $broken_count . '</strong></p>';
             // Show last Check Timestamp if available
@@ -341,11 +341,11 @@ function initialize_custom_dashboard() {
         $last_cleanup = get_option('custom_last_automated_cleanup');
         $last_result = get_option('custom_last_cleanup_result');
         if ($last_cleanup) {
-            echo '<p style="font-size: 12px; color: #666; margin: 5px 0;">Last cleanup: ' . 
-                esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</p>';
             if ($last_result) {
                 echo '<p style="font-size: 12px; color: #666; margin: 5px 0;">' . esc_html($last_result) . '</p>';
             }
+            echo '<p style="font-size: 12px; color: #666; margin: 5px 0;">Last cleanup: ' . 
+                esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</p>';
         }
         echo '</div>';
     }
