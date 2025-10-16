@@ -1,6 +1,6 @@
 <?php
 
-// CREATE SUBSCRIBERS TABLE TO STORE STUFF
+// ===== CREATE SUBSCRIBERS TABLE TO STORE STUFF =====
 
 add_action('init', function () {
     if (!get_option('subscribers_table_created')) {
@@ -25,7 +25,7 @@ add_action('init', function () {
     }
 });
 
-// SHORTCODE: [SUBSCRIBE_FORM LAYOUT="VERTICAL | HORIZONTAL"]
+// ===== SHORTCODE: [SUBSCRIBE_FORM LAYOUT="VERTICAL | HORIZONTAL"] =====
 
 function subscribe_form_shortcode($atts) {
     $atts = shortcode_atts(['layout' => ''], $atts);
@@ -107,7 +107,7 @@ function subscribe_form_shortcode($atts) {
 }
 add_shortcode('subscribe_form', 'subscribe_form_shortcode');
 
-// TRACK IP AND USER AGENT ON USER REGISTRATION
+// ===== TRACK IP AND USER AGENT ON USER REGISTRATION =====
 
 add_action('user_register', function($user_id) {
     if (!empty($user_id)) {
@@ -118,7 +118,7 @@ add_action('user_register', function($user_id) {
     }
 });
 
-// REUSABLE FUNCTION TO CHECK IF AN E-MAIL IS DISPOSABLE
+// ===== REUSABLE FUNCTION TO CHECK IF AN E-MAIL IS DISPOSABLE =====
 
 function is_disposable_email($email) {
     $domain = strtolower(substr(strrchr($email, "@"), 1));
@@ -151,7 +151,8 @@ function is_disposable_email($email) {
         "anonbox",
         "throwawaymail",
         "mailnesia",
-        "*.ru"
+        "*.ru",
+        "*.su"
     ];
     $disposable_domains = get_transient('disposable_domains_list');
     if ($disposable_domains === false) {
@@ -201,7 +202,89 @@ function is_disposable_email($email) {
     return false;
 }
 
-// AJAX SUBSCRIBE HANDLER
+// ===== EMAIL VERIFICATION FUNCTIONS =====
+
+// SMTP Verification: This function connects to the email server and verifies if the address actually exists
+function verify_email_smtp($email) {
+    // Extract domain from email (everything after @)
+    $domain = substr(strrchr($email, "@"), 1);
+    // Get MX records (mail server addresses) for the domain
+    $mxhosts = [];
+    if (!getmxrr($domain, $mxhosts)) {
+        return false; // Domain has no MX records = invalid
+    }
+    // Try to connect to the first MX server on port 25 (SMTP)
+    $host = $mxhosts[0];
+    $sock = @fsockopen($host, 25, $errno, $errstr, 10);
+    if (!$sock) {
+        return false; // Can't connect to server
+    }
+    // Read the server's greeting
+    fgets($sock, 1024);
+    // Step 1: Send HELO command (introduce ourselves)
+    $out = "HELO verify.com\r\n";
+    fwrite($sock, $out);
+    fgets($sock, 1024);
+    // Step 2: Tell server where mail is FROM
+    $out = "MAIL FROM: <verify@verify.com>\r\n";
+    fwrite($sock, $out);
+    fgets($sock, 1024);
+    // Step 3: Ask if the TARGET email can receive mail (this is the key check!)
+    $out = "RCPT TO: <$email>\r\n";
+    fwrite($sock, $out);
+    $response = fgets($sock, 1024); // This tells us if email exists
+    // Step 4: Close connection politely
+    $out = "QUIT\r\n";
+    fwrite($sock, $out);
+    fclose($sock);
+    // If response starts with 250 = success (email exists)
+    // If response starts with 550 = failure (email doesn't exist)
+    return (strpos($response, '250') === 0);
+}
+
+// Combined Validation Function: This checks disposable emails + SMTP verification
+function validate_email_before_registration($email) {
+    // Check 1: Is it a disposable email service?
+    if (is_disposable_email($email)) {
+        return ['valid' => false, 'reason' => 'disposable'];
+    }
+    // Check 2: Is the email format valid?
+    if (!is_email($email)) {
+        return ['valid' => false, 'reason' => 'invalid_format'];
+    }
+    // Check 3: Is this email already in your subscribers table?
+    global $wpdb;
+    $table_name = $wpdb->prefix . "subscribers";
+    $exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE email = %s", $email));
+    if ($exists) {
+        return ['valid' => false, 'reason' => 'already_subscribed'];
+    }
+    // Check 4: Does the email actually exist on the mail server? (SMTP check)
+    if (!verify_email_smtp($email)) {
+        return ['valid' => false, 'reason' => 'smtp_failed'];
+    }
+    // All checks passed!
+    return ['valid' => true, 'reason' => ''];
+}
+
+// ===== REGISTRATION ERRORS FILTER (SINGLE HOOK - NO DUPLICATION) =====
+
+add_filter('registration_errors', function($errors, $sanitized_user_login, $user_email) {
+    // NEW: Add the combined email validation (this replaces the old disposable-only check)
+    $validation = validate_email_before_registration($user_email);
+    if (!$validation['valid']) {
+        $messages = [
+            'disposable' => __('Disposable E-mail addresses are not allowed.'),
+            'invalid_format' => __('Invalid E-mail address format.'),
+            'already_subscribed' => __("You're already subscribed with this email."),
+            'smtp_failed' => __('Email address could not be verified. Please make sure the address is correct and try again.')
+        ];
+        $errors->add('email_validation', $messages[$validation['reason']] ?? 'Email validation failed.');
+    }
+    return $errors;
+}, 10, 3);
+
+// ===== AJAX SUBSCRIBE HANDLER =====
 
 function ajax_subscribe_user() {
     $ip = $_SERVER['REMOTE_ADDR'] ?? '';
@@ -209,7 +292,7 @@ function ajax_subscribe_user() {
     if (get_transient($cooldown_key)) {
         wp_send_json_error(['message' => 'Please wait before trying again.']);
     }
-    set_transient($cooldown_key, 1, 60); // 60 Seconds Cooldown
+    set_transient($cooldown_key, 1, 60); // 60 seconds cooldown
     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'subscribe_form_action')) {
         wp_send_json_error(['message' => 'Security check failed.']);
     }
@@ -223,15 +306,19 @@ function ajax_subscribe_user() {
     if (!isset($_POST['math_check']) || $_POST['math_check'] !== '7') {
         wp_send_json_error(['message' => 'Spam check failed.']);
     }
-    if (is_disposable_email($email)) {
-        wp_send_json_error(['message' => 'Disposable E-mail addresses are not allowed.']);
+    // Run the email validation
+    $validation = validate_email_before_registration($email);
+    if (!$validation['valid']) {
+        $messages = [
+            'disposable' => 'Disposable E-mail addresses are not allowed.',
+            'invalid_format' => 'Invalid E-mail address.',
+            'already_subscribed' => "You're already subscribed.",
+            'smtp_failed' => 'Email could not be verified. Please check the address and try again.'
+        ];
+        wp_send_json_error(['message' => $messages[$validation['reason']] ?? 'Email validation failed.']);
     }
     global $wpdb;
     $table_name = $wpdb->prefix . "subscribers";
-    $exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE email = %s", $email));
-    if ($exists) {
-        wp_send_json_error(['message' => "You're already subscribed."]);
-    }
     $unsubscribe_token = md5(uniqid(rand(), true));
     $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
     $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
@@ -250,16 +337,7 @@ function ajax_subscribe_user() {
 add_action('wp_ajax_nopriv_subscribe_user', 'ajax_subscribe_user');
 add_action('wp_ajax_subscribe_user', 'ajax_subscribe_user');
 
-// HOOK INTO WP REGISTRATION ERRORS FILTER (FOR ASGAROS AND WP REGISTRATIONS)
-
-add_filter('registration_errors', function($errors, $sanitized_user_login, $user_email) {
-    if (is_disposable_email($user_email)) {
-        $errors->add('disposable_email', __('Disposable E-mail addresses are not allowed.'));
-    }
-    return $errors;
-}, 10, 3);
-
-// HANDLE UNSUBSCRIBE VIA TOKEN
+// ===== UNSUBSCRIBE HANDLER =====
 
 function handle_unsubscribe() {
     if (isset($_GET['unsubscribe'])) {
@@ -280,7 +358,7 @@ function handle_unsubscribe() {
 }
 add_action('init', 'handle_unsubscribe');
 
-// NOTIFY SUBSCRIBERS WHEN NEW POSTS ARE PUBLISHED
+// ===== NOTIFY SUBSCRIBERS WHEN NEW POSTS ARE PUBLISHED =====
 
 function notify_subscribers_on_new_content($post_ID) {
     global $wpdb;
@@ -289,11 +367,9 @@ function notify_subscribers_on_new_content($post_ID) {
     if (strtotime($post->post_date) < strtotime('-1 day')) return;
     if (get_post_meta($post_ID, 'notification_sent', true)) return;
     update_post_meta($post_ID, 'notification_sent', true);
-
     $table_name = $wpdb->prefix . "subscribers";
     $subscribers = $wpdb->get_results("SELECT email, unsubscribe_token FROM $table_name");
     if (empty($subscribers)) return;
-
     $post_type = get_post_type($post_ID);
     $post_type_name = ($post_type === 'post') ? 'New Blog Post' : 'New "My Interests" Post';
     $post_title = get_the_title($post_ID);
@@ -301,18 +377,15 @@ function notify_subscribers_on_new_content($post_ID) {
     $post_url = get_permalink($post_ID);
     $post_thumbnail_url = get_the_post_thumbnail_url($post_ID, 'medium');
     $subject = sanitize_text_field("$post_type_name: $post_title");
-
     $from_email = defined('SMTP_FROM') ? SMTP_FROM : '';
     $from_name  = defined('SMTP_FROMNAME') ? SMTP_FROMNAME : '';
     if (empty($from_email) || empty($from_name)) return;
-
     $headers = [
         "From: $from_name <$from_email>",
         "Reply-To: $from_email",
         'MIME-Version: 1.0',
         'Content-Type: text/html; charset=UTF-8'
     ];
-
     foreach ($subscribers as $subscriber) {
         $unsubscribe_url = esc_url(site_url("/?unsubscribe=" . $subscriber->unsubscribe_token));
         ob_start();
@@ -344,3 +417,5 @@ function notify_subscribers_on_new_content($post_ID) {
 }
 add_action('publish_post', 'notify_subscribers_on_new_content');
 add_action('publish_my-interests', 'notify_subscribers_on_new_content');
+
+?>
