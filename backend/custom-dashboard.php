@@ -131,11 +131,11 @@ function initialize_custom_dashboard() {
             // Show last Check Timestamp if available
             if ($last_check) {
                 $tag = $check_type ? ' <strong>(' . esc_html($check_type) . ' check)</strong>' : '';
-                echo '<p style="font-size: 12px; color: #666;">Last checked: ' . 
+                echo '<p>Last checked: ' . 
                     esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_check)) . 
                     $tag . '</p>';
             } else {
-                echo '<p style="font-size: 12px; color: #666;">Last checked: <em>Never</em></p>';
+                echo '<p>Last checked: <em>Never</em></p>';
             }
             // Show broken Links Details
             if (!empty($cached_results['broken_posts'])) {
@@ -319,19 +319,37 @@ function initialize_custom_dashboard() {
         echo '</div>';
         global $wpdb;
         $postmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->postmeta}");
-        $status_color = ($postmeta_count > 50000) ? 'red' : (($postmeta_count > 10000) ? 'orange' : 'green');
-        $status_note = ($postmeta_count > 50000) ? 'Consider running a cleanup.' : (($postmeta_count > 10000) ? 'Moderate bloat detected.' : 'Healthy state.');
-        echo '<div style="margin-top: 10px;">';
-        echo '<p style="font-size: 14px; margin: 5px 0;">Post Meta Rows: <strong>' . number_format_i18n($postmeta_count) . '</strong> ';
-        echo '<span style="color:' . esc_attr($status_color) . ';">– ' . esc_html($status_note) . '</span></p>';
+        $commentmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->commentmeta}");
+        $termmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->termmeta}");
+        $usermeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->usermeta}");
+        $total_meta_count = $postmeta_count + $commentmeta_count + $termmeta_count + $usermeta_count;
+        $get_status = function($count) {
+            if ($count > 50000) return ['red', 'Consider running a cleanup.'];
+            if ($count > 10000) return ['orange', 'Moderate bloat detected.'];
+            return ['green', 'Healthy state.'];
+        };
+        echo '<div style="margin-top: 15px;">';
+        $pm_status = $get_status($postmeta_count);
+        echo '<p style="margin: 5px 0;">Post Meta Rows: <strong>' . number_format_i18n($postmeta_count) . '</strong> ';
+        echo '<span style="color:' . esc_attr($pm_status[0]) . ';">– ' . esc_html($pm_status[1]) . '</span></p>';
+        $cm_status = $get_status($commentmeta_count);
+        echo '<p style="margin: 5px 0;">Comment Meta Rows: <strong>' . number_format_i18n($commentmeta_count) . '</strong> ';
+        echo '<span style="color:' . esc_attr($cm_status[0]) . ';">– ' . esc_html($cm_status[1]) . '</span></p>';
+        $tm_status = $get_status($termmeta_count);
+        echo '<p style="margin: 5px 0;">Term Meta Rows: <strong>' . number_format_i18n($termmeta_count) . '</strong> ';
+        echo '<span style="color:' . esc_attr($tm_status[0]) . ';">– ' . esc_html($tm_status[1]) . '</span></p>';
+        $um_status = $get_status($usermeta_count);
+        echo '<p style="margin: 5px 0;">User Meta Rows: <strong>' . number_format_i18n($usermeta_count) . '</strong> ';
+        echo '<span style="color:' . esc_attr($um_status[0]) . ';">– ' . esc_html($um_status[1]) . '</span></p>';
+        echo '<p style="margin: 10px 0;">TOTAL Meta Rows: <strong>' . number_format_i18n($total_meta_count) . '</strong></p>';
         // Show last Cleanup Time and Result
         $last_cleanup = get_option('custom_last_cleanup');
         $last_result = get_option('custom_last_cleanup_result');
         if ($last_cleanup) {
             if ($last_result) {
-                echo '<p style="font-size: 12px; color: #666; margin: 5px 0;">' . esc_html($last_result) . '</p>';
+                echo '<p style="margin: 5px 0;">' . esc_html($last_result) . '</p>';
             }
-            echo '<p style="font-size: 12px; color: #666; margin: 5px 0;">Last cleanup: ' . 
+            echo '<p style="margin: 5px 0;">Last cleanup: ' . 
                 esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</p>';
         }
         echo '</div>';
