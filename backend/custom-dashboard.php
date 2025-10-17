@@ -330,7 +330,7 @@ function initialize_custom_dashboard() {
         };
         echo '<div style="margin-top: 15px;">';
         $pm_status = $get_status($postmeta_count);
-        echo '<p style="margin: 5px 0;">Post Meta Rows: <strong>' . number_format_i18n($postmeta_count) . '</strong> ';
+        echo '<p style="margin: 5px 0;">Content Meta Rows: <strong>' . number_format_i18n($postmeta_count) . '</strong> ';
         echo '<span style="color:' . esc_attr($pm_status[0]) . ';">– ' . esc_html($pm_status[1]) . '</span></p>';
         $cm_status = $get_status($commentmeta_count);
         echo '<p style="margin: 5px 0;">Comment Meta Rows: <strong>' . number_format_i18n($commentmeta_count) . '</strong> ';
@@ -357,16 +357,19 @@ function initialize_custom_dashboard() {
     function custom_run_full_inno_db_cleanup() {
         global $wpdb;
         $deleted_total = 0;
+        // Delete orphaned Postmeta
         $deleted_total += $wpdb->query("
             DELETE pm FROM {$wpdb->postmeta} pm
             LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
             WHERE p.ID IS NULL
         ");
+        // Delete orphaned Term Relationships
         $deleted_total += $wpdb->query("
             DELETE tr FROM {$wpdb->term_relationships} tr
             LEFT JOIN {$wpdb->posts} p ON p.ID = tr.object_id
             WHERE p.ID IS NULL
         ");
+        // Remove specific safe Postmeta Keys
         $safe_postmeta_keys = [
             '_edit_lock', '_edit_last', '_wp_old_slug', '_wp_old_date',
             '_last_viewed_timestamp', 'litespeed-optimize-set', 'litespeed-optimize-size'
@@ -384,17 +387,20 @@ function initialize_custom_dashboard() {
             DELETE FROM {$wpdb->postmeta}
             WHERE meta_key LIKE '_oembed_%' OR meta_key LIKE '_oembed_time_%'
         ");
+        // Delete orphaned Usermeta
         $deleted_total += $wpdb->query("
             DELETE um FROM {$wpdb->usermeta} um
             LEFT JOIN {$wpdb->users} u ON u.ID = um.user_id
             WHERE u.ID IS NULL
         ");
+        // Remove specific safe Usermeta Keys
         $safe_usermeta_keys = ['_session_tokens', '_last_activity', '_woocommerce_persistent_cart'];
         foreach ($safe_usermeta_keys as $key) {
             $deleted_total += $wpdb->query(
                 $wpdb->prepare("DELETE FROM {$wpdb->usermeta} WHERE meta_key = %s", $key)
             );
         }
+        // Delete transient Options
         $deleted_total += $wpdb->query("
             DELETE FROM {$wpdb->options}
             WHERE option_name LIKE '_transient_%' AND option_name NOT LIKE '_transient_timeout_%'
@@ -403,34 +409,41 @@ function initialize_custom_dashboard() {
             DELETE FROM {$wpdb->options}
             WHERE option_name LIKE '_transient_timeout_%' AND option_value < UNIX_TIMESTAMP()
         ");
+        // Delete old completed ActionScheduler Actions if Table exists
         if ($wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}actionscheduler_actions'")) {
             $deleted_total += $wpdb->query("
                 DELETE FROM {$wpdb->prefix}actionscheduler_actions
                 WHERE status = 'complete' AND scheduled_date_gmt < NOW() - INTERVAL 30 DAY
             ");
         }
+        // Delete orphaned Commentmeta
         $deleted_total += $wpdb->query("
             DELETE cm FROM {$wpdb->commentmeta} cm
             LEFT JOIN {$wpdb->comments} c ON c.comment_ID = cm.comment_id
             WHERE c.comment_ID IS NULL
         ");
+        // Delete empty auto-draft Posts
         $deleted_total += $wpdb->query("
             DELETE FROM {$wpdb->posts}
             WHERE post_status = 'auto-draft' AND post_content = ''
         ");
+        // Delete orphaned Termmeta
         $deleted_total += $wpdb->query("
             DELETE tm FROM {$wpdb->termmeta} tm
             LEFT JOIN {$wpdb->terms} t ON t.term_id = tm.term_id
             WHERE t.term_id IS NULL
         ");
+        // Delete old Spam Comments
         $deleted_total += $wpdb->query("
             DELETE FROM {$wpdb->comments}
             WHERE comment_approved = 'spam' AND comment_date < NOW() - INTERVAL 30 DAY
         ");
+        // Delete old Trash Posts
         $deleted_total += $wpdb->query("
             DELETE FROM {$wpdb->posts}
             WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 30 DAY
         ");
+        // Optimize Main Tables
         $tables = ['postmeta', 'usermeta', 'options', 'term_relationships'];
         foreach ($tables as $table) {
             $wpdb->query("OPTIMIZE TABLE {$wpdb->prefix}$table");
