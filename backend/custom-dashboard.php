@@ -391,6 +391,28 @@ function initialize_custom_dashboard() {
                 WHERE status = 'complete' AND scheduled_date_gmt < NOW() - INTERVAL 30 DAY
             ");
         }
+        $deleted_total += $wpdb->query("
+            DELETE cm FROM {$wpdb->commentmeta} cm
+            LEFT JOIN {$wpdb->comments} c ON c.comment_ID = cm.comment_id
+            WHERE c.comment_ID IS NULL
+        ");
+        $deleted_total += $wpdb->query("
+            DELETE FROM {$wpdb->posts}
+            WHERE post_status = 'auto-draft' AND post_content = ''
+        ");
+        $deleted_total += $wpdb->query("
+            DELETE tm FROM {$wpdb->termmeta} tm
+            LEFT JOIN {$wpdb->terms} t ON t.term_id = tm.term_id
+            WHERE t.term_id IS NULL
+        ");
+        $deleted_total += $wpdb->query("
+            DELETE FROM {$wpdb->comments}
+            WHERE comment_approved = 'spam' AND comment_date < NOW() - INTERVAL 30 DAY
+        ");
+        $deleted_total += $wpdb->query("
+            DELETE FROM {$wpdb->posts}
+            WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 30 DAY
+        ");
         $tables = ['postmeta', 'usermeta', 'options', 'term_relationships'];
         foreach ($tables as $table) {
             $wpdb->query("OPTIMIZE TABLE {$wpdb->prefix}$table");
