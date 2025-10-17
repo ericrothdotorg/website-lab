@@ -26,7 +26,7 @@ add_action("wp_head", function () {
     /* Grid Layouts */
     @media (min-width: 1024px) {.grid-four-columns .ct-query-template-grid {grid-template-columns: repeat(4,1fr);}}
     @media (max-width: 600px) {.ct-related-posts .flexy-container {--grid-columns-width: calc(100% / 2);}}
-    @media (min-width: 600px) and (max-width:1024px) {.ct-related-posts .flexy-container {--grid-columns-width:calc(100% / 3);}}
+    @media (min-width: 600px) and (max-width:1024px) {.ct-related-posts .flexy-container {--grid-columns-width: calc(100% / 3);}}
     /* Related Content */
     .ct-related-posts-container {border-top: 1px solid #e1e8ed !important; max-width: 1290px; margin: 0 auto;}
     /* Navigation Arrows */
