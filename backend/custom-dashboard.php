@@ -184,19 +184,6 @@ function initialize_custom_dashboard() {
             'broken_posts' => $broken_posts
         ];
     }
-    // Schedule automated YouTube Link Check to run daily at midnight
-    add_action('wp', function() {
-        if (!wp_next_scheduled('custom_daily_yt_check_event')) {
-            wp_schedule_event(strtotime('tomorrow midnight'), 'daily', 'custom_daily_yt_check_event');
-        }
-    });
-    // Hook the YouTube Check Function to the scheduled Event
-    add_action('custom_daily_yt_check_event', function() {
-        $result = custom_check_broken_yt_links();
-        update_option('custom_broken_yt_results', $result);
-        update_option('custom_last_yt_check', time());
-        update_option('custom_yt_check_type', 'Automatic');
-    });
 
     // 🌀 ADD HOSTINGER STUFF BUTTONS
 
@@ -321,7 +308,7 @@ function initialize_custom_dashboard() {
     function custom_render_optimize_and_cleanup() {
         if (isset($_POST['er_run_full_cleanup']) && current_user_can('manage_options')) {
             $result = custom_run_full_inno_db_cleanup();
-            update_option('custom_last_automated_cleanup', time());
+            update_option('custom_last_cleanup', time());
             update_option('custom_last_cleanup_result', $result);
         }
         echo '<div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">';
@@ -337,8 +324,8 @@ function initialize_custom_dashboard() {
         echo '<div style="margin-top: 10px;">';
         echo '<p style="font-size: 14px; margin: 5px 0;">Post Meta Rows: <strong>' . number_format_i18n($postmeta_count) . '</strong> ';
         echo '<span style="color:' . esc_attr($status_color) . ';">– ' . esc_html($status_note) . '</span></p>';
-        // Show last automated Cleanup Time and Result
-        $last_cleanup = get_option('custom_last_automated_cleanup');
+        // Show last Cleanup Time and Result
+        $last_cleanup = get_option('custom_last_cleanup');
         $last_result = get_option('custom_last_cleanup_result');
         if ($last_cleanup) {
             if ($last_result) {
@@ -410,18 +397,6 @@ function initialize_custom_dashboard() {
         }
         return "✅ Total rows deleted: $deleted_total. Tables optimized.";
     }
-    // Schedule automated Cleanup to run daily at midnight
-    add_action('wp', function() {
-        if (!wp_next_scheduled('custom_daily_cleanup_event')) {
-            wp_schedule_event(strtotime('tomorrow midnight'), 'daily', 'custom_daily_cleanup_event');
-        }
-    });
-    // Hook the Cleanup Function to the scheduled Event
-    add_action('custom_daily_cleanup_event', function() {
-        $result = custom_run_full_inno_db_cleanup();
-        update_option('custom_last_automated_cleanup', time());
-        update_option('custom_last_cleanup_result', $result . ' (Automatic run)');
-    });
 
     // 📰 ADD RSS FEED READER
 
