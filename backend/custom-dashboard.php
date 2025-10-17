@@ -131,11 +131,11 @@ function initialize_custom_dashboard() {
             // Show last Check Timestamp if available
             if ($last_check) {
                 $tag = $check_type ? ' <strong>(' . esc_html($check_type) . ' check)</strong>' : '';
-                echo '<p>Last checked: ' . 
+                echo '<p><em>Last checked: ' . 
                     esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_check)) . 
-                    $tag . '</p>';
+                    $tag . '</em></p>';
             } else {
-                echo '<p>Last checked: <em>Never</em></p>';
+                echo '<p><em>Last checked: Never</em></p>';
             }
             // Show broken Links Details
             if (!empty($cached_results['broken_posts'])) {
@@ -341,16 +341,16 @@ function initialize_custom_dashboard() {
         $um_status = $get_status($usermeta_count);
         echo '<p style="margin: 5px 0;">User Meta Rows: <strong>' . number_format_i18n($usermeta_count) . '</strong> ';
         echo '<span style="color:' . esc_attr($um_status[0]) . ';">– ' . esc_html($um_status[1]) . '</span></p>';
-        echo '<p style="margin: 10px 0;">TOTAL Meta Rows: <strong>' . number_format_i18n($total_meta_count) . '</strong></p>';
+        echo '<p style="margin: 5px 0;">TOTAL Meta Rows: <strong>' . number_format_i18n($total_meta_count) . '</strong></p>';
         // Show last Cleanup Time and Result
         $last_cleanup = get_option('custom_last_cleanup');
         $last_result = get_option('custom_last_cleanup_result');
         if ($last_cleanup) {
             if ($last_result) {
-                echo '<p style="margin: 5px 0;">' . esc_html($last_result) . '</p>';
+                echo '<p style="margin: 10px 0;">' . esc_html($last_result) . '</p>';
             }
-            echo '<p style="margin: 5px 0;">Last cleanup: ' . 
-                esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</p>';
+            echo '<p style="margin: 5px 0;"><em>Last cleanup: ' . 
+                esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</em></p>';
         }
         echo '</div>';
     }
