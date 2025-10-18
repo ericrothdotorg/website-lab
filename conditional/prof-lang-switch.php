@@ -11,6 +11,7 @@ function should_inject_lang_script() {
         '/professional/my-background' => '/berufswelt/mein-hintergrund',
         '/professional/my-background/my-competencies' => '/berufswelt/mein-hintergrund/meine-kompetenzen',
         '/professional/my-background/my-traits' => '/berufswelt/mein-hintergrund/meine-eigenschaften',
+        '/professional/my-background/profile-summary' => '/berufswelt/mein-hintergrund/mein-kurzprofil',
         '/professional/my-compass' => '/berufswelt/mein-kompass',
         '/professional/my-publications' => '/berufswelt/meine-publikationen',
         '/professional/my-availability' => '/berufswelt/meine-verfuegbarkeit'
@@ -55,6 +56,7 @@ add_action('wp_footer', function() {
                     '/professional/my-background': '/berufswelt/mein-hintergrund',
                     '/professional/my-background/my-competencies': '/berufswelt/mein-hintergrund/meine-kompetenzen',
                     '/professional/my-background/my-traits': '/berufswelt/mein-hintergrund/meine-eigenschaften',
+                    '/professional/my-background/profile-summary': '/berufswelt/mein-hintergrund/mein-kurzprofil',
                     '/professional/my-compass': '/berufswelt/mein-kompass',
                     '/professional/my-publications': '/berufswelt/meine-publikationen',
                     '/professional/my-availability': '/berufswelt/meine-verfuegbarkeit'
