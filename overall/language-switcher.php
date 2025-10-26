@@ -144,6 +144,14 @@ add_action('wp_footer', function () {
         gtScript.src = "//translate.google.com/translate_a/element.js?cb=injectGoogleTranslate";
         document.body.appendChild(gtScript);
         restoreLanguage();
+        setInterval(() => {
+            const googtransCookie = document.cookie.split('; ').find(row => row.startsWith('googtrans='));
+            if (!googtransCookie || googtransCookie.includes('/en/en')) {
+                if (localStorage.getItem('preferredLang')) {
+                    localStorage.removeItem('preferredLang');
+                }
+            }
+        }, 1000);
     }
 
     function resetTranslation() {
