@@ -11,6 +11,21 @@ add_action('wp_head', function() {
     #dark-mode-toggle-btn input[type='checkbox']:checked+.toggle-visual::after{background: #3A4F66; transform: translateX(25px);}
     .dark-mode-toggle-btn-accessibility-label,.tts-toggle-btn-accessibility-label{position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;}
   </style>
+  <script>
+(function() {
+  try {
+    const storedPreference = localStorage.getItem('changeMode');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (storedPreference === 'true' || (storedPreference === null && prefersDark)) {
+      document.documentElement.className += ' dark-mode-loading';
+    }
+  } catch(e) {}
+})();
+</script>
+<style>
+html.dark-mode-loading body {background: #0d0d0d; color: #bfbfbf;}
+</style>
   <?php
 });
 
@@ -85,13 +100,15 @@ add_action('wp_footer', function () {
     body.dark-mode .box-shadow {-webkit-box-shadow: none; box-shadow: none;}
     /* Various Elements */
     body.dark-mode .image-invert {-webkit-filter: invert(1); filter: invert(1);}
-    body.dark-mode .wp-image-122531 {content: url("http://ericroth.org/wp-content/uploads/2024/07/SBB_NEG_2F_RGB_100.svg");} /*Swap SBB logo in My World*/
+    body.dark-mode .wp-image-122531 {content: url("https://ericroth.org/wp-content/uploads/2024/07/SBB_NEG_2F_RGB_100.svg");} /*Swap SBB logo in My World*/
     body.dark-mode .wp-image-148107 {content: url("https://ericroth.org/wp-content/uploads/2025/07/github-mark-white.png");} /*Swap Github logo in HTML, CSS, JS & Co.*/
     body.dark-mode .cat-prefix {color: #bfbfbf;} body.dark-mode .cat-links {color: #bfbfbf;}
     body.dark-mode .wp-block-separator:not(.is-style-dots) {height: 1px; background: #3A4F66;}
     body.dark-mode .card-counter {color: #f2f2f2;}
     body.dark-mode .wp-block-group.has-border-color {border-color: #262626 !important;}
-    body.dark-mode .emphasized-design-red {color: #ff3377;}
+    body.dark-mode .emphasized-design-red {color: #cc0044;}
+    body.dark-mode .font-design-red {color: #cc0044;}
+    body.dark-mode code {background: none;}
   </style>
 
   <script>
@@ -101,6 +118,7 @@ add_action('wp_footer', function () {
     const visualToggle = document.querySelector('#dark-mode-toggle-btn .toggle-visual');
     const changeMode = () => {
         const isDark = document.body.classList.toggle('dark-mode');
+        if (changeModeSwitch) changeModeSwitch.checked = isDark;
         try {
         localStorage.setItem('changeMode', isDark);
         } catch (e) {
@@ -124,20 +142,25 @@ add_action('wp_footer', function () {
     };
     applyAccessibility(changeModeSwitch);
     applyAccessibility(changeModeButton);
-    if (changeModeSwitch) changeModeSwitch.addEventListener('click', changeMode);
+    if (changeModeSwitch) {
+        changeModeSwitch.addEventListener('change', changeMode);
+    }
     if (changeModeButton) changeModeButton.addEventListener('click', changeMode);
-    if (visualToggle && changeModeSwitch) {
+    if (visualToggle) {
         visualToggle.addEventListener('click', () => {
-        changeModeSwitch.checked = !changeModeSwitch.checked;
-        changeModeSwitch.dispatchEvent(new Event('click'));
+        if (changeModeSwitch) {
+            changeModeSwitch.checked = !changeModeSwitch.checked;
+        }
+        changeMode();
         });
     }
+    // Apply dark mode and remove loading class
+    document.documentElement.classList.remove('dark-mode-loading');
     const storedPreference = localStorage.getItem('changeMode');
-    if (storedPreference === null && window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (storedPreference === 'true' || (storedPreference === null && prefersDark)) {
         document.body.classList.add('dark-mode');
-    }
-    if (storedPreference === 'true') {
-        document.body.classList.add('dark-mode');
+        if (changeModeSwitch) changeModeSwitch.checked = true;
     }
     });
   </script>
