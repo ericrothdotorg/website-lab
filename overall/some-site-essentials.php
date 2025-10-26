@@ -45,7 +45,7 @@ add_action('template_redirect', function () {
         $count = 0;
         $html = preg_replace_callback('/<img[^>]+>/i', function ($imgMatch) use (&$count) {
             $img = $imgMatch[0];
-            if ($count === 0 && preg_match('/width=["\'](\d{4,})["\']/', $img)) {
+            if ($count === 0 && preg_match('/width=["\'](\d{3,})["\']/', $img)) {
                 $count++;
                 $img = preg_replace('/\sloading=["\']lazy["\']/', '', $img);
                 $img = str_replace('<img', '<img fetchpriority="high"', $img);
@@ -56,7 +56,7 @@ add_action('template_redirect', function () {
             }
             return $img;
         }, $html);
-        if (preg_match('/<img[^>]+width=["\'](\d{4,})["\'][^>]*src=["\']([^"\']+)["\'][^>]*>/i', $html, $match)) {
+        if (preg_match('/<img[^>]+width=["\'](\d{3,})["\'][^>]*src=["\']([^"\']+)["\'][^>]*>/i', $html, $match)) {
             $image_url = $match[2];
             $html = preg_replace('/<head>/', '<head><link rel="preload" as="image" href="' . esc_url($image_url) . '" fetchpriority="high">', $html, 1);
         }
@@ -164,13 +164,11 @@ add_filter('the_content', function($content) {
 // Custom Redirects (SEO-friendly)
 add_action('template_redirect', function() {
     $redirects = [
-        '/contact-me/' => '/about-me/contact/',
-        '/consulting/' => '/professional/',
-        '/services/' => '/professional/',
-        '/my-background/' => '/professional/my-background/',
-        '/my-traits/' => '/professional/my-background/my-traits/',
-        '/my-blog/' => '/personal/my-blog/',
-        '/my-interests/' => '/personal/my-interests/',
+        '/contact-me/'      => '/about-me/contact/',
+        '/services/'        => '/professional/',
+        '/my-background/'   => '/professional/my-background/',
+        '/my-blog/'         => '/personal/my-blog/',
+        '/my-interests/'    => '/personal/my-interests/',
     ];
     $uri = trailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
     if (isset($redirects[$uri])) {
@@ -212,10 +210,13 @@ add_action('wp_footer', function () {
                 gtag('config', 'G-X88D2RT23H');
             };
         }
+        const timeoutId = setTimeout(loadAnalytics, 5000);
         ['click','scroll','keydown','mousemove','touchstart'].forEach(function(event) {
-            window.addEventListener(event, loadAnalytics, { once: true, passive: true });
+            window.addEventListener(event, function() {
+                clearTimeout(timeoutId);
+                loadAnalytics();
+            }, { once: true, passive: true });
         });
-        setTimeout(loadAnalytics, 5000);
     });
     </script>
 
@@ -228,14 +229,22 @@ add_action('wp_footer', function () {
         }
     </style>
     <script>
+        let ticking = false;
         function scrollIndicator() {
-            requestAnimationFrame(() => {
-                const scroll = document.documentElement.scrollTop || document.body.scrollTop;
-                const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-                document.getElementById("my_scroll_indicator").style.width = (scroll / height) * 100 + "%";
-            });
+            const scroll = document.documentElement.scrollTop || document.body.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const indicator = document.getElementById("my_scroll_indicator");
+            if (indicator) {
+                indicator.style.width = (scroll / height) * 100 + "%";
+            }
+            ticking = false;
         }
-        window.addEventListener("scroll", scrollIndicator);
+        window.addEventListener("scroll", function() {
+            if (!ticking) {
+                requestAnimationFrame(scrollIndicator);
+                ticking = true;
+            }
+        }, { passive: true });
     </script>
     <div class="scroll-indicator-container">
         <div class="scroll-indicator-bar" id="my_scroll_indicator"></div>
@@ -251,6 +260,8 @@ add_action('wp_footer', function () {
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const details = document.querySelectorAll("details.details-accordion");
+            if (details.length === 0) return;
+            
             details.forEach((detail) => {
                 detail.addEventListener("toggle", () => {
                     if (detail.open) {
@@ -276,14 +287,22 @@ add_action('wp_footer', function () {
     <!-- Flexy Animation (Blocksy) -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            document.querySelectorAll('.flexy-container').forEach(el => {
-                el.classList.add('daneden-slideInUp');
-            });
+            const flexyElements = document.querySelectorAll('.flexy-container');
+            if (flexyElements.length === 0) return;
+            
+            // Use IntersectionObserver to animate when elements come into view
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('daneden-slideInUp');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            flexyElements.forEach(el => observer.observe(el));
         });
     </script>
-
-    <!-- Instant Page -->
-    <script src="https://instant.page/5.2.0" type="module" integrity="sha384-jnZyxPjiipYXnSU0ygqeac2q7CVYMbh84q0uHVRRxEtvFPiQYbXWUorga2aqZJ0z"></script>
 
     <?php
 }, 10);
