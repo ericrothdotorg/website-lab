@@ -16,7 +16,6 @@ add_action('wp_head', function() {
   try {
     const storedPreference = localStorage.getItem('changeMode');
     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
     if (storedPreference === 'true' || (storedPreference === null && prefersDark)) {
       document.documentElement.className += ' dark-mode-loading';
     }
@@ -38,28 +37,28 @@ add_action('wp_footer', function () {
     body.dark-mode :is(h1, h2, h3, h4, h5, h6) {color: #bfbfbf;}
     /* Theme related: Blocksy */
     body.dark-mode[data-header*="type-1"] .ct-header [data-row*="middle"] {background: rgba(0,0,0,0.75);}
-	body.dark-mode[data-header*="type-1"] .ct-header [data-id="logo"] .site-title {--linkInitialColor: #ffffff; --linkHoverColor: #bfbfbf;}
-	body.dark-mode[data-header*="type-1"] .ct-header [data-id="logo"] .site-description {color: #bfbfbf;}
-	body.dark-mode[data-header*="type-1"] .ct-header [data-id="menu"] > ul > li > a {--linkInitialColor: #ffffff; --linkHoverColor: #bfbfbf;}
-	body.dark-mode .ct-header-search {--linkInitialColor: #ffffff; --linkHoverColor: #bfbfbf;}
-	body.dark-mode .ct-search-results {background: rgba(0, 0, 0, 0.9); -webkit-box-shadow: none; box-shadow: none;}
-	body.dark-mode[data-header*="type-1"] [data-id="trigger"] {--icon-color: #ffffff; --icon-hover-color: #bfbfbf;}
-	body.dark-mode aside[data-type='type-4']:after {background: #0d0d0d;}
+	  body.dark-mode[data-header*="type-1"] .ct-header [data-id="logo"] .site-title {--linkInitialColor: #ffffff; --linkHoverColor: #bfbfbf;}
+	  body.dark-mode[data-header*="type-1"] .ct-header [data-id="logo"] .site-description {color: #bfbfbf;}
+	  body.dark-mode[data-header*="type-1"] .ct-header [data-id="menu"] > ul > li > a {--linkInitialColor: #ffffff; --linkHoverColor: #bfbfbf;}
+	  body.dark-mode .ct-header-search {--linkInitialColor: #ffffff; --linkHoverColor: #bfbfbf;}
+	  body.dark-mode .ct-search-results {background: rgba(0, 0, 0, 0.9); -webkit-box-shadow: none; box-shadow: none;}
+	  body.dark-mode[data-header*="type-1"] [data-id="trigger"] {--icon-color: #ffffff; --icon-hover-color: #bfbfbf;}
+	  body.dark-mode aside[data-type='type-4']:after {background: #0d0d0d;}
     body.dark-mode .single-query .ct-query-template-grid {background: #1a1a1a; border: 1px solid #1a1a1a;}
-	body.dark-mode .single-query .ct-query-template-grid:hover {background: #0d0d0d;}
+	  body.dark-mode .single-query .ct-query-template-grid:hover {background: #0d0d0d;}
     body.dark-mode .single-query .ct-query-template.is-layout-slider {background: #1a1a1a; border: 1px solid #1a1a1a;}
     body.dark-mode .single-query .ct-query-template.is-layout-slider:hover {background: #0d0d0d;}
     body.dark-mode .wp-block-term.is-layout-flow {background: #1a1a1a; border: 1px solid #1a1a1a;}
     body.dark-mode .wp-block-term.is-layout-flow:hover {background: #0d0d0d;}
-	body.dark-mode .ct-related-posts-container {border-top: 1px solid #3A4F66 !important;}
-	body.dark-mode article>.ct-related-posts {border-top: 1px solid #3A4F66;}
-	body.dark-mode .nav-item-prev {color: #bfbfbf;}
-	body.dark-mode .nav-item-next {color: #bfbfbf;}
-	body.dark-mode .post-navigation [class*='nav-item'] {color: #1e73be;}
-	body.dark-mode .post-navigation [class*='nav-item']:hover {color: #c53030;}
-	body.dark-mode .post-navigation:after {background: #3A4F66;}
-	body.dark-mode .ct-popup-inner > article {background: #0d0d0d;}
-	body.dark-mode .ct-popup-inner > article p {color: #bfbfbf;}
+	  body.dark-mode .ct-related-posts-container {border-top: 1px solid #3A4F66 !important;}
+	  body.dark-mode article>.ct-related-posts {border-top: 1px solid #3A4F66;}
+	  body.dark-mode .nav-item-prev {color: #bfbfbf;}
+	  body.dark-mode .nav-item-next {color: #bfbfbf;}
+	  body.dark-mode .post-navigation [class*='nav-item'] {color: #1e73be;}
+	  body.dark-mode .post-navigation [class*='nav-item']:hover {color: #c53030;}
+	  body.dark-mode .post-navigation:after {background: #3A4F66;}
+	  body.dark-mode .ct-popup-inner > article {background: #0d0d0d;}
+	  body.dark-mode .ct-popup-inner > article p {color: #bfbfbf;}
     body.dark-mode .ct-sidebar p {color: #bfbfbf;}
     /* Display Posts Shortcode */
     body.dark-mode .display-posts-listing .listing-item {background: #1a1a1a; border: 1px solid #1a1a1a;}
@@ -110,7 +109,6 @@ add_action('wp_footer', function () {
     body.dark-mode .font-design-red {color: #cc0044;}
     body.dark-mode code {background: none;}
   </style>
-
   <script>
     document.addEventListener('DOMContentLoaded', () => {
     const changeModeSwitch = document.getElementById('change-mode-switch');
@@ -154,7 +152,7 @@ add_action('wp_footer', function () {
         changeMode();
         });
     }
-    // Apply dark mode and remove loading class
+    // Apply Dark Mode and remove Loading Class
     document.documentElement.classList.remove('dark-mode-loading');
     const storedPreference = localStorage.getItem('changeMode');
     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
