@@ -11,12 +11,13 @@ add_action('init', function () {
         $sql = "CREATE TABLE $table_name (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             email varchar(100) NOT NULL,
-            unsubscribe_token varchar(32) NOT NULL,
+            unsubscribe_token varchar(64) NOT NULL,
             subscription_date datetime DEFAULT CURRENT_TIMESTAMP,
             ip_address varchar(100),
             user_agent text,
             PRIMARY KEY (id),
-            UNIQUE KEY email (email)
+            UNIQUE KEY email (email),
+            KEY subscription_date (subscription_date)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -58,8 +59,9 @@ function subscribe_form_shortcode($atts) {
             <input type="email" id="subscriber_email" name="subscriber_email" required placeholder="Enter your E-mail" autocomplete="email" aria-label="E-mail Address">
             <input type="hidden" name="contact_time" value="" autocomplete="off">
             <input type="hidden" name="middle_name" value="">
-            <input type="hidden" name="math_check" value="7">
+            <input type="hidden" name="math_check" value="">
             <input type="hidden" name="nonce" value="' . esc_attr($nonce) . '">
+            <input type="hidden" name="nonce_time" value="' . esc_attr(time()) . '">
             <button type="submit" aria-label="Subscribe to email updates">Subscribe</button>
         </form>
     </div>
@@ -69,6 +71,12 @@ function subscribe_form_shortcode($atts) {
     document.addEventListener("DOMContentLoaded", function() {
         const form = document.getElementById("subscription-form");
         const messageBox = document.getElementById("subscription-message");
+        const mathField = form.querySelector("[name=math_check]");
+        
+        // Generate dynamic math challenge: simple addition that equals 7
+        const num1 = Math.floor(Math.random() * 4) + 1;
+        const num2 = 7 - num1;
+        mathField.value = num1 + num2;
 
         form.addEventListener("submit", function(e) {
             e.preventDefault();
@@ -92,6 +100,7 @@ function subscribe_form_shortcode($atts) {
                 messageBox.focus();
                 if (data.success) {
                     form.reset();
+                    mathField.value = num1 + num2;
                 }
             })
             .catch(() => {
@@ -111,7 +120,8 @@ add_shortcode('subscribe_form', 'subscribe_form_shortcode');
 
 add_action('user_register', function($user_id) {
     if (!empty($user_id)) {
-        $ip_address = $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        // Use only REMOTE_ADDR to prevent IP spoofing
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
         update_user_meta($user_id, 'registration_ip', sanitize_text_field($ip_address));
         update_user_meta($user_id, 'registration_ua', sanitize_text_field($user_agent));
@@ -188,7 +198,7 @@ function is_disposable_email($email) {
             $disposable_domains = array_merge($disposable_domains, $custom_list);
         }
         $disposable_domains = array_values(array_unique($disposable_domains));
-        set_transient('disposable_domains_list', $disposable_domains, DAY_IN_SECONDS);
+        set_transient('disposable_domains_list', $disposable_domains, 12 * HOUR_IN_SECONDS);
     }
     foreach ($disposable_domains as $blocked) {
         if (
@@ -204,45 +214,25 @@ function is_disposable_email($email) {
 
 // ===== EMAIL VERIFICATION FUNCTIONS =====
 
-// SMTP Verification: This function connects to the email server and verifies if the address actually exists
-function verify_email_smtp($email) {
-    // Extract domain from email (everything after @)
+// Basic email domain verification: checks if domain has valid MX records
+function verify_email_domain($email) {
     $domain = substr(strrchr($email, "@"), 1);
-    // Get MX records (mail server addresses) for the domain
+    if (empty($domain)) {
+        return false;
+    }
+    // Check if domain has MX records
     $mxhosts = [];
-    if (!getmxrr($domain, $mxhosts)) {
-        return false; // Domain has no MX records = invalid
+    if (getmxrr($domain, $mxhosts)) {
+        return true;
     }
-    // Try to connect to the first MX server on port 25 (SMTP)
-    $host = $mxhosts[0];
-    $sock = @fsockopen($host, 25, $errno, $errstr, 10);
-    if (!$sock) {
-        return false; // Can't connect to server
+    // Fallback: check if domain has A record
+    if (checkdnsrr($domain, 'A')) {
+        return true;
     }
-    // Read the server's greeting
-    fgets($sock, 1024);
-    // Step 1: Send HELO command (introduce ourselves)
-    $out = "HELO verify.com\r\n";
-    fwrite($sock, $out);
-    fgets($sock, 1024);
-    // Step 2: Tell server where mail is FROM
-    $out = "MAIL FROM: <verify@verify.com>\r\n";
-    fwrite($sock, $out);
-    fgets($sock, 1024);
-    // Step 3: Ask if the TARGET email can receive mail (this is the key check!)
-    $out = "RCPT TO: <$email>\r\n";
-    fwrite($sock, $out);
-    $response = fgets($sock, 1024); // This tells us if email exists
-    // Step 4: Close connection politely
-    $out = "QUIT\r\n";
-    fwrite($sock, $out);
-    fclose($sock);
-    // If response starts with 250 = success (email exists)
-    // If response starts with 550 = failure (email doesn't exist)
-    return (strpos($response, '250') === 0);
+    return false;
 }
 
-// Combined Validation Function: This checks disposable emails + SMTP verification
+// Combined Validation Function: This checks disposable emails + domain verification
 function validate_email_before_registration($email) {
     // Check 1: Is it a disposable email service?
     if (is_disposable_email($email)) {
@@ -259,9 +249,9 @@ function validate_email_before_registration($email) {
     if ($exists) {
         return ['valid' => false, 'reason' => 'already_subscribed'];
     }
-    // Check 4: Does the email actually exist on the mail server? (SMTP check)
-    if (!verify_email_smtp($email)) {
-        return ['valid' => false, 'reason' => 'smtp_failed'];
+    // Check 4: Does the domain have valid MX or A records?
+    if (!verify_email_domain($email)) {
+        return ['valid' => false, 'reason' => 'domain_invalid'];
     }
     // All checks passed!
     return ['valid' => true, 'reason' => ''];
@@ -277,7 +267,7 @@ add_filter('registration_errors', function($errors, $sanitized_user_login, $user
             'disposable' => __('Disposable E-mail addresses are not allowed.'),
             'invalid_format' => __('Invalid E-mail address format.'),
             'already_subscribed' => __("You're already subscribed with this email."),
-            'smtp_failed' => __('Email address could not be verified. Please make sure the address is correct and try again.')
+            'domain_invalid' => __('Email domain could not be verified. Please check the address and try again.')
         ];
         $errors->add('email_validation', $messages[$validation['reason']] ?? 'Email validation failed.');
     }
@@ -287,15 +277,32 @@ add_filter('registration_errors', function($errors, $sanitized_user_login, $user
 // ===== AJAX SUBSCRIBE HANDLER =====
 
 function ajax_subscribe_user() {
+    // Use only REMOTE_ADDR to prevent IP spoofing
     $ip = $_SERVER['REMOTE_ADDR'] ?? '';
     $cooldown_key = 'subscribe_form_last_submit_' . md5($ip);
+    
+    // Check for rate limiting with escalating penalties
+    $attempt_count = get_transient($cooldown_key . '_attempts') ?: 0;
     if (get_transient($cooldown_key)) {
+        // Increase penalty time with each attempt
+        $penalty_time = min(300, 60 * pow(2, $attempt_count)); // Max 5 minutes
+        set_transient($cooldown_key . '_attempts', $attempt_count + 1, $penalty_time);
         wp_send_json_error(['message' => 'Please wait before trying again.']);
     }
-    set_transient($cooldown_key, 1, 60); // 60 seconds cooldown
+    
+    set_transient($cooldown_key, 1, 60);
+    set_transient($cooldown_key . '_attempts', $attempt_count + 1, 300);
+    
     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'subscribe_form_action')) {
         wp_send_json_error(['message' => 'Security check failed.']);
     }
+    
+    // Verify nonce age (max 12 hours old)
+    $nonce_time = isset($_POST['nonce_time']) ? absint($_POST['nonce_time']) : 0;
+    if ($nonce_time === 0 || (time() - $nonce_time) > 12 * HOUR_IN_SECONDS) {
+        wp_send_json_error(['message' => 'Security token expired. Please refresh the page.']);
+    }
+    
     $email = isset($_POST['subscriber_email']) ? sanitize_email($_POST['subscriber_email']) : '';
     if (empty($email) || !is_email($email)) {
         wp_send_json_error(['message' => 'Invalid E-mail address.']);
@@ -303,7 +310,8 @@ function ajax_subscribe_user() {
     if (!empty($_POST['contact_time'])) {
         wp_send_json_error(['message' => 'Bot activity detected.']);
     }
-    if (!isset($_POST['math_check']) || $_POST['math_check'] !== '7') {
+    // Verify math check equals 7
+    if (!isset($_POST['math_check']) || intval($_POST['math_check']) !== 7) {
         wp_send_json_error(['message' => 'Spam check failed.']);
     }
     // Run the email validation
@@ -313,24 +321,32 @@ function ajax_subscribe_user() {
             'disposable' => 'Disposable E-mail addresses are not allowed.',
             'invalid_format' => 'Invalid E-mail address.',
             'already_subscribed' => "You're already subscribed.",
-            'smtp_failed' => 'Email could not be verified. Please check the address and try again.'
+            'domain_invalid' => 'Email domain could not be verified. Please check the address and try again.'
         ];
         wp_send_json_error(['message' => $messages[$validation['reason']] ?? 'Email validation failed.']);
     }
     global $wpdb;
     $table_name = $wpdb->prefix . "subscribers";
-    $unsubscribe_token = md5(uniqid(rand(), true));
+    // Use cryptographically secure random token
+    $unsubscribe_token = bin2hex(random_bytes(32));
     $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
     $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
     $inserted = $wpdb->insert($table_name, [
         'email' => $email,
         'unsubscribe_token' => $unsubscribe_token,
-        'ip_address' => $ip_address,
-        'user_agent' => $user_agent
+        'ip_address' => sanitize_text_field($ip_address),
+        'user_agent' => sanitize_text_field($user_agent)
     ]);
     if ($inserted) {
+        // Clear rate limit attempts on success
+        delete_transient($cooldown_key . '_attempts');
         wp_send_json_success(['message' => 'Thank you for subscribing!']);
     } else {
+        // Handle duplicate email error gracefully (race condition protection)
+        if ($wpdb->last_error && strpos($wpdb->last_error, 'Duplicate entry') !== false) {
+            wp_send_json_error(['message' => "You're already subscribed."]);
+        }
+        error_log('Subscription insert failed: ' . $wpdb->last_error);
         wp_send_json_error(['message' => 'Subscription failed. Please try again.']);
     }
 }
@@ -344,7 +360,8 @@ function handle_unsubscribe() {
         global $wpdb;
         $table_name = $wpdb->prefix . "subscribers";
         $token = sanitize_text_field($_GET['unsubscribe']);
-        if (!preg_match('/^[a-f0-9]{32}$/', $token)) {
+        // Validate token format (now 64 hex characters for secure random token)
+        if (!preg_match('/^[a-f0-9]{64}$/', $token)) {
             wp_safe_redirect(home_url());
             return;
         }
@@ -368,7 +385,7 @@ function notify_subscribers_on_new_content($post_ID) {
     if (get_post_meta($post_ID, 'notification_sent', true)) return;
     update_post_meta($post_ID, 'notification_sent', true);
     $table_name = $wpdb->prefix . "subscribers";
-    $subscribers = $wpdb->get_results("SELECT email, unsubscribe_token FROM $table_name");
+    $subscribers = $wpdb->get_results($wpdb->prepare("SELECT email, unsubscribe_token FROM %i", $table_name));
     if (empty($subscribers)) return;
     $post_type = get_post_type($post_ID);
     $post_type_name = ($post_type === 'post') ? 'New Blog Post' : 'New "My Interests" Post';
@@ -386,8 +403,18 @@ function notify_subscribers_on_new_content($post_ID) {
         'MIME-Version: 1.0',
         'Content-Type: text/html; charset=UTF-8'
     ];
+    $site_url = esc_url(home_url());
+    $site_name = get_bloginfo('name');
+    
     foreach ($subscribers as $subscriber) {
-        $unsubscribe_url = esc_url(site_url("/?unsubscribe=" . $subscriber->unsubscribe_token));
+        // Sanitize email before sending
+        $subscriber_email = sanitize_email($subscriber->email);
+        if (!is_email($subscriber_email)) {
+            error_log("Invalid subscriber email skipped: " . $subscriber->email);
+            continue;
+        }
+        
+        $unsubscribe_url = esc_url(add_query_arg('unsubscribe', $subscriber->unsubscribe_token, home_url()));
         ob_start();
         ?>
         <html lang="en"><body>
@@ -401,17 +428,17 @@ function notify_subscribers_on_new_content($post_ID) {
         <h3><?php echo esc_html($post_title); ?></h3>
         <p><?php echo esc_html($post_excerpt); ?></p>
         <p>Read the full post: <a href="<?php echo esc_url($post_url); ?>"><strong><?php echo esc_html($post_title); ?></strong></a></p>
-        <p>Thank you for subscribing to <a href="https://ericroth.org">ericroth.org</a></p>
-        <p><img src="https://ericroth.org/wp-content/uploads/2024/03/Site-Logo.png" alt="ericroth.org Logo" style="width: 100px; height: auto;"></p>
+        <p>Thank you for subscribing to <a href="<?php echo $site_url; ?>"><?php echo esc_html($site_name); ?></a></p>
+        <p><img src="https://ericroth.org/wp-content/uploads/2024/03/Site-Logo.png" alt="<?php echo esc_attr($site_name); ?> Logo" style="width: 100px; height: auto;"></p>
         <hr>
         <p><a href="<?php echo $unsubscribe_url; ?>">Unsubscribe from notifications</a></p>
         <p style="font-size: 12px; color: #666;">Please do not reply to this email.</p>
         </body></html>
         <?php
         $message = ob_get_clean();
-        $sent = wp_mail($subscriber->email, $subject, $message, $headers);
+        $sent = wp_mail($subscriber_email, $subject, $message, $headers);
         if (!$sent) {
-            error_log("Failed to send notification to: " . $subscriber->email);
+            error_log("Failed to send notification to: " . $subscriber_email);
         }
     }
 }
