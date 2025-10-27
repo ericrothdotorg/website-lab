@@ -28,15 +28,15 @@ add_action('wp', function () {
             #af-wrapper .forum-menu .button-neutral:hover,
             #af-wrapper .forum-menu .topic-button-sticky:hover,
             #af-wrapper .forum-menu .forum-editor-button:hover {background: #c53030; color: #FFFFFF;}
-            #af-wrapper .button-red {color: #FFFFFF; background: #c53030;}
+            #af-wrapper .button {color: #FFFFFF;}
+            #af-wrapper .button-normal {background: #1e73be;}
+            #af-wrapper .button-red {background: #c53030;}
             #af-wrapper .button-red:hover {color: #FFFFFF;}
-            #af-wrapper .button-normal {color: #FFFFFF; background: #1e73be;}
         </style>';
     });
     // Restrict Uploads to Asgaros Forum Context
     add_filter('upload_dir', function ($dirs) {
         if (!is_asgaros_forum_upload()) return $dirs;
-
         $dirs['subdir'] = '/asgaros' . $dirs['subdir'];
         $dirs['path']   = $dirs['basedir'] . $dirs['subdir'];
         $dirs['url']    = $dirs['baseurl'] . $dirs['subdir'];
@@ -47,7 +47,7 @@ add_action('wp', function () {
             wp_set_object_terms($attachment_id, 63, 'rml-folder'); // Media Folder Number 63
         }
     });
-    // Gatekeeper to detect if the Request is forum-related to conditionally allow Uploads
+    // Detect if the Request is forum-related to conditionally allow Uploads
     function is_asgaros_forum_upload(): bool {
         $referer = $_SERVER['HTTP_REFERER'] ?? '';
         $request = $_SERVER['REQUEST_URI'] ?? '';
@@ -55,16 +55,14 @@ add_action('wp', function () {
                strpos($request, 'asgarosforum') !== false ||
                (defined('DOING_AJAX') && DOING_AJAX && !empty($_POST['action']) && strpos($_POST['action'], 'asgaros') !== false);
     }
-    // Load Quicktags Script only for Admins — Required for "Code" Tab
+    // Load Editor Scripts for All Users — Required for Formatting Toolbar
     add_action('wp_enqueue_scripts', function () {
-        if (current_user_can('administrator')) {
-            wp_enqueue_script('jquery');
-            wp_enqueue_script('editor');
-            wp_enqueue_style('editor-buttons');
-            wp_enqueue_script('quicktags');
-        }
+        wp_enqueue_script('jquery');
+        wp_enqueue_script('editor');
+        wp_enqueue_style('editor-buttons');
+        wp_enqueue_script('quicktags');
     });
-    // Enable Quicktags only for Admins — Ensures "Code" Tab appears
+    // Enable TinyMCE for Admins — Ensures "Code" Tab appears
     add_filter('wp_editor_settings', function ($settings, $editor_id) {
         if (current_user_can('administrator')) {
             $settings['tinymce']   = true;
@@ -72,14 +70,13 @@ add_action('wp', function () {
         }
         return $settings;
     }, 10, 2);
-    // Inject Editor only for Admins — Ensures full Editor with "Code" Tab
+    // Inject Custom Editor for All Users — Admins get full Editor with "Code" Tab
     add_filter('asgarosforum_custom_editor', function ($content) {
-        if (!current_user_can('administrator')) return $content;
         ob_start();
         wp_editor('', 'asgaros_editor', [
             'textarea_name' => 'asgaros_content',
             'media_buttons' => false,
-            'tinymce'       => true,
+            'tinymce'       => current_user_can('administrator'),
             'quicktags'     => true,
         ]);
         return ob_get_clean();
