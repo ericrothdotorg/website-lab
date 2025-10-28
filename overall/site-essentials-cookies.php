@@ -188,99 +188,117 @@ add_action('wp_footer', function () {
         We serve <strong>cookies</strong> to enhance your browsing experience. Learn more about it in our 
         <a href="https://ericroth.org/this-site/site-policies/">Site Policies</a><br>
         <span style="display: block; text-align: center;">
-            <button type="button" onclick="acceptCookie();" aria-label="Accept cookies and close notice"><span>Got It</span></button>
+            <button type="button" onclick="acceptCookie();" aria-label="Accept all cookies"><span>Accept All</span></button>
+            <button type="button" onclick="rejectCookie();" aria-label="Reject optional cookies" class="reject-btn"><span>Essential Only</span></button>
         </span>
     </p>
     <style>
         #cookie-notice {text-align: justify; color: #ffffff; font-family: inherit; background: rgba(0,0,0,0.75); padding: 20px; position: fixed; bottom: 15px; left: 15px; width: 100%; max-width: 300px; border-radius: 5px; margin: 0; z-index: 10000; box-sizing: border-box}
-        #cookie-notice button {font-weight: bold; color: #ffffff; background: #1e73be; border-radius: 3px; padding: 10px; margin-top: 15px; width: 50%; cursor: pointer; border: none;}
-        #cookie-notice button:hover {background: #c53030;}
+        #cookie-notice button {font-weight: normal; color: #ffffff; background: #1e73be; border-radius: 5px; padding: 8px; margin-top: 15px; width: 48%; cursor: pointer; border: none; margin-left: 2%; display: inline-block;}
+        #cookie-notice button:first-child {margin-left: 0;}
+        #cookie-notice button:hover {background: #1e73be;}
         #cookie-notice button:hover span {display: none;}
         #cookie-notice button:hover::before {content: "Accept";}
+        #cookie-notice button.reject-btn {background: #262626;}
+        #cookie-notice button.reject-btn:hover {background: #262626;}
+        #cookie-notice button.reject-btn:hover::before {content: "Reject";}
         #cookie-notice button:focus-visible {outline: 2px solid #ffffff; outline-offset: 2px;}
-        @media only screen and (max-width: 480px) {#cookie-notice {max-width: 100%; bottom: 0; left: 0; border-radius: 0}}
+        @media only screen and (max-width: 480px) {
+        #cookie-notice {max-width: 100%; bottom: 0; left: 0; border-radius: 0}
+        #cookie-notice button {width: 48%; font-size: 14px; padding: 8px 5px;}
+        }
     </style>
 
     <!-- MICROSOFT Clarity & GOOGLE Analytics with Cookie Consent -->
     <script>
-    function acceptCookie() {
-    const isSecure = window.location.protocol === 'https:' ? '; Secure' : '';
-    document.cookie = "cookieaccepted=1; max-age=31536000; path=/; SameSite=Lax" + isSecure;
+        function acceptCookie() {
+        const isSecure = window.location.protocol === 'https:' ? '; Secure' : '';
+        document.cookie = "cookieaccepted=1; max-age=31536000; path=/; SameSite=Lax" + isSecure;
+            const notice = document.getElementById("cookie-notice");
+            if (notice) {
+                notice.style.visibility = "hidden";
+                notice.setAttribute("aria-hidden", "true");
+            }
+            // Send consent Signal to Clarity
+            if (window.clarity) {
+                clarity("consent");
+            }
+            // Trigger Analytics loading if not already loaded
+            if (window.loadAnalyticsNow) {
+                window.loadAnalyticsNow();
+            }
+        }
+        function rejectCookie() {
+        const isSecure = window.location.protocol === 'https:' ? '; Secure' : '';
+        document.cookie = "cookieaccepted=0; max-age=31536000; path=/; SameSite=Lax" + isSecure;
         const notice = document.getElementById("cookie-notice");
         if (notice) {
             notice.style.visibility = "hidden";
             notice.setAttribute("aria-hidden", "true");
         }
-        // Send consent Signal to Clarity
-        if (window.clarity) {
-            clarity("consent");
+        // Don't send consent to Clarity - Don't load Analytics
         }
-        // Trigger Analytics loading if not already loaded
-        if (window.loadAnalyticsNow) {
-            window.loadAnalyticsNow();
-        }
-    }
-    document.addEventListener('DOMContentLoaded', function () {
-        // Check for existing Cookie Consent
-        const hasConsent = document.cookie.indexOf("cookieaccepted") >= 0;
-        // Show Cookie Notice if no Consent yet
-        if (!hasConsent) {
-            const notice = document.getElementById("cookie-notice");
-            if (notice) {
-                notice.style.visibility = "visible";
-                notice.setAttribute("aria-hidden", "false");
-            }
-        }
-        let loaded = false;
-        function loadAnalytics() {
-            if (loaded) return;
-            loaded = true;
-            
-            // Load MICROSOFT Clarity
-            (function(c,l,a,r,i,t,y){
-                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window, document, "clarity", "script", "eic7b2e9o1");
-            // Send consent to Clarity with polling
-            let clarityAttempts = 0;
-            const clarityInterval = setInterval(function() {
-                if (window.clarity && hasConsent) {
-                    clarity("consent");
-                    clearInterval(clarityInterval);
-                } else if (clarityAttempts++ > 20) {
-                    clearInterval(clarityInterval); // Stop after 2 seconds
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check for existing Cookie Consent
+            const hasConsent = document.cookie.indexOf("cookieaccepted=1") >= 0;
+            // Show Cookie Notice if no Consent yet
+            if (!hasConsent) {
+                const notice = document.getElementById("cookie-notice");
+                if (notice) {
+                    notice.style.visibility = "visible";
+                    notice.setAttribute("aria-hidden", "false");
                 }
-            }, 100);
-            
-            // Load GOOGLE Analytics
-            var s = document.createElement('script');
-            s.async = true;
-            s.src = "https://www.googletagmanager.com/gtag/js?id=G-X88D2RT23H";
-            document.head.appendChild(s);
-            s.onload = function() {
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                window.gtag = gtag;
-                gtag('js', new Date());
-                gtag('config', 'G-X88D2RT23H');
-            };
-        }
+            }
+            let loaded = false;
+            function loadAnalytics() {
+                if (loaded) return;
+                loaded = true;
+                
+                // Load MICROSOFT Clarity
+                (function(c,l,a,r,i,t,y){
+                    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+                })(window, document, "clarity", "script", "eic7b2e9o1");
+                // Send consent to Clarity with polling
+                let clarityAttempts = 0;
+                const clarityInterval = setInterval(function() {
+                    if (window.clarity && hasConsent) {
+                        clarity("consent");
+                        clearInterval(clarityInterval);
+                    } else if (clarityAttempts++ > 20) {
+                        clearInterval(clarityInterval); // Stop after 2 seconds
+                    }
+                }, 100);
+                
+                // Load GOOGLE Analytics
+                var s = document.createElement('script');
+                s.async = true;
+                s.src = "https://www.googletagmanager.com/gtag/js?id=G-X88D2RT23H";
+                document.head.appendChild(s);
+                s.onload = function() {
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    window.gtag = gtag;
+                    gtag('js', new Date());
+                    gtag('config', 'G-X88D2RT23H');
+                };
+            }
 
-        // Make loadAnalytics available globally for Cookie Acceptance
-        window.loadAnalyticsNow = loadAnalytics;
-        // Only auto-load if User has already consented
-        if (hasConsent) {
-            const timeoutId = setTimeout(loadAnalytics, 5000);
-            ['click','scroll','keydown','mousemove','touchstart'].forEach(function(event) {
-                window.addEventListener(event, function() {
-                    clearTimeout(timeoutId);
-                    loadAnalytics();
-                }, { once: true, passive: true });
-            });
-        }
-        // If no Consent yet, wait for User to click "Got It"
-    });
+            // Make loadAnalytics available globally for Cookie Acceptance
+            window.loadAnalyticsNow = loadAnalytics;
+            // Only auto-load if User has already consented
+            if (hasConsent) {
+                const timeoutId = setTimeout(loadAnalytics, 5000);
+                ['click','scroll','keydown','mousemove','touchstart'].forEach(function(event) {
+                    window.addEventListener(event, function() {
+                        clearTimeout(timeoutId);
+                        loadAnalytics();
+                    }, { once: true, passive: true });
+                });
+            }
+            // If no Consent yet, wait for User to click "Got It"
+        });
     </script>
 
     <!-- Scroll Progress Indicator -->
