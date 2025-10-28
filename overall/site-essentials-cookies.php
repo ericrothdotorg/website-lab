@@ -192,7 +192,7 @@ add_action('wp_footer', function () {
         </span>
     </p>
     <style>
-        #cookie-notice {text-align: justify; color: #ffffff; font-family: inherit; background: rgba(0,0,0,0.75); padding: 20px; position: fixed; bottom: 15px; left: 15px; width: 100%; max-width: 300px; border-radius: 5px; margin: 0; z-index: 9999; box-sizing: border-box}
+        #cookie-notice {text-align: justify; color: #ffffff; font-family: inherit; background: rgba(0,0,0,0.75); padding: 20px; position: fixed; bottom: 15px; left: 15px; width: 100%; max-width: 300px; border-radius: 5px; margin: 0; z-index: 10000; box-sizing: border-box}
         #cookie-notice button {font-weight: bold; color: #ffffff; background: #1e73be; border-radius: 3px; padding: 10px; margin-top: 15px; width: 50%; cursor: pointer; border: none;}
         #cookie-notice button:hover {background: #c53030;}
         #cookie-notice button:hover span {display: none;}
@@ -204,7 +204,8 @@ add_action('wp_footer', function () {
     <!-- MICROSOFT Clarity & GOOGLE Analytics with Cookie Consent -->
     <script>
     function acceptCookie() {
-        document.cookie = "cookieaccepted=1; max-age=31536000; path=/; SameSite=Lax; Secure";
+    const isSecure = window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = "cookieaccepted=1; max-age=31536000; path=/; SameSite=Lax" + isSecure;
         const notice = document.getElementById("cookie-notice");
         if (notice) {
             notice.style.visibility = "hidden";
@@ -241,12 +242,16 @@ add_action('wp_footer', function () {
                 t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
                 y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
             })(window, document, "clarity", "script", "eic7b2e9o1");
-            // Send consent to Clarity after it loads
-            setTimeout(function() {
+            // Send consent to Clarity with polling
+            let clarityAttempts = 0;
+            const clarityInterval = setInterval(function() {
                 if (window.clarity && hasConsent) {
                     clarity("consent");
+                    clearInterval(clarityInterval);
+                } else if (clarityAttempts++ > 20) {
+                    clearInterval(clarityInterval); // Stop after 2 seconds
                 }
-            }, 1000);
+            }, 100);
             
             // Load GOOGLE Analytics
             var s = document.createElement('script');
@@ -281,7 +286,7 @@ add_action('wp_footer', function () {
     <!-- Scroll Progress Indicator -->
     <style>
         .scroll-indicator-container {width: 100%;}
-        .scroll-indicator-bar {will-change: width; width: 0%; position: fixed; bottom: 0; height: 5px; background: #c53030; z-index: 99999;}
+        .scroll-indicator-bar {will-change: width; width: 0%; position: fixed; bottom: 0; height: 5px; background: #c53030; z-index: 5000;}
     </style>
     <script>
         let ticking = false;
