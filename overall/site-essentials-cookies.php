@@ -297,7 +297,7 @@ add_action('wp_footer', function () {
                     }, { once: true, passive: true });
                 });
             }
-            // If no Consent yet, wait for User to click "Got It"
+            // If no Consent yet, wait for User to click "Accept"
         });
     </script>
 
