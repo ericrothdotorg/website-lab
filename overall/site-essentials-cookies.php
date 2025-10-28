@@ -196,7 +196,7 @@ add_action('wp_footer', function () {
         #cookie-notice {text-align: justify; color: #ffffff; font-family: inherit; background: rgba(0,0,0,0.75); padding: 20px; position: fixed; bottom: 15px; left: 15px; width: 100%; max-width: 300px; border-radius: 5px; margin: 0; z-index: 10000; box-sizing: border-box}
         #cookie-notice button {font-weight: normal; color: #ffffff; background: #1e73be; border-radius: 5px; padding: 8px; margin-top: 15px; width: 48%; cursor: pointer; border: none; margin-left: 2%; display: inline-block;}
         #cookie-notice button:first-child {margin-left: 0;}
-        #cookie-notice button:hover {background: #1e73be;}
+        #cookie-notice button:hover {background: #c53030;}
         #cookie-notice button:hover span {display: none;}
         #cookie-notice button:hover::before {content: "Accept";}
         #cookie-notice button.reject-btn {background: #262626;}
