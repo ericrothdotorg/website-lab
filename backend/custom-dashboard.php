@@ -203,14 +203,6 @@ function initialize_custom_dashboard() {
         wp_add_dashboard_widget('custom_activity_alerts', '🗓️ Recent Site Activity', function () {
             global $wpdb;
             $format_count = fn($num) => number_format_i18n($num, 0);
-            // 🧍 Subscribers
-            $subs_today = $wpdb->get_var("
-                SELECT COUNT(*) FROM {$wpdb->prefix}subscribers
-                WHERE DATE(subscription_date) = CURDATE()
-            ");
-            $subs_total = $wpdb->get_var("
-                SELECT COUNT(*) FROM {$wpdb->prefix}subscribers
-            ");
             // 📬 Contact Messages
             $contact_today = $wpdb->get_var("
                 SELECT COUNT(*) FROM {$wpdb->prefix}contact_messages
@@ -218,22 +210,6 @@ function initialize_custom_dashboard() {
             ");
             $contact_total = $wpdb->get_var("
                 SELECT COUNT(*) FROM {$wpdb->prefix}contact_messages
-            ");
-            // 🙋 Forum Users (Asgaros)
-            $forum_users_today = $wpdb->get_var("
-                SELECT COUNT(*) FROM {$wpdb->users}
-                WHERE DATE(user_registered) = CURDATE()
-            ");
-            $forum_users_total = $wpdb->get_var("
-                SELECT COUNT(*) FROM {$wpdb->users}
-            ");
-            // 💬 Forum Posts (Asgaros)
-            $forum_today = $wpdb->get_var("
-                SELECT COUNT(*) FROM {$wpdb->prefix}forum_posts
-                WHERE DATE(date) = CURDATE()
-            ");
-            $forum_total = $wpdb->get_var("
-                SELECT COUNT(*) FROM {$wpdb->prefix}forum_posts
             ");
             // 👍 Likes
             $likes_today = $wpdb->get_var("
@@ -254,10 +230,7 @@ function initialize_custom_dashboard() {
                 WHERE meta_key = 'dislikes'
             ");
             echo '<ul style="font-size: 14px; line-height: 1.5;">';
-            echo '<li>🧍 Subscribers: <strong style="color: red;">' . intval($subs_today) . '</strong> today / <strong>' . $format_count($subs_total) . '</strong> total</li>';
             echo '<li>📬 Contact Messages: <strong style="color: red;">' . intval($contact_today) . '</strong> today / <strong>' . $format_count($contact_total) . '</strong> total</li>';
-            echo '<li>🙋 Forum Users: <strong style="color: red;">' . intval($forum_users_today) . '</strong> today / <strong>' . $format_count($forum_users_total) . '</strong style="color: red;"> total</li>';
-            echo '<li>💬 Forum Posts: <strong style="color: red;">' . intval($forum_today) . '</strong> today / <strong>' . $format_count($forum_total) . '</strong> total</li>';
             echo '<li>👍 Likes: <strong style="color: red;">' . intval($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</li>';
             echo '<li>👎 Dislikes: <strong style="color: red;">' . intval($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</li>';
             echo '</ul>';
@@ -347,7 +320,7 @@ function initialize_custom_dashboard() {
         $last_result = get_option('custom_last_cleanup_result');
         if ($last_cleanup) {
             if ($last_result) {
-                echo '<p style="margin: 10px 0;">' . esc_html($last_result) . '</p>';
+                echo '<p style="margin: 10px 0;"><strong>' . esc_html($last_result) . '</strong></p>';
             }
             echo '<p style="margin: 5px 0;"><em>Last cleanup: ' . 
                 esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</em></p>';
@@ -443,7 +416,7 @@ function initialize_custom_dashboard() {
             DELETE FROM {$wpdb->posts}
             WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 30 DAY
         ");
-        // Optimize Main Tables
+        // Optimize main Tables
         $tables = ['postmeta', 'usermeta', 'options', 'term_relationships'];
         foreach ($tables as $table) {
             $wpdb->query("OPTIMIZE TABLE {$wpdb->prefix}$table");
