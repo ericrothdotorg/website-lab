@@ -10,6 +10,7 @@ function lum_track_visitor() {
     $table_name = $wpdb->prefix . 'live_visitors';
     
     $ip_address = lum_get_client_ip();
+    $ip_address = lum_anonymize_ip($ip_address);
     $page_url = esc_url_raw($_SERVER['REQUEST_URI']);
     $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field($_SERVER['HTTP_USER_AGENT']) : '';
     
@@ -94,6 +95,21 @@ function lum_get_client_ip() {
         }
     }
     return isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '0.0.0.0';
+}
+
+// Anonymize IP address (IPv4 and IPv6)
+function lum_anonymize_ip($ip) {
+    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        return preg_replace('/\.\d+$/', '.0', $ip);
+    }
+    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+        $ip = inet_pton($ip);
+        if ($ip !== false) {
+            $ip = substr($ip, 0, 8) . str_repeat("\0", 8);
+            return inet_ntop($ip);
+        }
+    }
+    return $ip;
 }
 
 // Get geolocation from IP
