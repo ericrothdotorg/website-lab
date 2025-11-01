@@ -220,74 +220,21 @@ function lum_map_shortcode($atts) {
     </div>
     
     <style>
-    #live-user-map {
-        position: relative !important;
-        z-index: 1 !important;
-    }
-    
-    .leaflet-container {
-        position: relative !important;
-        z-index: 1 !important;
-    }
-    
+    #live-user-map {position: relative !important; z-index: 1 !important;}
+    .leaflet-container {position: relative !important; z-index: 1 !important;}
     @keyframes pulse {
-        0% {
-            box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
-        }
-        70% {
-            box-shadow: 0 0 0 20px rgba(40, 167, 69, 0);
-        }
-        100% {
-            box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
-        }
+        0% {box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);}
+        70% {box-shadow: 0 0 0 20px rgba(40, 167, 69, 0);}
+        100% {box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);}
     }
-    
-    .leaflet-popup-content {
-        margin: 15px;
-        min-width: 220px;
-    }
-    
-    .popup-title {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 10px;
-        color: #333;
-    }
-    
-    .popup-info {
-        font-size: 13px;
-        line-height: 1.8;
-        color: #666;
-    }
-    
-    .popup-info strong {
-        color: #333;
-        display: inline-block;
-        min-width: 80px;
-    }
-    
-    .popup-badge {
-        display: inline-block;
-        padding: 3px 8px;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 600;
-        margin-left: 5px;
-    }
-    
-    .badge-live {
-        background: #d4edda;
-        color: #155724;
-    }
-    
-    .badge-past {
-        background: #d1ecf1;
-        color: #0c5460;
-    }
-    
-    .leaflet-control-attribution a {
-        pointer-events: auto !important;
-    }
+    .leaflet-popup-content {margin: 15px; min-width: 220px;}
+    .popup-title {font-size: 16px; font-weight: 600; margin-bottom: 10px; color: #333;}
+    .popup-info {font-size: 13px; line-height: 1.8; color: #666;}
+    .popup-info strong {color: #333; display: inline-block; min-width: 80px;}
+    .popup-badge {display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 5px;}
+    .badge-live {background: #d4edda; color: #155724;}
+    .badge-past {background: #d1ecf1; color: #0c5460;}
+    .leaflet-control-attribution a {pointer-events: auto !important;}
     </style>
     
     <script>
