@@ -96,7 +96,7 @@ function lum_should_skip_tracking($uri) {
         return true;
     }
     
-    // Skip common WordPress technical URLs
+    // Skip common WP technical URLs and old stuff
     $skip_patterns = array(
         '/wp-content/',
         '/wp-includes/',
