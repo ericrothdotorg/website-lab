@@ -84,7 +84,7 @@ function lum_should_skip_tracking($uri) {
         'css', 'js', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico',
         'woff', 'woff2', 'ttf', 'eot', 'otf', // fonts
         'mp4', 'webm', 'ogg', 'mp3', 'wav', // media
-        'pdf', 'zip', 'tar', 'gz', // documents/archives
+        'pdf', 'zip', 'tar', 'gz', // documents / archives
         'xml', 'json', 'txt' // data files
     );
     
@@ -106,7 +106,9 @@ function lum_should_skip_tracking($uri) {
         'feed',
         '/litespeed/',
         '/cache/',
-        '.map' // source maps
+        '.map',
+        '/site-forum/',
+        '/jAlbums/'
     );
     
     foreach ($skip_patterns as $pattern) {
