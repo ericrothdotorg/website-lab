@@ -1,8 +1,13 @@
 <?php
 
-// Track current visitor
+// Track current visitor with filtering
 function lum_track_visitor() {
     if (is_admin() || wp_doing_ajax()) {
+        return;
+    }
+    
+    // Don't track if it's a REST API request
+    if (defined('REST_REQUEST') && REST_REQUEST) {
         return;
     }
     
@@ -11,8 +16,21 @@ function lum_track_visitor() {
     
     $ip_address = lum_get_client_ip();
     $ip_address = lum_anonymize_ip($ip_address);
-    $page_url = esc_url_raw($_SERVER['REQUEST_URI']);
+    $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+    
+    // Filter out unwanted requests
+    if (lum_should_skip_tracking($request_uri)) {
+        return;
+    }
+    
+    // Clean the URL - remove query parameters for cleaner display
+    $page_url = lum_clean_page_url($request_uri);
     $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field($_SERVER['HTTP_USER_AGENT']) : '';
+    
+    // Skip known bots
+    if (lum_is_bot($user_agent)) {
+        return;
+    }
     
     $geo_data = lum_get_geolocation($ip_address);
     
@@ -58,6 +76,93 @@ function lum_track_visitor() {
     }
 }
 add_action('wp', 'lum_track_visitor');
+
+// Check if request should be skipped
+function lum_should_skip_tracking($uri) {
+    // File extensions to ignore (assets)
+    $skip_extensions = array(
+        'css', 'js', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico',
+        'woff', 'woff2', 'ttf', 'eot', 'otf', // fonts
+        'mp4', 'webm', 'ogg', 'mp3', 'wav', // media
+        'pdf', 'zip', 'tar', 'gz', // documents/archives
+        'xml', 'json', 'txt' // data files
+    );
+    
+    // Check file extension
+    $path = parse_url($uri, PHP_URL_PATH);
+    $extension = pathinfo($path, PATHINFO_EXTENSION);
+    
+    if (in_array(strtolower($extension), $skip_extensions)) {
+        return true;
+    }
+    
+    // Skip common WordPress technical URLs
+    $skip_patterns = array(
+        '/wp-content/',
+        '/wp-includes/',
+        '/wp-json/',
+        'robots.txt',
+        'sitemap',
+        'feed',
+        '/litespeed/',
+        '/cache/',
+        '.map' // source maps
+    );
+    
+    foreach ($skip_patterns as $pattern) {
+        if (strpos($uri, $pattern) !== false) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Clean and normalize page URLs
+function lum_clean_page_url($uri) {
+    // Remove query parameters for cleaner display (optional)
+    $clean_uri = strtok($uri, '?');
+    
+    // Get the site URL to create full URLs
+    $site_url = get_site_url();
+    
+    // If it's just root, return full URL
+    if ($clean_uri === '/' || $clean_uri === '') {
+        return $site_url . '/';
+    }
+    
+    // Return full URL for display
+    return $site_url . $clean_uri;
+}
+
+// Detect if user agent is a bot
+function lum_is_bot($user_agent) {
+    if (empty($user_agent)) {
+        return true;
+    }
+    
+    $bot_patterns = array(
+        'bot', 'crawl', 'spider', 'slurp', 'mediapartners',
+        'googlebot', 'bingbot', 'yahoo', 'baiduspider',
+        'facebookexternalhit', 'twitterbot', 'rogerbot',
+        'linkedinbot', 'embedly', 'showyoubot', 'outbrain',
+        'pinterest', 'slackbot', 'vkshare', 'w3c_validator',
+        'redditbot', 'applebot', 'whatsapp', 'flipboard',
+        'tumblr', 'bitlybot', 'skypeuripreview', 'nuzzel',
+        'discordbot', 'qwantify', 'pinterestbot', 'bitrix',
+        'semrushbot', 'ahrefsbot', 'dotbot', 'mj12bot'
+    );
+    
+    $user_agent_lower = strtolower($user_agent);
+    
+    foreach ($bot_patterns as $pattern) {
+        if (strpos($user_agent_lower, $pattern) !== false) {
+            return true;
+        }
+    }
+    
+    return false;
+}
 
 // Cleanup old visitor records daily
 function lum_cleanup_old_visitors() {
@@ -271,7 +376,6 @@ function lum_map_shortcode($atts) {
                 maxZoom: 18
             }).addTo(map);
             
-            // Track user interaction
             map.on('zoomstart movestart', function() {
                 userHasInteracted = true;
             });
@@ -357,7 +461,6 @@ function lum_map_shortcode($atts) {
                 }
             });
             
-            // Only auto-zoom if user hasn't interacted with the map
             if (!skipZoom && !userHasInteracted && allLatLngs.length > 0) {
                 if (allLatLngs.length > 1) {
                     const bounds = L.latLngBounds(allLatLngs);
@@ -376,6 +479,9 @@ function lum_map_shortcode($atts) {
             
             const browser = parseBrowser(user.user_agent);
             
+            // Extract just the path from full URL for display
+            const displayUrl = user.page_url.replace(/^https?:\/\/[^\/]+/, '') || '/';
+            
             return `
                 <div class="popup-title">
                     🌍 ${user.city || 'Unknown City'}${badge}
@@ -383,7 +489,7 @@ function lum_map_shortcode($atts) {
                 <div class="popup-info">
                     <div><strong>Country:</strong> ${user.country} ${getFlagEmoji(user.country_code)}</div>
                     <div><strong>Last Seen:</strong> ${timeAgo}</div>
-                    <div><strong>Page:</strong> ${truncateUrl(user.page_url)}</div>
+                    <div><strong>Page:</strong> ${truncateUrl(displayUrl)}</div>
                     <div><strong>Browser:</strong> ${browser}</div>
                     <div><strong>Location:</strong> ${parseFloat(user.latitude).toFixed(4)}, ${parseFloat(user.longitude).toFixed(4)}</div>
                 </div>
@@ -453,9 +559,8 @@ function lum_map_shortcode($atts) {
             html += '<thead><tr style="border-bottom: 2px solid #ddd;"><th style="text-align: left; padding: 8px;">Page</th><th style="text-align: left; padding: 8px;">Visitors</th><th style="text-align: left; padding: 8px;">Location</th></tr></thead><tbody>';
             
             Array.from(pageMap.entries()).forEach(([url, data]) => {
-                const fullUrl = window.location.origin + url;
                 html += `<tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 8px;"><a href="${fullUrl}" target="_blank">${url}</a></td>
+                    <td style="padding: 8px;"><a href="${url}" target="_blank">${url}</a></td>
                     <td style="padding: 8px;">${data.count}</td>
                     <td style="padding: 8px;">${data.city}, ${data.country}</td>
                 </tr>`;
