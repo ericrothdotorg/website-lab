@@ -124,6 +124,64 @@ if (!is_admin()) {
     add_action('init', 'register_shortcodes');
 }
 
+// Shortcode: [post_stats]
+add_shortcode('post_stats', function() {
+    global $post;
+    if (!$post) return '';
+    $content = apply_filters('the_content', $post->post_content);
+    $text    = strip_tags(strip_shortcodes($content));
+    $word_count = str_word_count($text);
+    $minutes    = ceil($word_count / 200);
+    $char_count = strlen($text);
+    $paragraphs = substr_count($content, '</p>');
+    $images     = substr_count($content, '<img');
+    preg_match_all('/<video[^>]*>/i', $content, $video_matches);
+    preg_match_all('/<iframe[^>]*(?:youtube\.com|vimeo\.com)[^>]*>/i', $content, $embed_matches);
+    $videos = count($video_matches[0]) + count($embed_matches[0]);
+    preg_match_all('/<h[1-6][^>]*>.*?<\/h[1-6]>/', $content, $heading_matches);
+    $titles = count($heading_matches[0]);
+    preg_match_all('/<a\s[^>]*href=["\']([^"\']+)["\']/i', $content, $matches);
+    $internal_links = 0;
+    $external_links = 0;
+    $site_url = home_url();
+    if (!empty($matches[1])) {
+        foreach ($matches[1] as $url) {
+            if (strpos($url, $site_url) === 0 || strpos($url, '/') === 0) {
+                $internal_links++;
+            } else {
+                $external_links++;
+            }
+        }
+    }
+    $sentences = preg_split('/[.!?]+/', $text, -1, PREG_SPLIT_NO_EMPTY);
+    $sentence_count = count($sentences);
+    $avg_words_per_sentence = $sentence_count > 0 ? round($word_count / $sentence_count, 1) : 0;
+    // Format numbers with thousands separator
+    $word_count_fmt     = number_format($word_count, 0, '.', "'");
+    $char_count_fmt     = number_format($char_count, 0, '.', "'");
+    $paragraphs_fmt     = number_format($paragraphs, 0, '.', "'");
+    $titles_fmt         = number_format($titles, 0, '.', "'");
+    $images_fmt         = number_format($images, 0, '.', "'");
+    $videos_fmt         = number_format($videos, 0, '.', "'");
+    $internal_links_fmt = number_format($internal_links, 0, '.', "'");
+    $external_links_fmt = number_format($external_links, 0, '.', "'");
+    $sentence_count_fmt = number_format($sentence_count, 0, '.', "'");
+    // Return output
+    return '<div class="post-stats">'
+         . '<span class="word-count"><strong>'.$word_count_fmt.'</strong> Words</span> • '
+         . '<span class="read-time">Read Time: <strong>'.$minutes.'</strong> Min.</span><br>'
+         . '<span class="char-count"><strong>'.$char_count_fmt.'</strong> Characters</span> • '
+         . '<span class="paragraph-count"><strong>'.$paragraphs_fmt.'</strong> Paragraphs</span><br>'
+         . '<span class="sentence-count"><strong>'.$sentence_count_fmt.'</strong> Sentences</span> • '
+         . '<span class="avg-words-sentence"><strong>'.$avg_words_per_sentence.'</strong> Words per Sentence</span><br>'
+         . '<span class="internal-link-count"><strong>'.$internal_links_fmt.'</strong> Internal Links</span> • '
+         . '<span class="external-link-count"><strong>'.$external_links_fmt.'</strong> External Links</span><br>'
+         . '<span class="title-count"><strong>'.$titles_fmt.'</strong> Titles</span> • '
+         . '<span class="image-count"><strong>'.$images_fmt.'</strong> Images</span> • '
+         . '<span class="video-count"><strong>'.$videos_fmt.'</strong> Videos</span>'
+         . '</div>';
+});
+
 // ----------------------------------------
 //  SEO / UX & ACCESSIBILITY ENHANCEMENTS
 // ----------------------------------------
