@@ -373,7 +373,7 @@ function lum_map_shortcode($atts) {
                 terminator.setTime();
             }, 60000);
             loadMapData();
-            setInterval(loadMapData, 10000); // Changed to 10 seconds
+            setInterval(loadMapData, 15000); // Refresh every 15 seconds
         }
 
         function loadMapData() {
