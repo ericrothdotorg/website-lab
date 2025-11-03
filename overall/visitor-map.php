@@ -85,17 +85,34 @@ function lum_should_skip_tracking($uri) {
     }
     // Skip common WP technical URLs and old stuff
     $skip_patterns = array(
+        // WordPress Core
+        '/wp-admin/',
         '/wp-content/',
         '/wp-includes/',
         '/wp-json/',
+        '/wp-login',
+        '/wp-cron.php',
+        '/xmlrpc.php',
+        '/embed/',
+        '/trackback/',
+        // Cache & Performance
+        '/litespeed/',
+        '/cache/',
+        '/amp/',
+        // SEO & Standards
+        '/.well-known/',
         'robots.txt',
         'sitemap',
         'feed',
-        '/litespeed/',
-        '/cache/',
+        // Assets & Technical
+        '/favicon.ico',
         '.map',
+        // Query Parameters
+        '?replytocom=',
+        'preview=true',
+        // Site-Specific Legacy
         '/site-forum/',
-        '/jAlbums/'
+        '/jAlbums/',
     );
     foreach ($skip_patterns as $pattern) {
         if (strpos($uri, $pattern) !== false) {
