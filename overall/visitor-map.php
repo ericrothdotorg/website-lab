@@ -216,11 +216,13 @@ function lum_get_geolocation($ip) {
         return false; // Another request is processing
     }
     set_transient($lock_key, true, 30); // 30 second lock
-    $response = wp_remote_get("https://ip-api.com/json/{$ip}?fields=status,country,countryCode,city,lat,lon", array(
-        'timeout' => 5 // Add timeout
+    $response = wp_remote_get("http://ip-api.com/json/{$ip}?fields=status,country,countryCode,city,lat,lon", array(
+        'timeout' => 10, // Increased timeout
+        'sslverify' => false
     ));
     delete_transient($lock_key);
     if (is_wp_error($response)) {
+        error_log('LUM Geo Error: ' . $response->get_error_message());
         return false;
     }
     $body = wp_remote_retrieve_body($response);
@@ -234,11 +236,15 @@ function lum_get_geolocation($ip) {
 
 // *** AJAX endpoint to get map data
 function lum_get_map_data() {
-    check_ajax_referer('lum_map_nonce', 'nonce');
+    // More permissive nonce check
+    if (!isset($_REQUEST['nonce']) || !wp_verify_nonce($_REQUEST['nonce'], 'lum_map_nonce')) {
+        wp_send_json_error('Invalid nonce');
+        return;
+    }
     global $wpdb;
     $table_name = $wpdb->prefix . 'live_visitors';
     $current_time = current_time('timestamp');
-    $live_threshold = date('Y-m-d H:i:s', $current_time - (5 * 60));
+    $live_threshold = date('Y-m-d H:i:s', $current_time - (15 * 60)); // Increased to 15 minutes
     $history_threshold = date('Y-m-d H:i:s', $current_time - (90 * 24 * 60 * 60));
     $live_users = $wpdb->get_results($wpdb->prepare(
         "SELECT 
@@ -367,21 +373,39 @@ function lum_map_shortcode($atts) {
                 terminator.setTime();
             }, 60000);
             loadMapData();
-            setInterval(loadMapData, 15000);
+            setInterval(loadMapData, 10000); // Changed to 10 seconds
         }
 
         function loadMapData() {
-            fetch('<?php echo admin_url('admin-ajax.php'); ?>?action=lum_get_map_data&nonce=<?php echo wp_create_nonce('lum_map_nonce'); ?>')
-                .then(response => response.json())
+            const url = '<?php echo admin_url('admin-ajax.php'); ?>?action=lum_get_map_data&nonce=<?php echo wp_create_nonce('lum_map_nonce'); ?>&_=' + Date.now(); // Added cache-busting
+            fetch(url, {
+                method: 'GET',
+                cache: 'no-cache',
+                headers: {
+                    'Cache-Control': 'no-cache'
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Map data loaded:', data); // Added console logging
                     if (data.success) {
                         updateMarkers(data.data, isFirstLoad);
                         updateStats(data.data.counts);
                         updatePagesList(data.data.live);
                         isFirstLoad = false;
+                    } else {
+                        console.error('AJAX returned error:', data);
                     }
                 })
-                .catch(error => console.error('Error loading map data:', error));
+                .catch(error => {
+                    console.error('Error loading map data:', error);
+                    document.getElementById('pages-list').innerHTML = '<p style="color: #dc3545;">Error loading data. Check console.</p>';
+                });
         }
 
         function updateMarkers(data, skipZoom) {
