@@ -394,16 +394,17 @@ add_action("wp_footer", function () {
     }
     .dropdown:hover .dropdown-content, .dropdown:focus-within .dropdown-content {display: block;}
     /* Footer: Animate Footer Text */
-    .content-text::before {content: "content"; animation: content-words 9s linear infinite; will-change: content;}
+    .content-text::before {content: "content"; animation: content-words 10s linear infinite; will-change: content;}
     @keyframes content-words {
-      11.11% {content: " posts";}
-      22.22% {content: " traits";}
-      33.33% {content: " projects";}
-      44.44% {content: " topics";}
-      55.55% {content: " galleries";}
-      66.66% {content: " feeds";}
-      77.77% {content: " pages";}
-      88.88% {content: " things";}
+      10% {content: " posts";}
+      20% {content: " traits";}
+      30% {content: " projects";}
+      40% {content: " topics";}
+      50% {content: " galleries";}
+      60% {content: " feeds";}
+      70% {content: " pages";}
+      80% {content: " things";}
+      90% {content: " visitors";}
     }
 
     </style>
