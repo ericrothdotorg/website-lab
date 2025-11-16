@@ -21,9 +21,15 @@ add_filter( 'display_posts_shortcode_wrapper_open', 'be_dps_select_open', 10, 2 
 
 add_action( 'pre_get_posts', function( $query ) {
     if ( ! is_admin() && ! $query->is_main_query() && $query->get( 'wrapper' ) === 'select' ) {
-        if ( ! empty( $query->posts ) ) {
-            update_post_term_cache( $query->posts, [ 'category', 'topics' ] );
-        }
+        // Move cache warming to after posts are queried
+        add_action( 'the_posts', function( $posts ) use ( $query ) {
+            if ( ! empty( $posts ) && $query->get( 'wrapper' ) === 'select' ) {
+                $post_ids = wp_list_pluck( $posts, 'ID' );
+                update_post_term_cache( $post_ids, [ 'category', 'topics' ] );
+                update_post_cache( $posts );
+            }
+            return $posts;
+        }, 10, 1 );
     }
 }, 5 );
 
@@ -52,7 +58,7 @@ class DPS_Grouped_Collector {
         } elseif ( $post_type === 'my-interests' ) {
             $taxonomy = 'topics';
         }
-        // Determine taxonomy-based grouping
+        // Determine taxonomy-based grouping (uses pre-warmed cache)
         if ( $taxonomy ) {
             $terms = get_the_terms( $post->ID, $taxonomy );
             if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) {
@@ -156,7 +162,9 @@ function posts_count_per_category( $output, $atts ) {
 }
 add_filter( 'display_posts_shortcode_output', 'posts_count_per_category', 10, 2 );
 
-/* Inline CSS in wp_head for Early Load */
+// --------------------------------------
+//  INLINE CSS IN WP_HEAD FOR EARLY LOAD
+// --------------------------------------
 
 add_action( 'wp_head', function () { ?>
     <style>
@@ -216,11 +224,13 @@ add_action( 'wp_head', function () { ?>
     </style>
 <?php });
 
-/* Inline JS in Footer for Dynamic Behavior */
+// ---------------------------------------------------------------
+//  INLINE JS IN FOOTER FOR DYNAMIC BEHAVIOR - DEFERRED EXECUTION
+// ---------------------------------------------------------------
 
 add_action( 'wp_footer', function () { ?>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+(function() {
     // Adjust font size in sidebar to prevent overflow
     function adjustFontSize() {
         const sidebar = document.querySelector('.ct-sidebar');
@@ -236,21 +246,39 @@ document.addEventListener('DOMContentLoaded', function() {
             sidebar.style.fontSize = `${currentFontSize}px`;
         }
     }
-    setTimeout(adjustFontSize, 100);
-    window.addEventListener('resize', adjustFontSize);
-});
-document.addEventListener('DOMContentLoaded', function() {
     // ARIA live announcement when navigating via select menu
-    document.querySelectorAll('.display-posts-listing').forEach(function(select) {
-        const liveId = select.dataset.liveId;
-        const live = document.getElementById(liveId);
-        if (live) {
-            select.addEventListener('change', function() {
-                const selectedText = this.options[this.selectedIndex].text;
-                live.textContent = `Navigating to ${selectedText}`;
+    function setupSelectAnnouncements() {
+        document.querySelectorAll('.display-posts-listing').forEach(function(select) {
+            const liveId = select.dataset.liveId;
+            const live = document.getElementById(liveId);
+            if (live) {
+                select.addEventListener('change', function() {
+                    const selectedText = this.options[this.selectedIndex].text;
+                    live.textContent = `Navigating to ${selectedText}`;
+                });
+            }
+        });
+    }
+    // Run after DOM is ready and idle
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            requestIdleCallback(function() {
+                adjustFontSize();
+                setupSelectAnnouncements();
             });
-        }
+        });
+    } else {
+        requestIdleCallback(function() {
+            adjustFontSize();
+            setupSelectAnnouncements();
+        });
+    }
+    // Debounced resize handler
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(adjustFontSize, 150);
     });
-});
+})();
 </script>
 <?php });
