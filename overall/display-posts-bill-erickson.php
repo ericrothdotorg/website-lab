@@ -170,6 +170,7 @@ add_action( 'wp_head', function () { ?>
     <style>
     /* Accessibility Utilities */
     .screen-reader-text {position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden;}
+
     /* General Styling */
     .display-posts-listing {cursor: pointer;}
     .display-posts-listing .listing-item {clear: both; overflow: hidden; background: #fafbfc; border: 1px solid #e1e8ed; border-radius: 25px;}
@@ -178,14 +179,17 @@ add_action( 'wp_head', function () { ?>
     .display-posts-listing .title {display: block; margin-top: 16px; margin-bottom: 16px; text-align: center; font-size: 1.125rem; width: 100%;}
     .listing-item .excerpt-dash {display: none;}
     .display-posts-listing .excerpt {clear: right; display: block; text-align: center; margin: 0 16px 20px 16px;}
+
     /* Category Styling */
     .display-posts-listing .category-display, .display-posts-listing.grid .category-display {display: block; font-size: 0.85rem; text-align: center; margin-top: -8px; margin-bottom: 16px; opacity: 0.75;}
+
     /* Grid Layouts */
     .display-posts-listing.grid {display: grid; grid-template-columns: repeat(2, 1fr); grid-gap: 1.75rem 1.5rem;}
     .display-posts-listing.grid img {display: block; max-width: 100%; height: auto;}
     .display-posts-listing.grid .title {margin-top: 12px; margin-bottom: 12px; font-size: 1.125rem;}
     @media (max-width: 600px) {.display-posts-listing.grid .excerpt {padding-left: 8px; padding-right: 8px; font-size: 0.75rem;}}
     @media (min-width: 600px) {.display-posts-listing.grid .excerpt {padding-left: 16px; padding-right: 16px;}}
+
     /* More Columns */
     @media (min-width: 768px) {.display-posts-listing.grid#three-columns {grid-template-columns: repeat(3, 1fr);}}
     @media (min-width: 600px) and (max-width: 992px) {.display-posts-listing.grid#four-columns {grid-template-columns: repeat(2, 1fr);}}
@@ -194,18 +198,21 @@ add_action( 'wp_head', function () { ?>
     .display-posts-listing.grid#six-columns .title {margin-top: 8px; margin-bottom: 8px; font-size: 0.75rem;}
     @media (min-width: 600px) and (max-width: 992px) {.display-posts-listing.grid#six-columns {grid-template-columns: repeat(3, 1fr);}}
     @media (min-width: 992px) {.display-posts-listing.grid#six-columns {grid-template-columns: repeat(6, 1fr);}}
+
     /* Specific Layout Adjustments */
     .display-posts-listing.grid#small-version .listing-item {margin-bottom: 0;}
     .display-posts-listing.grid#small-version .title {margin-top: 10px; margin-bottom: 10px; font-size: 0.75rem;}
     .display-posts-listing#notorious-big .title, .display-posts-listing.grid#notorious-big .title {font-size: 1.5rem; margin-top: 7.5px; margin-bottom: 2.5px;}
     .display-posts-listing.grid#notorious-big .excerpt {font-size: 1rem;}
     @media (max-width: 768px) {.display-posts-listing.grid#notorious-big {grid-template-columns: repeat(1, 1fr);}}
+
     /* FAQs Layout */
     .display-posts-faqs .listing-item {clear: both; overflow: hidden; margin-bottom: 20px;}
     .display-posts-faqs .image {float: left; margin: 0 16px 0 0;}
     .display-posts-faqs .title {display: block; text-align: justify; font-size: 1rem; margin-top: -4px;}
     @media (max-width: 600px) {.display-posts-faqs .title {font-size: 1rem;}}
     .display-posts-faqs .excerpt {display: block; text-align: justify;}
+
     /* Trending Section */
     .display-posts-trending {display: flex; flex-wrap: wrap; gap: 20px;}
     .display-posts-trending .listing-item {display: flex; align-items: center; justify-content: space-between; flex: 1 1 calc(16.66% - 20px); box-sizing: border-box; margin-bottom: 20px; background: none; border: none;}
@@ -215,9 +222,11 @@ add_action( 'wp_head', function () { ?>
     .display-posts-trending .title {text-align: left; font-size: 1rem; margin: 0; flex: 1; overflow-wrap: anywhere;}
     @media (min-width: 768px) and (max-width: 1200px) {.display-posts-trending .listing-item {flex: 1 1 calc(33.33% - 20px);}}
     @media (max-width: 768px) {.display-posts-trending .listing-item {flex: 1 1 calc(50% - 20px);}}
+
     /* Widgets in Sidebar */
     .display-posts-widgets .listing-item .category-display a {font-weight: normal;}
     .ct-sidebar .display-posts-widgets {list-style-type: disc !important; padding-left: 20px;}
+
     /* Traits Conclusion Grid */
     .display-posts-listing.grid.traits-conclusion {display: grid; grid-gap: 0.25rem;}
     .display-posts-listing.grid.traits-conclusion .title {font-size: 0.85rem !important;}
