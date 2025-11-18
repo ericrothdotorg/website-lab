@@ -19,30 +19,25 @@ add_filter( 'display_posts_shortcode_wrapper_open', 'be_dps_select_open', 10, 2 
 
 /* Preload Taxonomy Term Caches for Select Wrapper Queries */
 
-add_action( 'pre_get_posts', function( $query ) {
-    if ( ! is_admin() && ! $query->is_main_query() && $query->get( 'wrapper' ) === 'select' ) {
-        // Move cache warming to after posts are queried
-        add_action( 'the_posts', function( $posts ) use ( $query ) {
-            if ( ! empty( $posts ) && $query->get( 'wrapper' ) === 'select' ) {
-                $post_ids = wp_list_pluck( $posts, 'ID' );
-                update_post_term_cache( $post_ids, [ 'category', 'topics' ] );
-                update_post_cache( $posts );
-            }
-            return $posts;
-        }, 10, 1 );
+add_action( 'the_posts', function( $posts, $query ) {
+    if ( ! is_admin() && ! $query->is_main_query() && $query->get( 'wrapper' ) === 'select' && ! empty( $posts ) ) {
+        $post_ids = wp_list_pluck( $posts, 'ID' );
+        update_post_term_cache( $post_ids, [ 'category', 'topics' ] );
+        update_post_cache( $posts );
     }
-}, 5 );
+    return $posts;
+}, 10, 2 );
 
 /* Class: Collects and Groups Posts by Taxonomy or Post Type */
 
 class DPS_Grouped_Collector {
     public static $instances = [];
     public static function add_post( $atts, $post ) {
-        $instance_id = md5( serialize( $atts ) );
+        $instance_id = md5( json_encode( $atts ) );
         if ( ! isset( self::$instances[ $instance_id ] ) ) {
             self::$instances[ $instance_id ] = [];
         }
-        $post_type = get_post_type( $post );
+        $post_type = $post->post_type;
         $term_id   = null;
         $label     = null;
         $taxonomy  = null;
@@ -89,7 +84,7 @@ class DPS_Grouped_Collector {
         ];
     }
     public static function render_grouped( $atts ) {
-        $instance_id = md5( serialize( $atts ) );
+        $instance_id = md5( json_encode( $atts ) );
         $grouped     = self::$instances[ $instance_id ] ?? [];
         // Sort alphabetically by label
         uasort( $grouped, function( $a, $b ) {
