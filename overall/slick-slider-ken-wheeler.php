@@ -46,6 +46,8 @@ add_action('wp_footer', function () {
         .slideshow-single-item { visibility: hidden; }
         .slideshow-multiple-items { visibility: hidden; }
         .slick-initialized { visibility: visible; }
+        /* Optimize Slider Animations */
+        .slick-track {will-change: transform;}
         /* Style Slideshows with multiple Items*/
         .slideshow-multiple-items .slick-list {margin: 0 -12.5px;}
         .slideshow-multiple-items .slick-slide {margin: 0 12.5px;}
