@@ -31,6 +31,7 @@ add_action('wp_enqueue_scripts', function () {
 // Initialize Slick sliders and add custom styles in the footer
 add_action('wp_footer', function () {
     ?>
+
     <style>
         /* Navigation */
         .slick-slider img {margin: 0 auto;}
@@ -90,6 +91,7 @@ add_action('wp_footer', function () {
         .layer-content-procurement-consulting {margin-right: 7.5px;}
         .layer-content-industries-served {font-size: 150%; color: #ffffff; padding: 0 0.75%;}
     </style>
+
     <script>
     (function() {
         function initSlick() {
@@ -126,13 +128,13 @@ add_action('wp_footer', function () {
                 dots: false,
                 fade: false,
                 adaptiveHeight: false,
-                slidesToShow: 4,
+                slidesToShow: 2,
                 slidesToScroll: 1,
                 mobileFirst: true,
                 responsive: [
-                    { breakpoint: 992, settings: { slidesToShow: 4 } },
+                    { breakpoint: 350, settings: { slidesToShow: 2 } },
                     { breakpoint: 768, settings: { slidesToShow: 3 } },
-                    { breakpoint: 350, settings: { slidesToShow: 2 } }
+                    { breakpoint: 992, settings: { slidesToShow: 4 } }
                 ]
             }));
             $('.slideshow-multiple-items-vertical').slick($.extend({}, baseConfig, {
@@ -153,12 +155,12 @@ add_action('wp_footer', function () {
                 slidesToShow: 1,
                 slidesToScroll: 1,
                 centerMode: true,
-                centerPadding: '175px',
+                centerPadding: '0px',
                 mobileFirst: true,
                 responsive: [
-                    { breakpoint: 992, settings: { centerPadding: '125px' } },
+                    { breakpoint: 350, settings: { centerPadding: '0px' } },
                     { breakpoint: 768, settings: { centerPadding: '75px' } },
-                    { breakpoint: 350, settings: { centerPadding: '0px' } }
+                    { breakpoint: 992, settings: { centerPadding: '175px' } }
                 ]
             }));
         }
@@ -180,6 +182,7 @@ add_action('wp_footer', function () {
         }
     })();
     </script>
+
     <?php
 }, 100);
 ?>
