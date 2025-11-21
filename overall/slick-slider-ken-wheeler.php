@@ -22,16 +22,25 @@ if (!is_admin()) {
         }
     }, 11);
 }
+
 // Enqueue Slick Slider assets after jQuery
 add_action('wp_enqueue_scripts', function () {
     wp_enqueue_style('slick-css', 'https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.css', [], null);
     wp_enqueue_style('slick-theme-css', 'https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick-theme.min.css', [], null);
     wp_enqueue_script('slick-js', 'https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.js', ['jquery'], null, true);
 }, 20);
+
+// Add defer attribute to Slick.js to prevent render blocking
+add_filter('script_loader_tag', function($tag, $handle) {
+    if ('slick-js' === $handle) {
+        return str_replace(' src', ' defer src', $tag);
+    }
+    return $tag;
+}, 10, 2);
+
 // Initialize Slick sliders and add custom styles in the footer
 add_action('wp_footer', function () {
     ?>
-
     <style>
         /* Navigation */
         .slick-slider img {margin: 0 auto;}
@@ -166,7 +175,6 @@ add_action('wp_footer', function () {
         }
     })();
     </script>
-
     <?php
 }, 100);
 ?>
