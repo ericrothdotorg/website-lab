@@ -72,22 +72,6 @@ add_action('wp_footer', function () {
         .slideshow-single-item .wp-block-columns {align-items: center;}
         /* Style Slideshows with Layers */
         .layer-container {position: relative; margin: 0 auto;}
-        .layer-content-quotes-featured-image {
-            position: absolute;
-            margin: 0 25px;
-            padding: 25px 25px 25px 0;
-            background: rgba(0, 0, 0, 0.65);
-            bottom: 25px;
-        }
-        @media (max-width: 600px) {
-            .layer-content-quotes-featured-image {line-height: 1.05; bottom: 0px;}
-            .layer-content-quotes-featured-image li {font-size: 75%;}
-        }
-        @media (min-width: 600px) and (max-width: 992px) {
-            .layer-content-quotes-featured-image {line-height: 1.1; bottom: 0px;}
-            .layer-content-quotes-featured-image li {font-size: 85%;}
-        }
-        .layer-content-quotes-featured-text {text-align: justify; color: #339966; font-style: italic;}
         .layer-content-procurement-consulting {margin-right: 7.5px;}
         .layer-content-industries-served {font-size: 150%; color: #ffffff; padding: 0 0.75%;}
     </style>
