@@ -43,8 +43,13 @@ add_action('wp_footer', function () {
         /* Style Height Transition*/
         .slideshow-single-item {transition: height 0.4s ease;}
         /* Prevent Flash before Slick initializes */
-        .slideshow-single-item { visibility: hidden; }
-        .slideshow-multiple-items { visibility: hidden; }
+        .slideshow-single-item,
+        .slideshow-single-item-no-dots,
+        .slideshow-multiple-items,
+        .slideshow-multiple-items-vertical,
+        .slideshow-multiple-items-center-mode {
+            visibility: hidden;
+        }
         .slick-initialized { visibility: visible; }
         /* Optimize Slider Animations */
         .slick-track {will-change: transform;}
