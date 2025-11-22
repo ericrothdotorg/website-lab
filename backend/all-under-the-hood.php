@@ -1,5 +1,4 @@
 <?php
-
 defined('ABSPATH') || exit;
 
 // === GLOBAL STUFF ===
@@ -92,12 +91,10 @@ add_filter('menu_order', function ($menu_order) {
         'users.php',
         'tools.php',
         'options-general.php',
-        'subscriber-list',
         'contact-form',
-        'asgarosforum-structure',
         'theseoframework-settings',
-        'wpcodebox2',
-        'litespeed',
+		'snippets',
+        'litespeed'
     ];
 });
 
