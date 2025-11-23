@@ -323,9 +323,10 @@ add_action("wp_footer", function () {
     }
     .blob-animation figcaption {font-size: 1.5em;}
     /* Imitate Bill Erickson DPS */
-    .image-bedps {background: #fafbfc; border: 1px solid #e1e8ed; margin-block: 0.5em 0;}
+    .image-bedps {clear: both; overflow: hidden; background: #fafbfc; border: 1px solid #e1e8ed;  border-radius: 25px; margin-block: 0.5em 0;}
     .image-bedps:hover {background: #f2f5f7;}
-    .image-bedps img {aspect-ratio: 16 / 9;}
+    .image-bedps img {aspect-ratio: 16 / 9; transition: transform 0.3s ease; will-change: transform;}
+	.image-bedps img:hover {transform: scale(1.05);}
     .image-bedps figcaption {margin-top: 14px; margin-bottom: 14px; font-size: 1.125rem; font-weight: bold;}
 
     /* EMBEDS & VIDEO */
