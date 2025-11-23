@@ -1,9 +1,8 @@
 <?php
-
 add_action('wp_footer', function () {
 ?>
 <div id="google_translate_element_wrapper" class="closed" role="region" aria-label="Language Switcher">
-    <div id="flags-container">
+    <div id="flags-container" aria-hidden="true">
         <div class="reset-and-flags">
             <span class="reset" title="Reset Language" role="button" aria-label="Reset Language" tabindex="0"
                 onclick="resetTranslation()" 
@@ -50,32 +49,37 @@ add_action('wp_footer', function () {
 </div>
 
 <style>
-#google_translate_element_wrapper {position: fixed; bottom: 25px; right: 75px; z-index: 999; background: #3A4F66; border-radius: 50%; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex; align-items: center; justify-content: flex-end; overflow: hidden;}
-#google_translate_element_wrapper [tabindex="0"]:focus-visible {outline: 2px solid #FFD700; outline-offset: 2px; border-radius: 4px;}
-#google_translate_element_wrapper.closed {width: 40px; height: 40px; padding: 0; border-radius: 50%; justify-content: center;}
-#google_translate_element_wrapper.open {border-radius: 30px; padding: 3px 10px 3px 10px; width: auto; height: auto;}
-#google_translate_element_wrapper.closed #flags-container {max-width: 0; opacity: 0; pointer-events: none;}
-#google_translate_element_wrapper.open #flags-container {max-width: 999px; padding-right: 10px; opacity: 1; pointer-events: auto;}
-#language-toggle {background: transparent; border: none; cursor: pointer; padding: 6px;}
-#language-toggle svg {display: block;}
-#flags-container {display: flex; align-items: center; flex-wrap: wrap;}
-#flags-container .reset-and-flags {display: flex; align-items: center; flex-wrap: nowrap;}
-#flags-container .reset {display: flex; align-items: center; flex-wrap: nowrap; gap: 4px; margin: 0 10px; color: white; font-size: 14px; cursor: pointer;}
-#flags-container .flags {display: flex; align-items: center; flex-wrap: wrap; gap: 6px;}
-#flags-container .flags img {width: 24px; height: auto; cursor: pointer;}
-#flags-container .flags img:hover {transform: scale(1.15);}
-@media (max-width: 600px) {#google_translate_element_wrapper.open {padding: 6px 10px 10px 20px !important;} #flags-container .reset {margin-right: 20px;}}
+	#google_translate_element_wrapper {position: fixed; bottom: 25px; right: 75px; z-index: 999; background: #3A4F66; border-radius: 50%; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); display: flex; align-items: center; justify-content: flex-end; overflow: hidden;}
+	#google_translate_element_wrapper [tabindex="0"]:focus-visible {outline: 2px solid #FFD700; outline-offset: 2px; border-radius: 4px;}
+	#google_translate_element_wrapper.closed {width: 40px; height: 40px; padding: 0; border-radius: 50%; justify-content: center;}
+	#google_translate_element_wrapper.open {border-radius: 30px; padding: 3px 10px 3px 10px; width: auto; height: auto;}
+	#google_translate_element_wrapper.closed #flags-container {max-width: 0; opacity: 0; pointer-events: none;}
+	#google_translate_element_wrapper.open #flags-container {max-width: 999px; padding-right: 10px; opacity: 1; pointer-events: auto;}
+	#language-toggle {background: transparent; border: none; cursor: pointer; padding: 6px;}
+	#language-toggle svg {display: block;}
+	#flags-container {display: flex; align-items: center; flex-wrap: wrap;}
+	#flags-container .reset-and-flags {display: flex; align-items: center; flex-wrap: nowrap;}
+	#flags-container .reset {display: flex; align-items: center; flex-wrap: nowrap; gap: 4px; margin: 0 10px; color: white; font-size: 14px; cursor: pointer;}
+	#flags-container .flags {display: flex; align-items: center; flex-wrap: wrap; gap: 6px;}
+	#flags-container .flags img {width: 24px; height: auto; cursor: pointer;}
+	#flags-container .flags img:hover {transform: scale(1.15);}
+	@media (max-width: 600px) {#google_translate_element_wrapper.open {padding: 6px 10px 10px 20px !important;} #flags-container .reset {margin-right: 20px;}}
 </style>
 
 <script type="text/javascript">
     function toggleLanguageFlags() {
         const wrapper = document.getElementById('google_translate_element_wrapper');
         const toggleBtn = document.getElementById('language-toggle');
+        const flagsContainer = document.getElementById('flags-container');
         const isOpen = !wrapper.classList.contains('open');
         wrapper.classList.toggle('open');
         wrapper.classList.toggle('closed');
-        wrapper.setAttribute('aria-hidden', !isOpen);
-        const focusables = wrapper.querySelectorAll('[tabindex]:not(#language-toggle)');
+        if (isOpen) {
+            flagsContainer.removeAttribute('aria-hidden');
+        } else {
+            flagsContainer.setAttribute('aria-hidden', 'true');
+        }
+        const focusables = flagsContainer.querySelectorAll('[tabindex]');
         focusables.forEach(el => {
             el.setAttribute('tabindex', isOpen ? '0' : '-1');
         });
@@ -176,22 +180,24 @@ add_action('wp_footer', function () {
 
     document.addEventListener('click', function (event) {
         const wrapper = document.getElementById('google_translate_element_wrapper');
+        const flagsContainer = document.getElementById('flags-container');
         if (!wrapper.contains(event.target)) {
             wrapper.classList.remove('open');
             wrapper.classList.add('closed');
-            wrapper.setAttribute('aria-hidden', 'true');
-            const focusables = wrapper.querySelectorAll('[tabindex]:not(#language-toggle)');
+            flagsContainer.setAttribute('aria-hidden', 'true');
+            const focusables = flagsContainer.querySelectorAll('[tabindex]');
             focusables.forEach(el => el.setAttribute('tabindex', '-1'));
         }
     });
 
     document.addEventListener("DOMContentLoaded", function () {
         const wrapper = document.getElementById('google_translate_element_wrapper');
+        const flagsContainer = document.getElementById('flags-container');
         if (wrapper) {
             wrapper.classList.add('closed');
             wrapper.classList.remove('open');
-            wrapper.setAttribute('aria-hidden', 'true');
-            const focusables = wrapper.querySelectorAll('[tabindex]:not(#language-toggle)');
+            flagsContainer.setAttribute('aria-hidden', 'true');
+            const focusables = flagsContainer.querySelectorAll('[tabindex]');
             focusables.forEach(el => el.setAttribute('tabindex', '-1'));
         }
 
