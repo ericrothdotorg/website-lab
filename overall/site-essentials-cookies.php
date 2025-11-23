@@ -181,7 +181,7 @@ add_shortcode('post_stats', function() {
          . '<span class="char-count"><strong>'.$char_count_fmt.'</strong> Characters</span> • '
          . '<span class="paragraph-count"><strong>'.$paragraphs_fmt.'</strong> Paragraphs</span><br>'
          . '<span class="sentence-count"><strong>'.$sentence_count_fmt.'</strong> Sentences</span> • '
-         . '<span class="avg-words-sentence"><strong>'.$avg_words_per_sentence.'</strong> Words per Sentence</span><br>'
+         . '<span class="avg-words-sentence"><strong>'.$avg_words_per_sentence.'</strong> Words / Sentence</span><br>'
          . '<span class="internal-link-count"><strong>'.$internal_links_fmt.'</strong> Internal Links</span> • '
          . '<span class="external-link-count"><strong>'.$external_links_fmt.'</strong> External Links</span><br>'
          . '<span class="title-count"><strong>'.$titles_fmt.'</strong> Titles</span> • '
