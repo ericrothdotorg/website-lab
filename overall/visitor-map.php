@@ -5,6 +5,9 @@ function lum_track_visitor() {
     if (is_admin() || wp_doing_ajax()) {
         return;
     }
+	if (is_404()) {
+        return;
+    }
     // Don't track if it's a REST API request
     if (defined('REST_REQUEST') && REST_REQUEST) {
         return;
@@ -65,7 +68,7 @@ function lum_track_visitor() {
         }
     }
 }
-add_action('wp', 'lum_track_visitor');
+add_action('template_redirect', 'lum_track_visitor');
 
 // *** Check if request should be skipped
 function lum_should_skip_tracking($uri) {
@@ -373,7 +376,7 @@ function lum_map_shortcode($atts) {
                 worldCopyJump: true
             });
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> Contributors',
                 maxZoom: 18
             }).addTo(map);
             map.on('zoomstart movestart', function() {
