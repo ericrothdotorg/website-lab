@@ -38,6 +38,16 @@ add_filter('script_loader_tag', function($tag, $handle) {
     return $tag;
 }, 10, 2);
 
+// Ignore slider images in LiteSpeed Cache – let Slick’s lazyLoad: 'ondemand' handle them
+add_filter('litespeed_optimize_html_excluded_selectors', function($excludes) {
+    $excludes[] = '.slick-slider img';
+    return $excludes;
+});
+add_filter('litespeed_optm_html_lazy_img_excludes', function($excludes) {
+    $excludes[] = '.slick-slider img';
+    return $excludes;
+});
+
 // Initialize Slick sliders and add custom styles in the footer
 add_action('wp_footer', function () {
     ?>
