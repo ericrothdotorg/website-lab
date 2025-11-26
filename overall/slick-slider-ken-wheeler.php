@@ -1,33 +1,11 @@
 <?php
 
-// Load jQuery from CDN if not already enqueued
-if (!is_admin()) {
-    add_action('wp_enqueue_scripts', function () {
-        // Preconnect to jQuery CDN
-        add_action('wp_head', function () {
-            echo '<link rel="preconnect" href="https://code.jquery.com" crossorigin>';
-            echo '<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>';
-        }, 0);
-        
-        if (!wp_script_is('jquery', 'enqueued')) {
-            wp_deregister_script('jquery');
-            wp_register_script(
-                'jquery',
-                'https://code.jquery.com/jquery-3.7.1.min.js',
-                [],
-                null,
-                true
-            );
-            wp_enqueue_script('jquery');
-        }
-    }, 11);
-}
-
-// Enqueue Slick Slider assets after jQuery
+// Enqueue Slick Slider assets from local files
 add_action('wp_enqueue_scripts', function () {
-    wp_enqueue_style('slick-css', 'https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.css', [], null);
-    wp_enqueue_style('slick-theme-css', 'https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick-theme.min.css', [], null);
-    wp_enqueue_script('slick-js', 'https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.js', ['jquery'], null, true);
+    $theme_uri = get_stylesheet_directory_uri();
+	wp_enqueue_style('slick-css', home_url('/my-assets/slick-slider/slick.css'), [], '1.9.0');
+	wp_enqueue_style('slick-theme-css', home_url('/my-assets/slick-slider/slick-theme.css'), [], '1.9.0');
+	wp_enqueue_script('slick-js', home_url('/my-assets/slick-slider/slick.js'), ['jquery'], '1.9.0', true);
 }, 20);
 
 // Add defer attribute to Slick.js to prevent render blocking
@@ -38,12 +16,8 @@ add_filter('script_loader_tag', function($tag, $handle) {
     return $tag;
 }, 10, 2);
 
-// Ignore slider images in LiteSpeed Cache – let Slick’s lazyLoad: 'ondemand' handle them
+// Ignore slider images in LiteSpeed Cache – let Slick's lazyLoad: 'ondemand' handle them
 add_filter('litespeed_optimize_html_excluded_selectors', function($excludes) {
-    $excludes[] = '.slick-slider img';
-    return $excludes;
-});
-add_filter('litespeed_optm_html_lazy_img_excludes', function($excludes) {
     $excludes[] = '.slick-slider img';
     return $excludes;
 });
@@ -187,4 +161,3 @@ add_action('wp_footer', function () {
     </script>
     <?php
 }, 100);
-?>
