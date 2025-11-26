@@ -1,7 +1,13 @@
 <?php
+
+// Enqueue Animate.css from local files
+add_action('wp_enqueue_scripts', function () {
+    wp_enqueue_style('animate-css', home_url('/my-assets/animate.min.css'), [], '4.1.1');
+}, 20);
+
+// Put these loaded styles into action
 add_action('wp_footer', function () {
     ?>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Check if Element is in Viewport
@@ -52,4 +58,3 @@ add_action('wp_footer', function () {
     </script>
     <?php
 });
-?>
