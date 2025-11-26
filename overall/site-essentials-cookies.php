@@ -1,6 +1,27 @@
 <?php
 
 // ----------------------------------------
+//  jQuery LOADING
+// ----------------------------------------
+
+// Replace WP's jQuery with self-hosted version if jQuery isn't already loaded
+if (!is_admin()) {
+    add_action('wp_enqueue_scripts', function () {
+        if (!wp_script_is('jquery', 'enqueued')) {
+            wp_deregister_script('jquery');
+            wp_register_script(
+                'jquery',
+                home_url('/my-assets/jquery-3.7.1.min.js'),
+                [],
+                '3.7.1',
+                true
+            );
+            wp_enqueue_script('jquery');
+        }
+    }, 11);
+}
+
+// ----------------------------------------
 //  PERFORMANCE OPTIMIZATIONS
 // ----------------------------------------
 
@@ -97,7 +118,6 @@ add_action('wp_head', function () {
     echo '
     <link rel="preconnect" href="https://www.clarity.ms" crossorigin>
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
-    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
     <link rel="dns-prefetch" href="https://secure.gravatar.com">
     ';
 });
@@ -137,14 +157,6 @@ if (!is_admin()) {
 add_shortcode('post_stats', function() {
     global $post;
     if (!$post) return '';
-    // Try to get cached stats
-    $transient_key = 'post_stats_' . $post->ID;
-    $cached_output = get_transient($transient_key);
-    
-    if ($cached_output !== false) {
-        return $cached_output;
-    }
-    // If not cached, calculate stats
     $content = apply_filters('the_content', $post->post_content);
     $text    = strip_tags(strip_shortcodes($content));
     $word_count = str_word_count($text);
@@ -184,7 +196,7 @@ add_shortcode('post_stats', function() {
     $external_links_fmt = number_format($external_links, 0, '.', "'");
     $sentence_count_fmt = number_format($sentence_count, 0, '.', "'");
     // Return output
-    $output = '<div class="post-stats">'
+    return '<div class="post-stats">'
          . '<span class="word-count"><strong>'.$word_count_fmt.'</strong> Words</span> • '
          . '<span class="read-time">Read Time: <strong>'.$minutes.'</strong> Min.</span><br>'
          . '<span class="char-count"><strong>'.$char_count_fmt.'</strong> Characters</span> • '
@@ -197,13 +209,6 @@ add_shortcode('post_stats', function() {
          . '<span class="image-count"><strong>'.$images_fmt.'</strong> Images</span> • '
          . '<span class="video-count"><strong>'.$videos_fmt.'</strong> Videos</span>'
          . '</div>';
-    // Cache for 24 hours (86400 seconds)
-    set_transient($transient_key, $output, 86400);
-    return $output;
-});
-// Clear cache when post is updated
-add_action('save_post', function($post_id) {
-    delete_transient('post_stats_' . $post_id);
 });
 
 // ----------------------------------------
@@ -464,5 +469,3 @@ add_action('wp_footer', function () {
 
     <?php
 }, 10);
-
-?>
