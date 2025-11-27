@@ -6,8 +6,6 @@ add_action("wp_head", function () {
 
     /* THEME (Blocksy) */
 
-    /* Hero Section: Background */
-    [data-prefix="single_page"] .hero-section[data-type="type-2"] {background: none !important;}
     /* Header Container: Image */
     .hero-section .ct-media-container {border-bottom-right-radius: 15vw;}
     /* Header Container: Layer */
@@ -20,8 +18,6 @@ add_action("wp_head", function () {
     .page-title {padding: 10px 20px;}
     .page-description {padding: 0 20px 20px;}
     .ct-breadcrumbs {padding: 0 20px 20px;}
-    /* Content: Adjust Layout Flow */
-    [data-prefix="single_page"] [class*="ct-container"] > article[class*="post"] {--has-boxed: var(--true);}
 
     /* SOME MISC STUFF */
 
@@ -41,22 +37,6 @@ add_action("wp_head", function () {
 
     /* NAVIGATION */
 
-    /* External Link Indicator */
-	a:not([href^='#']):not([href^='tel:']):not([href^='/']):not([href*='javascript'])
-	:not([href*='ericroth.org']):not([href*='ericroth-org']):not([href*='1drv.ms'])
-	:not([href*='paypal.com']):not([href*='librarything.com']):not([href*='themoviedb.org'])
-	:not([href*='facebook.com']):not([href*='github.com']):not([href*='linkedin.com'])
-	:not([href*='youtube.com']):not([href*='patreon.com']):not([href*='bsky.app'])
-	:not([href*='bsky.social']):not([href*='?cat='])
-	:not(.wp-block-button__link, .button, .neli, .page-numbers)::after {
-	  content: "";
-	  background: url("https://ericroth.org/wp-content/uploads/2024/03/external-link-greyblue.svg") no-repeat center;
-	  width: 0.75em;
-	  height: 0.75em;
-	  margin-left: 0.25em;
-	  display: inline-block;
-	}
-    /* Navigate with Text */
     a:link {font-weight: bold; color: #1e73be;}
     a:link:hover {color: #c53030;}
 
@@ -148,6 +128,21 @@ add_action("wp_footer", function () {
 
     /* NAVIGATION */
 
+    /* External Link Indicator */
+	a:not([href^='#']):not([href^='tel:']):not([href^='/']):not([href*='javascript'])
+	:not([href*='ericroth.org']):not([href*='ericroth-org']):not([href*='1drv.ms'])
+	:not([href*='paypal.com']):not([href*='librarything.com']):not([href*='themoviedb.org'])
+	:not([href*='facebook.com']):not([href*='github.com']):not([href*='linkedin.com'])
+	:not([href*='youtube.com']):not([href*='patreon.com']):not([href*='bsky.app'])
+	:not([href*='bsky.social']):not([href*='?cat='])
+	:not(.wp-block-button__link, .button, .neli, .page-numbers)::after {
+	  content: "";
+	  background: url("https://ericroth.org/wp-content/uploads/2024/03/external-link-greyblue.svg") no-repeat center;
+	  width: 0.75em;
+	  height: 0.75em;
+	  margin-left: 0.25em;
+	  display: inline-block;
+	}													 													 
     /* Exclude from Page List Block */
     .wp-block-page-list.english > li:nth-child(1) > ul > li:nth-child(n+2):nth-child(-n+4),
     .wp-block-page-list.english > li:not(:nth-child(1)):not(:nth-child(6)),
@@ -323,11 +318,11 @@ add_action("wp_footer", function () {
     }
     .blob-animation figcaption {font-size: 1.5em;}
     /* Imitate Bill Erickson DPS */
-    .image-bedps {clear: both; overflow: hidden; background: #fafbfc; border: 1px solid #e1e8ed;  border-radius: 25px; margin-block: 0.5em 0;}
+    .image-bedps {clear: both; overflow: hidden; background: #fafbfc; border: 1px solid #e1e8ed;  border-radius: 25px;}
     .image-bedps:hover {background: #f2f5f7;}
     .image-bedps img {aspect-ratio: 16 / 9; transition: transform 0.3s ease; will-change: transform;}
 	.image-bedps img:hover {transform: scale(1.05);}
-    .image-bedps figcaption {margin-top: 14px; margin-bottom: 14px; font-size: 1.125rem; font-weight: bold;}
+    .image-bedps figcaption {margin-top: 16px; margin-bottom: 16px; font-size: 1.125rem; font-weight: bold;}
 
     /* EMBEDS & VIDEO */
 
