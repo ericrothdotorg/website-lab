@@ -247,6 +247,34 @@ add_filter('the_content', function($content) {
     );
 });
 
+// External Link Indicator (style in CSS)
+add_filter('the_content', function ($content) {
+    $exclude_domains = [
+        'ericroth.org','ericroth-org','1drv.ms','paypal.com','librarything.com',
+        'themoviedb.org','facebook.com','github.com','linkedin.com','youtube.com',
+        'patreon.com','bsky.app','bsky.social'
+    ];
+    return preg_replace_callback('/<a\s+[^>]*href=["\']([^"\']+)["\'][^>]*>/i',
+        function ($m) use ($exclude_domains) {
+            $href = $m[1]; $tag = $m[0];
+            // Skip internal anchors, tel:, relative, javascript:, ?cat=
+            if ($href[0]==='#' || $href[0]==='/' ||
+                strpos($href,'tel:')===0 || stripos($href,'javascript')!==false ||
+                strpos($href,'?cat=')!==false) return $tag;
+            // Skip whitelisted domains
+            foreach ($exclude_domains as $d) {
+                if (strpos($href,$d)!==false) return $tag;
+            }
+            // Skip known WP classes
+            if (preg_match('/class=["\'][^"\']*(wp-block-button__link|button|neli|page-numbers)[^"\']*["\']/', $tag))
+                return $tag;
+            // Add external-link class
+            return strpos($tag,'class=')!==false
+                ? preg_replace('/class=(["\'])(.*?)\1/','class=$1$2 external-link$1',$tag)
+                : str_replace('<a ','<a class="external-link" ',$tag);
+        }, $content);
+});
+
 // Custom Redirects (SEO-Friendly)
 add_action('template_redirect', function() {
     $redirects = [
