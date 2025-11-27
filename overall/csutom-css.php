@@ -128,21 +128,12 @@ add_action("wp_footer", function () {
 
     /* NAVIGATION */
 
-    /* External Link Indicator */
-	a:not([href^='#']):not([href^='tel:']):not([href^='/']):not([href*='javascript'])
-	:not([href*='ericroth.org']):not([href*='ericroth-org']):not([href*='1drv.ms'])
-	:not([href*='paypal.com']):not([href*='librarything.com']):not([href*='themoviedb.org'])
-	:not([href*='facebook.com']):not([href*='github.com']):not([href*='linkedin.com'])
-	:not([href*='youtube.com']):not([href*='patreon.com']):not([href*='bsky.app'])
-	:not([href*='bsky.social']):not([href*='?cat='])
-	:not(.wp-block-button__link, .button, .neli, .page-numbers)::after {
-	  content: "";
-	  background: url("https://ericroth.org/wp-content/uploads/2024/03/external-link-greyblue.svg") no-repeat center;
-	  width: 0.75em;
-	  height: 0.75em;
-	  margin-left: 0.25em;
-	  display: inline-block;
-	}													 													 
+    /* External Link Indicator (filter in functions.php) */
+	a.external-link::after {
+    	content:"";
+    	background:url("https://ericroth.org/wp-content/uploads/2024/03/external-link-greyblue.svg") no-repeat center;
+    	width:.75em; height:.75em; margin-left:.25em; display:inline-block;
+	}
     /* Exclude from Page List Block */
     .wp-block-page-list.english > li:nth-child(1) > ul > li:nth-child(n+2):nth-child(-n+4),
     .wp-block-page-list.english > li:not(:nth-child(1)):not(:nth-child(6)),
