@@ -303,8 +303,8 @@ add_action('wp_footer', function () {
         We serve <strong>cookies</strong> to enhance your browsing experience. Learn more about it in our 
         <a href="https://ericroth.org/this-site/site-policies/">Site Policies</a><br>
         <span style="display: block; text-align: center;">
-            <button type="button" onclick="acceptCookie();" aria-label="Accept all cookies"><span>Accept All</span></button>
-            <button type="button" onclick="rejectCookie();" aria-label="Reject optional cookies" class="reject-btn"><span>Essential Only</span></button>
+            <button type="button" onclick="acceptCookie();" aria-label="Accept all cookies"><span>Accept</span></button>
+            <button type="button" onclick="rejectCookie();" aria-label="Reject optional cookies" class="reject-btn"><span>Essentials</span></button>
         </span>
     </p>
     <style>
@@ -313,10 +313,10 @@ add_action('wp_footer', function () {
         #cookie-notice button:first-child {margin-left: 0;}
         #cookie-notice button:hover {background: #c53030;}
         #cookie-notice button:hover span {display: none;}
-        #cookie-notice button:hover::before {content: "Accept";}
+        #cookie-notice button:hover::before {content: "All";}
         #cookie-notice button.reject-btn {background: #262626;}
         #cookie-notice button.reject-btn:hover {background: #262626;}
-        #cookie-notice button.reject-btn:hover::before {content: "Reject";}
+        #cookie-notice button.reject-btn:hover::before {content: "Only";}
         #cookie-notice button:focus-visible {outline: 2px solid #ffffff; outline-offset: 2px;}
         @media only screen and (max-width: 480px) {
         #cookie-notice {max-width: 100%; bottom: 0; left: 0; border-radius: 0}
