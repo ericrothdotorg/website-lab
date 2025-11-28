@@ -1,11 +1,12 @@
 <?php
+
 add_action('wp_footer', function() {
     if (
         is_page(array(
             // English Pages
-            '179','87873','59078','55867','138768','113713','123635','65752','8977','100674','83147','55706','65756','87873',
+            '179','87873','59078','55867','138768','113713','123635','65752','8977','100674','83147','55706','65756','87873','151412',
             // German Pages
-            '150455','150449','149904','149998','150034','150120','150200','150223','150233')) ||
+            '150455','150449','149904','149998','150034','150120','150200','150223','150233','151417')) ||
         is_single(array(
             // English Singles
             '140909', '127567', '127484', '121987', '121984', '141168','121985', '135495', '121986', '121983','150592',
@@ -24,7 +25,7 @@ add_action('wp_footer', function() {
                     wrapper.setAttribute("role", "img");
                     wrapper.setAttribute("aria-label", "Illustration of a Ninja Character");
                     const link = document.createElement("a");
-                    link.href = "https://ericroth.org/professional/";
+                    link.href = "https://ericroth.org/services/";
                     link.style.pointerEvents = "auto";
                     link.title = "Ninja Services";
                     link.setAttribute("aria-label", "Visit Ninja Services Page");
