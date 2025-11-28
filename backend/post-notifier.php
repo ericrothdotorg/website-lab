@@ -1,4 +1,5 @@
 <?php
+
 defined('ABSPATH') || exit;
 
 // Sends E-mail Notifications when Posts or Interests are published
