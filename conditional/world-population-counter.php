@@ -1,10 +1,12 @@
 <?php
+
 add_action('wp_footer', function() {
     if (is_page(array('')) || is_single(array('131123'))) {
     ?>
         <style>
             .world-population-design {text-align: center; color: #990033; font-size: 250%; font-weight: bold;}
         </style>
+
         <script>
             function worldpopulationcounter() {
                 var startdate = new Date();
@@ -45,4 +47,3 @@ add_action('wp_footer', function() {
     <?php
     }
 });
-?>
