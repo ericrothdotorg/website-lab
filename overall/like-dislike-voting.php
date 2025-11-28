@@ -50,6 +50,7 @@ function custom_like_dislike_shortcode() {
             border: 0;
         }
     </style>';
+
     // Output Buttons and prevent Voting again before xxx Time passed using localStorage
     $buttons = '<div class="like-dislike-container" style="padding-bottom: 5px;">
         <button id="like-btn-' . $post_id . '" onclick="updateLikes(' . $post_id . ')" aria-label="Like this post">
@@ -60,6 +61,7 @@ function custom_like_dislike_shortcode() {
         </button>
         <div id="vote-feedback" class="visually-hidden" aria-live="assertive"></div>
     </div>
+
     <script>
         var reactionNonce = "' . wp_create_nonce("update_post_reaction") . '";
         function checkVoteExpiration(postId) {
@@ -119,6 +121,7 @@ function custom_like_dislike_shortcode() {
             });
         }
     </script>';
+
     return $style . $buttons;
 }
 add_shortcode('like_dislike_buttons', 'custom_like_dislike_shortcode');
