@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 defined('ABSPATH') || exit;
 
@@ -7,7 +7,9 @@ function initialize_custom_dashboard() {
     return;
     }
 
+	// ======================================
     // 📇 ADD EMOJI ICONS FOR CORE WIDGETS
+    // ======================================
 
     add_action('wp_dashboard_setup', function() {
         $widgets = [
@@ -21,7 +23,9 @@ function initialize_custom_dashboard() {
         }
     });
 
-    // 📇 ADD CPTS TO "AT A GLANCE"
+    // ======================================
+	// 📇 ADD CPTS TO "AT A GLANCE"
+	// ======================================
 
     add_filter('dashboard_glance_items', function ($items) {
         $post_types = get_post_types(['public' => true, '_builtin' => false], 'objects');
@@ -39,7 +43,9 @@ function initialize_custom_dashboard() {
         return $items;
     });
 
-    // 🎨 ADD THEME SNAPSHOT AND BUTTONS
+    // ======================================
+	// 🎨 ADD THEME SNAPSHOT AND BUTTONS
+	// ======================================
 
     add_action('wp_dashboard_setup', function() {
         wp_add_dashboard_widget('custom_theme_snapshot', '🎨 Theme Snapshot', function() {
@@ -60,7 +66,9 @@ function initialize_custom_dashboard() {
         });
     });
 
-    // 📊 ADD ANALYTICS TOOLKIT
+    // ======================================
+	// 📊 ADD ANALYTICS TOOLKIT
+	// ======================================
 
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget('custom_analytics_toolkit', '📊 Analytics Toolkit', function () {
@@ -185,7 +193,9 @@ function initialize_custom_dashboard() {
         ];
     }
 
-    // 🌀 ADD HOSTINGER STUFF BUTTONS
+    // ======================================
+	// 🌀 ADD HOSTINGER STUFF BUTTONS
+	// ======================================
 
     add_action('wp_dashboard_setup', function() {
         wp_add_dashboard_widget('custom_hostinger_stuff', '🌀 Hostinger Stuff', function() {
@@ -197,7 +207,9 @@ function initialize_custom_dashboard() {
         });
     });
 
-    // 🗓️ ADD RECENT SITE ACTIVITY
+    // ======================================
+	// 🗓️ ADD RECENT SITE ACTIVITY
+	// ======================================
 
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget('custom_activity_alerts', '🗓️ Recent Site Activity', function () {
@@ -269,7 +281,9 @@ function initialize_custom_dashboard() {
         });
     });
 
-    // 🧹 ADD OPTIMIZE & CLEAN-UP BUTTONS
+    // ======================================
+	// 🧹 ADD OPTIMIZE & CLEAN-UP BUTTONS
+	// ======================================
 
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget(
@@ -424,7 +438,9 @@ function initialize_custom_dashboard() {
         return "✅ Total rows deleted: $deleted_total. Tables optimized.";
     }
 
-    // 📰 ADD RSS FEED READER
+    // ======================================
+	// 📰 ADD RSS FEED READER
+	// ======================================
 
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget('custom_rss_widget', '📡 RSS Feed: Blog & Interests', 'custom_render_rss_widget');
@@ -474,7 +490,9 @@ function initialize_custom_dashboard() {
         echo '</div>';
     }
 
-    // 🗂️ PAGES & TRAITS SNAPSHOT
+    // ======================================
+	// 🗂️ PAGES & TRAITS SNAPSHOT
+	// ======================================
 
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget('custom_snapshot_widget', '🗂️ Pages & Traits Snapshot', 'custom_render_snapshot_widget');
