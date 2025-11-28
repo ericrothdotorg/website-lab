@@ -44,6 +44,7 @@ function configure_smtp($phpmailer) {
 add_action('wp_footer', function () {
   if (is_page(array('59078','150449')) || is_single(array(''))) {
     ?>
+
     <style>
       .formsubmit-wrapper {max-width: 700px; margin: 0 auto; padding: 2em; background: #3A4F66; border-radius: 25px;}
       .formsubmit-wrapper input[type="text"],
@@ -69,6 +70,7 @@ add_action('wp_footer', function () {
       }
       .formsubmit-wrapper .hidden-field {position: absolute; left: -9999px; height: 1px; width: 1px; overflow: hidden;}
     </style>
+
     <script>
     document.addEventListener("DOMContentLoaded", function () {
       const form = document.getElementById("contact-form");
@@ -176,6 +178,7 @@ add_action('template_redirect', function () {
 
 add_action('wp_ajax_submit_contact_form_ajax', 'handle_contact_form_ajax');
 add_action('wp_ajax_nopriv_submit_contact_form_ajax', 'handle_contact_form_ajax');
+
 function handle_contact_form_ajax() {
   $honeypot = trim($_POST['middle_name'] ?? '');
   $math_check = trim($_POST['math_check'] ?? '');
@@ -225,11 +228,13 @@ add_action('admin_menu', function () {
     21
   );
 });
+
 add_action('admin_enqueue_scripts', function ($hook) {
   if ($hook === 'toplevel_page_contact-form') {
     add_thickbox();
   }
 });
+
 function display_contact_messages() {
   global $wpdb;
   $table = $wpdb->prefix . 'contact_messages';
