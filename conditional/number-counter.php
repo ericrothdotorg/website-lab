@@ -1,7 +1,9 @@
-<?php 
+<?php
+
 add_action('wp_footer', function() {
-    if (is_page(array('8977', '100674', '55867')) || is_single(array(''))) {
+    if (is_page(array('100674','150120')) || is_single(array(''))) {
         ?>
+
         <style>
             /* Summaries ALL */
             .card-counter {padding: 15px 0; text-align: center; color: #192a3d;}
@@ -13,6 +15,7 @@ add_action('wp_footer', function() {
             @media (max-width: 600px) {.column-counter-composition {width: 45%;}}
             @media (min-width: 600px) and (max-width: 992px) {.column-counter-composition {width: 30%;}}
         </style>
+
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 var a = 0;
@@ -48,4 +51,3 @@ add_action('wp_footer', function() {
         <?php 
     }
 });
-?>
