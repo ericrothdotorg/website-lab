@@ -34,8 +34,10 @@ add_action('wp_footer', function () {
         .slick-prev {right: 70px; left: auto;}
         .slick-dots li button:before {font-size: 15px; margin-top: 15px; opacity: 0.5; color: #afc2cf;}
         .slick-dots li.slick-active button:before {opacity: 1; color: #afc2cf;}
+
         /* Style Height Transition*/
         .slideshow-single-item {transition: height 0.4s ease;}
+
         /* Prevent Flash before Slick initializes */
         .slideshow-single-item,
         .slideshow-single-item-no-dots,
@@ -45,8 +47,10 @@ add_action('wp_footer', function () {
             visibility: hidden;
         }
         .slick-initialized { visibility: visible; }
+
         /* Optimize Slider Animations */
         .slick-track {will-change: transform;}
+
         /* Style Slideshows with multiple Items*/
         .slideshow-multiple-items .slick-list {margin: 0 -12.5px;}
         .slideshow-multiple-items .slick-slide {margin: 0 12.5px;}
@@ -61,8 +65,10 @@ add_action('wp_footer', function () {
         .slideshow-multiple-items-vertical .slick-list {margin: -10px 0;}
         .slideshow-multiple-items-vertical .slick-slide {margin: 10px 0;}
         .slideshow-multiple-items-center-mode img {padding: 0 0.75% 0 0.75%;}
+
         /* Style Slideshows with WP Columns */
         .slideshow-single-item .wp-block-columns {align-items: center;}
+
         /* Style Slideshows with Layers */
         .layer-container {position: relative; margin: 0 auto;}
         .layer-content-procurement-consulting {margin-right: 7.5px;}
