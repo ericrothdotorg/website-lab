@@ -1,8 +1,9 @@
 <?php
+
 add_action('wp_footer', function () {
     if (is_page(array('17552')) || is_single(array(''))) {
     ?>
-    <!-- Styles -->
+
     <style>
         .tabs {
             overflow: hidden;
@@ -38,7 +39,7 @@ add_action('wp_footer', function () {
             border: 1px solid #404040;
         }
     </style>
-    <!-- Script -->
+
     <script>
         function setupTabs(containerId) {
             const container = document.getElementById(containerId);
@@ -66,4 +67,3 @@ add_action('wp_footer', function () {
     <?php
     }
 });
-?>
