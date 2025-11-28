@@ -21,7 +21,7 @@ function lum_track_visitor() {
     if (lum_should_skip_tracking($request_uri)) {
         return;
     }
-    // Clean the URL - remove query parameters for cleaner display
+    // Clean the URL - Remove query parameters for cleaner display
     $page_url = lum_clean_page_url($request_uri);
     $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field($_SERVER['HTTP_USER_AGENT']) : '';
     // Skip known bots
