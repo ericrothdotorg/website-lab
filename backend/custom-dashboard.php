@@ -286,30 +286,7 @@ function initialize_custom_dashboard() {
 	// 🧹 ADD OPTIMIZE & CLEAN-UP BUTTONS
 	// ======================================
 
-	// Schedule the cleanup event (daily)
-    add_action('init', function() {
-        if (!wp_next_scheduled('custom_auto_cleanup_event')) {
-            wp_schedule_event(time(), 'daily', 'custom_auto_cleanup_event');
-        }
-    });
-    // Hook the cleanup function to the scheduled event
-    add_action('custom_auto_cleanup_event', function() {
-        $result = custom_run_full_inno_db_cleanup();
-        update_option('custom_last_auto_cleanup', time());
-        update_option('custom_last_auto_cleanup_result', $result);
-        
-        // Run LiteSpeed Database optimization if available
-        if (defined('LSCWP_V')) {
-            custom_run_litespeed_db_cleanup();
-        }
-        // Optional: Log to debug.log
-        error_log('Auto cleanup completed: ' . $result);
-    });
-    // Clean up scheduled event on deactivation
-    register_deactivation_hook(__FILE__, function() {
-        wp_clear_scheduled_hook('custom_auto_cleanup_event');
-    });
-    // Dashboard Widget
+	// Dashboard Widget
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget(
             'custom_optimize_and_cleanup',
@@ -323,23 +300,16 @@ function initialize_custom_dashboard() {
         if (isset($_POST['er_run_full_cleanup']) && current_user_can('manage_options')) {
             check_admin_referer('custom_cleanup_action', 'custom_cleanup_nonce');
             $result = custom_run_full_inno_db_cleanup();
-            update_option('custom_last_manual_cleanup', time());
-            update_option('custom_last_manual_cleanup_result', $result);
+            update_option('custom_last_cleanup', time());
+            update_option('custom_last_cleanup_result', $result);
         }
         echo '<div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">';
-        // Manual cleanup button
         echo '<form method="post" style="margin: 0;">';
         wp_nonce_field('custom_cleanup_action', 'custom_cleanup_nonce');
         echo '<button type="submit" name="er_run_full_cleanup" class="button">🛠️ Run InnoDB Cleanup</button>';
         echo '</form>';
         echo '<a href="' . esc_url(admin_url('admin.php?page=litespeed-db_optm')) . '" class="button" target="_blank">🛢️ LiteSpeed Database</a>';
         echo '</div>';
-        // Show next automatic cleanup time
-        $next_run = wp_next_scheduled('custom_auto_cleanup_event');
-        if ($next_run) {
-            echo '<p style="margin: 10px 0; color: green; font-size: 12px;">⏰ Next automatic cleanup: ' . 
-                esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $next_run)) . '</p>';
-        }
         global $wpdb;
         $postmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->postmeta}");
         $commentmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->commentmeta}");
@@ -365,21 +335,14 @@ function initialize_custom_dashboard() {
         echo '<p style="margin: 5px 0;">User Meta Rows: <strong>' . number_format_i18n($usermeta_count) . '</strong> ';
         echo '<span style="color:' . esc_attr($um_status[0]) . ';">– ' . esc_html($um_status[1]) . '</span></p>';
         echo '<p style="margin: 5px 0;">TOTAL Meta Rows: <strong>' . number_format_i18n($total_meta_count) . '</strong></p>';
-        // Show last Manual Cleanup Time and Result
-        $last_manual_cleanup = get_option('custom_last_manual_cleanup');
-        $last_manual_result = get_option('custom_last_manual_cleanup_result');
-        if ($last_manual_cleanup) {
-            if ($last_manual_result) {
-                echo '<p style="margin: 10px 0;"><strong>' . esc_html($last_manual_result) . '</strong></p>';
+        $last_cleanup = get_option('custom_last_cleanup');
+        $last_result = get_option('custom_last_cleanup_result');
+        if ($last_cleanup) {
+            if ($last_result) {
+                echo '<p style="margin: 10px 0;"><strong>' . esc_html($last_result) . '</strong></p>';
             }
-            echo '<p style="margin: 5px 0;"><em>Last manual cleanup: ' . 
-                esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $last_manual_cleanup)) . '</em></p>';
-        }
-        // Show last Automatic Cleanup Time
-        $last_auto_cleanup = get_option('custom_last_auto_cleanup');
-        if ($last_auto_cleanup) {
-            echo '<p style="margin: 5px 0; font-size: 12px; color: #666;"><em>Last automatic cleanup: ' . 
-                esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $last_auto_cleanup)) . '</em></p>';
+            echo '<p style="margin: 5px 0;"><em>Last cleanup: ' . 
+                esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</em></p>';
         }
         echo '</div>';
     }
@@ -479,32 +442,6 @@ function initialize_custom_dashboard() {
             $wpdb->query("OPTIMIZE TABLE {$wpdb->prefix}$table");
         }
         return "✅ Total rows deleted: $deleted_total. Tables optimized.";
-    }
-
-    function custom_run_litespeed_db_cleanup() {
-        // Check if LiteSpeed Cache plugin is active
-        if (!class_exists('LiteSpeed\Core')) {
-            return;
-        }
-        // Run LiteSpeed database optimizations programmatically
-        try {
-            // Clean up post revisions, auto drafts, trashed posts
-            do_action('litespeed_db_optimize_revisions');
-            do_action('litespeed_db_optimize_auto_drafts');
-            do_action('litespeed_db_optimize_trashed_posts');
-            // Clean up comments
-            do_action('litespeed_db_optimize_spam_comments');
-            do_action('litespeed_db_optimize_trashed_comments');
-            // Clean up other data
-            do_action('litespeed_db_optimize_trackbacks');
-            do_action('litespeed_db_optimize_expired_transients');
-            do_action('litespeed_db_optimize_all_transients');
-            // Optimize tables
-            do_action('litespeed_db_optimize_tables');
-            error_log('LiteSpeed database cleanup completed');
-        } catch (Exception $e) {
-            error_log('LiteSpeed database cleanup error: ' . $e->getMessage());
-        }
     }
 
     // ======================================
