@@ -1,5 +1,4 @@
 <?php
-
 add_action("wp_head", function () {
     ?>
     <style>
@@ -21,11 +20,11 @@ add_action("wp_head", function () {
 
     /* SOME MISC STUFF */
 
+	/* Text Basics */
+    p {text-align: justify;}
     /* Hide Stuff depending on VW */
     @media (max-width: 768px) {.hide-on-small {display: none;}}
     @media (min-width: 768px) {.hide-on-big {display: none;}}
-    /* Format built-in Separator */
-    .wp-block-separator:not(.is-style-dots) {height: 1px; background: #e1e8ed;}
     /* Display total Number of Posts */
     .display-total-number-of-posts {font-weight: normal;}
     /* Some HTML Stuff */
@@ -39,15 +38,6 @@ add_action("wp_head", function () {
 
     a:link {font-weight: bold; color: #1e73be;}
     a:link:hover {color: #c53030;}
-
-    /* BODY TEXT BASICS */
-
-    p {text-align: justify;}
-    .br {display: none;}
-    @media (max-width: 600px) {.br {display: block;}}
-    .font-color-white {color: #d9d9d9;}
-    .font-color-black {color: #192a3d;}
-    @media (max-width: 992px) {.font-size-75 {font-size: 75%;}}
 
     /* USER'S MOTION PREFERENCES */
 
@@ -124,7 +114,10 @@ add_action("wp_footer", function () {
 
     /* SOME MISC STUFF */
 
+    /* Used for Photo Album */
     .flex-item-country-icons {flex: 0 0 60px;}
+    /* Format built-in Separator */
+    .wp-block-separator:not(.is-style-dots) {height: 1px; background: #e1e8ed;}
 
     /* NAVIGATION */
 
@@ -172,14 +165,6 @@ add_action("wp_footer", function () {
       .two-columns, .three-columns {width: 100%;}
       .four-columns {width: 49%;}
     }
-    /* Columns TEXT */
-    .two-columns-text, .three-columns-text, .four-columns-text {
-      column-gap: 40px;
-      column-rule: 1px solid #808080;
-    }
-    .two-columns-text {column-count: 2;}
-    .three-columns-text {column-count: 3;}
-    .four-columns-text {column-count: 4;}
 
     /* FLEXBOX */
 
@@ -233,6 +218,20 @@ add_action("wp_footer", function () {
 
     /* TEXT & COLORS */
 
+    /* Text Basics */
+    .br {display: none;}
+    @media (max-width: 600px) {.br {display: block;}}
+    .font-color-white {color: #d9d9d9;}
+    .font-color-black {color: #192a3d;}
+    @media (max-width: 992px) {.font-size-75 {font-size: 75%;}}
+    /* Text as Columns */
+    .two-columns-text, .three-columns-text, .four-columns-text {
+      column-gap: 40px;
+      column-rule: 1px solid #808080;
+    }
+    .two-columns-text {column-count: 2;}
+    .three-columns-text {column-count: 3;}
+    .four-columns-text {column-count: 4;}
     /* (Emphasized) Design Blocks */
     .emphasized-design-green, .emphasized-design-red, .emphasized-design-orange {
       font-style: italic; 
