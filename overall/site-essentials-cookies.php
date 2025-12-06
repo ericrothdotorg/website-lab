@@ -461,7 +461,6 @@ add_action('wp_footer', function () {
         document.addEventListener("DOMContentLoaded", () => {
             const elements = document.querySelectorAll('.flexy-container');
             if (!elements.length) return;
-            
             const observer = new IntersectionObserver(entries => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
@@ -470,7 +469,6 @@ add_action('wp_footer', function () {
                     }
                 });
             }, { threshold: 0.1 });
-            
             elements.forEach(el => observer.observe(el));
         });
     </script>
