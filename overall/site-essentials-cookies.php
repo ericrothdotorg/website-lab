@@ -26,7 +26,7 @@ if (!is_admin()) {
             'in_footer' => true,
         ]);
         wp_enqueue_script('jquery');
-    }, 11);
+    }, 11); // Leave as is cuz: WP core enqueues jQuery at priority 10
 }
 
 // ======================================
