@@ -1,17 +1,31 @@
 <?php
 
 // ======================================
+// CONFIGURATION CONSTANTS
+// ======================================
+
+// Content & SEO
+define('ALT_TEXT_MAX_LENGTH', 100);          // Maximum characters for image alt text
+define('READING_SPEED_WPM', 200);            // Words per minute for read time calculation
+define('LCP_IMAGE_MIN_WIDTH', 300);          // Minimum width (px) to consider image for LCP optimization
+// Cache Durations (in seconds)
+define('CACHE_POST_STATS', 86400);           // 24 hours - Post statistics cache
+define('CACHE_POST_COUNT', 3600);            // 1 hour - Post count cache
+define('CACHE_LCP_HTML', 3600);              // 1 hour - LCP optimized HTML cache
+
+// ======================================
 // JQUERY & CORE SCRIPTS
 // ======================================
 
-// Replace WordPress jQuery with self-hosted version
+// Replace WP jQuery with self-hosted Version
 if (!is_admin()) {
     add_action('wp_enqueue_scripts', function () {
-        if (!wp_script_is('jquery', 'enqueued')) {
-            wp_deregister_script('jquery');
-            wp_register_script('jquery', home_url('/my-assets/jquery-3.7.1.min.js'), [], '3.7.1', true);
-            wp_enqueue_script('jquery');
-        }
+        wp_deregister_script('jquery');
+        wp_register_script('jquery', home_url('/my-assets/jquery-3.7.1.min.js'), [], '3.7.1', [
+            'strategy'  => 'defer',
+            'in_footer' => true,
+        ]);
+        wp_enqueue_script('jquery');
     }, 11);
 }
 
@@ -44,26 +58,39 @@ add_action('init', function() {
 
 // Optimize Largest Contentful Paint (LCP) - first image gets priority
 add_action('template_redirect', function () {
+    // Skip for admin, feeds, and AJAX
+    if (is_admin() || is_feed() || wp_doing_ajax()) {
+        return;
+    }
     ob_start(function ($html) {
+        // Generate cache key based on current page
+        $cache_key = 'lcp_optimized_' . md5($html);
+        $cached = wp_cache_get($cache_key, 'lcp_optimization');
+        
+        if ($cached !== false) {
+            return $cached;
+        }
         $count = 0;
         // Add fetchpriority="high" to first large image
-        $html = preg_replace_callback('/<img[^>]+>/i', function ($match) use (&$count) {
+		$html = preg_replace_callback('/<img[^>]+>/i', function ($match) use (&$count) {
             $img = $match[0];
-            if ($count === 0 && preg_match('/width=["\'](\d{3,})["\']/', $img)) {
-                $count++;
-                $img = preg_replace('/\sloading=["\']lazy["\']/', '', $img);
-                $img = str_replace('<img', '<img fetchpriority="high"', $img);
-                if (!strpos($img, 'sizes=')) {
-                    $img = str_replace('<img', '<img sizes="(max-width: 600px)100vw,(max-width: 1024px)80vw,1000px"', $img);
+            if ($count === 0 && preg_match('/width=["\'](\d+)["\']/', $img, $width_match)) {
+                if ((int)$width_match[1] >= LCP_IMAGE_MIN_WIDTH) {
+                    $count++;
+                    $img = preg_replace('/\sloading=["\']lazy["\']/', '', $img);
+                    $img = str_replace('<img', '<img fetchpriority="high"', $img);
+                    if (!strpos($img, 'sizes=')) {
+                        $img = str_replace('<img', '<img sizes="(max-width: 600px)100vw,(max-width: 1024px)80vw,1000px"', $img);
+                    }
                 }
             }
             return $img;
         }, $html);
-        
         // Preload first large image
         if (preg_match('/<img[^>]+width=["\'](\d{3,})["\'][^>]*src=["\']([^"\']+)["\'][^>]*>/i', $html, $match)) {
             $html = preg_replace('/<head>/', '<head><link rel="preload" as="image" href="' . esc_url($match[2]) . '" fetchpriority="high">', $html, 1);
         }
+        wp_cache_set($cache_key, $html, 'lcp_optimization', CACHE_LCP_HTML);
         return $html;
     });
 });
@@ -109,9 +136,7 @@ add_action('wp_enqueue_scripts', fn() => wp_enqueue_style('dashicons'));
 
 // Preconnect to external services for faster loading
 add_action('wp_head', function () {
-    echo '<link rel="preconnect" href="https://www.clarity.ms" crossorigin>
-          <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
-          <link rel="dns-prefetch" href="https://secure.gravatar.com">';
+    echo '<link rel="dns-prefetch" href="https://secure.gravatar.com">';
 });
 
 // ======================================
@@ -131,53 +156,65 @@ function get_reusable_block($atts) {
     return $post ? apply_filters('the_content', $post->post_content) : '';
 }
 
-// [total_post], [total_page], etc. - Display post type counts
+// [total_post], [total_page], etc. - Display Post Type Counts
 if (!is_admin()) {
     add_action('init', function() {
         foreach (['post', 'page', 'my-interests', 'my-traits'] as $type) {
-            add_shortcode('total_' . str_replace('-', '_', $type), 
-                fn() => wp_count_posts($type)->publish
-            );
+            add_shortcode('total_' . str_replace('-', '_', $type), function() use ($type) {
+                $cache_key = 'post_count_' . $type;
+                $count = get_transient($cache_key);
+                if ($count === false) {
+                    $count = wp_count_posts($type)->publish;
+                    set_transient($cache_key, $count, CACHE_POST_COUNT);
+                }
+                return $count;
+            });
         }
     });
 }
+// Clear Cache when Posts are published / deleted
+add_action('transition_post_status', function($new_status, $old_status, $post) {
+    if ($new_status !== $old_status) {
+        delete_transient('post_count_' . $post->post_type);
+    }
+}, 10, 3);
 
 // [post_stats] - Comprehensive content statistics
 add_shortcode('post_stats', function() {
     global $post;
     if (!$post) return '';
-    
+    // Check Cache first
+    $cache_key = 'post_stats_' . $post->ID;
+    $cached_output = get_transient($cache_key);
+    if ($cached_output !== false) {
+        return $cached_output;
+    }
     $content = apply_filters('the_content', $post->post_content);
     $text = strip_tags(strip_shortcodes($content));
-    
-    // Calculate statistics
+    // Calculate Statistics
     $stats = [
         'words' => str_word_count($text),
-        'minutes' => ceil(str_word_count($text) / 200),
+        'minutes' => ceil(str_word_count($text) / READING_SPEED_WPM),
         'chars' => strlen($text),
         'paragraphs' => substr_count($content, '</p>'),
         'images' => substr_count($content, '<img'),
         'videos' => preg_match_all('/<video[^>]*>/i', $content) + preg_match_all('/<iframe[^>]*(?:youtube\.com|vimeo\.com)[^>]*>/i', $content),
         'titles' => preg_match_all('/<h[1-6][^>]*>.*?<\/h[1-6]>/', $content)
     ];
-    
-    // Count links
+    // Count Links
     preg_match_all('/<a\s[^>]*href=["\']([^"\']+)["\']/i', $content, $matches);
     $site_url = home_url();
     $internal = $external = 0;
     foreach ($matches[1] ?? [] as $url) {
         (strpos($url, $site_url) === 0 || strpos($url, '/') === 0) ? $internal++ : $external++;
     }
-    
-    // Sentence analysis
+    // Sentence Analysis
     $sentences = preg_split('/[.!?]+/', $text, -1, PREG_SPLIT_NO_EMPTY);
     $sentence_count = count($sentences);
     $avg_words = $sentence_count > 0 ? round($stats['words'] / $sentence_count, 1) : 0;
-    
-    // Format output with thousands separators
+    // Format Output with Thousands Separators
     $fmt = fn($n) => number_format($n, 0, '.', "'");
-    
-    return '<div class="post-stats">'
+    $output = '<div class="post-stats">'
          . '<span><strong>' . $fmt($stats['words']) . '</strong> Words</span> • '
          . '<span>Read Time: <strong>' . $stats['minutes'] . '</strong> Min.</span><br>'
          . '<span><strong>' . $fmt($stats['chars']) . '</strong> Characters</span> • '
@@ -190,72 +227,77 @@ add_shortcode('post_stats', function() {
          . '<span><strong>' . $fmt($stats['images']) . '</strong> Images</span> • '
          . '<span><strong>' . $fmt($stats['videos']) . '</strong> Videos</span>'
          . '</div>';
+    set_transient($cache_key, $output, CACHE_POST_STATS);
+    return $output;
+});
+// Clear [post_stats] Cache when Post is updated
+add_action('save_post', function($post_id) {
+    delete_transient('post_stats_' . $post_id);
 });
 
 // ======================================
 // SEO & ACCESSIBILITY
 // ======================================
 
-// Auto-generate ALT text for images (or mark decorative images)
+// Auto-generate ALT text for Images (or mark decorative Images)
 add_filter('wp_get_attachment_image', function($html, $attachment_id) {
     $alt = get_post_meta($attachment_id, '_wp_attachment_image_alt', true);
     $src = wp_get_attachment_url($attachment_id);
-    
-    // Mark decorative images with empty alt
+    // Mark decorative Images with empty alt
     if (preg_match('/(divider|icon|bg|decor|spacer)/i', $src)) {
         $alt = '';
     } elseif (empty($alt)) {
         $alt = get_the_title($attachment_id);
     }
-    
-    // Remove alt if image is wrapped in link with same text
+    // Remove alt if Image is wrapped in Link with same Text
     if (strpos($html, '<a') !== false && strpos($html, $alt) !== false) {
         $alt = '';
     }
-    
-    $alt = esc_attr(mb_substr(wp_strip_all_tags($alt), 0, 100));
+    $alt = esc_attr(mb_substr(wp_strip_all_tags($alt), 0, ALT_TEXT_MAX_LENGTH));
     return preg_replace('/alt=["\'](.*?)["\']/', 'alt="' . $alt . '"', $html);
 }, 10, 2);
 
-// Add helpful title to external links
-add_filter('the_content', function($content) {
-    return preg_replace_callback('/<a\s+([^>]*?)target="_blank"([^>]*)>(.*?)<\/a>/i', function ($m) {
-        return strpos($m[1] . $m[2], 'title=') !== false ? $m[0] : str_replace('<a ', '<a title="Opens in a new tab" ', $m[0]);
-    }, $content);
-});
-
-// Add visual indicator class to external links (style with CSS)
+// Process external Links (combined: Add Class + Title Attribute)
 add_filter('the_content', function ($content) {
     $exclude = ['ericroth.org', 'ericroth-org', '1drv.ms', 'paypal.com', 'librarything.com',
                 'themoviedb.org', 'facebook.com', 'github.com', 'linkedin.com', 'youtube.com',
                 'patreon.com', 'bsky.app', 'bsky.social'];
-    
-    return preg_replace_callback('/<a\s+[^>]*href=["\']([^"\']+)["\'][^>]*>/i', function ($m) use ($exclude) {
-        $href = $m[1];
+    return preg_replace_callback('/<a\s+([^>]+)>/i', function ($m) use ($exclude) {
         $tag = $m[0];
-        
-        // Skip internal/special links
+        $attrs = $m[1];
+        // Extract href
+        if (!preg_match('/href=["\']([^"\']+)["\']/i', $attrs, $href_match)) {
+            return $tag; // No href, skip
+        }
+        $href = $href_match[1];
+        // Skip internal / special Links
         if ($href[0] === '#' || $href[0] === '/' || strpos($href, 'tel:') === 0 || 
             stripos($href, 'javascript') !== false || strpos($href, '?cat=') !== false) {
             return $tag;
         }
-        
-        // Skip whitelisted domains
+        // Skip whitelisted Domains
         foreach ($exclude as $domain) {
             if (strpos($href, $domain) !== false) return $tag;
         }
-        
-        // Skip WordPress UI classes
-        if (preg_match('/class=["\'][^"\']*(wp-block-button__link|button|neli|page-numbers)[^"\']*["\']/', $tag)) {
+        // Skip WP UI Classes
+        if (preg_match('/class=["\'][^"\']*(wp-block-button__link|button|neli|page-numbers)[^"\']*["\']/', $attrs)) {
             return $tag;
         }
-        
-        // Add external-link class
-        return strpos($tag, 'class=') !== false 
-            ? preg_replace('/class=(["\'])(.*?)\1/', 'class=$1$2 external-link$1', $tag)
-            : str_replace('<a ', '<a class="external-link" ', $tag);
+        // This is an external Link - Process it
+        $modified = $tag;
+        // Add external-link Class
+        if (strpos($attrs, 'class=') !== false) {
+            $modified = preg_replace('/class=(["\'])(.*?)\1/', 'class=$1$2 external-link$1', $modified);
+        } else {
+            $modified = str_replace('<a ', '<a class="external-link" ', $modified);
+        }
+        // Add Title if target="_blank" and no existing Title
+        if (strpos($attrs, 'target="_blank"') !== false && strpos($attrs, 'title=') === false) {
+            $modified = str_replace('<a ', '<a title="Opens in a new tab" ', $modified);
+        }
+        return $modified;
     }, $content);
-});
+}, 10);
 
 // ======================================
 // REDIRECTS
@@ -286,6 +328,7 @@ add_action('wp_footer', function () {
     ?>
     
     <!-- Cookie Consent Banner -->
+
     <p id="cookie-notice" role="region" aria-live="polite" aria-label="Cookie notice" aria-hidden="true" style="visibility: hidden;">
         We serve <strong>cookies</strong> to enhance your browsing experience. Learn more in our 
         <a href="https://ericroth.org/this-site/site-policies/">Site Policies</a><br>
@@ -312,7 +355,8 @@ add_action('wp_footer', function () {
         }
     </style>
 
-    <!-- Analytics & Cookie Consent Logic -->
+    <!-- Cookie Consent Logic -->
+
     <script>
         function acceptCookie() {
             const isSecure = location.protocol === 'https:' ? '; Secure' : '';
@@ -322,8 +366,6 @@ add_action('wp_footer', function () {
                 notice.style.visibility = "hidden";
                 notice.setAttribute("aria-hidden", "true");
             }
-            if (window.clarity) clarity("consent");
-            if (window.loadAnalyticsNow) window.loadAnalyticsNow();
         }
         
         function rejectCookie() {
@@ -337,7 +379,7 @@ add_action('wp_footer', function () {
         }
         
         document.addEventListener('DOMContentLoaded', function () {
-            const hasConsent = document.cookie.indexOf("cookieaccepted=1") >= 0;
+            const hasConsent = document.cookie.indexOf("cookieaccepted=") >= 0;
             
             // Show banner if no consent yet
             if (!hasConsent) {
@@ -347,63 +389,15 @@ add_action('wp_footer', function () {
                     notice.setAttribute("aria-hidden", "false");
                 }
             }
-            
-            let loaded = false;
-            function loadAnalytics() {
-                if (loaded) return;
-                loaded = true;
-                
-                // Microsoft Clarity
-                (function(c,l,a,r,i,t,y){
-                    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-                })(window, document, "clarity", "script", "eic7b2e9o1");
-                
-                // Send consent to Clarity
-                let attempts = 0;
-                const interval = setInterval(() => {
-                    if (window.clarity && hasConsent) {
-                        clarity("consent");
-                        clearInterval(interval);
-                    } else if (attempts++ > 20) {
-                        clearInterval(interval);
-                    }
-                }, 100);
-                
-                // Google Analytics
-                const script = document.createElement('script');
-                script.async = true;
-                script.src = "https://www.googletagmanager.com/gtag/js?id=G-X88D2RT23H";
-                document.head.appendChild(script);
-                script.onload = () => {
-                    window.dataLayer = window.dataLayer || [];
-                    function gtag(){dataLayer.push(arguments);}
-                    window.gtag = gtag;
-                    gtag('js', new Date());
-                    gtag('config', 'G-X88D2RT23H');
-                };
-            }
-            
-            window.loadAnalyticsNow = loadAnalytics;
-            
-            // Auto-load analytics if user already consented
-            if (hasConsent) {
-                const timeout = setTimeout(loadAnalytics, 5000);
-                ['click','scroll','keydown','mousemove','touchstart'].forEach(event => {
-                    window.addEventListener(event, () => {
-                        clearTimeout(timeout);
-                        loadAnalytics();
-                    }, { once: true, passive: true });
-                });
-            }
         });
     </script>
 
     <!-- Scroll Progress Indicator -->
+
     <style>
         .scroll-indicator-bar {will-change: width; width: 0%; position: fixed; bottom: 0; height: 5px; background: #c53030; z-index: 5000}
     </style>
+
     <script>
         let ticking = false;
         function updateScroll() {
@@ -420,17 +414,20 @@ add_action('wp_footer', function () {
             }
         }, { passive: true });
     </script>
+
     <div class="scroll-indicator-container">
         <div class="scroll-indicator-bar" id="my_scroll_indicator"></div>
     </div>
 
     <!-- Auto-Insert Current Year -->
+
     <script>
         const yearEl = document.getElementById("current-year");
         if (yearEl) yearEl.textContent = new Date().getFullYear();
     </script>
 
     <!-- Accordion (One Open at a Time) -->
+
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const details = document.querySelectorAll("details.details-accordion");
@@ -444,7 +441,6 @@ add_action('wp_footer', function () {
                         });
                     }
                 });
-                
                 const summary = detail.querySelector("summary");
                 if (summary) {
                     summary.setAttribute("tabindex", "0");
@@ -460,6 +456,7 @@ add_action('wp_footer', function () {
     </script>
 
     <!-- Flexy Animation (Blocksy) -->
+
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const elements = document.querySelectorAll('.flexy-container');
