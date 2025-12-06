@@ -287,162 +287,199 @@ function initialize_custom_dashboard() {
 	// ======================================
 
 	// Dashboard Widget
-    add_action('wp_dashboard_setup', function () {
-        wp_add_dashboard_widget(
-            'custom_optimize_and_cleanup',
-            '🧹 Optimize & Clean-Up',
-            'custom_render_optimize_and_cleanup'
-        );
-    });
+	add_action('wp_dashboard_setup', function () {
+		wp_add_dashboard_widget(
+			'custom_optimize_and_cleanup',
+			'🧹 Optimize & Clean-Up',
+			'custom_render_optimize_and_cleanup'
+		);
+	});
 
-    function custom_render_optimize_and_cleanup() {
-        // Handle manual cleanup
-        if (isset($_POST['er_run_full_cleanup']) && current_user_can('manage_options')) {
-            check_admin_referer('custom_cleanup_action', 'custom_cleanup_nonce');
-            $result = custom_run_full_inno_db_cleanup();
-            update_option('custom_last_cleanup', time());
-            update_option('custom_last_cleanup_result', $result);
-        }
-        echo '<div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">';
-        echo '<form method="post" style="margin: 0;">';
-        wp_nonce_field('custom_cleanup_action', 'custom_cleanup_nonce');
-        echo '<button type="submit" name="er_run_full_cleanup" class="button">🛠️ Run InnoDB Cleanup</button>';
-        echo '</form>';
-        echo '<a href="' . esc_url(admin_url('admin.php?page=litespeed-db_optm')) . '" class="button" target="_blank">🛢️ LiteSpeed Database</a>';
-        echo '</div>';
-        global $wpdb;
-        $postmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->postmeta}");
-        $commentmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->commentmeta}");
-        $termmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->termmeta}");
-        $usermeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->usermeta}");
-        $total_meta_count = $postmeta_count + $commentmeta_count + $termmeta_count + $usermeta_count;
-        $get_status = function($count) {
-            if ($count > 50000) return ['red', 'Consider running a cleanup.'];
-            if ($count > 10000) return ['orange', 'Moderate bloat detected.'];
-            return ['green', 'Healthy state.'];
-        };
-        echo '<div style="margin-top: 15px;">';
-        $pm_status = $get_status($postmeta_count);
-        echo '<p style="margin: 5px 0;">Content Meta Rows: <strong>' . number_format_i18n($postmeta_count) . '</strong> ';
-        echo '<span style="color:' . esc_attr($pm_status[0]) . ';">– ' . esc_html($pm_status[1]) . '</span></p>';
-        $cm_status = $get_status($commentmeta_count);
-        echo '<p style="margin: 5px 0;">Comment Meta Rows: <strong>' . number_format_i18n($commentmeta_count) . '</strong> ';
-        echo '<span style="color:' . esc_attr($cm_status[0]) . ';">– ' . esc_html($cm_status[1]) . '</span></p>';
-        $tm_status = $get_status($termmeta_count);
-        echo '<p style="margin: 5px 0;">Term Meta Rows: <strong>' . number_format_i18n($termmeta_count) . '</strong> ';
-        echo '<span style="color:' . esc_attr($tm_status[0]) . ';">– ' . esc_html($tm_status[1]) . '</span></p>';
-        $um_status = $get_status($usermeta_count);
-        echo '<p style="margin: 5px 0;">User Meta Rows: <strong>' . number_format_i18n($usermeta_count) . '</strong> ';
-        echo '<span style="color:' . esc_attr($um_status[0]) . ';">– ' . esc_html($um_status[1]) . '</span></p>';
-        echo '<p style="margin: 5px 0;">TOTAL Meta Rows: <strong>' . number_format_i18n($total_meta_count) . '</strong></p>';
-        $last_cleanup = get_option('custom_last_cleanup');
-        $last_result = get_option('custom_last_cleanup_result');
-        if ($last_cleanup) {
-            if ($last_result) {
-                echo '<p style="margin: 10px 0;"><strong>' . esc_html($last_result) . '</strong></p>';
-            }
-            echo '<p style="margin: 5px 0;"><em>Last cleanup: ' . 
-                esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</em></p>';
-        }
-        echo '</div>';
-    }
+	function custom_render_optimize_and_cleanup() {
+		// Handle manual cleanup - verify nonce first
+		if (isset($_POST['er_run_full_cleanup'])) {
+			if (!current_user_can('manage_options')) {
+				wp_die('Unauthorized access');
+			}
+			check_admin_referer('custom_cleanup_action', 'custom_cleanup_nonce');
+			$result = custom_run_full_inno_db_cleanup();
+			update_option('custom_last_cleanup', time());
+			update_option('custom_last_cleanup_result', $result['message']);
+			update_option('custom_last_cleanup_success', $result['success']);
+		}
+		echo '<div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">';
+		echo '<form method="post" style="margin: 0;">';
+		wp_nonce_field('custom_cleanup_action', 'custom_cleanup_nonce');
+		echo '<button type="submit" name="er_run_full_cleanup" class="button">🛠️ Run InnoDB Cleanup</button>';
+		echo '</form>';
+		echo '<a href="' . esc_url(admin_url('admin.php?page=litespeed-db_optm')) . '" class="button" target="_blank">🛢️ LiteSpeed Database</a>';
+		echo '</div>';
+		global $wpdb;
+		$postmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->postmeta}");
+		$commentmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->commentmeta}");
+		$termmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->termmeta}");
+		$usermeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->usermeta}");
+		$total_meta_count = $postmeta_count + $commentmeta_count + $termmeta_count + $usermeta_count;
+		$get_status = function($count) {
+			if ($count > 50000) return ['red', 'Consider running a cleanup.'];
+			if ($count > 10000) return ['orange', 'Moderate bloat detected.'];
+			return ['green', 'Healthy state.'];
+		};
+		echo '<div style="margin-top: 15px;">';
+		$pm_status = $get_status($postmeta_count);
+		echo '<p style="margin: 5px 0;">Content Meta Rows: <strong>' . number_format_i18n($postmeta_count) . '</strong> ';
+		echo '<span style="color:' . esc_attr($pm_status[0]) . ';">– ' . esc_html($pm_status[1]) . '</span></p>';
+		$cm_status = $get_status($commentmeta_count);
+		echo '<p style="margin: 5px 0;">Comment Meta Rows: <strong>' . number_format_i18n($commentmeta_count) . '</strong> ';
+		echo '<span style="color:' . esc_attr($cm_status[0]) . ';">– ' . esc_html($cm_status[1]) . '</span></p>';
+		$tm_status = $get_status($termmeta_count);
+		echo '<p style="margin: 5px 0;">Term Meta Rows: <strong>' . number_format_i18n($termmeta_count) . '</strong> ';
+		echo '<span style="color:' . esc_attr($tm_status[0]) . ';">– ' . esc_html($tm_status[1]) . '</span></p>';
+		$um_status = $get_status($usermeta_count);
+		echo '<p style="margin: 5px 0;">User Meta Rows: <strong>' . number_format_i18n($usermeta_count) . '</strong> ';
+		echo '<span style="color:' . esc_attr($um_status[0]) . ';">– ' . esc_html($um_status[1]) . '</span></p>';
+		echo '<p style="margin: 5px 0;">TOTAL Meta Rows: <strong>' . number_format_i18n($total_meta_count) . '</strong></p>';
+		$last_cleanup = get_option('custom_last_cleanup');
+		$last_result = get_option('custom_last_cleanup_result');
+		$last_success = get_option('custom_last_cleanup_success', true);
+		if ($last_cleanup) {
+			if ($last_result) {
+				$result_color = $last_success ? 'green' : 'red';
+				echo '<p style="margin: 10px 0; color: ' . esc_attr($result_color) . ';"><strong>' . esc_html($last_result) . '</strong></p>';
+			}
+			echo '<p style="margin: 5px 0;"><em>Last cleanup: ' . 
+				esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</em></p>';
+		}
+		echo '</div>';
+	}
 
-    function custom_run_full_inno_db_cleanup() {
-        global $wpdb;
-        $deleted_total = 0;
-        // Delete orphaned Postmeta
-        $deleted_total += $wpdb->query("
-            DELETE pm FROM {$wpdb->postmeta} pm
-            LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-            WHERE p.ID IS NULL
-        ");
-        // Delete orphaned Term Relationships
-        $deleted_total += $wpdb->query("
-            DELETE tr FROM {$wpdb->term_relationships} tr
-            LEFT JOIN {$wpdb->posts} p ON p.ID = tr.object_id
-            WHERE p.ID IS NULL
-        ");
-        // Remove specific safe Postmeta Keys
-        $safe_postmeta_keys = [
-            '_edit_lock', '_edit_last', '_wp_old_slug', '_wp_old_date',
-            '_last_viewed_timestamp', 'litespeed-optimize-set', 'litespeed-optimize-size'
-        ];
-        foreach ($safe_postmeta_keys as $key) {
-            $deleted_total += $wpdb->query(
-                $wpdb->prepare("DELETE FROM {$wpdb->postmeta} WHERE meta_key = %s", $key)
-            );
-        }
-        $deleted_total += $wpdb->query("
-            DELETE FROM {$wpdb->postmeta}
-            WHERE meta_key = '_menu_item_target' AND (meta_value IS NULL OR meta_value = '')
-        ");
-        $deleted_total += $wpdb->query("
-            DELETE FROM {$wpdb->postmeta}
-            WHERE meta_key LIKE '_oembed_%' OR meta_key LIKE '_oembed_time_%'
-        ");
-        // Delete orphaned Usermeta
-        $deleted_total += $wpdb->query("
-            DELETE um FROM {$wpdb->usermeta} um
-            LEFT JOIN {$wpdb->users} u ON u.ID = um.user_id
-            WHERE u.ID IS NULL
-        ");
-        // Remove specific safe Usermeta Keys
-        $safe_usermeta_keys = ['_session_tokens', '_last_activity', '_woocommerce_persistent_cart'];
-        foreach ($safe_usermeta_keys as $key) {
-            $deleted_total += $wpdb->query(
-                $wpdb->prepare("DELETE FROM {$wpdb->usermeta} WHERE meta_key = %s", $key)
-            );
-        }
-        // Delete transient Options
-        $deleted_total += $wpdb->query("
-            DELETE FROM {$wpdb->options}
-            WHERE option_name LIKE '_transient_%' AND option_name NOT LIKE '_transient_timeout_%'
-        ");
-        $deleted_total += $wpdb->query("
-            DELETE FROM {$wpdb->options}
-            WHERE option_name LIKE '_transient_timeout_%' AND option_value < UNIX_TIMESTAMP()
-        ");
-        // Delete old completed ActionScheduler Actions if Table exists
-        if ($wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}actionscheduler_actions'")) {
-            $deleted_total += $wpdb->query("
-                DELETE FROM {$wpdb->prefix}actionscheduler_actions
-                WHERE status = 'complete' AND scheduled_date_gmt < NOW() - INTERVAL 30 DAY
-            ");
-        }
-        // Delete orphaned Commentmeta
-        $deleted_total += $wpdb->query("
-            DELETE cm FROM {$wpdb->commentmeta} cm
-            LEFT JOIN {$wpdb->comments} c ON c.comment_ID = cm.comment_id
-            WHERE c.comment_ID IS NULL
-        ");
-        // Delete empty auto-draft Posts
-        $deleted_total += $wpdb->query("
-            DELETE FROM {$wpdb->posts}
-            WHERE post_status = 'auto-draft' AND post_content = ''
-        ");
-        // Delete orphaned Termmeta
-        $deleted_total += $wpdb->query("
-            DELETE tm FROM {$wpdb->termmeta} tm
-            LEFT JOIN {$wpdb->terms} t ON t.term_id = tm.term_id
-            WHERE t.term_id IS NULL
-        ");
-        // Delete old Spam Comments
-        $deleted_total += $wpdb->query("
-            DELETE FROM {$wpdb->comments}
-            WHERE comment_approved = 'spam' AND comment_date < NOW() - INTERVAL 30 DAY
-        ");
-        // Delete old Trash Posts
-        $deleted_total += $wpdb->query("
-            DELETE FROM {$wpdb->posts}
-            WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 30 DAY
-        ");
-        // Optimize main Tables
-        $tables = ['postmeta', 'usermeta', 'options', 'term_relationships'];
-        foreach ($tables as $table) {
-            $wpdb->query("OPTIMIZE TABLE {$wpdb->prefix}$table");
-        }
-        return "✅ Total rows deleted: $deleted_total. Tables optimized.";
-    }
+	function custom_run_full_inno_db_cleanup() {
+		global $wpdb;
+		$deleted_total = 0;
+		$errors = [];
+		// Helper function to safely execute and count deletions
+		$safe_delete = function($query, $operation_name) use ($wpdb, &$deleted_total, &$errors) {
+			$result = $wpdb->query($query);
+			if ($result === false) {
+				$errors[] = $operation_name . ' failed: ' . $wpdb->last_error;
+				return 0;
+			}
+			return (int)$result;
+		};
+		// Delete orphaned Postmeta
+		$deleted_total += $safe_delete("
+			DELETE pm FROM {$wpdb->postmeta} pm
+			LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+			WHERE p.ID IS NULL
+		", 'Orphaned postmeta cleanup');
+		// Delete orphaned Term Relationships
+		$deleted_total += $safe_delete("
+			DELETE tr FROM {$wpdb->term_relationships} tr
+			LEFT JOIN {$wpdb->posts} p ON p.ID = tr.object_id
+			WHERE p.ID IS NULL
+		", 'Orphaned term relationships cleanup');
+		// Remove specific safe Postmeta Keys
+		$safe_postmeta_keys = [
+			'_edit_lock', '_edit_last', '_wp_old_slug', '_wp_old_date',
+			'_last_viewed_timestamp', 'litespeed-optimize-set', 'litespeed-optimize-size'
+		];
+		foreach ($safe_postmeta_keys as $key) {
+			$deleted_total += $safe_delete(
+				$wpdb->prepare("DELETE FROM {$wpdb->postmeta} WHERE meta_key = %s", $key),
+				"Postmeta cleanup ({$key})"
+			);
+		}
+		// Delete empty menu item targets
+		$deleted_total += $safe_delete("
+			DELETE FROM {$wpdb->postmeta}
+			WHERE meta_key = '_menu_item_target' AND (meta_value IS NULL OR meta_value = '')
+		", 'Empty menu item targets cleanup');
+		// Delete oEmbed cache
+		$deleted_total += $safe_delete("
+			DELETE FROM {$wpdb->postmeta}
+			WHERE meta_key LIKE '_oembed_%' OR meta_key LIKE '_oembed_time_%'
+		", 'oEmbed cache cleanup');
+		// Delete orphaned Usermeta
+		$deleted_total += $safe_delete("
+			DELETE um FROM {$wpdb->usermeta} um
+			LEFT JOIN {$wpdb->users} u ON u.ID = um.user_id
+			WHERE u.ID IS NULL
+		", 'Orphaned usermeta cleanup');
+		// Remove specific safe Usermeta Keys
+		$safe_usermeta_keys = ['_session_tokens', '_last_activity', '_woocommerce_persistent_cart'];
+		foreach ($safe_usermeta_keys as $key) {
+			$deleted_total += $safe_delete(
+				$wpdb->prepare("DELETE FROM {$wpdb->usermeta} WHERE meta_key = %s", $key),
+				"Usermeta cleanup ({$key})"
+			);
+		}
+		// Delete transient Options
+		$deleted_total += $safe_delete("
+			DELETE FROM {$wpdb->options}
+			WHERE option_name LIKE '_transient_%' AND option_name NOT LIKE '_transient_timeout_%'
+		", 'Transient cleanup');
+		$deleted_total += $safe_delete("
+			DELETE FROM {$wpdb->options}
+			WHERE option_name LIKE '_transient_timeout_%' AND option_value < UNIX_TIMESTAMP()
+		", 'Expired transient timeout cleanup');
+		// Delete old completed ActionScheduler Actions if Table exists
+		if ($wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}actionscheduler_actions'") === "{$wpdb->prefix}actionscheduler_actions") {
+			$deleted_total += $safe_delete("
+				DELETE FROM {$wpdb->prefix}actionscheduler_actions
+				WHERE status = 'complete' AND scheduled_date_gmt < NOW() - INTERVAL 30 DAY
+			", 'ActionScheduler cleanup');
+		}
+		// Delete orphaned Commentmeta
+		$deleted_total += $safe_delete("
+			DELETE cm FROM {$wpdb->commentmeta} cm
+			LEFT JOIN {$wpdb->comments} c ON c.comment_ID = cm.comment_id
+			WHERE c.comment_ID IS NULL
+		", 'Orphaned commentmeta cleanup');
+		// Delete empty auto-draft Posts
+		$deleted_total += $safe_delete("
+			DELETE FROM {$wpdb->posts}
+			WHERE post_status = 'auto-draft' AND post_content = ''
+		", 'Auto-draft cleanup');
+		// Delete orphaned Termmeta
+		$deleted_total += $safe_delete("
+			DELETE tm FROM {$wpdb->termmeta} tm
+			LEFT JOIN {$wpdb->terms} t ON t.term_id = tm.term_id
+			WHERE t.term_id IS NULL
+		", 'Orphaned termmeta cleanup');
+		// Delete old Spam Comments
+		$deleted_total += $safe_delete("
+			DELETE FROM {$wpdb->comments}
+			WHERE comment_approved = 'spam' AND comment_date < NOW() - INTERVAL 30 DAY
+		", 'Spam comments cleanup');
+		// Delete old Trash Posts
+		$deleted_total += $safe_delete("
+			DELETE FROM {$wpdb->posts}
+			WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 30 DAY
+		", 'Trash posts cleanup');
+		// Optimize main Tables
+		$tables = ['postmeta', 'usermeta', 'options', 'term_relationships'];
+		$optimized_count = 0;
+		foreach ($tables as $table) {
+			$result = $wpdb->query("OPTIMIZE TABLE {$wpdb->prefix}{$table}");
+			if ($result !== false) {
+				$optimized_count++;
+			} else {
+				$errors[] = "Failed to optimize {$table}: " . $wpdb->last_error;
+			}
+		}
+		// Build result message
+		if (!empty($errors)) {
+			$error_msg = implode(' | ', $errors);
+			return [
+				'success' => false,
+				'message' => "⚠️ Partial cleanup: {$deleted_total} rows deleted, {$optimized_count} tables optimized. Errors: {$error_msg}"
+			];
+		}
+		return [
+			'success' => true,
+			'message' => "✅ Total rows deleted: {$deleted_total}. {$optimized_count} tables optimized."
+		];
+	}
 
     // ======================================
 	// 📰 ADD RSS FEED READER
