@@ -159,7 +159,7 @@ function initialize_custom_dashboard() {
 	// 📊 ADD ANALYTICS TOOLKIT
 	// ======================================
 
-    add_action('wp_dashboard_setup', function () {
+	add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget('custom_analytics_toolkit', '📊 Analytics Toolkit', function () {
             // Define URLs for external Tools
             $site_url = 'https://ericroth.org/';
@@ -168,11 +168,9 @@ function initialize_custom_dashboard() {
             $wave_url = 'https://wave.webaim.org/report#/' . urlencode($site_url);
             // External Analytics Buttons
             echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
-            echo '<a href="https://analytics.google.com/analytics/web/#/p438219493/reports/overview" target="_blank" class="button">📈 GoogleAnalytics</a>';
-            echo '<a href="https://clarity.microsoft.com/projects/view/eic7b2e9o1/dashboard" target="_blank" class="button">📉 MS Clarity</a>';
             echo '<a href="' . esc_url($pagespeed_url) . '" target="_blank" class="button">⚡ PageSpeed</a>';
             echo '<a href="' . esc_url($webpagetest_url) . '" target="_blank" class="button">🧪 WebPageTest</a>';
-            echo '<a href="' . esc_url($wave_url) . '" target="_blank" class="button">♿ Accessibility Audit</a>';
+            echo '<a href="' . esc_url($wave_url) . '" target="_blank" class="button">♿ Accessibility</a>';
             echo '</div>';
             // Gather Site Metrics
             $media_count = wp_count_attachments();
