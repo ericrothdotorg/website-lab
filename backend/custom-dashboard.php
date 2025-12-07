@@ -166,12 +166,12 @@ function initialize_custom_dashboard() {
             $pagespeed_url = 'https://pagespeed.web.dev/report?url=' . urlencode($site_url);
             $webpagetest_url = 'https://www.webpagetest.org/?url=' . urlencode($site_url);
             $wave_url = 'https://wave.webaim.org/report#/' . urlencode($site_url);
+			$w3_url = 'https://www.w3.org/developers/tools/';
             // External Analytics Buttons
             echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
             echo '<a href="' . esc_url($pagespeed_url) . '" target="_blank" class="button">⚡ PageSpeed</a>';
             echo '<a href="' . esc_url($webpagetest_url) . '" target="_blank" class="button">🧪 WebPageTest</a>';
             echo '<a href="' . esc_url($wave_url) . '" target="_blank" class="button">♿ Accessibility</a>';
-            echo '</div>';
             // Gather Site Metrics
             $media_count = wp_count_attachments();
             $total_media = array_sum((array) $media_count);
@@ -198,14 +198,19 @@ function initialize_custom_dashboard() {
             echo '<p>🧍 Your IP: <strong>' . esc_html($visitor_ip) . '</strong></p>';
             echo '<p style="margin-top: -5px;">🔌 Active Plugins Installed: <strong>' . $plugin_count . '</strong></p>';
             echo '</div>';
-            // START Broken YT Links + Design Block Tracker Buttons DIV
-            echo '<div style="width: 100%; display: flex; gap: 10px; flex-wrap: wrap;">';
-            // Broken YT Links Button
-            echo '<form method="post" style="margin: 0;">';
-            echo '<button type="submit" name="check_broken_yt" class="button">🔍 Broken YT Links</button>';
-            echo '</form>';
-            // Design Block Tracker Button
-            echo '<a href="https://ericroth.org/wp-admin/tools.php?page=design-block-tracker" class="button">🎨 Design Block Tracker</a>';
+			// START Broken YT Links + Design Block Tracker Buttons DIV
+			echo '<div style="width: 100%;">';
+			// Design Block Tracker Button on its own line (Row 1)
+			echo '<div style="margin-bottom: 10px;">';
+			echo '<a href="https://ericroth.org/wp-admin/tools.php?page=design-block-tracker" class="button">🎨 Design Block Tracker</a>';
+			echo '</div>';
+			// Row 2: Broken YT Links + W3.org Dev Tools side‑by‑side
+			echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
+			echo '<form method="post" style="margin: 0;">';
+			echo '<button type="submit" name="check_broken_yt" class="button">🔍 Broken YT Links</button>';
+			echo '</form>';
+			echo '<a href="' . esc_url($w3_url) . '" target="_blank" class="button">🛠️ W3.org Dev Tools</a>';
+			echo '</div>';
             // Always get latest cached Results
             $cached_results = get_option('custom_broken_yt_results', []);
             $last_check = get_option('custom_last_yt_check', 0);
@@ -243,12 +248,13 @@ function initialize_custom_dashboard() {
                 }
                 echo '</ul></details>';
             }
-            echo '</div>'; // END Metrics Display Section DIV
-            echo '</div>'; // END Broken YT Links + Design Block Tracker Buttons DIV
-            echo '</div>'; // END Display broken YT Links Info DIV
+			echo '</div>'; // END Display broken YT Links Info DIV
+			echo '</div>'; // END Broken YT Links + Design Block Tracker Buttons DIV
+			echo '</div>'; // END Metrics Display Section DIV
+			echo '</div>'; // END External Analytics Buttons DIV
         });
     });
-    // Function to check broken YouTube Links
+
     function custom_check_broken_yt_links() {
         $broken_links = 0;
         $broken_posts = [];
@@ -284,7 +290,6 @@ function initialize_custom_dashboard() {
 	// 🧹 ADD OPTIMIZE & CLEAN-UP BUTTONS
 	// ======================================
 
-	// Dashboard Widget
 	add_action('wp_dashboard_setup', function () {
 		wp_add_dashboard_widget(
 			'custom_optimize_and_cleanup',
@@ -486,6 +491,7 @@ function initialize_custom_dashboard() {
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget('custom_rss_widget', '📡 RSS Feed: Blog & Interests', 'custom_render_rss_widget');
     });
+
     function custom_render_rss_widget() {
         $feeds = [
             ['label' => 'My Blog', 'url' => 'https://ericroth.org/feed/'],
@@ -538,6 +544,7 @@ function initialize_custom_dashboard() {
     add_action('wp_dashboard_setup', function () {
         wp_add_dashboard_widget('custom_snapshot_widget', '🗂️ Pages & Traits Snapshot', 'custom_render_snapshot_widget');
     });
+
     function custom_render_snapshot_widget() {
         $tabs = [
             ['label' => 'My Pages', 'type' => 'page', 'exclude' => [179, 14581]],
@@ -580,6 +587,7 @@ function initialize_custom_dashboard() {
         }
         echo '</div>';
     }
+
     add_action('admin_footer', function () {
         echo '<style>
             [id^="custom_"] .postbox-header .hndle,
@@ -590,76 +598,82 @@ function initialize_custom_dashboard() {
                 gap: 5px;
             }
     </style>';
+
         echo <<<HTML
-    <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.rss-widget-wrapper').forEach(widget => {
-            const tabNav = widget.querySelector('.rss-tab-nav');
-            const tabButtons = widget.querySelectorAll('.rss-tab-btn');
-            const tabContents = widget.querySelectorAll('.rss-tab-content');
-            const navGroup = document.createElement('div');
-            navGroup.style.marginLeft = 'auto';
-            navGroup.style.display = 'flex';
-            navGroup.style.gap = '6px';
-            const prevBtn = document.createElement('button');
-            prevBtn.innerHTML = '⬅️';
-            prevBtn.title = 'Previous';
-            prevBtn.style.padding = '6px';
-            prevBtn.style.cursor = 'pointer';
-            const nextBtn = document.createElement('button');
-            nextBtn.innerHTML = '➡️';
-            nextBtn.title = 'Next';
-            nextBtn.style.padding = '6px';
-            nextBtn.style.cursor = 'pointer';
-            navGroup.appendChild(prevBtn);
-            navGroup.appendChild(nextBtn);
-            tabNav.appendChild(navGroup);
-            tabNav.style.display = 'flex';
-            tabNav.style.flexWrap = 'wrap';
-            tabNav.style.alignItems = 'center';
-            tabButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    tabContents.forEach(tab => tab.style.display = 'none');
-                    const target = widget.querySelector('#' + btn.dataset.tab);
-                    if (target) {
-                        target.style.display = 'block';
-                        resetPagination(target);
-                    }
-                });
-            });
-            if (tabButtons.length) tabButtons[0].click();
-            widget.querySelectorAll('.rss-tab-content').forEach(tab => {
-                const items = tab.querySelectorAll('.rss-item');
-                let currentStart = 0;
-                const batchSize = 5;
-                function renderBatch(start) {
-                    items.forEach((item, i) => {
-                        item.style.display = (i >= start && i < start + batchSize) ? 'block' : 'none';
-                    });
-                    currentStart = start;
-                    prevBtn.style.display = currentStart === 0 ? 'none' : 'inline-block';
-                    nextBtn.style.display = currentStart + batchSize >= items.length ? 'none' : 'inline-block';
-                }
-                renderBatch(0);
-                prevBtn.addEventListener('click', () => {
-                    if (tab.style.display === 'block' && currentStart - batchSize >= 0) {
-                        renderBatch(currentStart - batchSize);
-                    }
-                });
-                nextBtn.addEventListener('click', () => {
-                    if (tab.style.display === 'block' && currentStart + batchSize < items.length) {
-                        renderBatch(currentStart + batchSize);
-                    }
-                });
-                function resetPagination(container) {
-                    if (container === tab) renderBatch(0);
-                }
-            });
-        });
-    });
-    </script>
+
+	<script>
+	document.addEventListener('DOMContentLoaded', function () {
+		document.querySelectorAll('.rss-widget-wrapper').forEach(widget => {
+			const tabNav = widget.querySelector('.rss-tab-nav');
+			const tabButtons = widget.querySelectorAll('.rss-tab-btn');
+			const tabContents = widget.querySelectorAll('.rss-tab-content');
+			// Prev/Next navigation group
+			const navGroup = document.createElement('div');
+			navGroup.style.marginLeft = 'auto';
+			navGroup.style.display = 'flex';
+			navGroup.style.gap = '6px';
+			const prevBtn = document.createElement('button');
+			prevBtn.innerHTML = '⬅️';
+			prevBtn.title = 'Previous';
+			prevBtn.style.padding = '6px';
+			prevBtn.style.cursor = 'pointer';
+			const nextBtn = document.createElement('button');
+			nextBtn.innerHTML = '➡️';
+			nextBtn.title = 'Next';
+			nextBtn.style.padding = '6px';
+			nextBtn.style.cursor = 'pointer';
+			navGroup.appendChild(prevBtn);
+			navGroup.appendChild(nextBtn);
+			tabNav.appendChild(navGroup);
+			tabNav.style.display = 'flex';
+			tabNav.style.flexWrap = 'wrap';
+			tabNav.style.alignItems = 'center';
+			// Attach tab switching
+			tabButtons.forEach(btn => {
+				btn.addEventListener('click', () => {
+					tabContents.forEach(tab => tab.style.display = 'none');
+					const target = widget.querySelector('#' + btn.dataset.tab);
+					if (target) {
+						target.style.display = 'block';
+						// resetPagination is now bound per tab
+						target.resetPagination();
+					}
+				});
+			});
+			if (tabButtons.length) tabButtons[0].click();
+			// Attach pagination per tab
+			tabContents.forEach(tab => {
+				const items = tab.querySelectorAll('.rss-item');
+				let currentStart = 0;
+				const batchSize = 5;
+				function renderBatch(start) {
+					items.forEach((item, i) => {
+						item.style.display = (i >= start && i < start + batchSize) ? 'block' : 'none';
+					});
+					currentStart = start;
+					prevBtn.style.display = currentStart === 0 ? 'none' : 'inline-block';
+					nextBtn.style.display = currentStart + batchSize >= items.length ? 'none' : 'inline-block';
+				}
+				// Bind resetPagination directly to the tab element
+				tab.resetPagination = () => renderBatch(0);
+				renderBatch(0);
+				prevBtn.addEventListener('click', () => {
+					if (tab.style.display === 'block' && currentStart - batchSize >= 0) {
+						renderBatch(currentStart - batchSize);
+					}
+				});
+				nextBtn.addEventListener('click', () => {
+					if (tab.style.display === 'block' && currentStart + batchSize < items.length) {
+						renderBatch(currentStart + batchSize);
+					}
+				});
+			});
+		});
+	});
+	</script>
+
 HTML;
-    });
+});
 
 }
 
