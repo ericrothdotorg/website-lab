@@ -57,39 +57,41 @@ add_action('init', function() {
 });
 
 // Optimize Largest Contentful Paint (LCP) - first image gets priority
+add_action('wp_head', function () {
+    if (has_post_thumbnail()) {
+        $hero_image = get_the_post_thumbnail_url(get_the_ID(), 'full');
+        if ($hero_image) {
+            echo '<link rel="preload" as="image" href="' . esc_url($hero_image) . '" fetchpriority="high">';
+        }
+    }
+}, 5);
 add_action('template_redirect', function () {
-    // Skip for admin, feeds, and AJAX
     if (is_admin() || is_feed() || wp_doing_ajax()) {
         return;
     }
     ob_start(function ($html) {
-        // Generate cache key based on current page
-        $cache_key = 'lcp_optimized_' . md5($html);
+        $cache_key = 'lcp_optimized_' . md5($_SERVER['REQUEST_URI']);
         $cached = wp_cache_get($cache_key, 'lcp_optimization');
-        
         if ($cached !== false) {
             return $cached;
         }
         $count = 0;
-        // Add fetchpriority="high" to first large image
-		$html = preg_replace_callback('/<img[^>]+>/i', function ($match) use (&$count) {
+        $html = preg_replace_callback('/<img[^>]+>/i', function ($match) use (&$count) {
             $img = $match[0];
             if ($count === 0 && preg_match('/width=["\'](\d+)["\']/', $img, $width_match)) {
                 if ((int)$width_match[1] >= LCP_IMAGE_MIN_WIDTH) {
                     $count++;
                     $img = preg_replace('/\sloading=["\']lazy["\']/', '', $img);
-                    $img = str_replace('<img', '<img fetchpriority="high"', $img);
+                    if (!strpos($img, 'fetchpriority')) {
+                        $img = str_replace('<img', '<img fetchpriority="high"', $img);
+                    }
                     if (!strpos($img, 'sizes=')) {
-                        $img = str_replace('<img', '<img sizes="(max-width: 600px)100vw,(max-width: 1024px)80vw,1000px"', $img);
+                        $img = str_replace('<img', '<img sizes="(max-width: 600px) 100vw, (max-width: 1024px) 80vw, 1000px"', $img);
                     }
                 }
             }
             return $img;
         }, $html);
-        // Preload first large image
-        if (preg_match('/<img[^>]+width=["\'](\d{3,})["\'][^>]*src=["\']([^"\']+)["\'][^>]*>/i', $html, $match)) {
-            $html = preg_replace('/<head>/', '<head><link rel="preload" as="image" href="' . esc_url($match[2]) . '" fetchpriority="high">', $html, 1);
-        }
         wp_cache_set($cache_key, $html, 'lcp_optimization', CACHE_LCP_HTML);
         return $html;
     });
