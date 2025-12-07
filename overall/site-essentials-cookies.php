@@ -57,14 +57,6 @@ add_action('init', function() {
 });
 
 // Optimize Largest Contentful Paint (LCP) - first image gets priority
-add_action('wp_head', function () {
-    if (has_post_thumbnail()) {
-        $hero_image = get_the_post_thumbnail_url(get_the_ID(), 'full');
-        if ($hero_image) {
-            echo '<link rel="preload" as="image" href="' . esc_url($hero_image) . '" fetchpriority="high">';
-        }
-    }
-}, 5);
 add_action('template_redirect', function () {
     if (is_admin() || is_feed() || wp_doing_ajax()) {
         return;
