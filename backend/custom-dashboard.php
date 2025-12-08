@@ -167,6 +167,7 @@ function initialize_custom_dashboard() {
 			$pagespeed_url = 'https://pagespeed.web.dev/report?url=' . urlencode($site_url);
 			$webpagetest_url = 'https://www.webpagetest.org/?url=' . urlencode($site_url);
 			$wave_url = 'https://wave.webaim.org/report#/' . urlencode($site_url);
+			$clarity_url = 'https://clarity.microsoft.com/projects/view/eic7b2e9o1/dashboard';
 			$w3_url = 'https://www.w3.org/developers/tools/';
 
 			// START External Analytics Buttons Section
@@ -212,7 +213,7 @@ function initialize_custom_dashboard() {
 				// START Design Blocks and Site Analytics Row
 				echo '<div style="margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap;">';
 					echo '<a href="https://ericroth.org/wp-admin/tools.php?page=design-block-tracker" class="button">🎨 Design Blocks</a>';
-					echo '<a href="https://ericroth.org/wp-admin/admin.php?page=independent-analytics" class="button">📈 Site Analytics</a>';
+					echo '<a href="' . esc_url($clarity_url) . '" target="_blank" class="button">📈 MS Clarity</a>';
 				echo '</div>'; // END Design Blocks and Site Analytics Row
 				// START Action Buttons Row
 				echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
@@ -490,12 +491,12 @@ function initialize_custom_dashboard() {
 			$error_msg = implode(' | ', $errors);
 			return [
 				'success' => false,
-				'message' => "⚠️ Partial cleanup: {$deleted_total} rows deleted, {$optimized_count} tables optimized. Errors: {$error_msg}"
+				'message' => "⚠️ Partial cleanup: {$deleted_total} rows deleted → {$optimized_count} tables optimized. Errors: {$error_msg}"
 			];
 		}
 		return [
 			'success' => true,
-			'message' => "✅ Total rows deleted: {$deleted_total}. {$optimized_count} tables optimized."
+			'message' => "✅ Total rows deleted: {$deleted_total} → {$optimized_count} tables optimized."
 		];
 	}
 
