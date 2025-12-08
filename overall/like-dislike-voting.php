@@ -1,8 +1,87 @@
 <?php
 
-/* ADD LIKE / DISLIKE BUTTONS TO POSTS & CPTs */
+// ======================================
+// ADD POST VIEWS TRACKING
+// ======================================
 
-// Shortcode to manually insert Like / Dislike Buttons anywhere
+// Increment View Count on single Posts, Pages, CPT
+function er_track_post_views($post_id) {
+    if (!is_singular()) return;
+    if (empty($post_id)) $post_id = get_the_ID();
+    $views = (int) get_post_meta($post_id, '_er_post_views', true);
+    update_post_meta($post_id, '_er_post_views', $views + 1);
+}
+add_action('wp_head', function() {
+    if (is_singular()) er_track_post_views(get_the_ID());
+});
+
+// Shortcode with Prefix / Suffix Options
+function er_post_views_shortcode($atts) {
+    $atts = shortcode_atts([
+        'id' => get_the_ID(),
+        'before' => '👁️ ',
+        'after' => ' Views',
+    ], $atts, 'post_views');
+    $post_id = $atts['id'];
+    
+    // Assign initial random Values if not set
+    $views = get_post_meta($post_id, '_er_post_views', true);
+    if (!$views || $views < 5000) {
+        $views = rand(5000, 10000);
+        update_post_meta($post_id, '_er_post_views', $views);
+    }
+	// Inline CSS Styles
+    $style = '<style>
+        .post-views-wrapper {
+            display: inline-block;
+            margin-right: 25px;
+			padding-top: 10px;
+			padding-bottom: 25px;
+            vertical-align: middle;
+			font-weight: bold;
+        }
+    </style>';
+	
+	// Output Number of Views
+    $output = esc_html($atts['before']) . number_format($views) . esc_html($atts['after']);
+    return $style . '<span class="post-views-wrapper">' . $output . '</span>';
+}
+add_shortcode('post_views', 'er_post_views_shortcode');
+
+// Introduce Increments for Views
+function increment_views() {
+    $args = array('post_type' => get_post_types(['public' => true]), 'posts_per_page' => -1);
+    $posts = get_posts($args);
+    foreach ($posts as $post) {
+        $post_id = $post->ID;
+        $views = get_post_meta($post_id, '_er_post_views', true) ?: 5000;
+        $views += rand(50, 100);
+        update_post_meta($post_id, '_er_post_views', $views);
+    }
+}
+
+// Schedule automatic Increments
+if (!wp_next_scheduled('increment_views_event')) {
+    wp_schedule_event(time(), 'biweekly', 'increment_views_event');
+}
+add_action('increment_views_event', 'increment_views');
+
+// Add custom bi-weekly Schedule
+add_filter('cron_schedules', function($schedules) {
+    if (!isset($schedules['biweekly'])) {
+        $schedules['biweekly'] = array(
+            'interval' => 1209600, // 14 days in seconds
+            'display' => __('Every Two Weeks')
+        );
+    }
+    return $schedules;
+});
+
+// ======================================
+// ADD LIKE / DISLIKE BUTTONS
+// ======================================
+
+// Shortcode to manually insert Like / Dislike Buttons
 function custom_like_dislike_shortcode() {
     if (!is_singular()) {
         return '';
@@ -21,21 +100,24 @@ function custom_like_dislike_shortcode() {
     }
     // Inline CSS Styles
     $style = '<style>
-        .like-dislike-container {
-            margin-top: -25px;
+        .like-dislike-buttons-wrapper {
+            display: inline-block;
+			padding-top: 10px;
+			padding-bottom: 25px;
+            vertical-align: middle;
         }
-        .like-dislike-container button {
+        .like-dislike-buttons-wrapper button {
             background: none;
             border: none;
-            font-size: 16px;
             font-weight: bold;
             color: #1e73be;
             cursor: pointer;
+            display: inline-block;
         }
-        .like-dislike-container button:hover {
+        .like-dislike-buttons-wrapper button:hover {
             color: #c53030;
         }
-        .like-dislike-container button:focus-visible {
+        .like-dislike-buttons-wrapper button:focus-visible {
             outline: 2px dashed #1e73be;
             outline-offset: 3px;
         }
@@ -52,15 +134,15 @@ function custom_like_dislike_shortcode() {
     </style>';
 
     // Output Buttons and prevent Voting again before xxx Time passed using localStorage
-    $buttons = '<div class="like-dislike-container" style="padding-bottom: 5px;">
+    $buttons = '<span class="like-dislike-buttons-wrapper">
         <button id="like-btn-' . $post_id . '" onclick="updateLikes(' . $post_id . ')" aria-label="Like this post">
             👍 <span class="visually-hidden">Like</span> Like (<span id="like-count-' . $post_id . '" aria-live="polite">' . $likes . '</span>)
         </button>
         <button id="dislike-btn-' . $post_id . '" onclick="updateDislikes(' . $post_id . ')" aria-label="Dislike this post">
             👎 <span class="visually-hidden">Dislike</span> Dislike (<span id="dislike-count-' . $post_id . '" aria-live="polite">' . $dislikes . '</span>)
         </button>
-        <div id="vote-feedback" class="visually-hidden" aria-live="assertive"></div>
-    </div>
+        <span id="vote-feedback" class="visually-hidden" aria-live="assertive"></span>
+    </span>
 
     <script>
         var reactionNonce = "' . wp_create_nonce("update_post_reaction") . '";
