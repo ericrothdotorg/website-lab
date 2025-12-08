@@ -160,131 +160,146 @@ function initialize_custom_dashboard() {
 	// ======================================
 
 	add_action('wp_dashboard_setup', function () {
-        wp_add_dashboard_widget('custom_analytics_toolkit', '📊 Analytics Toolkit', function () {
-            // Define URLs for external Tools
-            $site_url = 'https://ericroth.org/';
-            $pagespeed_url = 'https://pagespeed.web.dev/report?url=' . urlencode($site_url);
-            $webpagetest_url = 'https://www.webpagetest.org/?url=' . urlencode($site_url);
-            $wave_url = 'https://wave.webaim.org/report#/' . urlencode($site_url);
-			$w3_url = 'https://www.w3.org/developers/tools/';
-            // External Analytics Buttons
-            echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
-            echo '<a href="' . esc_url($pagespeed_url) . '" target="_blank" class="button">⚡ PageSpeed</a>';
-            echo '<a href="' . esc_url($webpagetest_url) . '" target="_blank" class="button">🧪 WebPageTest</a>';
-            echo '<a href="' . esc_url($wave_url) . '" target="_blank" class="button">♿ Accessibility</a>';
-            // Gather Site Metrics
-            $media_count = wp_count_attachments();
-            $total_media = array_sum((array) $media_count);
-            global $wpdb;
-            $tables = $wpdb->get_col('SHOW TABLES');
-            $db_table_count = count($tables);
-            $visitor_ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
-            if (filter_var($visitor_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-                $visitor_ip = gethostbyname(gethostname());
-            }
-            if (!function_exists('get_plugins')) {
-                require_once ABSPATH . 'wp-admin/includes/plugin.php';
-            }
-            $plugin_count = count(get_plugins());
-            // START Metrics Display Section DIV
-            echo '<div style="margin-top: 5px; display: flex; flex-wrap: wrap; gap: 10px;">';
-            // Column 1: Media Files and DB Tables
-            echo '<div style="width: calc(50% - 10px);">';
-            echo '<p>🖼️ Media Files: <strong>' . $total_media . '</strong></p>';
-            echo '<p style="margin-top: -5px;">🧵 DB Tables: <strong>' . $db_table_count . '</strong></p>';
-            echo '</div>';
-            // Column 2: Visitor IP and Plugin Count
-            echo '<div style="width: calc(50% - 10px);">';
-            echo '<p>🧍 Your IP: <strong>' . esc_html($visitor_ip) . '</strong></p>';
-            echo '<p style="margin-top: -5px;">🔌 Active Plugins Installed: <strong>' . $plugin_count . '</strong></p>';
-            echo '</div>';
-			// START Broken YT Links + Design Block Tracker Buttons DIV
-			echo '<div style="width: 100%;">';
-			// Design Block Tracker Button on its own line (Row 1)
-			echo '<div style="margin-bottom: 10px;">';
-			echo '<a href="https://ericroth.org/wp-admin/tools.php?page=design-block-tracker" class="button">🎨 Design Block Tracker</a>';
-			echo '</div>';
-			// Row 2: Broken YT Links + W3.org Dev Tools side‑by‑side
-			echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
-			echo '<form method="post" style="margin: 0;">';
-			echo '<button type="submit" name="check_broken_yt" class="button">🔍 Broken YT Links</button>';
-			echo '</form>';
-			echo '<a href="' . esc_url($w3_url) . '" target="_blank" class="button">🛠️ W3.org Dev Tools</a>';
-			echo '</div>';
-            // Always get latest cached Results
-            $cached_results = get_option('custom_broken_yt_results', []);
-            $last_check = get_option('custom_last_yt_check', 0);
-            $check_type = get_option('custom_yt_check_type', '');
-            // Run manual Check if Button pressed
-            if (isset($_POST['check_broken_yt'])) {
-                $result = custom_check_broken_yt_links();
-                update_option('custom_broken_yt_results', $result);
-                update_option('custom_last_yt_check', time());
-                delete_option('custom_yt_check_type');
-                $cached_results = $result;
-                $last_check = time();
-            }
-            // START Display broken YT Links Info DIV
-            echo '<div style="width: 100%;">';
-            $broken_count = !empty($cached_results['broken_count']) ? $cached_results['broken_count'] : 0;
-            echo '<p>🔴 Broken YT Links: <strong style="color: red;">' . $broken_count . '</strong></p>';
-            // Show last Check Timestamp if available
-            if ($last_check) {
-                $tag = $check_type ? ' <strong>(' . esc_html($check_type) . ' check)</strong>' : '';
-                echo '<p><em>Last checked: ' . 
-                    esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_check)) . 
-                    $tag . '</em></p>';
-            } else {
-                echo '<p><em>Last checked: Never</em></p>';
-            }
-            // Show broken Links Details
-            if (!empty($cached_results['broken_posts'])) {
-                echo '<details style="margin-top: 15px;"><summary style="cursor: pointer; margin-bottom: 15px;"><strong>Broken Links Locations</strong></summary><ul>';
-                foreach ($cached_results['broken_posts'] as $post_id => $video_ids) {
-                    $title = get_the_title($post_id);
-                    $edit_link = get_edit_post_link($post_id);
-                    echo '<li><a href="' . esc_url($edit_link) . '" target="_blank">' . esc_html($title) . '</a>: ';
-                    echo implode(', ', array_map('esc_html', $video_ids)) . '</li>';
-                }
-                echo '</ul></details>';
-            }
-			echo '</div>'; // END Display broken YT Links Info DIV
-			echo '</div>'; // END Broken YT Links + Design Block Tracker Buttons DIV
-			echo '</div>'; // END Metrics Display Section DIV
-			echo '</div>'; // END External Analytics Buttons DIV
-        });
-    });
+		wp_add_dashboard_widget('custom_analytics_toolkit', '📊 Analytics Toolkit', function () {
 
-    function custom_check_broken_yt_links() {
-        $broken_links = 0;
-        $broken_posts = [];
-        $args = [
-            'post_type' => ['post', 'page', 'my-interests', 'my-traits'],
-            'posts_per_page' => -1,
-        ];
-        $query = new WP_Query($args);
-        foreach ($query->posts as $post) {
-            preg_match_all('/https:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $post->post_content, $matches);
-            if (!empty($matches[1])) {
-                $excluded_video_ids = ['-cW']; // Add Video IDs to exclude from Check
-                foreach ($matches[1] as $video_id) {
-                    if (in_array($video_id, $excluded_video_ids)) {
-                        continue;
-                    }
-                    $url = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={$video_id}&format=json";
-                    $response = wp_remote_get($url);
-                    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
-                        $broken_links++;
-                        $broken_posts[$post->ID][] = $video_id;
-                    }
-                }
-            }
-        }
-        return [
-            'broken_count' => $broken_links,
-            'broken_posts' => $broken_posts
-        ];
-    }
+			// Define URLs for external Tools
+			$site_url = 'https://ericroth.org/';
+			$pagespeed_url = 'https://pagespeed.web.dev/report?url=' . urlencode($site_url);
+			$webpagetest_url = 'https://www.webpagetest.org/?url=' . urlencode($site_url);
+			$wave_url = 'https://wave.webaim.org/report#/' . urlencode($site_url);
+			$w3_url = 'https://www.w3.org/developers/tools/';
+
+			// START External Analytics Buttons Section
+			echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
+				echo '<a href="' . esc_url($pagespeed_url) . '" target="_blank" class="button">⚡ PageSpeed</a>';
+				echo '<a href="' . esc_url($webpagetest_url) . '" target="_blank" class="button">🧪 WebPageTest</a>';
+				echo '<a href="' . esc_url($wave_url) . '" target="_blank" class="button">♿ Accessibility</a>';
+			echo '</div>';
+			// END External Analytics Buttons Section
+
+			// Gather Site Metrics
+			$media_count = wp_count_attachments();
+			$total_media = array_sum((array) $media_count);
+			global $wpdb;
+			$tables = $wpdb->get_col('SHOW TABLES');
+			$db_table_count = count($tables);
+			$visitor_ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
+			if (filter_var($visitor_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+				$visitor_ip = gethostbyname(gethostname());
+			}
+			if (!function_exists('get_plugins')) {
+				require_once ABSPATH . 'wp-admin/includes/plugin.php';
+			}
+			$plugin_count = count(get_plugins());
+
+			// START Site Metrics Section
+			echo '<div style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px;">';
+				// START Column 1: Media Files and DB Tables
+				echo '<div style="width: calc(50% - 5px);">';
+					echo '<p>🖼️ Media Files: <strong>' . $total_media . '</strong></p>';
+					echo '<p style="margin-top: -5px;">🧵 InnoDB Tables: <strong>' . $db_table_count . '</strong></p>';
+				echo '</div>'; // END Column 1
+				// START Column 2: Visitor IP and Plugin Count
+				echo '<div style="width: calc(50% - 5px);">';
+					echo '<p>🧍 Your IP: <strong>' . esc_html($visitor_ip) . '</strong></p>';
+					echo '<p style="margin-top: -5px;">🔌 Active Plugins Installed: <strong>' . $plugin_count . '</strong></p>';
+				echo '</div>'; // END Column 2
+			echo '</div>';
+			// END Site Metrics Section
+
+			// START Tools & Actions Section
+			echo '<div style="margin-top: 15px;">';
+				// START Design Blocks and Site Analytics Row
+				echo '<div style="margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap;">';
+					echo '<a href="https://ericroth.org/wp-admin/tools.php?page=design-block-tracker" class="button">🎨 Design Blocks</a>';
+					echo '<a href="https://ericroth.org/wp-admin/admin.php?page=independent-analytics" class="button">📈 Site Analytics</a>';
+				echo '</div>'; // END Design Blocks and Site Analytics Row
+				// START Action Buttons Row
+				echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
+					echo '<form method="post" style="margin: 0;">';
+						echo '<button type="submit" name="check_broken_yt" class="button">🔍 Broken YT Links</button>';
+					echo '</form>';
+					echo '<a href="' . esc_url($w3_url) . '" target="_blank" class="button">🛠️ W3.org Dev Tools</a>';
+				echo '</div>'; // END Action Buttons Row
+			echo '</div>';
+			// END Tools & Actions Section
+
+			// Always get latest cached Results
+			$cached_results = get_option('custom_broken_yt_results', []);
+			$last_check = get_option('custom_last_yt_check', 0);
+			$check_type = get_option('custom_yt_check_type', '');
+			// Run manual Check if Button pressed
+			if (isset($_POST['check_broken_yt'])) {
+				$result = custom_check_broken_yt_links();
+				update_option('custom_broken_yt_results', $result);
+				update_option('custom_last_yt_check', time());
+				delete_option('custom_yt_check_type');
+				$cached_results = $result;
+				$last_check = time();
+			}
+
+			// START Broken YT Links Results Section
+			echo '<div style="margin-top: 15px;">';
+				$broken_count = !empty($cached_results['broken_count']) ? $cached_results['broken_count'] : 0;
+				echo '<p>🔴 Broken YT Links: <strong style="color: red;">' . $broken_count . '</strong></p>';
+				// Show last Check Timestamp if available
+				if ($last_check) {
+					$tag = $check_type ? ' <strong>(' . esc_html($check_type) . ' check)</strong>' : '';
+					echo '<p><em>Last checked: ' . 
+						esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_check)) . 
+						$tag . '</em></p>';
+				} else {
+					echo '<p><em>Last checked: Never</em></p>';
+				}
+				// Show Broken YT Links Details
+				if (!empty($cached_results['broken_posts'])) {
+					echo '<details style="margin-top: 15px;">';
+						echo '<summary style="cursor: pointer; margin-bottom: 15px;"><strong>Broken Links Locations</strong></summary>';
+						echo '<ul>';
+						foreach ($cached_results['broken_posts'] as $post_id => $video_ids) {
+							$title = get_the_title($post_id);
+							$edit_link = get_edit_post_link($post_id);
+							echo '<li><a href="' . esc_url($edit_link) . '" target="_blank">' . esc_html($title) . '</a>: ';
+							echo implode(', ', array_map('esc_html', $video_ids)) . '</li>';
+						}
+						echo '</ul>';
+					echo '</details>';
+				}
+			echo '</div>';
+			// END Broken YT Links Results Section
+		});
+	});
+
+	function custom_check_broken_yt_links() {
+		$broken_links = 0;
+		$broken_posts = [];
+		$args = [
+			'post_type' => ['post', 'page', 'my-interests', 'my-traits'],
+			'posts_per_page' => -1,
+		];
+		$query = new WP_Query($args);
+		foreach ($query->posts as $post) {
+			preg_match_all('/https:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $post->post_content, $matches);
+			if (!empty($matches[1])) {
+				$excluded_video_ids = ['-cW']; // Add Video IDs to exclude from Check
+				foreach ($matches[1] as $video_id) {
+					if (in_array($video_id, $excluded_video_ids)) {
+						continue;
+					}
+					$url = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={$video_id}&format=json";
+					$response = wp_remote_get($url);
+					if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+						$broken_links++;
+						$broken_posts[$post->ID][] = $video_id;
+					}
+				}
+			}
+		}
+		return [
+			'broken_count' => $broken_links,
+			'broken_posts' => $broken_posts
+		];
+	}
 
     // ======================================
 	// 🧹 ADD OPTIMIZE & CLEAN-UP BUTTONS
