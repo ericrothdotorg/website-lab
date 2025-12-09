@@ -133,21 +133,18 @@ add_action('wp_head', function () {
     // DNS Prefetch for faster Loading
     echo '<link rel="dns-prefetch" href="https://secure.gravatar.com">';
     echo '<link rel="dns-prefetch" href="https://www.clarity.ms">';
-    // Microsoft Clarity Analytics (respects cookie consent)
+    // MS Clarity Analytics - Loads for all Visitors except Admins
+    if (!current_user_can('administrator')) {
     ?>
     <script type="text/javascript">
-        (function() {
-            // Only load if user has accepted cookies
-            const hasConsent = document.cookie.indexOf("cookieaccepted=1") >= 0;
-            if (!hasConsent) return;
-            (function(c,l,a,r,i,t,y){
-                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window, document, "clarity", "script", "eic7b2e9o1");
-        })();
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "eic7b2e9o1");
     </script>
     <?php
+    }
 }, 10);
 
 // ======================================
