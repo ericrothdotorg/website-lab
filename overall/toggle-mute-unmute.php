@@ -3,7 +3,7 @@
 add_action('wp_head', function() {
   ?>
   <style>
-	/* Toggle Button */
+	/* TTS Toggle Button */
 	#tts-toggle-btn {display: flex; align-items: center; gap: 10px; padding-top: 15px;}
 	#tts-toggle-btn input[type='checkbox'] {display: none;}
 	#tts-toggle-btn .toggle-visual {
@@ -33,7 +33,7 @@ add_action('wp_head', function() {
 	#tts-toggle-btn input[type='checkbox']:checked + .toggle-visual {background: #0f1924; border-color: #3A4F66;}
 	#tts-toggle-btn input[type='checkbox']:checked + .toggle-visual::after {background: #3A4F66; transform: translateX(25px);}
 
-	/* Accessibility Labels */
+	/* TTS Accessibility Labels */
 	#tts-status, .tts-toggle-btn-accessibility-label {
 	  position: absolute;
 	  left: -9999px;
@@ -42,7 +42,7 @@ add_action('wp_head', function() {
 	  overflow: hidden;
 	}
 	
-	/* Controls Button */
+	/* TTS Controls Button (Play, Pause, Stop) */
 	#tts-controls {
 	  display: flex;
 	  align-items: center;
@@ -93,17 +93,50 @@ add_action('wp_footer', function() {
 
       if (!('speechSynthesis' in window)) {
         console.warn('Speech synthesis not supported in this browser');
-        document.getElementById('tts-toggle-btn')?.style.setProperty('display', 'none');
+        const ttsToggle = document.getElementById('tts-toggle-btn');
+        if (ttsToggle) ttsToggle.style.setProperty('display', 'none');
         return;
       }
 
-      try { speechSynthesis.cancel(); } catch(e) {}
+      // Safe localStorage wrapper
+      const safeStorage = {
+        get: (key) => {
+          try {
+            return localStorage.getItem(key);
+          } catch(e) {
+            console.warn('localStorage get failed:', e);
+            return null;
+          }
+        },
+        set: (key, val) => {
+          try {
+            localStorage.setItem(key, val);
+            return true;
+          } catch(e) {
+            console.warn('localStorage set failed:', e);
+            return false;
+          }
+        },
+        remove: (key) => {
+          try {
+            localStorage.removeItem(key);
+            return true;
+          } catch(e) {
+            console.warn('localStorage remove failed:', e);
+            return false;
+          }
+        }
+      };
 
       // TTS Manager Class
       class TTSManager {
         constructor() {
           this.initialized = false;
           this.ttsTimeout = null;
+          this.toggleDebounceTimer = null;
+          this.contentObserver = null;
+          this.voicesChangedHandled = false;
+          this.isPaused = false;
           this.init();
         }
         init() {
@@ -115,13 +148,14 @@ add_action('wp_footer', function() {
         // === Lazy-load TTS on first toggle Click ===
         initTTS() {
           if (this.initialized) return;
+          this.initialized = true;
           
           // === TTS Content Extraction ===
           this.getReadableText = function() {
             const main = document.querySelector('main') || document.body;
             if (!main) return '';
             const clone = main.cloneNode(true);
-            clone.querySelectorAll('nav,aside,footer,header,style,script,select,code,img,svg,iframe,.social-icons,.share-buttons,.tag-cloud,.like-dislike-container,.slick-arrow,.slick-dots,.slick-cloned').forEach(el => el.remove());
+            clone.querySelectorAll('nav,aside,footer,header,style,script,select,code,img,svg,iframe,.social-icons,.share-buttons,.tag-cloud,.like-dislike-container,.slick-arrow,.slick-dots,.slick-cloned,.tts-cue').forEach(el => el.remove());
             clone.querySelectorAll('a,button').forEach(el => {
               const text = document.createTextNode(el.textContent);
               el.replaceWith(text);
@@ -148,24 +182,38 @@ add_action('wp_footer', function() {
                 'ru':'ru-RU','fi':'fi-FI','sv':'sv-SE','tl':'tl-PH',
                 'th':'th-TH','tr':'tr-TR','vi':'vi-VN','en':'en-US'
               };
-              const rawLang = localStorage.getItem('preferredLang') || 'en';
+              const rawLang = safeStorage.get('preferredLang') || 'en';
               const targetLang = langMap[rawLang] || 'en-US';
               const utterance = new SpeechSynthesisUtterance(text);
               utterance.lang = targetLang;
               const speak = () => {
+                if (self.voicesChangedHandled) return;
+                self.voicesChangedHandled = true;
+                
                 const voices = speechSynthesis.getVoices();
                 const matchedVoice = voices.find(v => v.lang === targetLang);
                 if (!matchedVoice) {
                   statusEl.textContent = 'No matching voice found for ' + targetLang;
+                  self.voicesChangedHandled = false;
                   return;
                 }
                 utterance.voice = matchedVoice;
-                utterance.onstart = () => { statusEl.textContent = 'Text-to-speech started.'; };
-                utterance.onend = () => { statusEl.textContent = 'Text-to-speech finished.'; };
-                utterance.onerror = () => { statusEl.textContent = 'Error occurred during speech.'; };
+                utterance.onstart = () => { 
+                  statusEl.textContent = 'Text-to-speech started.';
+                  self.isPaused = false;
+                };
+                utterance.onend = () => { 
+                  statusEl.textContent = 'Text-to-speech finished.';
+                  self.voicesChangedHandled = false;
+                  safeStorage.remove('ttsPlaying');
+                };
+                utterance.onerror = () => { 
+                  statusEl.textContent = 'Error occurred during speech.';
+                  self.voicesChangedHandled = false;
+                };
                 speechSynthesis.cancel();
                 speechSynthesis.speak(utterance);
-                localStorage.setItem('ttsPlaying', 'true');
+                safeStorage.set('ttsPlaying', 'true');
               };
               if (speechSynthesis.getVoices().length === 0) {
                 speechSynthesis.onvoiceschanged = speak;
@@ -179,9 +227,16 @@ add_action('wp_footer', function() {
             const statusEl = document.getElementById('tts-status');
             if (statusEl) statusEl.textContent = 'Text-to-speech stopped.';
             document.querySelectorAll('#tts-toggle-switch').forEach(toggle => toggle.checked = false);
-            document.getElementById('tts-controls')?.classList.remove('show');
-            localStorage.removeItem('ttsEnabled');
-            localStorage.removeItem('ttsPlaying');
+            const controls = document.getElementById('tts-controls');
+            if (controls) controls.classList.remove('show');
+            safeStorage.remove('ttsEnabled');
+            safeStorage.remove('ttsPlaying');
+            self.isPaused = false;
+            self.cleanupCues();
+            if (self.contentObserver) {
+              self.contentObserver.disconnect();
+              self.contentObserver = null;
+            }
           };
 
           // === Idempotent TTS Cue for Display Posts ===
@@ -234,13 +289,18 @@ add_action('wp_footer', function() {
             });
           };
 
+          // === Cleanup all TTS cues ===
+          this.cleanupCues = function() {
+            document.querySelectorAll('.tts-cue').forEach(cue => cue.remove());
+          };
+
           // === Initialize all Modules ===
           this.insertDisplayPostsCue();
           this.insertSlideshowCue();
           this.insertYouTubeCue();
 
           // === Observe dynamically added Content safely ===
-          const observer = new MutationObserver(mutations => {
+          this.contentObserver = new MutationObserver(mutations => {
             mutations.forEach(mutation => {
               mutation.addedNodes.forEach(node => {
                 if (!(node instanceof HTMLElement)) return;
@@ -250,23 +310,37 @@ add_action('wp_footer', function() {
               });
             });
           });
-          observer.observe(document.body, { childList: true, subtree: true });
+          this.contentObserver.observe(document.body, { childList: true, subtree: true });
 
           // === TTS Play / Pause / Stop Controls Button Handlers ===
           const btnPlay = document.getElementById('tts-play-icon');
           const btnPause = document.getElementById('tts-pause-icon');
           const btnStop = document.getElementById('tts-stop-icon');
-          btnPlay?.addEventListener('click', () => {
-            if (speechSynthesis.paused) speechSynthesis.resume();
-            else speakContent();
-          });
-          btnPause?.addEventListener('click', () => {
-            if (!speechSynthesis.paused) speechSynthesis.pause();
-            localStorage.removeItem('ttsPlaying');
-          });
-          btnStop?.addEventListener('click', () => {
-            stopSpeaking();
-          });
+          if (btnPlay) {
+            btnPlay.addEventListener('click', () => {
+              if (speechSynthesis.paused) {
+                speechSynthesis.resume();
+                self.isPaused = false;
+                safeStorage.set('ttsPlaying', 'true');
+              } else if (window.speakContent) {
+                window.speakContent();
+              }
+            });
+          }
+          if (btnPause) {
+            btnPause.addEventListener('click', () => {
+              if (!speechSynthesis.paused && speechSynthesis.speaking) {
+                speechSynthesis.pause();
+                self.isPaused = true;
+                safeStorage.set('ttsPaused', 'true');
+              }
+            });
+          }
+          if (btnStop) {
+            btnStop.addEventListener('click', () => {
+              if (window.stopSpeaking) window.stopSpeaking();
+            });
+          }
 
           // === Keyboard Accessibility for TTS Controls Button ===
           document.querySelectorAll('#tts-controls button').forEach(btn => {
@@ -274,11 +348,15 @@ add_action('wp_footer', function() {
               if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); }
             });
           });
-          this.initialized = true;
         }
         setupNavCleanup() {
           window.addEventListener('beforeunload', function() {
-            speechSynthesis.cancel();
+            try {
+              if (speechSynthesis.speaking && !speechSynthesis.paused) {
+                // Only cancel if we're the ones using it
+                speechSynthesis.cancel();
+              }
+            } catch(e) {}
           });
         }
         setupTTSOnToggle() {
@@ -296,19 +374,22 @@ add_action('wp_footer', function() {
             });
             
             toggleSwitch.addEventListener('change', () => {
-              if (toggleSwitch.checked) {
-                if (!self.initialized) { self.initTTS(); }
-                controls.classList.add('show');
-                localStorage.setItem('ttsEnabled','true');
-                window.scrollTo({top:0, behavior:'smooth'});
-                setTimeout(() => {
-                  if (window.speakContent) window.speakContent();
-                }, 500);
-              } else {
-                controls.classList.remove('show');
-                if (window.stopSpeaking) window.stopSpeaking();
-                localStorage.removeItem('ttsEnabled');
-              }
+              clearTimeout(self.toggleDebounceTimer);
+              self.toggleDebounceTimer = setTimeout(() => {
+                if (toggleSwitch.checked) {
+                  if (!self.initialized) { self.initTTS(); }
+                  if (controls) controls.classList.add('show');
+                  safeStorage.set('ttsEnabled','true');
+                  window.scrollTo({top:0, behavior:'smooth'});
+                  setTimeout(() => {
+                    if (window.speakContent) window.speakContent();
+                  }, 500);
+                } else {
+                  if (controls) controls.classList.remove('show');
+                  if (window.stopSpeaking) window.stopSpeaking();
+                  safeStorage.remove('ttsEnabled');
+                }
+              }, 200);
             });
           };
 
@@ -334,22 +415,25 @@ add_action('wp_footer', function() {
           const controls = document.getElementById('tts-controls');
 
           // === Show TTS Controls immediately if previously enabled ===
-          if (localStorage.getItem('ttsEnabled')) {
+          if (safeStorage.get('ttsEnabled')) {
             if (!self.initialized) { self.initTTS(); }
             setTimeout(() => {
-              controls?.classList.add('show');
+              if (controls) controls.classList.add('show');
               document.querySelectorAll('#tts-toggle-switch').forEach(toggle => toggle.checked = true);
             }, 100);
           }
 
-          // === Auto-resume TTS if it was playing before ===
-          if (localStorage.getItem('ttsEnabled') && localStorage.getItem('ttsPlaying')) {
+          // === Auto-resume TTS if it was playing before (not paused) ===
+          if (safeStorage.get('ttsEnabled') && safeStorage.get('ttsPlaying') && !safeStorage.get('ttsPaused')) {
             setTimeout(() => {
               if (!self.initialized) { self.initTTS(); }
-              controls?.classList.add('show');
+              if (controls) controls.classList.add('show');
               document.querySelectorAll('#tts-toggle-switch').forEach(toggle => toggle.checked = true);
               setTimeout(() => { if (window.speakContent) window.speakContent(); }, 500);
             }, 200);
+          } else if (safeStorage.get('ttsPaused')) {
+            // Was paused, don't auto-resume but keep controls visible
+            safeStorage.remove('ttsPaused');
           }
         }
       }
