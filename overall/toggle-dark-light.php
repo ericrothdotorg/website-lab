@@ -1,11 +1,11 @@
 <?php
 
+/* ===== CRITICAL Styles (Toggle & Loading State) ===== */
+
 add_action('wp_head', function() {
   ?>
   <style>
 
-    /* ===== CRITICAL - Dark Mode Toggle & Loading State ===== */
-    
     /* Dark Mode Toggle Button */
     #dark-mode-toggle-btn {align-items: center; padding-top: 2.5px; padding-left: 2.5px;}
     #dark-mode-toggle-btn input[type='checkbox'] {display: none;}
@@ -46,6 +46,8 @@ add_action('wp_head', function() {
     }
   </style>
 
+/* ===== Run the SCRIPT (Part I) ===== */
+
   <script>
 (function() {
   try {
@@ -58,20 +60,22 @@ add_action('wp_head', function() {
 })();
 </script>
 
+/* ===== Prevent FOUC (Flash of Unstyled Content) ===== */
+
   <style>
-    /* Prevent FOUC - Critical Loading State */
     html.dark-mode-loading body {background: #0d0d0d; color: #bfbfbf;}
+	html.dark-mode-loading body .toggle-mode {color: #bfbfbf !important;}
+	html.dark-mode-loading body :is(h1, h2, h3, h4, h5, h6) {color: #bfbfbf;}
   </style>
   <?php
 });
 
+/* ===== NON-CRITICAL Styles (Formats) ===== */
 
 add_action('wp_footer', function () {
   ?>
   <style>
 
-    /* ===== DARK MODE - Non-Critical Styles ===== */
-    
     /* Dark Mode Basics */
     body.dark-mode {background: #0d0d0d; color: #bfbfbf;}
     body.dark-mode .toggle-mode {color: #bfbfbf !important;}
@@ -100,10 +104,6 @@ add_action('wp_footer', function () {
     body.dark-mode .single-query .ct-query-template.is-layout-slider {background: #1a1a1a; border: 1px solid #1a1a1a;}
     body.dark-mode .single-query .ct-query-template.is-layout-slider:hover {background: #0d0d0d;}
     
-    /* Taxonomy Blocks */
-    body.dark-mode .wp-block-term.is-layout-flow {background: #1a1a1a; border: 1px solid #1a1a1a;}
-    body.dark-mode .wp-block-term.is-layout-flow:hover {background: #0d0d0d;}
-    
     /* Related Posts */
     body.dark-mode .ct-related-posts-container {border-top: 1px solid #3a4f66 !important;}
     body.dark-mode article > .ct-related-posts {border-top: 1px solid #3a4f66;}
@@ -111,16 +111,18 @@ add_action('wp_footer', function () {
     /* Post Navigation */
     body.dark-mode .nav-item-prev {color: #bfbfbf;}
     body.dark-mode .nav-item-next {color: #bfbfbf;}
+	
+    /* == NOT THEME RELATED == */
+	
+    /* Post Navigation */
     body.dark-mode .post-navigation [class*='nav-item'] {color: #1e73be;}
     body.dark-mode .post-navigation [class*='nav-item']:hover {color: #c53030;}
     body.dark-mode .post-navigation:after {background: #3a4f66;}
-    
-    /* Popup */
-    body.dark-mode .ct-popup-inner > article {background: #0d0d0d;}
-    body.dark-mode .ct-popup-inner > article p {color: #bfbfbf;}
-
-    /* == NOT THEME RELATED == */
-
+	
+    /* Taxonomy Blocks */
+    body.dark-mode .wp-block-term.is-layout-flow {background: #1a1a1a; border: 1px solid #1a1a1a;}
+    body.dark-mode .wp-block-term.is-layout-flow:hover {background: #0d0d0d;}
+	
     /* DPS - Bill Erickson */
     body.dark-mode .display-posts-listing .listing-item {background: #1a1a1a; border: 1px solid #1a1a1a;}
     body.dark-mode .display-posts-listing .listing-item:hover {background: #0d0d0d;}
@@ -192,6 +194,8 @@ add_action('wp_footer', function () {
     body.dark-mode code {background: none;}
     body.dark-mode .text-column-front {background: #1a1a1a !important;}
   </style>
+
+/* ===== Run the SCRIPT (Part II) ===== */
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
