@@ -1,6 +1,6 @@
 <?php
 
-/* ===== CRITICAL Styles (Toggle & Loading State) ===== */
+<!-- == CRITICAL Styles (Toggle & Loading State) == -->
 
 add_action('wp_head', function() {
   ?>
@@ -46,7 +46,7 @@ add_action('wp_head', function() {
     }
   </style>
 
-/* ===== Run the SCRIPT (Part I) ===== */
+<!-- == Run the SCRIPT (Part I) == -->
 
   <script>
 (function() {
@@ -60,7 +60,7 @@ add_action('wp_head', function() {
 })();
 </script>
 
-/* ===== Prevent FOUC (Flash of Unstyled Content) ===== */
+<!-- == Prevent FOUC (Flash of Unstyled Content) == -->
 
   <style>
     html.dark-mode-loading body {background: #0d0d0d; color: #bfbfbf;}
@@ -70,7 +70,7 @@ add_action('wp_head', function() {
   <?php
 });
 
-/* ===== NON-CRITICAL Styles (Formats) ===== */
+<!-- == NON-CRITICAL Styles (Formats) == -->
 
 add_action('wp_footer', function () {
   ?>
@@ -195,7 +195,7 @@ add_action('wp_footer', function () {
     body.dark-mode .text-column-front {background: #1a1a1a !important;}
   </style>
 
-/* ===== Run the SCRIPT (Part II) ===== */
+<!-- == Run the SCRIPT (Part II) == -->
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
