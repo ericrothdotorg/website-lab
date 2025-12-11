@@ -1,21 +1,78 @@
 <?php
+
 add_action('wp_head', function() {
   ?>
   <style>
-    /* TTS Switch */
-    #tts-toggle-btn {display: flex; align-items: center; gap:10px; padding-top: 15px;}
-    #tts-toggle-btn input[type='checkbox'] {display: none;}
-    #tts-toggle-btn .toggle-visual {background: #3A4F66; border: 1px solid #192a3d; border-radius: 50px; cursor: pointer; display: inline-block; position: relative; transition: all ease-in-out 0.3s; width: 50px; height: 25px;}
-    #tts-toggle-btn .toggle-visual::after {background: #192a3d; border-radius: 50%; content: ''; cursor: pointer; display: inline-block; position: absolute; left:1px; top: 1px; transition: all ease-in-out 0.3s; width: 21px; height: 21px;}
-    #tts-toggle-btn input[type='checkbox']:checked + .toggle-visual {background: #0f1924; border-color: #3A4F66;}
-    #tts-toggle-btn input[type='checkbox']:checked + .toggle-visual::after {background: #3A4F66; transform: translateX(25px);}
-    /*TTS Status*/
-    #tts-status, .tts-toggle-btn-accessibility-label {position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;}
-    /* TTS Controls Button */
-    #tts-controls {display: flex; align-items: center; gap: 10px; position: fixed; bottom: 27.5px; left: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 9999;}
-    #tts-controls.show {opacity: 1; pointer-events: auto;}
-    #tts-controls button {padding: 5px 10px; border: none; border-radius: 5px; background: #3A4F66; color: white; cursor: pointer; transition: background 0.2s;}
-    #tts-controls button:hover, #tts-controls button:focus {background: #192a3d; outline: none;}
+	/* Toggle Button */
+	#tts-toggle-btn {display: flex; align-items: center; gap: 10px; padding-top: 15px;}
+	#tts-toggle-btn input[type='checkbox'] {display: none;}
+	#tts-toggle-btn .toggle-visual {
+	  background: #3A4F66;
+	  border: 1px solid #192a3d;
+	  border-radius: 50px;
+	  cursor: pointer;
+	  display: inline-block;
+	  position: relative;
+	  transition: all ease-in-out 0.3s;
+	  width: 50px;
+	  height: 25px;
+	}
+	#tts-toggle-btn .toggle-visual::after {
+	  background: #192a3d;
+	  border-radius: 50%;
+	  content: '';
+	  cursor: pointer;
+	  display: inline-block;
+	  position: absolute;
+	  left: 1px;
+	  top: 1px;
+	  transition: all ease-in-out 0.3s;
+	  width: 21px;
+	  height: 21px;
+	}
+	#tts-toggle-btn input[type='checkbox']:checked + .toggle-visual {background: #0f1924; border-color: #3A4F66;}
+	#tts-toggle-btn input[type='checkbox']:checked + .toggle-visual::after {background: #3A4F66; transform: translateX(25px);}
+
+	/* Accessibility Labels */
+	#tts-status, .tts-toggle-btn-accessibility-label {
+	  position: absolute;
+	  left: -9999px;
+	  width: 1px;
+	  height: 1px;
+	  overflow: hidden;
+	}
+	
+	/* Controls Button */
+	#tts-controls {
+	  display: flex;
+	  align-items: center;
+	  gap: 10px;
+	  position: fixed;
+	  bottom: 27.5px;
+	  left: 20px;
+	  opacity: 0;
+	  pointer-events: none;
+	  transition: opacity 0.3s;
+	  z-index: 9999;
+	}
+	#tts-controls.show {
+	  opacity: 1;
+	  pointer-events: auto;
+	}
+	#tts-controls button {
+	  padding: 5px 10px;
+	  border: none;
+	  border-radius: 5px;
+	  background: #3A4F66;
+	  color: white;
+	  cursor: pointer;
+	  transition: background 0.2s;
+	}
+	#tts-controls button:hover,
+	#tts-controls button:focus {
+	  background: #192a3d;
+	  outline: none;
+	}
   </style>
   <?php
 });
@@ -303,4 +360,3 @@ add_action('wp_footer', function() {
   </script>
   <?php
 });
-?>
