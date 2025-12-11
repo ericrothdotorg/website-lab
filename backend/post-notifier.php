@@ -38,14 +38,14 @@ class Post_Notifier {
         }
         // Check if this is a Post Type we care about
         $post_type = get_post_type($post);
-        $allowed_types = ['post', 'interests'];
+        $allowed_types = ['post', 'my-interests'];
         if (!in_array($post_type, $allowed_types)) {
             return;
         }
         // Determine the Label
         $label_map = [
-            'post'      => 'Blog',
-            'interests' => 'Interests'
+            'post'      => 'My Blog',
+            'my-interests' => 'My Interests'
         ];
         $label = $label_map[$post_type];
         // Send the notification
