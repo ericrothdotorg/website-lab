@@ -1,52 +1,47 @@
 <?php
 
-<!-- == CRITICAL Styles (Toggle & Loading State) == -->
-
 add_action('wp_head', function() {
   ?>
   <style>
+	/* Dark Mode Toggle Button */
+	#dark-mode-toggle-btn {display: flex; align-items: center; gap: 10px;}
+	#dark-mode-toggle-btn input#change-mode-switch {display: none;}
+	#dark-mode-toggle-btn .toggle-visual {
+	  background: #3a4f66;
+	  border: 1px solid #192a3d;
+	  border-radius: 50px;
+	  cursor: pointer;
+	  display: inline-block;
+	  position: relative;
+	  transition: all ease-in-out 0.3s;
+	  width: 50px;
+	  height: 25px;
+	}
+	#dark-mode-toggle-btn .toggle-visual::after {
+	  background: #192a3d;
+	  border-radius: 50%;
+	  content: '';
+	  cursor: pointer;
+	  display: inline-block;
+	  position: absolute;
+	  left: 1px;
+	  top: 1px;
+	  transition: all ease-in-out 0.3s;
+	  width: 21px;
+	  height: 21px;
+	}
+	#change-mode-switch:checked + .toggle-visual {background: #0f1924; border-color: #3a4f66;}
+	#change-mode-switch:checked + .toggle-visual::after {background: #3a4f66; transform: translateX(25px);}
 
-    /* Dark Mode Toggle Button */
-    #dark-mode-toggle-btn {align-items: center; padding-top: 2.5px; padding-left: 2.5px;}
-    #dark-mode-toggle-btn input[type='checkbox'] {display: none;}
-    #dark-mode-toggle-btn .toggle-visual {
-      background: #3a4f66;
-      border: 1px solid #192a3d;
-      border-radius: 50px;
-      cursor: pointer;
-      display: inline-block;
-      position: relative;
-      transition: all ease-in-out 0.3s;
-      width: 50px;
-      height: 25px;
-    }
-    #dark-mode-toggle-btn .toggle-visual::after {
-      background: #192a3d;
-      border-radius: 50%;
-      content: '';
-      cursor: pointer;
-      display: inline-block;
-      position: absolute;
-      left: 1px;
-      top: 1px;
-      transition: all ease-in-out 0.3s;
-      width: 21px;
-      height: 21px;
-    }
-    #dark-mode-toggle-btn input[type='checkbox']:checked + .toggle-visual {background: #0f1924; border-color: #3a4f66;}
-    #dark-mode-toggle-btn input[type='checkbox']:checked + .toggle-visual::after {background: #3a4f66; transform: translateX(25px);}
-    
-    /* Accessibility Labels */
-    .dark-mode-toggle-btn-accessibility-label, .tts-toggle-btn-accessibility-label {
-      position: absolute;
-      left: -9999px;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-    }
+	/* Dark Mode Accessibility Labels */
+	#dark-mode-status, .dark-mode-toggle-btn-accessibility-label {
+	  position: absolute;
+	  left: -9999px;
+	  width: 1px;
+	  height: 1px;
+	  overflow: hidden;
+	}
   </style>
-
-<!-- == Run the SCRIPT (Part I) == -->
 
   <script>
 (function() {
@@ -60,8 +55,6 @@ add_action('wp_head', function() {
 })();
 </script>
 
-<!-- == Prevent FOUC (Flash of Unstyled Content) == -->
-
   <style>
     html.dark-mode-loading body {background: #0d0d0d; color: #bfbfbf;}
 	html.dark-mode-loading body .toggle-mode {color: #bfbfbf !important;}
@@ -69,8 +62,6 @@ add_action('wp_head', function() {
   </style>
   <?php
 });
-
-<!-- == NON-CRITICAL Styles (Formats) == -->
 
 add_action('wp_footer', function () {
   ?>
@@ -194,8 +185,6 @@ add_action('wp_footer', function () {
     body.dark-mode code {background: none;}
     body.dark-mode .text-column-front {background: #1a1a1a !important;}
   </style>
-
-<!-- == Run the SCRIPT (Part II) == -->
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
