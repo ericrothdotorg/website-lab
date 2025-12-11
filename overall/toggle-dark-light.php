@@ -49,9 +49,12 @@ add_action('wp_head', function() {
     const storedPreference = localStorage.getItem('changeMode');
     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (storedPreference === 'true' || (storedPreference === null && prefersDark)) {
-      document.documentElement.className += ' dark-mode-loading';
+      document.documentElement.classList.add('dark-mode-loading');
+      document.body.classList.add('dark-mode');
     }
-  } catch(e) {}
+  } catch(e) {
+    console.warn('Dark mode initialization failed:', e);
+  }
 })();
 </script>
 
@@ -192,14 +195,27 @@ add_action('wp_footer', function () {
       const changeModeButton = document.getElementById('change-mode-button');
       const visualToggle = document.querySelector('#dark-mode-toggle-btn .toggle-visual');
       
+      let debounceTimer;
       const changeMode = () => {
-        const isDark = document.body.classList.toggle('dark-mode');
-        if (changeModeSwitch) changeModeSwitch.checked = isDark;
-        try {
-          localStorage.setItem('changeMode', isDark);
-        } catch (e) {
-          console.warn('LocalStorage unavailable');
-        }
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          const isDark = document.body.classList.toggle('dark-mode');
+          if (changeModeSwitch) changeModeSwitch.checked = isDark;
+          
+          // Update aria-checked on all accessible elements
+          const updateAriaChecked = () => {
+            if (changeModeSwitch) changeModeSwitch.setAttribute('aria-checked', isDark);
+            if (changeModeButton) changeModeButton.setAttribute('aria-checked', isDark);
+            if (visualToggle) visualToggle.setAttribute('aria-checked', isDark);
+          };
+          updateAriaChecked();
+          
+          try {
+            localStorage.setItem('changeMode', isDark);
+          } catch (e) {
+            console.warn('LocalStorage unavailable');
+          }
+        }, 150);
       };
       
       const applyAccessibility = (el) => {
@@ -213,13 +229,11 @@ add_action('wp_footer', function () {
             el.click();
           }
         });
-        el.addEventListener('click', () => {
-          el.setAttribute('aria-checked', document.body.classList.contains('dark-mode'));
-        });
       };
       
       applyAccessibility(changeModeSwitch);
       applyAccessibility(changeModeButton);
+      applyAccessibility(visualToggle);
       
       if (changeModeSwitch) {
         changeModeSwitch.addEventListener('change', changeMode);
@@ -234,15 +248,15 @@ add_action('wp_footer', function () {
         });
       }
       
-      // Apply Dark Mode and remove Loading Class
+      // Remove Loading Class - mode already applied in head
       document.documentElement.classList.remove('dark-mode-loading');
-      const storedPreference = localStorage.getItem('changeMode');
-      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (storedPreference === 'true' || (storedPreference === null && prefersDark)) {
-        document.body.classList.add('dark-mode');
-        if (changeModeSwitch) changeModeSwitch.checked = true;
+      
+      // Sync toggle state with current mode (already set by inline script)
+      if (changeModeSwitch) {
+        changeModeSwitch.checked = document.body.classList.contains('dark-mode');
       }
     });
   </script>
   <?php
 });
+									 
