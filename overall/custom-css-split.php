@@ -1,11 +1,11 @@
 <?php
 
+/* ===== CRITICAL CSS - ABOVE THE FOLD ===== */
+
 add_action("wp_head", function () {
     ?>
     <style>
 
-    /* ===== CRITICAL CSS - ABOVE THE FOLD ===== */
-    
     /* HTML & BODY BASICS */
     html {text-size-adjust: 100%; scroll-behavior: smooth;}
     p {text-align: justify;}
@@ -85,13 +85,12 @@ add_action("wp_head", function () {
     <?php
 }, 5); // Load critical Styles in Head early
 
+/* ===== NON-CRITICAL CSS - BELOW THE FOLD ===== */
 
 add_action("wp_footer", function () {
     ?>
     <style>
 
-    /* ===== NON-CRITICAL CSS - BELOW THE FOLD ===== */
-    
     /* == THEME RELATED == */
     
     /* Global Elements */
@@ -109,14 +108,8 @@ add_action("wp_footer", function () {
     .single-query .ct-query-template-grid:hover,
     .single-query .ct-query-template.is-layout-slider:hover {background: #f2f5f7;}
     .single-query .ct-dynamic-data {padding-bottom: 16px;}
-    
+
     /* Taxonomy Blocks */
-    .wp-block-term.is-layout-flow {
-        background: #fafbfc;
-        border: 1px solid #e1e8ed;
-        border-radius: 25px;
-    }
-    .wp-block-term.is-layout-flow:hover {background: #f2f5f7;}
     .wp-block-term.is-layout-flow .ct-dynamic-data {padding-bottom: 16px;}
     
     /* Media Styling */
@@ -154,7 +147,15 @@ add_action("wp_footer", function () {
     
     /* Format built-in Separator */
     .wp-block-separator:not(.is-style-dots) {height: 1px; background: #e1e8ed;}
-    
+
+    /* Taxonomy Blocks */
+    .wp-block-term.is-layout-flow {
+        background: #fafbfc;
+        border: 1px solid #e1e8ed;
+        border-radius: 25px;
+    }
+    .wp-block-term.is-layout-flow:hover {background: #f2f5f7;}
+
     /* NAVIGATION */
     
     /* External Link Indicator (filter in functions.php) */
