@@ -172,7 +172,7 @@ function initialize_custom_dashboard() {
 
 			// START External Analytics Buttons Section
 			echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
-				echo '<a href="' . esc_url($pagespeed_url) . '" target="_blank" class="button">⚡ PageSpeed</a>';
+				echo '<a href="' . esc_url($pagespeed_url) . '" target="_blank" class="button">🚀 PageSpeed</a>';
 				echo '<a href="' . esc_url($webpagetest_url) . '" target="_blank" class="button">🧪 WebPageTest</a>';
 				echo '<a href="' . esc_url($wave_url) . '" target="_blank" class="button">♿ Accessibility</a>';
 			echo '</div>';
@@ -194,7 +194,7 @@ function initialize_custom_dashboard() {
 			$plugin_count = count(get_plugins());
 
 			// START Site Metrics Section
-			echo '<div style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px;">';
+			echo '<div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">';
 				// START Column 1: Media Files and DB Tables
 				echo '<div style="width: calc(50% - 5px);">';
 					echo '<p>🖼️ Media Files: <strong>' . $total_media . '</strong></p>';
@@ -240,7 +240,7 @@ function initialize_custom_dashboard() {
 			}
 
 			// START Broken YT Links Results Section
-			echo '<div style="margin-top: 15px;">';
+			echo '<div style="margin-top: 30px;">';
 				$broken_count = !empty($cached_results['broken_count']) ? $cached_results['broken_count'] : 0;
 				echo '<p>🔴 Broken YT Links: <strong style="color: red;">' . $broken_count . '</strong></p>';
 				// Show last Check Timestamp if available
@@ -310,18 +310,18 @@ function initialize_custom_dashboard() {
 		wp_add_dashboard_widget(
 			'custom_optimize_and_cleanup',
 			'🧹 Optimize & Clean-Up',
-			'custom_render_optimize_and_cleanup'
+			'custom_render_innodb_cleanup'
 		);
 	});
 
-	function custom_render_optimize_and_cleanup() {
-		// Handle manual cleanup - verify nonce first
+	function custom_render_innodb_cleanup() {
+		// Render InnoDB cleanup dashboard widget - Display stats, buttons and handle form submission
 		if (isset($_POST['er_run_full_cleanup'])) {
 			if (!current_user_can('manage_options')) {
 				wp_die('Unauthorized access');
 			}
 			check_admin_referer('custom_cleanup_action', 'custom_cleanup_nonce');
-			$result = custom_run_full_inno_db_cleanup();
+			$result = custom_run_innodb_cleanup();
 			update_option('custom_last_cleanup', time());
 			update_option('custom_last_cleanup_result', $result['message']);
 			update_option('custom_last_cleanup_success', $result['success']);
@@ -329,9 +329,11 @@ function initialize_custom_dashboard() {
 		echo '<div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">';
 		echo '<form method="post" style="margin: 0;">';
 		wp_nonce_field('custom_cleanup_action', 'custom_cleanup_nonce');
-		echo '<button type="submit" name="er_run_full_cleanup" class="button">🛠️ Run InnoDB Cleanup</button>';
+		echo '<button type="submit" name="er_run_full_cleanup" class="button">🛠️ InnoDB Cleanup</button>';
 		echo '</form>';
-		echo '<a href="' . esc_url(admin_url('admin.php?page=litespeed-db_optm')) . '" class="button" target="_blank">🛢️ LiteSpeed Database</a>';
+		// Add additional buttons (act just as links)
+		echo '<a href="' . esc_url(admin_url('admin.php?page=litespeed-db_optm')) . '" class="button" target="_blank">🛢️ LiteSpeed DB</a>';
+		echo '<a href="' . esc_url(admin_url('index.php?LSCWP_CTRL=purge&litespeed_type=purge_all')) . '" class="button">⚡ Purge All</a>';
 		echo '</div>';
 		global $wpdb;
 		$postmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->postmeta}");
@@ -372,7 +374,8 @@ function initialize_custom_dashboard() {
 		echo '</div>';
 	}
 
-	function custom_run_full_inno_db_cleanup() {
+	function custom_run_innodb_cleanup() {
+		// Execute InnoDB cleanup operations - Delete orphaned data and optimize tables
 		global $wpdb;
 		$deleted_total = 0;
 		$errors = [];
@@ -385,19 +388,19 @@ function initialize_custom_dashboard() {
 			}
 			return (int)$result;
 		};
-		// Delete orphaned Postmeta
+		// Delete orphaned postmeta
 		$deleted_total += $safe_delete("
 			DELETE pm FROM {$wpdb->postmeta} pm
 			LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id
 			WHERE p.ID IS NULL
 		", 'Orphaned postmeta cleanup');
-		// Delete orphaned Term Relationships
+		// Delete orphaned term relationships
 		$deleted_total += $safe_delete("
 			DELETE tr FROM {$wpdb->term_relationships} tr
 			LEFT JOIN {$wpdb->posts} p ON p.ID = tr.object_id
 			WHERE p.ID IS NULL
 		", 'Orphaned term relationships cleanup');
-		// Remove specific safe Postmeta Keys
+		// Remove specific safe postmeta keys
 		$safe_postmeta_keys = [
 			'_edit_lock', '_edit_last', '_wp_old_slug', '_wp_old_date',
 			'_last_viewed_timestamp', 'litespeed-optimize-set', 'litespeed-optimize-size'
@@ -418,13 +421,13 @@ function initialize_custom_dashboard() {
 			DELETE FROM {$wpdb->postmeta}
 			WHERE meta_key LIKE '_oembed_%' OR meta_key LIKE '_oembed_time_%'
 		", 'oEmbed cache cleanup');
-		// Delete orphaned Usermeta
+		// Delete orphaned usermeta
 		$deleted_total += $safe_delete("
 			DELETE um FROM {$wpdb->usermeta} um
 			LEFT JOIN {$wpdb->users} u ON u.ID = um.user_id
 			WHERE u.ID IS NULL
 		", 'Orphaned usermeta cleanup');
-		// Remove specific safe Usermeta Keys
+		// Remove specific safe usermeta keys
 		$safe_usermeta_keys = ['_session_tokens', '_last_activity', '_woocommerce_persistent_cart'];
 		foreach ($safe_usermeta_keys as $key) {
 			$deleted_total += $safe_delete(
@@ -432,7 +435,7 @@ function initialize_custom_dashboard() {
 				"Usermeta cleanup ({$key})"
 			);
 		}
-		// Delete transient Options
+		// Delete transient options
 		$deleted_total += $safe_delete("
 			DELETE FROM {$wpdb->options}
 			WHERE option_name LIKE '_transient_%' AND option_name NOT LIKE '_transient_timeout_%'
@@ -441,41 +444,41 @@ function initialize_custom_dashboard() {
 			DELETE FROM {$wpdb->options}
 			WHERE option_name LIKE '_transient_timeout_%' AND option_value < UNIX_TIMESTAMP()
 		", 'Expired transient timeout cleanup');
-		// Delete old completed ActionScheduler Actions if Table exists
+		// Delete old completed ActionScheduler actions if table exists
 		if ($wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}actionscheduler_actions'") === "{$wpdb->prefix}actionscheduler_actions") {
 			$deleted_total += $safe_delete("
 				DELETE FROM {$wpdb->prefix}actionscheduler_actions
 				WHERE status = 'complete' AND scheduled_date_gmt < NOW() - INTERVAL 30 DAY
 			", 'ActionScheduler cleanup');
 		}
-		// Delete orphaned Commentmeta
+		// Delete orphaned commentmeta
 		$deleted_total += $safe_delete("
 			DELETE cm FROM {$wpdb->commentmeta} cm
 			LEFT JOIN {$wpdb->comments} c ON c.comment_ID = cm.comment_id
 			WHERE c.comment_ID IS NULL
 		", 'Orphaned commentmeta cleanup');
-		// Delete empty auto-draft Posts
+		// Delete empty auto-draft posts
 		$deleted_total += $safe_delete("
 			DELETE FROM {$wpdb->posts}
 			WHERE post_status = 'auto-draft' AND post_content = ''
 		", 'Auto-draft cleanup');
-		// Delete orphaned Termmeta
+		// Delete orphaned termmeta
 		$deleted_total += $safe_delete("
 			DELETE tm FROM {$wpdb->termmeta} tm
 			LEFT JOIN {$wpdb->terms} t ON t.term_id = tm.term_id
 			WHERE t.term_id IS NULL
 		", 'Orphaned termmeta cleanup');
-		// Delete old Spam Comments
+		// Delete old spam comments
 		$deleted_total += $safe_delete("
 			DELETE FROM {$wpdb->comments}
 			WHERE comment_approved = 'spam' AND comment_date < NOW() - INTERVAL 30 DAY
 		", 'Spam comments cleanup');
-		// Delete old Trash Posts
+		// Delete old trash posts
 		$deleted_total += $safe_delete("
 			DELETE FROM {$wpdb->posts}
 			WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 30 DAY
 		", 'Trash posts cleanup');
-		// Optimize main Tables
+		// Optimize main tables
 		$tables = ['postmeta', 'usermeta', 'options', 'term_relationships'];
 		$optimized_count = 0;
 		foreach ($tables as $table) {
@@ -499,6 +502,19 @@ function initialize_custom_dashboard() {
 			'message' => "✅ Total rows deleted: {$deleted_total} → {$optimized_count} tables optimized."
 		];
 	}
+
+	// Auto-schedule daily InnoDB cleanup at 2 AM
+	add_action('init', function() {
+		if (!wp_next_scheduled('custom_auto_innodb_cleanup')) {
+			wp_schedule_event(strtotime('tomorrow 2:00:00'), 'daily', 'custom_auto_innodb_cleanup');
+		}
+	});
+	add_action('custom_auto_innodb_cleanup', function() {
+		$result = custom_run_innodb_cleanup();
+		update_option('custom_last_cleanup', time());
+		update_option('custom_last_cleanup_result', $result['message']);
+		update_option('custom_last_cleanup_success', $result['success']);
+	});
 
     // ======================================
 	// 📰 ADD RSS FEED READER
@@ -694,3 +710,4 @@ HTML;
 }
 
 add_action('admin_init', 'initialize_custom_dashboard');
+
