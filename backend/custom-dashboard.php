@@ -173,7 +173,7 @@ function initialize_custom_dashboard() {
 			// START External Analytics Buttons Section
 			echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
 				echo '<a href="' . esc_url($pagespeed_url) . '" target="_blank" class="button">🚀 PageSpeed</a>';
-				echo '<a href="' . esc_url($webpagetest_url) . '" target="_blank" class="button">🧪 WebPageTest</a>';
+				echo '<a href="' . esc_url($webpagetest_url) . '" target="_blank" class="button">🔥 WebPageTest</a>';
 				echo '<a href="' . esc_url($wave_url) . '" target="_blank" class="button">♿ Accessibility</a>';
 			echo '</div>';
 			// END External Analytics Buttons Section
@@ -329,7 +329,7 @@ function initialize_custom_dashboard() {
 		echo '<div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">';
 		echo '<form method="post" style="margin: 0;">';
 		wp_nonce_field('custom_cleanup_action', 'custom_cleanup_nonce');
-		echo '<button type="submit" name="er_run_full_cleanup" class="button">🛠️ InnoDB Cleanup</button>';
+		echo '<button type="submit" name="er_run_full_cleanup" class="button">🧵 InnoDB Cleanup</button>';
 		echo '</form>';
 		// Add additional buttons (act just as links)
 		echo '<a href="' . esc_url(admin_url('admin.php?page=litespeed-db_optm')) . '" class="button" target="_blank">🛢️ LiteSpeed DB</a>';
@@ -502,19 +502,6 @@ function initialize_custom_dashboard() {
 			'message' => "✅ Total rows deleted: {$deleted_total} → {$optimized_count} tables optimized."
 		];
 	}
-
-	// Auto-schedule daily InnoDB cleanup at 2 AM
-	add_action('init', function() {
-		if (!wp_next_scheduled('custom_auto_innodb_cleanup')) {
-			wp_schedule_event(strtotime('tomorrow 2:00:00'), 'daily', 'custom_auto_innodb_cleanup');
-		}
-	});
-	add_action('custom_auto_innodb_cleanup', function() {
-		$result = custom_run_innodb_cleanup();
-		update_option('custom_last_cleanup', time());
-		update_option('custom_last_cleanup_result', $result['message']);
-		update_option('custom_last_cleanup_success', $result['success']);
-	});
 
     // ======================================
 	// 📰 ADD RSS FEED READER
