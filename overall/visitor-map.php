@@ -1,5 +1,4 @@
 <?php
-
 // *** Track current visitor with filtering
 function lum_track_visitor() {
     if (is_admin() || wp_doing_ajax()) {
@@ -321,23 +320,23 @@ function lum_map_shortcode($atts) {
     ob_start();
     ?>
     <div id="live-user-map" style="height: <?php echo esc_attr($atts['height']); ?>; width: 100%; border-radius: 15px; position: relative; z-index: 1;"></div>
-    <div id="map-stats" style="margin-top: 15px; padding: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-        <div style="display: flex; gap: 15px; align-items: center; font-size: 1em;">
-            <span>Live Visitors: <strong><span id="live-count">0</span></strong></span>
-            <span>Last Updated: <strong><span id="last-update">-</span></strong></span>
-        </div>
-        <div style="display: flex; gap: 15px; align-items: center; font-size: 1em;">
-            <span><strong>Legend:</strong></span>
-            <span style="display: inline-flex; align-items: center; gap: 5px;">
-                <span style="display: inline-block; width: 12px; height: 12px; background: #28a745; border-radius: 50%; border: 2px solid rgba(40, 167, 69, 0.3);"></span>
-                Live Visitors
-            </span>
-            <span style="display: inline-flex; align-items: center; gap: 5px;">
-                <span style="display: inline-block; width: 12px; height: 12px; background: #007bff; border-radius: 50%; border: 2px solid rgba(0, 123, 255, 0.5); opacity: 0.8;"></span>
-                Past Visitors
-            </span>
-        </div>
-    </div>
+	<div id="map-stats" style="margin-top: 15px; padding: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+		<div style="display: flex; align-items: center; font-size: 1em;">
+			<span>Live Visitors: <strong><span id="live-count">0</span></strong></span>
+			<span style="margin-left: 15px;">Last Updated: <strong><span id="last-update">-</span></strong></span>
+		</div>
+		<div style="display: flex; align-items: center; font-size: 1em;">
+			<span><strong>Legend:</strong></span>
+			<span style="display: inline-flex; align-items: center; margin-left: 15px;">
+				<span style="display: inline-block; width: 12px; height: 12px; background: #28a745; border-radius: 50%; border: 2px solid rgba(40, 167, 69, 0.3); margin-right: 5px;"></span>
+				Live Visitors
+			</span>
+			<span style="display: inline-flex; align-items: center; margin-left: 15px;">
+				<span style="display: inline-block; width: 12px; height: 12px; background: #007bff; border-radius: 50%; border: 2px solid rgba(0, 123, 255, 0.5); opacity: 0.8; margin-right: 5px;"></span>
+				Past Visitors
+			</span>
+		</div>
+	</div>
     <div class="wp-block-table" id="visited-pages">
         <h3 style="margin-top: 0; margin-bottom: 25px; font-weight: 700; font-size: 20px; line-height: 1.5;">Currently Visited Pages</h3>
         <div id="pages-list" style="max-height: 350px; overflow-y: auto;">
