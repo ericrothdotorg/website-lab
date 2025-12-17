@@ -1,10 +1,10 @@
 <?php
-
 add_action('wp_head', function() {
   ?>
   <style>
 	/* TTS Toggle Button */
-	#tts-toggle-btn {display: flex; align-items: center; gap: 10px; padding-top: 15px;}
+	#tts-toggle-btn {display: flex; align-items: center; padding-top: 15px;}
+	#tts-toggle-btn > * + * {margin-left: 10px;}
 	#tts-toggle-btn input[type='checkbox'] {display: none;}
 	#tts-toggle-btn .toggle-visual {
 	  background: #3A4F66;
@@ -46,7 +46,6 @@ add_action('wp_head', function() {
 	#tts-controls {
 	  display: flex;
 	  align-items: center;
-	  gap: 10px;
 	  position: fixed;
 	  bottom: 27.5px;
 	  left: 20px;
@@ -55,6 +54,7 @@ add_action('wp_head', function() {
 	  transition: opacity 0.3s;
 	  z-index: 9999;
 	}
+	#tts-controls > * + * {margin-left: 10px;}
 	#tts-controls.show {
 	  opacity: 1;
 	  pointer-events: auto;
@@ -73,6 +73,7 @@ add_action('wp_head', function() {
 	  background: #192a3d;
 	  outline: none;
 	}
+	#tts-play > * + * {margin-left: 10px;}
   </style>
   <?php
 });
@@ -81,7 +82,7 @@ add_action('wp_footer', function() {
   ?>
   <!-- TTS Play / Pause / Stop Controls Button -->
   <div id="tts-controls" style="display: inline-block; padding: 0;">
-    <button id="tts-play" aria-label="Text-to-speech controls" style="display: flex; gap: 10px; padding: 5px 10px; background: #3A4F66; color: white; border: none; border-radius: 5px; cursor: pointer;">
+      <button id="tts-play" aria-label="Text-to-speech controls" style="display: flex; padding: 5px 10px; background: #3A4F66; color: white; border: none; border-radius: 5px; cursor: pointer;">
       <span id="tts-play-icon" aria-label="Play text-to-speech" title="Play" style="cursor: pointer;">▶</span>
       <span id="tts-pause-icon" aria-label="Pause text-to-speech" title="Pause" style="cursor: pointer;">⏸</span>
       <span id="tts-stop-icon" aria-label="Stop text-to-speech" title="Stop" style="cursor: pointer;">⏹</span>
