@@ -1,5 +1,4 @@
 <?php
-
 // =====================================
 // SELECT DROPDOWN FUNCTIONALITY
 // =====================================
@@ -293,12 +292,17 @@ add_action( 'wp_footer', function () {
     		});
 		}
         // Initialize on DOM ready
-        function init() {
-            requestIdleCallback(() => {
-                adjustFontSize();
-                setupSelectAnnouncements();
-            });
-        }
+		function init() {
+			const runInit = () => {
+				adjustFontSize();
+				setupSelectAnnouncements();
+			};
+			if ('requestIdleCallback' in window) {
+				requestIdleCallback(runInit);
+			} else {
+				setTimeout(runInit, 100);
+			}
+		}
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {
