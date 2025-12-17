@@ -1,10 +1,9 @@
 <?php
-
 add_action('wp_head', function() {
   ?>
   <style>
 	/* Dark Mode Toggle Button */
-	#dark-mode-toggle-btn {display: flex; align-items: center; gap: 10px;}
+	#dark-mode-toggle-btn {display: -webkit-box; display: -webkit-flex; display: flex; -webkit-box-align: center; -webkit-align-items: center; align-items: center;}
 	#dark-mode-toggle-btn input#change-mode-switch {display: none;}
 	#dark-mode-toggle-btn .toggle-visual {
 	  background: #3a4f66;
@@ -13,10 +12,12 @@ add_action('wp_head', function() {
 	  cursor: pointer;
 	  display: inline-block;
 	  position: relative;
+	  -webkit-transition: all ease-in-out 0.3s;
 	  transition: all ease-in-out 0.3s;
 	  width: 50px;
 	  height: 25px;
 	}
+	#dark-mode-toggle-btn input#change-mode-switch + .toggle-visual {margin-left: 10px;}
 	#dark-mode-toggle-btn .toggle-visual::after {
 	  background: #192a3d;
 	  border-radius: 50%;
@@ -26,12 +27,13 @@ add_action('wp_head', function() {
 	  position: absolute;
 	  left: 1px;
 	  top: 1px;
+	  -webkit-transition: all ease-in-out 0.3s;
 	  transition: all ease-in-out 0.3s;
 	  width: 21px;
 	  height: 21px;
 	}
 	#change-mode-switch:checked + .toggle-visual {background: #0f1924; border-color: #3a4f66;}
-	#change-mode-switch:checked + .toggle-visual::after {background: #3a4f66; transform: translateX(25px);}
+	#change-mode-switch:checked + .toggle-visual::after {background: #3a4f66; -webkit-transform: translateX(25px); transform: translateX(25px);}
 
 	/* Dark Mode Accessibility Labels */
 	#dark-mode-status, .dark-mode-toggle-btn-accessibility-label {
@@ -259,4 +261,3 @@ add_action('wp_footer', function () {
   </script>
   <?php
 });
-									 
