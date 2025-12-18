@@ -1,8 +1,5 @@
 <?php
-
 defined('ABSPATH') || exit;
-
-// === GLOBAL STUFF ===
 
 // Remove "Edit" Link for non-logged-in Users
 add_filter('edit_post_link', '__return_false');
@@ -27,7 +24,17 @@ function er_stay_logged_in($expiration, $user_id) {
 }
 add_filter('auth_cookie_expiration', 'er_stay_logged_in', 99, 2);
 
-// === ADMIN-ONLY HOOKS ===
+// Prevent cached previews (with timestamp)
+add_filter('preview_post_link', function($url){
+    return add_query_arg('ts', time(), $url);
+});
+
+// Prevent cached frontend for logged-in editors
+add_action('template_redirect', function () {
+    if (!is_user_logged_in()) return;
+    if (!current_user_can('edit_posts')) return;
+    nocache_headers();
+});
 
 // Unregister Tags
 function er_unregister_tags() {
@@ -57,7 +64,6 @@ add_action('pre_get_posts', 'er_custom_post_order');
 
 // Style Gutenberg UI
 function er_gutenberg_admin_styles() {
-    if (!is_admin()) return;
     echo '<style type="text/css">
         .wp-block { max-width: 1024px !important; }
         .blocks-widgets-container .editor-styles-wrapper { max-width: 1024px; }
@@ -95,13 +101,12 @@ add_filter('menu_order', function ($menu_order) {
         'contact-form',
         'theseoframework-settings',
 		'snippets',
-        'litespeed'
+        'litespeed',
     ];
 });
 
 // Remove Comments from Menu
 function er_remove_comments_menu() {
-    if (!is_admin()) return;
     remove_menu_page('edit-comments.php');
 }
 add_action('admin_menu', 'er_remove_comments_menu');
