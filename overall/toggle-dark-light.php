@@ -208,7 +208,6 @@ add_action('wp_footer', function () {
           const updateAriaChecked = () => {
             if (changeModeSwitch) changeModeSwitch.setAttribute('aria-checked', isDark);
             if (changeModeButton) changeModeButton.setAttribute('aria-checked', isDark);
-            if (visualToggle) visualToggle.setAttribute('aria-checked', isDark);
           };
           updateAriaChecked();
           
@@ -235,7 +234,11 @@ add_action('wp_footer', function () {
       
       applyAccessibility(changeModeSwitch);
       applyAccessibility(changeModeButton);
-      applyAccessibility(visualToggle);
+      
+      // Mark visual toggle as decorative only
+      if (visualToggle) {
+        visualToggle.setAttribute('aria-hidden', 'true');
+      }
       
       if (changeModeSwitch) {
         changeModeSwitch.addEventListener('change', changeMode);
