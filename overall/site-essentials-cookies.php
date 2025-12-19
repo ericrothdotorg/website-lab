@@ -180,7 +180,7 @@ if (!is_admin()) {
         }
     });
 }
-// Clear Cache when Posts are published / deleted
+// Clear [total_post] Cache when Posts are published / deleted
 add_action('transition_post_status', function($new_status, $old_status, $post) {
     if ($new_status !== $old_status) {
         delete_transient('post_count_' . $post->post_type);
@@ -221,7 +221,7 @@ add_shortcode('post_stats', function() {
     $sentence_count = count($sentences);
     $avg_words = $sentence_count > 0 ? round($stats['words'] / $sentence_count, 1) : 0;
     // Format Output with Thousands Separators
-    $fmt = fn($n) => number_format($n, 0, '.', "'");
+    $fmt = fn($n) => number_format($n, 0, '.', ",");
     $output = '<div class="post-stats">'
          . '<span><strong>' . $fmt($stats['words']) . '</strong> Words</span> • '
          . '<span>Read Time: <strong>' . $stats['minutes'] . '</strong> Min.</span><br>'
@@ -307,6 +307,53 @@ add_filter('the_content', function ($content) {
     }, $content);
 }, 10);
 
+// Ensure all image links have accessible names
+add_filter('the_content', function ($content) {
+    // Find all <a> tags that contain only <img> tags (image links)
+    return preg_replace_callback(
+        '/<a\s+([^>]*?)>\s*<img\s+([^>]*?)>\s*<\/a>/is',
+        function ($matches) {
+            $link_attrs = $matches[1];
+            $img_attrs = $matches[2];
+            
+            // Check if image has meaningful alt text
+            $has_alt = preg_match('/alt=(["\'])(?!\s*\1)(.+?)\1/i', $img_attrs, $alt_match);
+            
+            // Check if link already has aria-label or title
+            $has_aria_label = preg_match('/aria-label=/i', $link_attrs);
+            $has_title = preg_match('/title=/i', $link_attrs);
+            
+            // If no accessible name exists anywhere, add aria-label to the link
+            if (!$has_alt && !$has_aria_label && !$has_title) {
+                // Extract href to create a meaningful label
+                if (preg_match('/href=(["\'])([^"\']+)\1/i', $link_attrs, $href_match)) {
+                    $url = $href_match[2];
+                    $domain = parse_url($url, PHP_URL_HOST);
+                    $label = $domain ? "Link to $domain" : "Link to image";
+                    $link_attrs = 'aria-label="' . esc_attr($label) . '" ' . $link_attrs;
+                }
+            }
+            // If image has empty alt, use it from link title or create one
+            elseif (preg_match('/alt=(["\'])\s*\1/i', $img_attrs)) {
+                if ($has_title && preg_match('/title=(["\'])(.+?)\1/i', $link_attrs, $title_match)) {
+                    // Use link title as alt text
+                    $img_attrs = preg_replace('/alt=(["\'])\s*\1/i', 'alt="' . esc_attr($title_match[2]) . '"', $img_attrs);
+                } elseif (preg_match('/href=(["\'])([^"\']+)\1/i', $link_attrs, $href_match)) {
+                    // Generate alt from URL
+                    $url = $href_match[2];
+                    $path = parse_url($url, PHP_URL_PATH);
+                    $filename = basename($path);
+                    $alt_text = ucfirst(str_replace(['-', '_'], ' ', pathinfo($filename, PATHINFO_FILENAME)));
+                    $img_attrs = preg_replace('/alt=(["\'])\s*\1/i', 'alt="' . esc_attr($alt_text) . '"', $img_attrs);
+                }
+            }
+            
+            return "<a $link_attrs><img $img_attrs></a>";
+        },
+        $content
+    );
+}, 15);
+
 // ======================================
 // REDIRECTS
 // ======================================
@@ -320,7 +367,6 @@ add_action('template_redirect', function() {
         '/my-blog/'       => '/personal/my-blog/',
         '/my-interests/'  => '/personal/my-interests/',
     ];
-    
     $uri = trailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
     if (isset($redirects[$uri])) {
         wp_redirect($redirects[$uri], 301);
@@ -550,3 +596,4 @@ add_action('wp_footer', function () {
     
     <?php
 });
+
