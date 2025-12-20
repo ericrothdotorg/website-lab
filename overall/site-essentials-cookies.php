@@ -55,38 +55,27 @@ add_action('init', function() {
     }, 10, 2);
 });
 
-// Optimize Largest Contentful Paint (LCP) - First Image gets priority
-add_action('template_redirect', function () {
-    if (is_admin() || is_feed() || wp_doing_ajax()) {
-        return;
+// Optimize LCP - First Image (featured Image) gets Priority
+add_filter('wp_get_attachment_image_attributes', function ($attr, $attachment, $size) {
+    static $first_image = false;
+    if ($first_image || is_admin() || is_feed() || wp_doing_ajax()) {
+        return $attr;
     }
-    ob_start(function ($html) {
-        $cache_key = 'lcp_optimized_' . md5($_SERVER['REQUEST_URI']);
-        $cached = wp_cache_get($cache_key, 'lcp_optimization');
-        if ($cached !== false) {
-            return $cached;
+    // Check if Image is large enough to be LCP Candidate
+    $width = isset($attr['width']) ? (int)$attr['width'] : 0;
+    if ($width >= LCP_IMAGE_MIN_WIDTH) {
+        $first_image = true;
+        // Remove Lazy Loading
+        unset($attr['loading']);
+        // Add Fetch Priority
+        $attr['fetchpriority'] = 'high';
+        // Add responsive Sizes if not present
+        if (!isset($attr['sizes'])) {
+            $attr['sizes'] = '(max-width: 600px) 100vw, (max-width: 1024px) 80vw, 1000px';
         }
-        $count = 0;
-        $html = preg_replace_callback('/<img[^>]+>/i', function ($match) use (&$count) {
-            $img = $match[0];
-            if ($count === 0 && preg_match('/width=["\'](\d+)["\']/', $img, $width_match)) {
-                if ((int)$width_match[1] >= LCP_IMAGE_MIN_WIDTH) {
-                    $count++;
-                    $img = preg_replace('/\sloading=["\']lazy["\']/', '', $img);
-                    if (!strpos($img, 'fetchpriority')) {
-                        $img = str_replace('<img', '<img fetchpriority="high"', $img);
-                    }
-                    if (!strpos($img, 'sizes=')) {
-                        $img = str_replace('<img', '<img sizes="(max-width: 600px) 100vw, (max-width: 1024px) 80vw, 1000px"', $img);
-                    }
-                }
-            }
-            return $img;
-        }, $html);
-        wp_cache_set($cache_key, $html, 'lcp_optimization', CACHE_LCP_HTML);
-        return $html;
-    });
-});
+    }
+    return $attr;
+}, 10, 3);
 
 // Set responsive Image Sizes (aligned with Blocksy Breakpoints)
 add_filter('wp_get_attachment_image_attributes', function ($attr) {
