@@ -55,7 +55,7 @@ add_action('init', function() {
     }, 10, 2);
 });
 
-// Optimize Largest Contentful Paint (LCP) - first Image gets priority
+// Optimize Largest Contentful Paint (LCP) - First Image gets priority
 add_action('template_redirect', function () {
     if (is_admin() || is_feed() || wp_doing_ajax()) {
         return;
@@ -267,7 +267,7 @@ add_filter('wp_get_attachment_image', function($html, $attachment_id) {
 // Process external Links (combined: Add Class + Title Attribute)
 add_filter('the_content', function ($content) {
     $exclude = ['ericroth.org', 'ericroth-org', '1drv.ms', 'paypal.com', 'librarything.com',
-                'themoviedb.org', 'facebook.com', 'github.com', 'linkedin.com', 'youtube.com',
+                'themoviedb.org', 'facebook.com', 'github.com', 'linkedin.com',
                 'patreon.com', 'bsky.app', 'bsky.social'];
     return preg_replace_callback('/<a\s+([^>]+)>/i', function ($m) use ($exclude) {
         $tag = $m[0];
@@ -305,6 +305,23 @@ add_filter('the_content', function ($content) {
         return $modified;
     }, $content);
 }, 10);
+
+// Remove external-Link Class from iFrame Wrappers (for embedded Vids)
+add_filter('the_content', function ($content) {
+    // Remove external-link Class from any <a> Tags that wrap iFrames
+    return preg_replace_callback(
+        '/<a\s+([^>]*class=["\'][^"\']*external-link[^"\']*["\'][^>]*)>\s*<iframe/i',
+        function ($matches) {
+            $attrs = $matches[1];
+            // Remove external-link Class
+            $attrs = preg_replace('/\bexternal-link\b\s*/', '', $attrs);
+            // Clean up double Spaces in Class Attribute
+            $attrs = preg_replace('/class=(["\'])\s+/', 'class=$1', $attrs);
+            return "<a $attrs><iframe";
+        },
+        $content
+    );
+}, 11); // Leave as is cuz: Runs after the external Link Filter above
 
 // Ensure all Image Links have accessible Names
 add_filter('the_content', function ($content) {
