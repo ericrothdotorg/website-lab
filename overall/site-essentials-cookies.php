@@ -1,5 +1,4 @@
 <?php
-
 // ======================================
 // CONFIGURATION CONSTANTS
 // ======================================
@@ -33,11 +32,11 @@ if (!is_admin()) {
 // PERFORMANCE OPTIMIZATIONS
 // ======================================
 
-// Remove query strings from static resources for better caching
+// Remove QUERY Strings from static Resources for better Caching
 add_filter('style_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
 add_filter('script_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
 
-// Disable WordPress emoji scripts and styles
+// Disable WordPress emoji Scripts and Styles
 add_action('init', function() {
     remove_action('wp_head', 'print_emoji_detection_script', 7);
     remove_action('admin_print_scripts', 'print_emoji_detection_script');
@@ -56,7 +55,7 @@ add_action('init', function() {
     }, 10, 2);
 });
 
-// Optimize Largest Contentful Paint (LCP) - first image gets priority
+// Optimize Largest Contentful Paint (LCP) - first Image gets priority
 add_action('template_redirect', function () {
     if (is_admin() || is_feed() || wp_doing_ajax()) {
         return;
@@ -89,7 +88,7 @@ add_action('template_redirect', function () {
     });
 });
 
-// Set responsive image sizes (aligned with Blocksy breakpoints)
+// Set responsive Image Sizes (aligned with Blocksy Breakpoints)
 add_filter('wp_get_attachment_image_attributes', function ($attr) {
     $attr['sizes'] = '(max-width: 480px) 300px, (max-width: 768px) 768px, (max-width: 1024px) 1024px, 1536px';
     return $attr;
@@ -99,17 +98,17 @@ add_filter('wp_get_attachment_image_attributes', function ($attr) {
 // BLOCKSY THEME OPTIMIZATIONS
 // ======================================
 
-// Disable Google fonts (using local fonts instead)
+// Disable Google Fonts (using local Fonts instead)
 add_filter('blocksy:typography:google:use-remote', '__return_false');
 add_filter('blocksy_typography_font_sources', function($sources) {
     unset($sources['google']);
     return $sources;
 });
 
-// Enable Blocksy flexy animation styles
+// Enable Blocksy Flexy Animation Styles
 add_action('wp_enqueue_scripts', fn() => wp_enqueue_style('ct-flexy-styles'));
 
-// Strip unused Blocksy extensions for faster loading
+// Strip unused Blocksy Extensions for faster Loading
 add_action('wp_enqueue_scripts', function() {
     $extensions = ['newsletter', 'woocommerce', 'trending', 'cookie-consent', 'local-google-fonts', 
                    'portfolio', 'shop-extra', 'advanced-menu', 'contact-form', 'popups', 'color-mode-switcher'];
@@ -151,11 +150,11 @@ add_action('wp_head', function () {
 // SHORTCODES
 // ======================================
 
-// Enable shortcodes in widgets and blocks
+// Enable Shortcodes in Widgets and Blocks
 add_filter('widget_text', 'do_shortcode');
 add_filter('widget_block_content', 'do_shortcode');
 
-// [reusable id="123"] - Display reusable content blocks
+// [reusable id="123"] - Display reusable Content Blocks
 add_shortcode('reusable', 'get_reusable_block');
 add_shortcode('blocksy_content_block', 'get_reusable_block');
 function get_reusable_block($atts) {
@@ -247,17 +246,17 @@ add_action('save_post', function($post_id) {
 // SEO & ACCESSIBILITY
 // ======================================
 
-// Auto-generate ALT text for Images (or mark decorative Images)
+// Auto-generate ALT Text for Images (or mark decorative Images)
 add_filter('wp_get_attachment_image', function($html, $attachment_id) {
     $alt = get_post_meta($attachment_id, '_wp_attachment_image_alt', true);
     $src = wp_get_attachment_url($attachment_id);
-    // Mark decorative Images with empty alt
+    // Mark decorative Images with empty ALT
     if (preg_match('/(divider|icon|bg|decor|spacer)/i', $src)) {
         $alt = '';
     } elseif (empty($alt)) {
         $alt = get_the_title($attachment_id);
     }
-    // Remove alt if Image is wrapped in Link with same Text
+    // Remove ALT if Image is wrapped in Link with same Text
     if (strpos($html, '<a') !== false && strpos($html, $alt) !== false) {
         $alt = '';
     }
@@ -307,25 +306,22 @@ add_filter('the_content', function ($content) {
     }, $content);
 }, 10);
 
-// Ensure all image links have accessible names
+// Ensure all Image Links have accessible Names
 add_filter('the_content', function ($content) {
-    // Find all <a> tags that contain only <img> tags (image links)
+    // Find all <a> Tags that contain only <img> Tags (Image Links)
     return preg_replace_callback(
         '/<a\s+([^>]*?)>\s*<img\s+([^>]*?)>\s*<\/a>/is',
         function ($matches) {
             $link_attrs = $matches[1];
             $img_attrs = $matches[2];
-            
-            // Check if image has meaningful alt text
+            // Check if Image has meaningful ALT Text
             $has_alt = preg_match('/alt=(["\'])(?!\s*\1)(.+?)\1/i', $img_attrs, $alt_match);
-            
-            // Check if link already has aria-label or title
+            // Check if Link already has Aria-Label or Title
             $has_aria_label = preg_match('/aria-label=/i', $link_attrs);
             $has_title = preg_match('/title=/i', $link_attrs);
-            
-            // If no accessible name exists anywhere, add aria-label to the link
+            // If no accessible Name exists anywhere, add Aria-Label to the Link
             if (!$has_alt && !$has_aria_label && !$has_title) {
-                // Extract href to create a meaningful label
+                // Extract href to create a meaningful Label
                 if (preg_match('/href=(["\'])([^"\']+)\1/i', $link_attrs, $href_match)) {
                     $url = $href_match[2];
                     $domain = parse_url($url, PHP_URL_HOST);
@@ -333,13 +329,13 @@ add_filter('the_content', function ($content) {
                     $link_attrs = 'aria-label="' . esc_attr($label) . '" ' . $link_attrs;
                 }
             }
-            // If image has empty alt, use it from link title or create one
+            // If Image has empty ALT, use it from Link Title or create one
             elseif (preg_match('/alt=(["\'])\s*\1/i', $img_attrs)) {
                 if ($has_title && preg_match('/title=(["\'])(.+?)\1/i', $link_attrs, $title_match)) {
                     // Use link title as alt text
                     $img_attrs = preg_replace('/alt=(["\'])\s*\1/i', 'alt="' . esc_attr($title_match[2]) . '"', $img_attrs);
                 } elseif (preg_match('/href=(["\'])([^"\']+)\1/i', $link_attrs, $href_match)) {
-                    // Generate alt from URL
+                    // Generate ALT from URL
                     $url = $href_match[2];
                     $path = parse_url($url, PHP_URL_PATH);
                     $filename = basename($path);
@@ -347,7 +343,6 @@ add_filter('the_content', function ($content) {
                     $img_attrs = preg_replace('/alt=(["\'])\s*\1/i', 'alt="' . esc_attr($alt_text) . '"', $img_attrs);
                 }
             }
-            
             return "<a $link_attrs><img $img_attrs></a>";
         },
         $content
@@ -358,7 +353,7 @@ add_filter('the_content', function ($content) {
 // REDIRECTS
 // ======================================
 
-// SEO-friendly 301 redirects for old URLs
+// SEO-friendly 301 Redirects for old URLs
 add_action('template_redirect', function() {
     $redirects = [
         '/contact-me/'    => '/about-me/contact/',
@@ -421,7 +416,6 @@ add_action('wp_footer', function () {
                 notice.setAttribute("aria-hidden", "true");
             }
         }
-        
         function rejectCookie() {
             const isSecure = location.protocol === 'https:' ? '; Secure' : '';
             document.cookie = "cookieaccepted=0; max-age=31536000; path=/; SameSite=Lax" + isSecure;
@@ -431,11 +425,9 @@ add_action('wp_footer', function () {
                 notice.setAttribute("aria-hidden", "true");
             }
         }
-        
         document.addEventListener('DOMContentLoaded', function () {
             const hasConsent = document.cookie.indexOf("cookieaccepted=") >= 0;
-            
-            // Show banner if no consent yet
+            // Show Banner if no consent yet
             if (!hasConsent) {
                 const notice = document.getElementById("cookie-notice");
                 if (notice) {
@@ -514,7 +506,6 @@ add_action('wp_footer', function () {
         document.addEventListener("DOMContentLoaded", () => {
             const elements = document.querySelectorAll('.flexy-container');
             if (!elements.length) return;
-            
             const observer = new IntersectionObserver(entries => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
@@ -593,7 +584,5 @@ add_action('wp_footer', function () {
         });
     </script>
     <?php } ?>
-    
     <?php
 });
-
