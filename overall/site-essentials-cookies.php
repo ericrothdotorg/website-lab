@@ -281,7 +281,7 @@ add_filter('the_content', function ($content) {
             if (strpos($href, $domain) !== false) return $tag;
         }
         // Skip WP UI Classes
-        if (preg_match('/class=["\'][^"\']*(wp-block-button__link|button|neli|page-numbers)[^"\']*["\']/', $attrs)) {
+        if (preg_match('/class=["\'][^"\']*(wp-block-button__link|button|neli|page-numbers|wp-block-social-link|wp-social-link|wp-social-link-youtube)[^"\']*["\']/', $attrs)) {
             return $tag;
         }
         // This is an external Link - Process it
