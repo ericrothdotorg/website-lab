@@ -55,30 +55,50 @@ add_action('init', function() {
     }, 10, 2);
 });
 
-// Optimize Largest Contentful Paint (LCP) - First Image gets priority
+// Optimize LCP for Blocksy: Prioritize real Content Images, skip Logos / Icons
 add_action('template_redirect', function () {
     if (is_admin() || is_feed() || wp_doing_ajax()) {
         return;
     }
-    ob_start(function ($html) {
-        $count = 0;
-        $html = preg_replace_callback('/<img[^>]+>/i', function ($match) use (&$count) {
+    // Internal Threshold: Images smaller than this are never LCP Candidates
+    $min_width = 600;
+    ob_start(function ($html) use ($min_width) {
+        $lcp_found = false;
+        return preg_replace_callback('/<img\b[^>]*>/i', function ($match) use (&$lcp_found, $min_width) {
             $img = $match[0];
-            if ($count === 0 && preg_match('/width=["\'](\d+)["\']/', $img, $width_match)) {
-                if ((int)$width_match[1] >= LCP_IMAGE_MIN_WIDTH) {
-                    $count++;
-                    $img = preg_replace('/\sloading=["\']lazy["\']/', '', $img);
-                    if (!strpos($img, 'fetchpriority')) {
-                        $img = str_replace('<img', '<img fetchpriority="high"', $img);
-                    }
-                    if (!strpos($img, 'sizes=')) {
-                        $img = str_replace('<img', '<img sizes="(max-width: 600px) 100vw, (max-width: 1024px) 80vw, 1000px"', $img);
-                    }
+            // Skip decorative Images
+            if (preg_match('/logo|icon|avatar|emoji|placeholder|data:image\/svg/i', $img)) {
+                return $img;
+            }
+            // Skip Images without width Attribute
+            if (!preg_match('/width=["\'](\d+)["\']/', $img, $w)) {
+                return $img;
+            }
+            $width = (int)$w[1];
+            // Blocksy LCP Candidates
+            $is_blocksy_lcp =
+                preg_match('/ct-featured-image|wp-post-image|ct-image-container/i', $img);
+            // First real Content Image
+            if (!$lcp_found && ($is_blocksy_lcp || $width >= $min_width)) {
+                $lcp_found = true;
+                // Remove Lazy Loading
+                $img = preg_replace('/\sloading=["\']lazy["\']/', '', $img);
+                $img = preg_replace('/\blazyload\b/i', '', $img);
+                // Add fetchpriority
+                if (strpos($img, 'fetchpriority') === false) {
+                    $img = str_replace('<img', '<img fetchpriority="high"', $img);
+                }
+                // Add Sizes if missing
+                if (strpos($img, 'sizes=') === false) {
+                    $img = str_replace(
+                        '<img',
+                        '<img sizes="(max-width: 600px) 100vw, (max-width: 1024px) 80vw, 1000px"',
+                        $img
+                    );
                 }
             }
             return $img;
         }, $html);
-        return $html;
     });
 });
 
