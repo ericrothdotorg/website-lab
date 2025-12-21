@@ -1,5 +1,4 @@
 <?php
-
 defined('ABSPATH') || exit;
 
 function initialize_custom_admin_columns() {
@@ -108,6 +107,8 @@ function initialize_custom_admin_columns() {
         return [
             'id' => 'ID',
             'title' => 'title',
+			'post_categories' => 'post_categories',
+			'topics' => 'topics',
             'date' => 'date',
         ];
     }
@@ -116,6 +117,31 @@ function initialize_custom_admin_columns() {
     add_filter('manage_edit-post_sortable_columns', 'set_sortables');
     add_filter('manage_edit-my-interests_sortable_columns', 'set_sortables');
     add_filter('manage_edit-my-traits_sortable_columns', 'set_sortables');
+
+	add_filter('posts_clauses', function($clauses, $query) {
+		global $wpdb;
+		if (!is_admin() || !$query->is_main_query()) {
+			return $clauses;
+		}
+		$orderby = $query->get('orderby');
+		$taxonomy_map = [
+			'post_categories' => 'category',
+			'topics'          => 'topics',
+		];
+		if (!isset($taxonomy_map[$orderby])) {
+			return $clauses;
+		}
+		$taxonomy = $taxonomy_map[$orderby];
+		$order    = strtoupper($query->get('order')) === 'ASC' ? 'ASC' : 'DESC';
+		$clauses['join'] .= "
+			LEFT JOIN {$wpdb->term_relationships} tr ON {$wpdb->posts}.ID = tr.object_id
+			LEFT JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+			LEFT JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+		";
+		$clauses['where'] .= $wpdb->prepare(" AND tt.taxonomy = %s ", $taxonomy);
+		$clauses['orderby'] = " t.name $order ";
+		return $clauses;
+	}, 10, 2);
 
     // === OPTIONAL STYLES ===
 
