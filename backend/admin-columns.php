@@ -21,8 +21,10 @@ function initialize_custom_admin_columns() {
             $columns['parent'] = __('Parent');
         } elseif ($type === 'post') {
             $columns['post_categories'] = __('Categories');
+			$columns['post_tags'] = __('Tags');
         } elseif ($type === 'my-interests') {
             $columns['topics'] = __('Topics');
+			$columns['post_tags'] = __('Tags');
         } elseif ($type === 'my-traits') {
             $columns['types'] = __('Types');
         }
@@ -63,11 +65,13 @@ function initialize_custom_admin_columns() {
             case 'topics':
             case 'types':
             case 'post_categories':
+			case 'post_tags':
                 $taxonomy = match ($column) {
                     'things' => 'things',
                     'topics' => 'topics',
                     'types' => 'types',
                     'post_categories' => 'category',
+					'post_tags' => 'post_tag',
                 };
                 $terms = get_the_terms($post_id, $taxonomy);
                 if ($terms && !is_wp_error($terms)) {
@@ -164,9 +168,10 @@ function initialize_custom_admin_columns() {
                 .post-type-post .column-id { width: 5%; }
                 .post-type-post .column-featured_image { width: 8%; }
                 .post-type-post .column-title { width: 12%; }
-                .post-type-post .column-post_categories { width: 10%; }
-                .post-type-post .column-custom_excerpt { width: 30%; }
-                .post-type-post .column-word_count { width: 6%; }
+                .post-type-post .column-post_categories { width: 8%; }
+				.post-type-post .column-post_tags { width: 8%; }
+                .post-type-post .column-custom_excerpt { width: 25%; }
+                .post-type-post .column-word_count { width: 5%; }
                 .post-type-post .column-read_time { width: 5%; }
                 .post-type-post .column-date { width: 10%; }
             ',
@@ -174,9 +179,10 @@ function initialize_custom_admin_columns() {
                 .post-type-my-interests .column-id { width: 5%; }
                 .post-type-my-interests .column-featured_image { width: 8%; }
                 .post-type-my-interests .column-title { width: 12%; }
-                .post-type-my-interests .column-topics { width: 10%; }
-                .post-type-my-interests .column-custom_excerpt { width: 30%; }
-                .post-type-my-interests .column-word_count { width: 6%; }
+                .post-type-my-interests .column-topics { width: 8%; }
+				.post-type-my-interests .column-post_tags { width: 8%; }
+                .post-type-my-interests .column-custom_excerpt { width: 25%; }
+                .post-type-my-interests .column-word_count { width: 5%; }
                 .post-type-my-interests .column-read_time { width: 5%; }
                 .post-type-my-interests .column-date { width: 10%; }
             ',
