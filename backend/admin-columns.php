@@ -146,6 +146,7 @@ function initialize_custom_admin_columns() {
 		$clauses['orderby'] = " t.name $order ";
 		return $clauses;
 	}, 10, 2);
+	add_action('set_object_terms', function() { wp_cache_flush(); });
 
     // === OPTIONAL STYLES ===
 
