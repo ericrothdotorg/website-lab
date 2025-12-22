@@ -44,6 +44,8 @@ function initialize_custom_admin_columns() {
     // === RENDER CONTENT ===
 
     function render_column_content($column, $post_id) {
+        static $word_counts = [];
+        
         switch ($column) {
             case 'id':
                 echo $post_id;
@@ -55,11 +57,16 @@ function initialize_custom_admin_columns() {
                 echo wp_trim_words(get_the_excerpt($post_id), 35);
                 break;
             case 'word_count':
-                echo str_word_count(strip_tags(get_post_field('post_content', $post_id)));
+                if (!isset($word_counts[$post_id])) {
+                    $word_counts[$post_id] = str_word_count(strip_tags(get_post_field('post_content', $post_id)));
+                }
+                echo $word_counts[$post_id];
                 break;
             case 'read_time':
-                $words = str_word_count(strip_tags(get_post_field('post_content', $post_id)));
-                echo ceil($words / 200) . ' min';
+                if (!isset($word_counts[$post_id])) {
+                    $word_counts[$post_id] = str_word_count(strip_tags(get_post_field('post_content', $post_id)));
+                }
+                echo ceil($word_counts[$post_id] / 200) . ' min';
                 break;
             case 'things':
             case 'topics':
@@ -108,13 +115,10 @@ function initialize_custom_admin_columns() {
     // === SORTABLE COLUMNS ===
 
     function set_sortables($columns) {
-        return [
-            'id' => 'ID',
-            'title' => 'title',
-			'post_categories' => 'post_categories',
-			'topics' => 'topics',
-            'date' => 'date',
-        ];
+        $columns['id'] = 'ID';
+        $columns['post_categories'] = 'post_categories';
+        $columns['topics'] = 'topics';
+        return $columns;
     }
 
     add_filter('manage_edit-page_sortable_columns', 'set_sortables');
@@ -135,21 +139,28 @@ function initialize_custom_admin_columns() {
 		if (!isset($taxonomy_map[$orderby])) {
 			return $clauses;
 		}
+		$allowed_orderbys = ['post_categories', 'topics'];
+		if (!in_array($orderby, $allowed_orderbys, true)) {
+			return $clauses;
+		}
 		$taxonomy = $taxonomy_map[$orderby];
 		$order    = strtoupper($query->get('order')) === 'ASC' ? 'ASC' : 'DESC';
-		$clauses['join'] .= "
-			LEFT JOIN {$wpdb->term_relationships} tr ON {$wpdb->posts}.ID = tr.object_id
-			LEFT JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
-			LEFT JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
-		";
-		$clauses['where'] .= $wpdb->prepare(" AND tt.taxonomy = %s ", $taxonomy);
-		$clauses['orderby'] = " t.name $order ";
+		if (strpos($clauses['join'], $wpdb->term_relationships) === false) {
+			$clauses['join'] .= "
+				LEFT JOIN {$wpdb->term_relationships} tr ON {$wpdb->posts}.ID = tr.object_id
+				LEFT JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+				LEFT JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+			";
+		}
+		$clauses['where'] .= $wpdb->prepare(" AND (tt.taxonomy = %s OR tt.taxonomy IS NULL) ", $taxonomy);
+		$clauses['distinct'] = 'DISTINCT';
+		$clauses['orderby'] = " CASE WHEN t.name IS NULL THEN 1 ELSE 0 END, t.name $order ";
 		return $clauses;
 	}, 10, 2);
 
     // === OPTIONAL STYLES ===
 
-    add_action('admin_head', function () {
+    add_action('admin_head-edit.php', function () {
         global $typenow;
         $styles = [
             'page' => '
@@ -230,7 +241,7 @@ function initialize_custom_admin_columns() {
             case 'uploaded_to':
                 $parent_id = wp_get_post_parent_id($post_id);
                 if ($parent_id) {
-                    $title = _draft_or_post_title($parent_id);
+                    $title = get_the_title($parent_id) ?: __('(no title)');
                     $url = get_edit_post_link($parent_id);
                     echo '<strong><a href="' . esc_url($url) . '" target="_blank" rel="noopener noreferrer">' . esc_html($title) . '</a></strong>';
                 } else {
