@@ -1,5 +1,4 @@
 <?php
-
 // ✅ Register Custom TAXONOMY for Pages
 function page_register_taxonomy() {
     $rewrite = array(
@@ -46,7 +45,7 @@ function page_register_taxonomy() {
 add_action( 'init', 'page_register_taxonomy', 0 );
 
 // ✅ Register Custom TAXONOMY for My Interests
-function mi_register_taxonomy() {
+function mi_register_topics_taxonomy() {
     $rewrite = array(
         'slug'         => 'topics',
         'with_front'   => true,
@@ -88,7 +87,41 @@ function mi_register_taxonomy() {
     );
     register_taxonomy( 'topics', array( 'my-interests' ), $args );
 }
-add_action( 'init', 'mi_register_taxonomy', 0 );
+add_action( 'init', 'mi_register_topics_taxonomy', 0 );
+
+function mi_register_tags_taxonomy() {
+    $labels = array(
+        'name'                       => esc_html_x( 'Interest Tags', 'textdomain' ),
+        'singular_name'              => esc_html_x( 'Interest Tag', 'textdomain' ),
+        'menu_name'                  => esc_html__( 'Interest Tags', 'textdomain' ),
+        'all_items'                  => esc_html__( 'All Tags', 'textdomain' ),
+        'new_item_name'              => esc_html__( 'New Tag Name', 'textdomain' ),
+        'add_new_item'               => esc_html__( 'Add New Tag', 'textdomain' ),
+        'edit_item'                  => esc_html__( 'Edit Tag', 'textdomain' ),
+        'update_item'                => esc_html__( 'Update Tag', 'textdomain' ),
+        'view_item'                  => esc_html__( 'View Tag', 'textdomain' ),
+        'separate_items_with_commas' => esc_html__( 'Separate Tags with Commas', 'textdomain' ),
+        'add_or_remove_items'        => esc_html__( 'Add or remove Tags', 'textdomain' ),
+        'choose_from_most_used'      => esc_html__( 'Choose from most used', 'textdomain' ),
+        'popular_items'              => esc_html__( 'Popular Tags', 'textdomain' ),
+        'search_items'               => esc_html__( 'Search Tags', 'textdomain' ),
+        'not_found'                  => esc_html__( 'No Tags found', 'textdomain' ),
+    );
+    $args = array(
+        'labels'            => $labels,
+        'hierarchical'      => false,  // Tags are NOT hierarchical
+        'public'            => true,
+        'show_ui'           => true,
+        'show_in_rest'      => true,
+        'query_var'         => true,
+        'rewrite'           => array( 'slug' => 'interest-tag' ),
+        'show_admin_column' => true,
+        'show_in_nav_menus' => true,
+        'show_tagcloud'     => true,
+    );
+    register_taxonomy( 'interest_tag', array( 'my-interests' ), $args );
+}
+add_action( 'init', 'mi_register_tags_taxonomy', 0 );
 
 // ✅ Register Custom POST TYPE for My Interests
 function mi_register_post_type() {
@@ -128,7 +161,7 @@ function mi_register_post_type() {
             'title', 'editor', 'author', 'excerpt', 'thumbnail',
             'custom-fields', 'revisions', 'post-formats',
         ),
-        'taxonomies' => array( 'topics' ),
+        'taxonomies' => array( 'topics', 'interest_tag' ),
         'rewrite'    => array(
             'slug'       => 'my-interests',
             'with_front' => true,
