@@ -212,7 +212,6 @@ function initialize_custom_admin_columns() {
         ];
         echo '<style>' . ($styles[$typenow] ?? '') . '
             .wp-list-table {
-                table-layout: auto !important;
                 width: 100%;
             }
         </style>';
@@ -311,6 +310,147 @@ function initialize_custom_admin_columns() {
         </style>';
     });
 
+// === ADD MEDIA TO TAXONOMY COLUMNS ===
+
+	add_filter('manage_edit-post_tag_columns', function($columns) {
+        $new = [];
+        $new['cb'] = $columns['cb'];
+        $new['featured_image'] = __('Image');
+        foreach ($columns as $key => $value) {
+            if ($key !== 'cb') {
+                $new[$key] = $value;
+            }
+        }
+        return $new;
+    });
+    add_filter('manage_edit-interest_tag_columns', function($columns) {
+        $new = [];
+        $new['cb'] = $columns['cb'];
+        $new['featured_image'] = __('Image');
+        foreach ($columns as $key => $value) {
+            if ($key !== 'cb') {
+                $new[$key] = $value;
+            }
+        }
+        return $new;
+    });
+    add_filter('manage_edit-category_columns', function($columns) {
+        $new = [];
+        $new['cb'] = $columns['cb'];
+        $new['featured_image'] = __('Image');
+        foreach ($columns as $key => $value) {
+            if ($key !== 'cb') {
+                $new[$key] = $value;
+            }
+        }
+        return $new;
+    });
+    add_filter('manage_edit-topics_columns', function($columns) {
+        $new = [];
+        $new['cb'] = $columns['cb'];
+        $new['featured_image'] = __('Image');
+        foreach ($columns as $key => $value) {
+            if ($key !== 'cb') {
+                $new[$key] = $value;
+            }
+        }
+        return $new;
+    });
+
+    add_filter('manage_post_tag_custom_column', function($content, $column, $term_id) {
+        if ($column === 'featured_image') {
+            $blocksy_meta = get_term_meta($term_id, 'blocksy_taxonomy_meta_options', true);
+            if (is_array($blocksy_meta) && !empty($blocksy_meta['image']['url'])) {
+                $image_url = $blocksy_meta['image']['url'];
+                echo '<img src="' . esc_url($image_url) . '" style="width: 65px; height: auto; border-radius: 4px;">';
+            } else {
+                echo '—';
+            }
+        }
+        return $content;
+    }, 10, 3);
+    add_filter('manage_interest_tag_custom_column', function($content, $column, $term_id) {
+        if ($column === 'featured_image') {
+            $blocksy_meta = get_term_meta($term_id, 'blocksy_taxonomy_meta_options', true);
+            if (is_array($blocksy_meta) && !empty($blocksy_meta['image']['url'])) {
+                $image_url = $blocksy_meta['image']['url'];
+                echo '<img src="' . esc_url($image_url) . '" style="width: 65px; height: auto; border-radius: 4px;">';
+            } else {
+                echo '—';
+            }
+        }
+        return $content;
+    }, 10, 3);
+    add_filter('manage_category_custom_column', function($content, $column, $term_id) {
+        if ($column === 'featured_image') {
+            $blocksy_meta = get_term_meta($term_id, 'blocksy_taxonomy_meta_options', true);
+            if (is_array($blocksy_meta) && !empty($blocksy_meta['image']['url'])) {
+                $image_url = $blocksy_meta['image']['url'];
+                echo '<img src="' . esc_url($image_url) . '" style="width: 65px; height: auto; border-radius: 4px;">';
+            } else {
+                echo '—';
+            }
+        }
+        return $content;
+    }, 10, 3);
+    add_filter('manage_topics_custom_column', function($content, $column, $term_id) {
+        if ($column === 'featured_image') {
+            $blocksy_meta = get_term_meta($term_id, 'blocksy_taxonomy_meta_options', true);
+            if (is_array($blocksy_meta) && !empty($blocksy_meta['image']['url'])) {
+                $image_url = $blocksy_meta['image']['url'];
+                echo '<img src="' . esc_url($image_url) . '" style="width: 65px; height: auto; border-radius: 4px;">';
+            } else {
+                echo '—';
+            }
+        }
+        return $content;
+    }, 10, 3);
+
+	add_action('admin_head-edit-tags.php', function () {
+			$screen = get_current_screen();
+			if ($screen && in_array($screen->taxonomy, ['post_tag', 'interest_tag', 'category', 'topics'])) {
+				$taxonomy = $screen->taxonomy;
+				$styles = [
+					'post_tag' => '
+						.column-cb { width: 5%; }
+						.column-featured_image { width: 10%; }
+						.column-name { width: 15%; }
+						.column-description { width: 30%; }
+						.column-slug { width: 10%; }
+						.column-posts { width: 7%; }
+					',
+					'interest_tag' => '
+						.column-cb { width: 5%; }
+						.column-featured_image { width: 10%; }
+						.column-name { width: 15%; }
+						.column-description { width: 30%; }
+						.column-slug { width: 10%; }
+						.column-posts { width: 7%; }
+					',
+					'category' => '
+						.column-cb { width: 5%; }
+						.column-featured_image { width: 10%; }
+						.column-name { width: 15%; }
+						.column-description { width: 30%; }
+						.column-slug { width: 10%; }
+						.column-posts { width: 7%; }
+					',
+					'topics' => '
+						.column-cb { width: 5%; }
+						.column-featured_image { width: 10%; }
+						.column-name { width: 15%; }
+						.column-description { width: 30%; }
+						.column-slug { width: 10%; }
+						.column-posts { width: 7%; }
+					'
+				];
+				echo '<style>' . ($styles[$taxonomy] ?? '') . '
+					.wp-list-table {
+						width: 100%;
+					}
+				</style>';
+			}
+		});
 }
 
 add_action('admin_init', 'initialize_custom_admin_columns');
