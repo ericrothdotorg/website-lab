@@ -24,7 +24,7 @@ function initialize_custom_admin_columns() {
 			$columns['post_tags'] = __('Tags');
         } elseif ($type === 'my-interests') {
             $columns['topics'] = __('Topics');
-			$columns['post_tags'] = __('Tags');
+			$columns['interest_tags'] = __('Tags');
         } elseif ($type === 'my-traits') {
             $columns['types'] = __('Types');
         }
@@ -73,12 +73,14 @@ function initialize_custom_admin_columns() {
             case 'types':
             case 'post_categories':
 			case 'post_tags':
+			case 'interest_tags':
                 $taxonomy = match ($column) {
                     'things' => 'things',
                     'topics' => 'topics',
                     'types' => 'types',
                     'post_categories' => 'category',
 					'post_tags' => 'post_tag',
+					'interest_tags' => 'interest_tag',
                 };
                 $terms = get_the_terms($post_id, $taxonomy);
                 if ($terms && !is_wp_error($terms)) {
