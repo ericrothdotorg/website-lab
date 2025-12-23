@@ -114,7 +114,7 @@ function initialize_custom_admin_columns() {
     add_action('manage_my-interests_posts_custom_column', 'render_column_content', 10, 2);
     add_action('manage_my-traits_posts_custom_column', 'render_column_content', 10, 2);
 
-    // === SORTABLE COLUMNS ===
+    // === MAKE COLUMNS SORTABLE ===
 
     function set_sortables($columns) {
         $columns['id'] = 'ID';
@@ -160,7 +160,7 @@ function initialize_custom_admin_columns() {
 		return $clauses;
 	}, 10, 2);
 
-    // === OPTIONAL STYLES ===
+    // === SET COLUMNS WIDTHS ===
 
     add_action('admin_head-edit.php', function () {
         global $typenow;
@@ -193,7 +193,7 @@ function initialize_custom_admin_columns() {
                 .post-type-my-interests .column-featured_image { width: 8%; }
                 .post-type-my-interests .column-title { width: 12%; }
                 .post-type-my-interests .column-topics { width: 8%; }
-				.post-type-my-interests .column-post_tags { width: 8%; }
+				.post-type-my-interests .column-interest_tags { width: 8%; }
                 .post-type-my-interests .column-custom_excerpt { width: 25%; }
                 .post-type-my-interests .column-word_count { width: 5%; }
                 .post-type-my-interests .column-read_time { width: 5%; }
@@ -310,147 +310,55 @@ function initialize_custom_admin_columns() {
         </style>';
     });
 
-// === ADD MEDIA TO TAXONOMY COLUMNS ===
+	// === ADD FEATURED IMGs TO TAX COLUMNS ===
 
-	add_filter('manage_edit-post_tag_columns', function($columns) {
-        $new = [];
-        $new['cb'] = $columns['cb'];
-        $new['featured_image'] = __('Image');
-        foreach ($columns as $key => $value) {
-            if ($key !== 'cb') {
-                $new[$key] = $value;
-            }
-        }
-        return $new;
-    });
-    add_filter('manage_edit-interest_tag_columns', function($columns) {
-        $new = [];
-        $new['cb'] = $columns['cb'];
-        $new['featured_image'] = __('Image');
-        foreach ($columns as $key => $value) {
-            if ($key !== 'cb') {
-                $new[$key] = $value;
-            }
-        }
-        return $new;
-    });
-    add_filter('manage_edit-category_columns', function($columns) {
-        $new = [];
-        $new['cb'] = $columns['cb'];
-        $new['featured_image'] = __('Image');
-        foreach ($columns as $key => $value) {
-            if ($key !== 'cb') {
-                $new[$key] = $value;
-            }
-        }
-        return $new;
-    });
-    add_filter('manage_edit-topics_columns', function($columns) {
-        $new = [];
-        $new['cb'] = $columns['cb'];
-        $new['featured_image'] = __('Image');
-        foreach ($columns as $key => $value) {
-            if ($key !== 'cb') {
-                $new[$key] = $value;
-            }
-        }
-        return $new;
-    });
+	$taxonomies = ['category', 'post_tag', 'topics', 'interest_tag'];
+	
+	// Add featured IMG Column
+	foreach ($taxonomies as $tax) {
+		add_filter("manage_edit-{$tax}_columns", function($columns) {
+			$new = [];
+			$new['cb'] = $columns['cb'];
+			$new['featured_image'] = __('Image');
+			foreach ($columns as $key => $value) {
+				if ($key !== 'cb') {
+					$new[$key] = $value;
+				}
+			}
+			return $new;
+		});
+	}
+	// Render featured IMG Column Content
+	foreach ($taxonomies as $tax) {
+		add_filter("manage_{$tax}_custom_column", function($content, $column, $term_id) {
+			if ($column === 'featured_image') {
+				$blocksy_meta = get_term_meta($term_id, 'blocksy_taxonomy_meta_options', true);
+				if (is_array($blocksy_meta) && !empty($blocksy_meta['image']['url'])) {
+					echo '<img src="' . esc_url($blocksy_meta['image']['url']) . '" style="width: 65px; height: auto; border-radius: 4px;">';
+				} else {
+					echo '—';
+				}
+			}
+			return $content;
+		}, 10, 3);
+	}
 
-    add_filter('manage_post_tag_custom_column', function($content, $column, $term_id) {
-        if ($column === 'featured_image') {
-            $blocksy_meta = get_term_meta($term_id, 'blocksy_taxonomy_meta_options', true);
-            if (is_array($blocksy_meta) && !empty($blocksy_meta['image']['url'])) {
-                $image_url = $blocksy_meta['image']['url'];
-                echo '<img src="' . esc_url($image_url) . '" style="width: 65px; height: auto; border-radius: 4px;">';
-            } else {
-                echo '—';
-            }
-        }
-        return $content;
-    }, 10, 3);
-    add_filter('manage_interest_tag_custom_column', function($content, $column, $term_id) {
-        if ($column === 'featured_image') {
-            $blocksy_meta = get_term_meta($term_id, 'blocksy_taxonomy_meta_options', true);
-            if (is_array($blocksy_meta) && !empty($blocksy_meta['image']['url'])) {
-                $image_url = $blocksy_meta['image']['url'];
-                echo '<img src="' . esc_url($image_url) . '" style="width: 65px; height: auto; border-radius: 4px;">';
-            } else {
-                echo '—';
-            }
-        }
-        return $content;
-    }, 10, 3);
-    add_filter('manage_category_custom_column', function($content, $column, $term_id) {
-        if ($column === 'featured_image') {
-            $blocksy_meta = get_term_meta($term_id, 'blocksy_taxonomy_meta_options', true);
-            if (is_array($blocksy_meta) && !empty($blocksy_meta['image']['url'])) {
-                $image_url = $blocksy_meta['image']['url'];
-                echo '<img src="' . esc_url($image_url) . '" style="width: 65px; height: auto; border-radius: 4px;">';
-            } else {
-                echo '—';
-            }
-        }
-        return $content;
-    }, 10, 3);
-    add_filter('manage_topics_custom_column', function($content, $column, $term_id) {
-        if ($column === 'featured_image') {
-            $blocksy_meta = get_term_meta($term_id, 'blocksy_taxonomy_meta_options', true);
-            if (is_array($blocksy_meta) && !empty($blocksy_meta['image']['url'])) {
-                $image_url = $blocksy_meta['image']['url'];
-                echo '<img src="' . esc_url($image_url) . '" style="width: 65px; height: auto; border-radius: 4px;">';
-            } else {
-                echo '—';
-            }
-        }
-        return $content;
-    }, 10, 3);
+	// === SET COLUMNS WIDTHS IN TAX COLUMNS ===
 
 	add_action('admin_head-edit-tags.php', function () {
-			$screen = get_current_screen();
-			if ($screen && in_array($screen->taxonomy, ['post_tag', 'interest_tag', 'category', 'topics'])) {
-				$taxonomy = $screen->taxonomy;
-				$styles = [
-					'post_tag' => '
-						.column-cb { width: 5%; }
-						.column-featured_image { width: 10%; }
-						.column-name { width: 15%; }
-						.column-description { width: 30%; }
-						.column-slug { width: 10%; }
-						.column-posts { width: 7%; }
-					',
-					'interest_tag' => '
-						.column-cb { width: 5%; }
-						.column-featured_image { width: 10%; }
-						.column-name { width: 15%; }
-						.column-description { width: 30%; }
-						.column-slug { width: 10%; }
-						.column-posts { width: 7%; }
-					',
-					'category' => '
-						.column-cb { width: 5%; }
-						.column-featured_image { width: 10%; }
-						.column-name { width: 15%; }
-						.column-description { width: 30%; }
-						.column-slug { width: 10%; }
-						.column-posts { width: 7%; }
-					',
-					'topics' => '
-						.column-cb { width: 5%; }
-						.column-featured_image { width: 10%; }
-						.column-name { width: 15%; }
-						.column-description { width: 30%; }
-						.column-slug { width: 10%; }
-						.column-posts { width: 7%; }
-					'
-				];
-				echo '<style>' . ($styles[$taxonomy] ?? '') . '
-					.wp-list-table {
-						width: 100%;
-					}
-				</style>';
-			}
-		});
+		$screen = get_current_screen();
+		if ($screen && in_array($screen->taxonomy, ['category', 'post_tag', 'topics', 'interest_tag'])) {
+			echo '<style>
+				.column-cb { width: 5%; }
+				.column-featured_image { width: 10%; }
+				.column-name { width: 15%; }
+				.column-description { width: 30%; }
+				.column-slug { width: 10%; }
+				.column-posts { width: 7%; }
+				.wp-list-table { width: 100%; }
+			</style>';
+		}
+	});
 }
 
 add_action('admin_init', 'initialize_custom_admin_columns');
