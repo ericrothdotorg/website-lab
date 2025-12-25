@@ -5,19 +5,6 @@ add_action("wp_head", function () {
     ?>
     <style>
 
-    /* HTML & BODY BASICS */
-    html {-webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-behavior: smooth;}
-    p {text-align: justify;}
-    code {background: none !important; border: none; padding: 0;}
-    
-    /* CORE LAYOUT UTILITIES */
-    .row::after {content: ""; display: table; clear: both;}
-    .clearfix::after {content: ""; clear: both; display: table;}
-    
-    /* RESPONSIVE VISIBILITY */
-    @media (max-width: 768px) {.hide-on-small {display: none;}}
-    @media (min-width: 768px) {.hide-on-big {display: none;}}
-    
     /* == THEME RELATED == */
     
     /* Header Container: Image */
@@ -34,12 +21,25 @@ add_action("wp_head", function () {
     .page-title {padding: 10px 20px;}
     .page-description {padding: 0 20px 20px;}
     .ct-breadcrumbs {padding: 0 20px 20px;}
-
+		
 	/* == NOT THEME RELATED == */
 
     /* NAVIGATION */
     a:link {font-weight: bold; color: #1e73be;}
     a:link:hover {color: #c53030;}
+
+    /* HTML & BODY BASICS */
+    html {-webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-behavior: smooth;}
+    p {text-align: justify;}
+    code {background: none !important; border: none; padding: 0;}
+    
+    /* CORE LAYOUT UTILITIES */
+    .row::after {content: ""; display: table; clear: both;}
+    .clearfix::after {content: ""; clear: both; display: table;}
+    
+    /* RESPONSIVE VISIBILITY */
+    @media (max-width: 768px) {.hide-on-small {display: none;}}
+    @media (min-width: 768px) {.hide-on-big {display: none;}}
     
     /* BRANDING */
     
@@ -171,7 +171,7 @@ add_action("wp_footer", function () {
 
     /* NAVIGATION */
     
-    /* External Link Indicator (filter in functions.php) */
+    /* External Link Indicator (Functionality is in functions.php) */
     a.external-link::after {
         content: "";
         background: url("https://ericroth.org/wp-content/uploads/2024/03/external-link-greyblue.svg") no-repeat center;
@@ -181,7 +181,7 @@ add_action("wp_footer", function () {
         display: inline-block;
     }
     
-    /* Exclude from Page List Block */
+    /* Exclude from Page List Block (hide specific Navigation Items) */
     .wp-block-page-list.english > li:nth-child(1) > ul > li:nth-child(n+2):nth-child(-n+4),
     .wp-block-page-list.english > li:not(:nth-child(1)):not(:nth-child(6)),
     .wp-block-page-list.english > li:nth-child(6) > ul > li:nth-child(1),
@@ -293,7 +293,8 @@ add_action("wp_footer", function () {
     .two-columns-text {-webkit-column-count: 2; column-count: 2;}
     .three-columns-text {-webkit-column-count: 3; column-count: 3;}
     .four-columns-text {-webkit-column-count: 4; column-count: 4;}
-    
+    @media (max-width:768px) {.two-columns-text,.three-columns-text,.four-columns-text{-webkit-column-count: 1; column-count: 1; -webkit-column-gap: 0; column-gap: 0; -webkit-column-rule: none; column-rule: none;}}
+	
     /* (Emphasized) Design Blocks */
     .emphasized-design-green, .emphasized-design-red, .emphasized-design-orange {
         font-style: italic;
