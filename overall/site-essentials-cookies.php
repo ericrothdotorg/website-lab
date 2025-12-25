@@ -270,9 +270,12 @@ add_filter('wp_get_attachment_image', function($html, $attachment_id) {
     } elseif (empty($alt)) {
         $alt = get_the_title($attachment_id);
     }
-    // Remove ALT if Image is wrapped in Link with same Text
-    if (strpos($html, '<a') !== false && strpos($html, $alt) !== false) {
-        $alt = '';
+    // Remove ALT if Link has visible Text that matches the ALT (avoids Redundancy)
+    if (preg_match('/<a[^>]*>([^<]+)<img/i', $html, $link_text_match)) {
+        $link_text = trim(strip_tags($link_text_match[1]));
+        if (!empty($link_text) && strcasecmp($link_text, $alt) === 0) {
+            $alt = '';
+        }
     }
     $alt = esc_attr(mb_substr(wp_strip_all_tags($alt), 0, ALT_TEXT_MAX_LENGTH));
     return preg_replace('/alt=["\'](.*?)["\']/', 'alt="' . $alt . '"', $html);
@@ -280,43 +283,61 @@ add_filter('wp_get_attachment_image', function($html, $attachment_id) {
 
 // Process external Links (combined: Add Class + Title Attribute)
 add_filter('the_content', function ($content) {
+    // Domains to exclude from external Link Processing
     $exclude = ['ericroth.org', 'ericroth-org', '1drv.ms', 'paypal.com', 'librarything.com',
                 'themoviedb.org', 'facebook.com', 'github.com', 'linkedin.com',
                 'patreon.com', 'bsky.app', 'bsky.social'];
+	
+    // STEP 1: Pre-process Content to detect 'neli' Class on Parent Containers
+    $content = preg_replace_callback('/<(figure|div)[^>]*class=["\'][^"\']*neli[^"\']*["\'][^>]*>(.*?)<\/\1>/is', 
+        function($m) {
+            return preg_replace('/<a\s+/', '<a data-neli="true" ', $m[0]);
+        }, 
+        $content
+    );
+    // STEP 2: Process all Links
     return preg_replace_callback('/<a\s+([^>]+)>/i', function ($m) use ($exclude) {
         $tag = $m[0];
         $attrs = $m[1];
-        // Extract href
+        // Extract href (if no href, skip Processing)
         if (!preg_match('/href=["\']([^"\']+)["\']/i', $attrs, $href_match)) {
-            return $tag; // No href, skip
+            return $tag;
         }
         $href = $href_match[1];
-        // Skip internal / special Links
+		
+        // --- SKIP CONDITIONS (return Link unchanged) ---
+        
+        // Skip: 'neli' Exclusion
+        if (strpos($attrs, 'data-neli="true"') !== false) {
+            return str_replace(' data-neli="true"', '', $tag);
+        }
+        if (preg_match('/class=["\'][^"\']*\bneli\b[^"\']*["\']/', $attrs)) {
+            return $tag;
+        }
+        // Skip: Internal / Special Links
         if ($href[0] === '#' || $href[0] === '/' || strpos($href, 'tel:') === 0 || 
             stripos($href, 'javascript') !== false || strpos($href, '?cat=') !== false) {
             return $tag;
         }
-        // Skip whitelisted Domains
+        // Skip: Whitelisted Domains
         foreach ($exclude as $domain) {
             if (strpos($href, $domain) !== false) return $tag;
         }
-        // Skip Links with 'neli' Class
-        if (preg_match('/class=["\'][^"\']* ?neli[^"\']* ?["\']/', $attrs)) {
-            return $tag;
-        }
-        // Skip WP UI Classes
+        // Skip: WordPress UI Elements
         if (preg_match('/class=["\'][^"\']*(wp-block-button__link|button|page-numbers|wp-block-social-link|wp-social-link|wp-social-link-youtube)[^"\']*["\']/', $attrs)) {
             return $tag;
         }
-        // This is an external Link - Process it
+        
+        // --- PROCESS LINKS (return Link changed) ---
+        
         $modified = $tag;
-        // Add external-link Class
+        // Add 'external-link' Class
         if (strpos($attrs, 'class=') !== false) {
             $modified = preg_replace('/class=(["\'])(.*?)\1/', 'class=$1$2 external-link$1', $modified);
         } else {
             $modified = str_replace('<a ', '<a class="external-link" ', $modified);
         }
-        // Add Title if target="_blank" and no existing Title
+        // Add Title Attribute for Links opening in new Tab
         if (strpos($attrs, 'target="_blank"') !== false && strpos($attrs, 'title=') === false) {
             $modified = str_replace('<a ', '<a title="Opens in a new tab" ', $modified);
         }
