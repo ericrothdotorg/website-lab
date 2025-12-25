@@ -82,6 +82,22 @@ add_filter('cron_schedules', function($schedules) {
     return $schedules;
 });
 
+// Shortcode to display output on Frontend
+function er_today_total_views_shortcode() {
+    global $wpdb;
+    $views_today = $wpdb->get_var("
+        SELECT COUNT(*) FROM {$wpdb->prefix}postmeta
+        WHERE meta_key = 'view_timestamp' AND DATE(meta_value) = CURDATE()
+    ");
+    $views_total = $wpdb->get_var("
+        SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta
+        WHERE meta_key = '_er_post_views'
+    ");
+    $format_count = fn($num) => number_format($num);
+    return '<p>👁️ Views: <strong style="color: red;">' . intval($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</p>';
+}
+add_shortcode('today_total_views', 'er_today_total_views_shortcode');
+
 // ======================================
 // ADD LIKE / DISLIKE BUTTONS
 // ======================================
