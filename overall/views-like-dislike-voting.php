@@ -1,5 +1,4 @@
 <?php
-
 // ======================================
 // ADD POST VIEWS TRACKING
 // ======================================
@@ -10,6 +9,7 @@ function er_track_post_views($post_id) {
     if (empty($post_id)) $post_id = get_the_ID();
     $views = (int) get_post_meta($post_id, '_er_post_views', true);
     update_post_meta($post_id, '_er_post_views', $views + 1);
+    add_post_meta($post_id, 'view_timestamp', current_time('mysql'));
 }
 add_action('wp_head', function() {
     if (is_singular()) er_track_post_views(get_the_ID());
@@ -55,8 +55,13 @@ function increment_views() {
     foreach ($posts as $post) {
         $post_id = $post->ID;
         $views = get_post_meta($post_id, '_er_post_views', true) ?: 5000;
-        $views += rand(50, 100);
+        $increment = rand(100, 200);
+        $views += $increment;
         update_post_meta($post_id, '_er_post_views', $views);
+        // Add timestamps for each incremented view
+        for ($i = 0; $i < $increment; $i++) {
+            add_post_meta($post_id, 'view_timestamp', current_time('mysql'));
+        }
     }
 }
 
