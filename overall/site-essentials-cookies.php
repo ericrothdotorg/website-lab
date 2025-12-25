@@ -300,8 +300,12 @@ add_filter('the_content', function ($content) {
         foreach ($exclude as $domain) {
             if (strpos($href, $domain) !== false) return $tag;
         }
+        // Skip Links with 'neli' Class
+        if (preg_match('/class=["\'][^"\']* ?neli[^"\']* ?["\']/', $attrs)) {
+            return $tag;
+        }
         // Skip WP UI Classes
-        if (preg_match('/class=["\'][^"\']*(wp-block-button__link|button|neli|page-numbers|wp-block-social-link|wp-social-link|wp-social-link-youtube)[^"\']*["\']/', $attrs)) {
+        if (preg_match('/class=["\'][^"\']*(wp-block-button__link|button|page-numbers|wp-block-social-link|wp-social-link|wp-social-link-youtube)[^"\']*["\']/', $attrs)) {
             return $tag;
         }
         // This is an external Link - Process it
