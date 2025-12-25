@@ -1,5 +1,4 @@
 <?php
-
 defined('ABSPATH') || exit;
 
 function initialize_custom_dashboard() {
@@ -115,10 +114,20 @@ function initialize_custom_dashboard() {
                 SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta
                 WHERE meta_key = 'dislikes'
             ");
+			// 👁️ Views
+            $views_today = $wpdb->get_var("
+                SELECT COUNT(*) FROM {$wpdb->prefix}postmeta
+                WHERE meta_key = 'view_timestamp' AND DATE(meta_value) = CURDATE()
+            ");
+            $views_total = $wpdb->get_var("
+                SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta
+                WHERE meta_key = '_er_post_views'
+            ");
             echo '<ul style="font-size: 14px; line-height: 1.5;">';
             echo '<li>📬 Contact Messages: <strong style="color: red;">' . intval($contact_today) . '</strong> today / <strong>' . $format_count($contact_total) . '</strong> total</li>';
             echo '<li>👍 Likes: <strong style="color: red;">' . intval($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</li>';
             echo '<li>👎 Dislikes: <strong style="color: red;">' . intval($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</li>';
+			echo '<li>👁️ Views: <strong style="color: red;">' . intval($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</li>';
             echo '</ul>';
             // Today's 👍 Liked / 👎 Disliked Content (Aggregated)
             $engagement_summary = $wpdb->get_results("
@@ -333,7 +342,8 @@ function initialize_custom_dashboard() {
 		echo '</form>';
 		// Add additional buttons (act just as links)
 		echo '<a href="' . esc_url(admin_url('admin.php?page=litespeed-db_optm')) . '" class="button" target="_blank">🛢️ LiteSpeed DB</a>';
-		echo '<a href="' . esc_url(admin_url('index.php?LSCWP_CTRL=purge&litespeed_type=purge_all')) . '" class="button">⚡ Purge All</a>';
+		$nonce = wp_create_nonce('purge');
+		echo '<a href="' . esc_url(admin_url('index.php?LSCWP_CTRL=purge&LSCWP_NONCE=' . $nonce . '&litespeed_type=purge_all')) . '" class="button">⚡ Purge All</a>';
 		echo '</div>';
 		global $wpdb;
 		$postmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->postmeta}");
@@ -473,6 +483,12 @@ function initialize_custom_dashboard() {
 			DELETE FROM {$wpdb->comments}
 			WHERE comment_approved = 'spam' AND comment_date < NOW() - INTERVAL 30 DAY
 		", 'Spam comments cleanup');
+		// Delete old view timestamps
+		$deleted_total += $safe_delete("
+			DELETE FROM {$wpdb->postmeta}
+			WHERE meta_key = 'view_timestamp' 
+			AND meta_value < DATE_SUB(NOW(), INTERVAL 30 DAY)
+		", 'Old view timestamps cleanup');
 		// Delete old trash posts
 		$deleted_total += $safe_delete("
 			DELETE FROM {$wpdb->posts}
@@ -697,4 +713,3 @@ HTML;
 }
 
 add_action('admin_init', 'initialize_custom_dashboard');
-
