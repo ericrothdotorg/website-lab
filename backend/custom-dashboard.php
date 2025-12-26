@@ -124,10 +124,10 @@ function initialize_custom_dashboard() {
                 WHERE meta_key = '_er_post_views'
             ");
             echo '<ul style="font-size: 14px; line-height: 1.5;">';
-            echo '<li>📬 Contact Messages: <strong style="color: red;">' . intval($contact_today) . '</strong> today / <strong>' . $format_count($contact_total) . '</strong> total</li>';
-            echo '<li>👍 Likes: <strong style="color: red;">' . intval($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</li>';
-            echo '<li>👎 Dislikes: <strong style="color: red;">' . intval($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</li>';
-			echo '<li>👁️ Views: <strong style="color: red;">' . intval($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</li>';
+			echo '<li>📬 Contact Messages: <strong style="color: red;">' . $format_count($contact_today) . '</strong> today / <strong>' . $format_count($contact_total) . '</strong> total</li>';
+			echo '<li>👍 Likes: <strong style="color: red;">' . $format_count($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</li>';
+			echo '<li>👎 Dislikes: <strong style="color: red;">' . $format_count($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</li>';
+			echo '<li>👁️ Views: <strong style="color: red;">' . $format_count($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</li>';
             echo '</ul>';
             // Today's 👍 Liked / 👎 Disliked Content (Aggregated)
             $engagement_summary = $wpdb->get_results("
