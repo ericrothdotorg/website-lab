@@ -15,7 +15,7 @@ add_action('wp_head', function() {
     if (is_singular()) er_track_post_views(get_the_ID());
 });
 
-// Shortcode with Prefix / Suffix Options
+// Shortcode with Prefix / Suffix Options for Views
 function er_post_views_shortcode($atts) {
     $atts = shortcode_atts([
         'id' => get_the_ID(),
@@ -30,6 +30,7 @@ function er_post_views_shortcode($atts) {
         $views = rand(5000, 10000);
         update_post_meta($post_id, '_er_post_views', $views);
     }
+	
 	// Inline CSS Styles
     $style = '<style>
         .post-views-wrapper {
@@ -48,41 +49,7 @@ function er_post_views_shortcode($atts) {
 }
 add_shortcode('post_views', 'er_post_views_shortcode');
 
-// Introduce Increments for Views
-function increment_views() {
-    $args = array('post_type' => get_post_types(['public' => true]), 'posts_per_page' => -1);
-    $posts = get_posts($args);
-    foreach ($posts as $post) {
-        $post_id = $post->ID;
-        $views = get_post_meta($post_id, '_er_post_views', true) ?: 5000;
-        $increment = rand(100, 200);
-        $views += $increment;
-        update_post_meta($post_id, '_er_post_views', $views);
-        // Add timestamps for each incremented view
-        for ($i = 0; $i < $increment; $i++) {
-            add_post_meta($post_id, 'view_timestamp', current_time('mysql'));
-        }
-    }
-}
-
-// Schedule automatic Increments
-if (!wp_next_scheduled('increment_views_event')) {
-    wp_schedule_event(time(), 'biweekly', 'increment_views_event');
-}
-add_action('increment_views_event', 'increment_views');
-
-// Add custom bi-weekly Schedule
-add_filter('cron_schedules', function($schedules) {
-    if (!isset($schedules['biweekly'])) {
-        $schedules['biweekly'] = array(
-            'interval' => 1209600, // 14 days in seconds
-            'display' => __('Every Two Weeks')
-        );
-    }
-    return $schedules;
-});
-
-// Shortcode to display output on Frontend
+// Shortcode to display Views on Frontend
 function er_today_total_views_shortcode() {
     global $wpdb;
     $views_today = $wpdb->get_var("
@@ -94,20 +61,80 @@ function er_today_total_views_shortcode() {
         WHERE meta_key = '_er_post_views'
     ");
     $format_count = fn($num) => number_format($num);
-    return '<p>👁️ Views: <strong style="color: red;">' . intval($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</p>';
+    return '<p>👁️ Views: <strong style="color: red;">' . $format_count($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</p>';
 }
 add_shortcode('today_total_views', 'er_today_total_views_shortcode');
+
+// Introduce Increments for Views
+function increment_views() {
+    $args = array('post_type' => get_post_types(['public' => true]), 'posts_per_page' => -1);
+    $posts = get_posts($args);
+    foreach ($posts as $post) {
+        $post_id = $post->ID;
+        $views = get_post_meta($post_id, '_er_post_views', true) ?: 5000;
+        $increment = rand(10, 30);
+        $views += $increment;
+        update_post_meta($post_id, '_er_post_views', $views);
+        // Add Timestamp for each incremented View
+        for ($i = 0; $i < $increment; $i++) {
+            add_post_meta($post_id, 'view_timestamp', current_time('mysql'));
+        }
+    }
+}
+
+// Schedule automatic Increments for Views
+if (!wp_next_scheduled('increment_views_event')) {
+    wp_schedule_event(time(), 'weekly', 'increment_views_event');
+}
+add_action('increment_views_event', 'increment_views');
 
 // ======================================
 // ADD LIKE / DISLIKE BUTTONS
 // ======================================
 
-// Shortcode to manually insert Like / Dislike Buttons
+// Update Likes
+function update_likes() {
+    if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'update_post_reaction')) {
+        wp_die('Invalid request');
+    }
+    $post_id = intval($_GET['post_id']);
+    if (!$post_id || !get_post_status($post_id)) {
+        wp_die('Invalid Post');
+    }
+    $likes = get_post_meta($post_id, 'likes', true) ?: 0;
+    update_post_meta($post_id, 'likes', $likes + 1);
+    add_post_meta($post_id, 'like_timestamp', current_time('mysql'));
+    echo $likes + 1;
+    wp_die();
+}
+add_action('wp_ajax_update_likes', 'update_likes');
+add_action('wp_ajax_nopriv_update_likes', 'update_likes');
+
+// Update Dislikes
+function update_dislikes() {
+    if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'update_post_reaction')) {
+        wp_die('Invalid request');
+    }
+    $post_id = intval($_GET['post_id']);
+    if (!$post_id || !get_post_status($post_id)) {
+        wp_die('Invalid Post');
+    }
+    $dislikes = get_post_meta($post_id, 'dislikes', true) ?: 0;
+    update_post_meta($post_id, 'dislikes', $dislikes + 1);
+    add_post_meta($post_id, 'dislike_timestamp', current_time('mysql'));
+    echo $dislikes + 1;
+    wp_die();
+}
+add_action('wp_ajax_update_dislikes', 'update_dislikes');
+add_action('wp_ajax_nopriv_update_dislikes', 'update_dislikes');
+
+// Shortcode with Prefix / Suffix Options for Like / Dislike
 function custom_like_dislike_shortcode() {
     if (!is_singular()) {
         return '';
     }
     $post_id = get_the_ID();
+	
     // Assign initial random Values if not set
     $likes = get_post_meta($post_id, 'likes', true);
     if (!$likes || $likes < 500) {
@@ -119,6 +146,7 @@ function custom_like_dislike_shortcode() {
         $dislikes = rand(5, 10);
         update_post_meta($post_id, 'dislikes', $dislikes);
     }
+	
     // Inline CSS Styles
     $style = '<style>
         .like-dislike-buttons-wrapper {
@@ -229,41 +257,37 @@ function custom_like_dislike_shortcode() {
 }
 add_shortcode('like_dislike_buttons', 'custom_like_dislike_shortcode');
 
-// Update Likes
-function update_likes() {
-    if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'update_post_reaction')) {
-        wp_die('Invalid request');
-    }
-    $post_id = intval($_GET['post_id']);
-    if (!$post_id || !get_post_status($post_id)) {
-        wp_die('Invalid Post');
-    }
-    $likes = get_post_meta($post_id, 'likes', true) ?: 0;
-    update_post_meta($post_id, 'likes', $likes + 1);
-    add_post_meta($post_id, 'like_timestamp', current_time('mysql'));
-    echo $likes + 1;
-    wp_die();
+// Shortcode to display Likes on Frontend
+function er_today_total_likes_shortcode() {
+    global $wpdb;
+    $likes_today = $wpdb->get_var("
+        SELECT COUNT(*) FROM {$wpdb->prefix}postmeta
+        WHERE meta_key = 'like_timestamp' AND DATE(meta_value) = CURDATE()
+    ");
+    $likes_total = $wpdb->get_var("
+        SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta
+        WHERE meta_key = 'likes'
+    ");
+    $format_count = fn($num) => number_format($num);
+    return '<p>👍 Likes: <strong style="color: red;">' . $format_count($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</p>';
 }
-add_action('wp_ajax_update_likes', 'update_likes');
-add_action('wp_ajax_nopriv_update_likes', 'update_likes');
+add_shortcode('today_total_likes', 'er_today_total_likes_shortcode');
 
-// Update Dislikes
-function update_dislikes() {
-    if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'update_post_reaction')) {
-        wp_die('Invalid request');
-    }
-    $post_id = intval($_GET['post_id']);
-    if (!$post_id || !get_post_status($post_id)) {
-        wp_die('Invalid Post');
-    }
-    $dislikes = get_post_meta($post_id, 'dislikes', true) ?: 0;
-    update_post_meta($post_id, 'dislikes', $dislikes + 1);
-    add_post_meta($post_id, 'dislike_timestamp', current_time('mysql'));
-    echo $dislikes + 1;
-    wp_die();
+// Shortcode to display Dislikes on Frontend
+function er_today_total_dislikes_shortcode() {
+    global $wpdb;
+    $dislikes_today = $wpdb->get_var("
+        SELECT COUNT(*) FROM {$wpdb->prefix}postmeta
+        WHERE meta_key = 'dislike_timestamp' AND DATE(meta_value) = CURDATE()
+    ");
+    $dislikes_total = $wpdb->get_var("
+        SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta
+        WHERE meta_key = 'dislikes'
+    ");
+    $format_count = fn($num) => number_format($num);
+    return '<p>👎 Dislikes: <strong style="color: red;">' . $format_count($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</p>';
 }
-add_action('wp_ajax_update_dislikes', 'update_dislikes');
-add_action('wp_ajax_nopriv_update_dislikes', 'update_dislikes');
+add_shortcode('today_total_dislikes', 'er_today_total_dislikes_shortcode');
 
 // Introduce Increments for Likes
 function increment_likes() {
@@ -272,10 +296,21 @@ function increment_likes() {
     foreach ($posts as $post) {
         $post_id = $post->ID;
         $likes = get_post_meta($post_id, 'likes', true) ?: 500;
-        $likes += rand(10, 20);
+        $increment = rand(10, 20);
+        $likes += $increment;
         update_post_meta($post_id, 'likes', $likes);
+        // Add Timestamp for each incremented Like
+        for ($i = 0; $i < $increment; $i++) {
+            add_post_meta($post_id, 'like_timestamp', current_time('mysql'));
+        }
     }
 }
+
+// Schedule automatic Increments for Likes
+if (!wp_next_scheduled('increment_likes_event')) {
+    wp_schedule_event(time(), 'weekly', 'increment_likes_event');
+}
+add_action('increment_likes_event', 'increment_likes');
 
 // Introduce Increments for Dislikes
 function increment_dislikes() {
@@ -284,17 +319,17 @@ function increment_dislikes() {
     foreach ($posts as $post) {
         $post_id = $post->ID;
         $dislikes = get_post_meta($post_id, 'dislikes', true) ?: 5;
-        $dislikes += rand(1, 2);
+        $increment = rand(1, 2);
+        $dislikes += $increment;
         update_post_meta($post_id, 'dislikes', $dislikes);
+        // Add Timestamp for each incremented Dislike
+        for ($i = 0; $i < $increment; $i++) {
+            add_post_meta($post_id, 'dislike_timestamp', current_time('mysql'));
+        }
     }
 }
 
-// Schedule automatic Increments
-if (!wp_next_scheduled('increment_likes_event')) {
-    wp_schedule_event(time(), 'weekly', 'increment_likes_event');
-}
-add_action('increment_likes_event', 'increment_likes');
-
+// Schedule automatic Increments for Dislikes
 if (!wp_next_scheduled('increment_dislikes_event')) {
     wp_schedule_event(time(), 'monthly', 'increment_dislikes_event');
 }
