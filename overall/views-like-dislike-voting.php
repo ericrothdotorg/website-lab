@@ -75,10 +75,8 @@ function increment_views() {
         $increment = rand(10, 30);
         $views += $increment;
         update_post_meta($post_id, '_er_post_views', $views);
-        // Add Timestamp for each incremented View
-        for ($i = 0; $i < $increment; $i++) {
-            add_post_meta($post_id, 'view_timestamp', current_time('mysql'));
-        }
+        // Add Timestamp for incremented Views
+		add_post_meta($post_id, 'view_timestamp', current_time('mysql'));
     }
 }
 
@@ -299,10 +297,8 @@ function increment_likes() {
         $increment = rand(10, 20);
         $likes += $increment;
         update_post_meta($post_id, 'likes', $likes);
-        // Add Timestamp for each incremented Like
-        for ($i = 0; $i < $increment; $i++) {
-            add_post_meta($post_id, 'like_timestamp', current_time('mysql'));
-        }
+        // Add Timestamp for incremented Likes
+		add_post_meta($post_id, 'like_timestamp', current_time('mysql'));
     }
 }
 
@@ -322,10 +318,8 @@ function increment_dislikes() {
         $increment = rand(1, 2);
         $dislikes += $increment;
         update_post_meta($post_id, 'dislikes', $dislikes);
-        // Add Timestamp for each incremented Dislike
-        for ($i = 0; $i < $increment; $i++) {
-            add_post_meta($post_id, 'dislike_timestamp', current_time('mysql'));
-        }
+        // Add Timestamp for incremented Dislikes
+		add_post_meta($post_id, 'dislike_timestamp', current_time('mysql'));
     }
 }
 
