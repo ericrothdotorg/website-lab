@@ -129,38 +129,6 @@ function initialize_custom_dashboard() {
 			echo '<li>👎 Dislikes: <strong style="color: red;">' . $format_count($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</li>';
 			echo '<li>👁️ Views: <strong style="color: red;">' . $format_count($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</li>';
             echo '</ul>';
-            // Today's 👍 Liked / 👎 Disliked Content (Aggregated)
-            $engagement_summary = $wpdb->get_results("
-                SELECT post_id,
-                    SUM(CASE WHEN meta_key = 'like_timestamp' THEN 1 ELSE 0 END) AS likes,
-                    SUM(CASE WHEN meta_key = 'dislike_timestamp' THEN 1 ELSE 0 END) AS dislikes
-                FROM {$wpdb->prefix}postmeta
-                WHERE meta_key IN ('like_timestamp', 'dislike_timestamp')
-                AND DATE(meta_value) = CURDATE()
-                GROUP BY post_id
-                ORDER BY MAX(meta_value) DESC
-            ");
-            if ($engagement_summary) {
-                echo '<h4 style="margin-top: 25px;">Today\'s Liked / Disliked Content</h4>';
-                echo '<ul style="font-size: 14px; line-height: 1.5;">';
-                foreach ($engagement_summary as $row) {
-                    $post_id = intval($row->post_id);
-                    $post = get_post($post_id);
-                    if ($post) {
-                        $type = get_post_type($post_id);
-                        $title = esc_html(get_the_title($post_id));
-                        $view_link = get_permalink($post_id);
-                        $likes = intval($row->likes);
-                        $dislikes = intval($row->dislikes);
-                        $summary = [];
-                        if ($likes > 0) $summary[] = "👍 <strong>{$likes}</strong>";
-                        if ($dislikes > 0) $summary[] = "👎 <strong>{$dislikes}</strong>";
-                        $summary_text = implode(' / ', $summary);
-                        echo "<li>{$summary_text} → <a href='{$view_link}' target='_blank'><strong>{$title}</strong></a> <em>({$type})</em></li>";
-                    }
-                }
-                echo '</ul>';
-            }
         });
     });
 
@@ -483,6 +451,18 @@ function initialize_custom_dashboard() {
 			DELETE FROM {$wpdb->comments}
 			WHERE comment_approved = 'spam' AND comment_date < NOW() - INTERVAL 30 DAY
 		", 'Spam comments cleanup');
+		// Delete old like timestamps
+		$deleted_total += $safe_delete("
+			DELETE FROM {$wpdb->postmeta}
+			WHERE meta_key = 'like_timestamp' 
+			AND meta_value < DATE_SUB(NOW(), INTERVAL 30 DAY)
+		", 'Old like timestamps cleanup');
+		// Delete old dislike timestamps
+		$deleted_total += $safe_delete("
+			DELETE FROM {$wpdb->postmeta}
+			WHERE meta_key = 'dislike_timestamp' 
+			AND meta_value < DATE_SUB(NOW(), INTERVAL 30 DAY)
+		", 'Old dislike timestamps cleanup');
 		// Delete old view timestamps
 		$deleted_total += $safe_delete("
 			DELETE FROM {$wpdb->postmeta}
