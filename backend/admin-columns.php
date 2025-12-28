@@ -211,9 +211,7 @@ function initialize_custom_admin_columns() {
             '
         ];
         echo '<style>' . ($styles[$typenow] ?? '') . '
-            .wp-list-table {
-                width: 100%;
-            }
+            .wp-list-table { width: 100%; }
         </style>';
     });
 
@@ -303,10 +301,7 @@ function initialize_custom_admin_columns() {
             .upload-php .column-available_sizes { width: 15%; }
             .upload-php .column-file_format { width: 10%; }
             .upload-php .column-date { width: 10%; }
-            .wp-list-table {
-                table-layout: auto !important;
-                width: 100%;
-            }
+            .wp-list-table { width: 100%; }
         </style>';
     });
 
