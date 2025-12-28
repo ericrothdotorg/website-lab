@@ -79,7 +79,6 @@ function initialize_custom_dashboard() {
         });
     });
 
-
     // ======================================
 	// 🗓️ ADD RECENT SITE ACTIVITY
 	// ======================================
@@ -95,6 +94,15 @@ function initialize_custom_dashboard() {
             ");
             $contact_total = $wpdb->get_var("
                 SELECT COUNT(*) FROM {$wpdb->prefix}contact_messages
+            ");
+			// 👁️ Views
+            $views_today = $wpdb->get_var("
+                SELECT COUNT(*) FROM {$wpdb->prefix}postmeta
+                WHERE meta_key = 'view_timestamp' AND DATE(meta_value) = CURDATE()
+            ");
+            $views_total = $wpdb->get_var("
+                SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta
+                WHERE meta_key = '_er_post_views'
             ");
             // 👍 Likes
             $likes_today = $wpdb->get_var("
@@ -114,20 +122,11 @@ function initialize_custom_dashboard() {
                 SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta
                 WHERE meta_key = 'dislikes'
             ");
-			// 👁️ Views
-            $views_today = $wpdb->get_var("
-                SELECT COUNT(*) FROM {$wpdb->prefix}postmeta
-                WHERE meta_key = 'view_timestamp' AND DATE(meta_value) = CURDATE()
-            ");
-            $views_total = $wpdb->get_var("
-                SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta
-                WHERE meta_key = '_er_post_views'
-            ");
             echo '<ul style="font-size: 14px; line-height: 1.5;">';
 			echo '<li>📬 Contact Messages: <strong style="color: red;">' . $format_count($contact_today) . '</strong> today / <strong>' . $format_count($contact_total) . '</strong> total</li>';
+			echo '<li>👁️ Views: <strong style="color: red;">' . $format_count($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</li>';
 			echo '<li>👍 Likes: <strong style="color: red;">' . $format_count($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</li>';
 			echo '<li>👎 Dislikes: <strong style="color: red;">' . $format_count($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</li>';
-			echo '<li>👁️ Views: <strong style="color: red;">' . $format_count($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</li>';
             echo '</ul>';
         });
     });
