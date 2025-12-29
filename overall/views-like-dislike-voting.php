@@ -9,7 +9,7 @@ function er_track_post_views($post_id) {
     if (empty($post_id)) $post_id = get_the_ID();
     $views = (int) get_post_meta($post_id, '_er_post_views', true);
     update_post_meta($post_id, '_er_post_views', $views + 1);
-    add_post_meta($post_id, 'view_timestamp', current_time('mysql'));
+    update_post_meta($post_id, 'view_timestamp', current_time('mysql'));
 }
 add_action('wp_head', function() {
     if (is_singular()) er_track_post_views(get_the_ID());
@@ -76,7 +76,7 @@ function increment_views() {
         $views += $increment;
         update_post_meta($post_id, '_er_post_views', $views);
         // Add Timestamp for incremented Views
-		add_post_meta($post_id, 'view_timestamp', current_time('mysql'));
+        update_post_meta($post_id, 'view_timestamp', current_time('mysql'));
     }
 }
 
@@ -101,7 +101,7 @@ function update_likes() {
     }
     $likes = get_post_meta($post_id, 'likes', true) ?: 0;
     update_post_meta($post_id, 'likes', $likes + 1);
-    add_post_meta($post_id, 'like_timestamp', current_time('mysql'));
+    update_post_meta($post_id, 'like_timestamp', current_time('mysql'));
     echo $likes + 1;
     wp_die();
 }
@@ -119,7 +119,7 @@ function update_dislikes() {
     }
     $dislikes = get_post_meta($post_id, 'dislikes', true) ?: 0;
     update_post_meta($post_id, 'dislikes', $dislikes + 1);
-    add_post_meta($post_id, 'dislike_timestamp', current_time('mysql'));
+    update_post_meta($post_id, 'dislike_timestamp', current_time('mysql'));
     echo $dislikes + 1;
     wp_die();
 }
@@ -298,7 +298,7 @@ function increment_likes() {
         $likes += $increment;
         update_post_meta($post_id, 'likes', $likes);
         // Add Timestamp for incremented Likes
-		add_post_meta($post_id, 'like_timestamp', current_time('mysql'));
+		update_post_meta($post_id, 'like_timestamp', current_time('mysql'));
     }
 }
 
@@ -319,7 +319,7 @@ function increment_dislikes() {
         $dislikes += $increment;
         update_post_meta($post_id, 'dislikes', $dislikes);
         // Add Timestamp for incremented Dislikes
-		add_post_meta($post_id, 'dislike_timestamp', current_time('mysql'));
+		update_post_meta($post_id, 'dislike_timestamp', current_time('mysql'));
     }
 }
 
