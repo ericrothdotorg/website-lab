@@ -363,7 +363,10 @@ add_action("wp_footer", function () {
     .zoom:hover {width: 100% !important;}
     .zoom-x2 {-webkit-transition: -webkit-transform 1.5s ease-in-out; transition: -webkit-transform 1.5s ease-in-out; transition: transform 1.5s ease-in-out; transition: transform 1.5s ease-in-out, -webkit-transform 1.5s ease-in-out; will-change: transform;}
     .zoom-x2:hover {-webkit-transform: scale(2); transform: scale(2);}
-    
+
+	/* er-social-link-icon */
+	@media (prefers-reduced-motion: no-preference) {.er-social-link-icon {transition: transform 0.1s ease;} .er-social-link-icon:hover {transform: scale(1.1);}}
+
     /* Blob Animation */
     .blob-animation img {-webkit-animation: animate-blob 7.5s ease-in-out infinite alternate; animation: animate-blob 7.5s ease-in-out infinite alternate; will-change: border-radius;}
     .blob-animation img:hover {-webkit-animation-play-state: paused; animation-play-state: paused;}
