@@ -86,7 +86,7 @@ add_action("wp_head", function () {
     
     /* USER'S MOTION PREFERENCES */
     @media (prefers-reduced-motion: reduce) {
-        .site-logo, .octagon-text-outside, .blob-animation img, .animate__animated {
+        .site-logo, .octagon-text-outside, .blob-animation img, .animate__animated, .er-social-link-icon {
             -webkit-animation: none !important;
             animation: none !important;
             -webkit-transition: none !important;
