@@ -286,7 +286,7 @@ add_filter('the_content', function ($content) {
     // Domains to exclude from external Link Processing
     $exclude = ['ericroth.org', 'ericroth-org', '1drv.ms', 'paypal.com', 'librarything.com',
                 'themoviedb.org', 'facebook.com', 'github.com', 'linkedin.com',
-                'patreon.com', 'bsky.app', 'bsky.social'];
+                'patreon.com', 'bsky.app', 'bsky.social', 'about.me'];
 	
     // STEP 1: Pre-process Content to detect 'neli' Class on Parent Containers
     $content = preg_replace_callback('/<(figure|div)[^>]*class=["\'][^"\']*neli[^"\']*["\'][^>]*>(.*?)<\/\1>/is', 
