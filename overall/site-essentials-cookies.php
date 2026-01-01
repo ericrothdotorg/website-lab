@@ -8,7 +8,7 @@ define('ALT_TEXT_MAX_LENGTH', 100);          // Maximum characters for image alt
 define('READING_SPEED_WPM', 200);            // Words per minute for read time calculation
 define('LCP_IMAGE_MIN_WIDTH', 300);          // Minimum width (px) to consider image for LCP optimization
 // Cache Durations (in seconds)
-define('CACHE_POST_STATS', 86400);           // 24 hours - Post statistics cache
+define('CACHE_POST_STATS', 3600);            // 1 hour - Post statistics cache
 define('CACHE_POST_COUNT', 3600);            // 1 hour - Post count cache
 define('CACHE_LCP_HTML', 3600);              // 1 hour - LCP optimized HTML cache
 
@@ -77,7 +77,7 @@ add_action('template_redirect', function () {
             $width = (int)$w[1];
             // Blocksy LCP Candidates
             $is_blocksy_lcp =
-                preg_match('/ct-featured-image|wp-post-image|ct-image-container/i', $img);
+                preg_match('/ct-featured-image|wp-post-image|ct-image-container|ct-media-container/i', $img);
             // First real Content Image
             if (!$lcp_found && ($is_blocksy_lcp || $width >= $min_width)) {
                 $lcp_found = true;
@@ -101,6 +101,19 @@ add_action('template_redirect', function () {
         }, $html);
     });
 });
+
+// Optimize LCP by adding Class - priority-high - to chosen Images
+add_filter('render_block', function($html, $block) {
+    if ($block['blockName'] !== 'core/image') return $html;
+    $cls = $block['attrs']['className'] ?? '';
+    if (strpos($cls, 'priority-high') === false) return $html;
+    return preg_replace(
+        '/<img(?![^>]*fetchpriority)([^>]+)>/',
+        '<img$1 class="priority-high" fetchpriority="high" loading="eager">',
+        $html,
+        1
+    );
+}, 10, 2);
 
 // Set responsive Image Sizes (aligned with Blocksy Breakpoints)
 add_filter('wp_get_attachment_image_attributes', function ($attr) {
@@ -287,16 +300,21 @@ add_filter('the_content', function ($content) {
     $exclude = ['ericroth.org', 'ericroth-org', '1drv.ms', 'paypal.com', 'librarything.com',
                 'themoviedb.org', 'facebook.com', 'github.com', 'linkedin.com',
                 'patreon.com', 'bsky.app', 'bsky.social', 'about.me'];
-	
-    // STEP 1: Pre-process Content to detect 'neli' Class on Parent Containers
-    $content = preg_replace_callback('/<(figure|div)[^>]*class=["\'][^"\']*neli[^"\']*["\'][^>]*>(.*?)<\/\1>/is', 
+	// STEP 1: Pre-process Content for 'neli' Class and Figure Links (wp-block-image, wp-block-embed)
+	$content = preg_replace_callback('/<(figure|div)[^>]*class=["\'][^"\']*neli[^"\']*["\'][^>]*>(.*?)<\/\1>/is', 
         function($m) {
             return preg_replace('/<a\s+/', '<a data-neli="true" ', $m[0]);
         }, 
         $content
     );
+	$content = preg_replace_callback('/<figure[^>]*class=["\'][^"\']*(wp-block-image|wp-block-embed)[^"\']*["\'][^>]*>(.*?)<\/figure>/is', 
+		function($m) {
+			return preg_replace('/<a\s+/', '<a data-figure-link="true" ', $m[0]);
+		}, 
+		$content
+	);
     // STEP 2: Process all Links
-    return preg_replace_callback('/<a\s+([^>]+)>/i', function ($m) use ($exclude) {
+	return preg_replace_callback('/<a\s+([^>]+)>/i', function ($m) use ($exclude) {
         $tag = $m[0];
         $attrs = $m[1];
         // Extract href (if no href, skip Processing)
@@ -307,6 +325,10 @@ add_filter('the_content', function ($content) {
 		
         // --- SKIP CONDITIONS (return Link unchanged) ---
         
+		// Skip: Whitelisted Domains
+        foreach ($exclude as $domain) {
+            if (strpos($href, $domain) !== false) return $tag;
+        }
         // Skip: 'neli' Exclusion
         if (strpos($attrs, 'data-neli="true"') !== false) {
             return str_replace(' data-neli="true"', '', $tag);
@@ -314,17 +336,17 @@ add_filter('the_content', function ($content) {
         if (preg_match('/class=["\'][^"\']*\bneli\b[^"\']*["\']/', $attrs)) {
             return $tag;
         }
+		// Skip: Figure Links (wp-block-image, wp-block-embed)
+		if (strpos($attrs, 'data-figure-link="true"') !== false) {
+			return str_replace(' data-figure-link="true"', '', $tag);
+		}
+		// Skip: Other WordPress UI Elements
+        if (preg_match('/class=["\'][^"\']*(wp-block-button__link|button|page-numbers|wp-block-social-link|wp-social-link|wp-social-link-youtube)[^"\']*["\']/', $attrs)) {
+            return $tag;
+        }
         // Skip: Internal / Special Links
         if ($href[0] === '#' || $href[0] === '/' || strpos($href, 'tel:') === 0 || 
             stripos($href, 'javascript') !== false || strpos($href, '?cat=') !== false) {
-            return $tag;
-        }
-        // Skip: Whitelisted Domains
-        foreach ($exclude as $domain) {
-            if (strpos($href, $domain) !== false) return $tag;
-        }
-        // Skip: WordPress UI Elements
-        if (preg_match('/class=["\'][^"\']*(wp-block-button__link|button|page-numbers|wp-block-social-link|wp-social-link|wp-social-link-youtube)[^"\']*["\']/', $attrs)) {
             return $tag;
         }
         
@@ -348,7 +370,7 @@ add_filter('the_content', function ($content) {
 // Remove external-Link Class from iFrame Wrappers (for embedded Vids)
 add_filter('the_content', function ($content) {
     // Remove external-link Class from any <a> Tags that wrap iFrames
-    return preg_replace_callback(
+	return preg_replace_callback(
         '/<a\s+([^>]*class=["\'][^"\']*external-link[^"\']*["\'][^>]*)>\s*<iframe/i',
         function ($matches) {
             $attrs = $matches[1];
