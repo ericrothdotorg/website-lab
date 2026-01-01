@@ -294,6 +294,53 @@ add_filter('wp_get_attachment_image', function($html, $attachment_id) {
     return preg_replace('/alt=["\'](.*?)["\']/', 'alt="' . $alt . '"', $html);
 }, 10, 2);
 
+// Ensure all Image Links have accessible Names
+add_filter('the_content', function ($content) {
+    // Find all <a> Tags that contain only <img> Tags (Image Links)
+    return preg_replace_callback(
+        '/<a\s+([^>]*?)>\s*<img\s+([^>]*?)>\s*<\/a>/is',
+        function ($matches) {
+            $link_attrs = $matches[1];
+            $img_attrs = $matches[2];
+            // Check if Image has meaningful ALT Text
+            $has_alt = preg_match('/alt=(["\'])(?!\s*\1)(.+?)\1/i', $img_attrs, $alt_match);
+            // Check if Link already has Aria-Label or Title
+            $has_aria_label = preg_match('/aria-label=/i', $link_attrs);
+            $has_title = preg_match('/title=/i', $link_attrs);
+            // If no accessible Name exists anywhere, add Aria-Label to the Link
+            if (!$has_alt && !$has_aria_label && !$has_title) {
+                // Extract href to create a meaningful Label
+                if (preg_match('/href=(["\'])([^"\']+)\1/i', $link_attrs, $href_match)) {
+                    $url = $href_match[2];
+                    $domain = parse_url($url, PHP_URL_HOST);
+                    $label = $domain ? "Link to $domain" : "Link to image";
+                    $link_attrs = 'aria-label="' . esc_attr($label) . '" ' . $link_attrs;
+                }
+            }
+            // If Image has empty ALT, use it from Link Title or create one
+            elseif (preg_match('/alt=(["\'])\s*\1/i', $img_attrs)) {
+                if ($has_title && preg_match('/title=(["\'])(.+?)\1/i', $link_attrs, $title_match)) {
+                    // Use link title as alt text
+                    $img_attrs = preg_replace('/alt=(["\'])\s*\1/i', 'alt="' . esc_attr($title_match[2]) . '"', $img_attrs);
+                } elseif (preg_match('/href=(["\'])([^"\']+)\1/i', $link_attrs, $href_match)) {
+                    // Generate ALT from URL
+                    $url = $href_match[2];
+                    $path = parse_url($url, PHP_URL_PATH);
+                    $filename = basename($path);
+                    $alt_text = ucfirst(str_replace(['-', '_'], ' ', pathinfo($filename, PATHINFO_FILENAME)));
+                    $img_attrs = preg_replace('/alt=(["\'])\s*\1/i', 'alt="' . esc_attr($alt_text) . '"', $img_attrs);
+                }
+            }
+            return "<a $link_attrs><img $img_attrs></a>";
+        },
+        $content
+    );
+}, 15);
+
+// ======================================
+// LINK PROCESSING
+// ======================================
+
 // Process external Links (combined: Add Class + Title Attribute)
 add_filter('the_content', function ($content) {
     // Domains to exclude from external Link Processing
@@ -383,49 +430,6 @@ add_filter('the_content', function ($content) {
         $content
     );
 }, 11); // Leave as is cuz: Runs after the external Link Filter above
-
-// Ensure all Image Links have accessible Names
-add_filter('the_content', function ($content) {
-    // Find all <a> Tags that contain only <img> Tags (Image Links)
-    return preg_replace_callback(
-        '/<a\s+([^>]*?)>\s*<img\s+([^>]*?)>\s*<\/a>/is',
-        function ($matches) {
-            $link_attrs = $matches[1];
-            $img_attrs = $matches[2];
-            // Check if Image has meaningful ALT Text
-            $has_alt = preg_match('/alt=(["\'])(?!\s*\1)(.+?)\1/i', $img_attrs, $alt_match);
-            // Check if Link already has Aria-Label or Title
-            $has_aria_label = preg_match('/aria-label=/i', $link_attrs);
-            $has_title = preg_match('/title=/i', $link_attrs);
-            // If no accessible Name exists anywhere, add Aria-Label to the Link
-            if (!$has_alt && !$has_aria_label && !$has_title) {
-                // Extract href to create a meaningful Label
-                if (preg_match('/href=(["\'])([^"\']+)\1/i', $link_attrs, $href_match)) {
-                    $url = $href_match[2];
-                    $domain = parse_url($url, PHP_URL_HOST);
-                    $label = $domain ? "Link to $domain" : "Link to image";
-                    $link_attrs = 'aria-label="' . esc_attr($label) . '" ' . $link_attrs;
-                }
-            }
-            // If Image has empty ALT, use it from Link Title or create one
-            elseif (preg_match('/alt=(["\'])\s*\1/i', $img_attrs)) {
-                if ($has_title && preg_match('/title=(["\'])(.+?)\1/i', $link_attrs, $title_match)) {
-                    // Use link title as alt text
-                    $img_attrs = preg_replace('/alt=(["\'])\s*\1/i', 'alt="' . esc_attr($title_match[2]) . '"', $img_attrs);
-                } elseif (preg_match('/href=(["\'])([^"\']+)\1/i', $link_attrs, $href_match)) {
-                    // Generate ALT from URL
-                    $url = $href_match[2];
-                    $path = parse_url($url, PHP_URL_PATH);
-                    $filename = basename($path);
-                    $alt_text = ucfirst(str_replace(['-', '_'], ' ', pathinfo($filename, PATHINFO_FILENAME)));
-                    $img_attrs = preg_replace('/alt=(["\'])\s*\1/i', 'alt="' . esc_attr($alt_text) . '"', $img_attrs);
-                }
-            }
-            return "<a $link_attrs><img $img_attrs></a>";
-        },
-        $content
-    );
-}, 15);
 
 // ======================================
 // REDIRECTS
