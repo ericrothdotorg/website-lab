@@ -7,10 +7,27 @@
 function er_track_post_views($post_id) {
     if (!is_singular()) return;
     if (empty($post_id)) $post_id = get_the_ID();
-    $views = (int) get_post_meta($post_id, '_er_post_views', true);
-    update_post_meta($post_id, '_er_post_views', $views + 1);
+    global $wpdb;
+    // Atomic Increment - Prevents Race Conditions
+    $wpdb->query($wpdb->prepare(
+        "UPDATE {$wpdb->postmeta} 
+         SET meta_value = CAST(meta_value AS UNSIGNED) + 1
+         WHERE post_id = %d AND meta_key = '_er_post_views'",
+        $post_id
+    ));
     update_post_meta($post_id, 'view_timestamp', current_time('mysql'));
 }
+// Ensure View Meta exists for new Posts
+function er_init_views_meta($post_id) {
+    if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) {
+        return;
+    }
+    if (!get_post_meta($post_id, '_er_post_views', true)) {
+        update_post_meta($post_id, '_er_post_views', rand(5000, 10000));
+    }
+}
+add_action('publish_post', 'er_init_views_meta');
+add_action('publish_page', 'er_init_views_meta');
 add_action('wp_head', function() {
     if (is_singular()) er_track_post_views(get_the_ID());
 });
@@ -52,39 +69,51 @@ add_shortcode('post_views', 'er_post_views_shortcode');
 // Shortcode to display Views on Frontend
 function er_today_total_views_shortcode() {
     global $wpdb;
+    $cache_key = 'er_views_stats_' . date('Y-m-d-H');
+    $cached = get_transient($cache_key);
+    if ($cached !== false) {
+        return $cached;
+    }
     $views_today = $wpdb->get_var("
-        SELECT COUNT(*) FROM {$wpdb->prefix}postmeta
+        SELECT COUNT(*) FROM {$wpdb->postmeta}
         WHERE meta_key = 'view_timestamp' AND DATE(meta_value) = CURDATE()
     ");
     $views_total = $wpdb->get_var("
-        SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta
+        SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->postmeta}
         WHERE meta_key = '_er_post_views'
     ");
     $format_count = fn($num) => number_format($num);
-    return '<p>👁️ Views: <strong style="color: red;">' . $format_count($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</p>';
+    $output = '<p>👁️ Views: <strong style="color: red;">' . $format_count($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</p>';
+    set_transient($cache_key, $output, HOUR_IN_SECONDS);
+    return $output;
 }
 add_shortcode('today_total_views', 'er_today_total_views_shortcode');
 
 // Introduce Increments for Views
 function increment_views() {
-    $args = array('post_type' => get_post_types(['public' => true]), 'posts_per_page' => -1);
-    $posts = get_posts($args);
-    foreach ($posts as $post) {
-        $post_id = $post->ID;
-        $views = get_post_meta($post_id, '_er_post_views', true) ?: 5000;
-        $increment = rand(10, 30);
-        $views += $increment;
-        update_post_meta($post_id, '_er_post_views', $views);
-        // Add Timestamp for incremented Views
-        update_post_meta($post_id, 'view_timestamp', current_time('mysql'));
-    }
+    global $wpdb;
+    $wpdb->query("
+        UPDATE {$wpdb->postmeta} pm
+        INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+        SET pm.meta_value = CAST(pm.meta_value AS UNSIGNED) + FLOOR(20 + RAND() * 21)
+        WHERE pm.meta_key = '_er_post_views'
+        AND p.post_status = 'publish'
+    ");
+    $current_time = current_time('mysql');
+    $wpdb->query($wpdb->prepare("
+        UPDATE {$wpdb->postmeta} pm
+        INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+        SET pm.meta_value = %s
+        WHERE pm.meta_key = 'view_timestamp'
+        AND p.post_status = 'publish'
+    ", $current_time));
 }
 
 // Schedule automatic Increments for Views
+add_action('increment_views_event', 'increment_views');
 if (!wp_next_scheduled('increment_views_event')) {
     wp_schedule_event(time(), 'weekly', 'increment_views_event');
 }
-add_action('increment_views_event', 'increment_views');
 
 // ======================================
 // ADD LIKE / DISLIKE BUTTONS
@@ -99,12 +128,35 @@ function update_likes() {
     if (!$post_id || !get_post_status($post_id)) {
         wp_die('Invalid Post');
     }
-    $likes = get_post_meta($post_id, 'likes', true) ?: 0;
-    update_post_meta($post_id, 'likes', $likes + 1);
+    global $wpdb;
+    // Atomic Increment - Prevents Race Conditions
+    $wpdb->query($wpdb->prepare(
+        "UPDATE {$wpdb->postmeta} 
+         SET meta_value = CAST(meta_value AS UNSIGNED) + 1
+         WHERE post_id = %d AND meta_key = 'likes'",
+        $post_id
+    ));
+    // Get the new Value
+    $new_likes = (int) $wpdb->get_var($wpdb->prepare(
+        "SELECT meta_value FROM {$wpdb->postmeta} 
+         WHERE post_id = %d AND meta_key = 'likes'",
+        $post_id
+    ));
     update_post_meta($post_id, 'like_timestamp', current_time('mysql'));
-    echo $likes + 1;
+    echo $new_likes;
     wp_die();
 }
+// Ensure Likes Meta exists for new Posts
+function er_init_likes_meta($post_id) {
+    if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) {
+        return;
+    }
+    if (!get_post_meta($post_id, 'likes', true)) {
+        update_post_meta($post_id, 'likes', rand(500, 1000));
+    }
+}
+add_action('publish_post', 'er_init_likes_meta');
+add_action('publish_page', 'er_init_likes_meta');
 add_action('wp_ajax_update_likes', 'update_likes');
 add_action('wp_ajax_nopriv_update_likes', 'update_likes');
 
@@ -117,12 +169,35 @@ function update_dislikes() {
     if (!$post_id || !get_post_status($post_id)) {
         wp_die('Invalid Post');
     }
-    $dislikes = get_post_meta($post_id, 'dislikes', true) ?: 0;
-    update_post_meta($post_id, 'dislikes', $dislikes + 1);
+    global $wpdb;
+    // Atomic Increment - Prevents Race Conditions
+    $wpdb->query($wpdb->prepare(
+        "UPDATE {$wpdb->postmeta} 
+         SET meta_value = CAST(meta_value AS UNSIGNED) + 1
+         WHERE post_id = %d AND meta_key = 'dislikes'",
+        $post_id
+    ));
+    // Get the new Value
+    $new_dislikes = (int) $wpdb->get_var($wpdb->prepare(
+        "SELECT meta_value FROM {$wpdb->postmeta} 
+         WHERE post_id = %d AND meta_key = 'dislikes'",
+        $post_id
+    ));
     update_post_meta($post_id, 'dislike_timestamp', current_time('mysql'));
-    echo $dislikes + 1;
+    echo $new_dislikes;
     wp_die();
 }
+// Ensure Dislikes Meta exists for new Posts
+function er_init_dislikes_meta($post_id) {
+    if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) {
+        return;
+    }
+    if (!get_post_meta($post_id, 'dislikes', true)) {
+        update_post_meta($post_id, 'dislikes', rand(5, 10));
+    }
+}
+add_action('publish_post', 'er_init_dislikes_meta');
+add_action('publish_page', 'er_init_dislikes_meta');
 add_action('wp_ajax_update_dislikes', 'update_dislikes');
 add_action('wp_ajax_nopriv_update_dislikes', 'update_dislikes');
 
@@ -258,73 +333,97 @@ add_shortcode('like_dislike_buttons', 'custom_like_dislike_shortcode');
 // Shortcode to display Likes on Frontend
 function er_today_total_likes_shortcode() {
     global $wpdb;
+    $cache_key = 'er_likes_stats_' . date('Y-m-d-H');
+    $cached = get_transient($cache_key);
+    if ($cached !== false) {
+        return $cached;
+    }
     $likes_today = $wpdb->get_var("
-        SELECT COUNT(*) FROM {$wpdb->prefix}postmeta
+        SELECT COUNT(*) FROM {$wpdb->postmeta}
         WHERE meta_key = 'like_timestamp' AND DATE(meta_value) = CURDATE()
     ");
     $likes_total = $wpdb->get_var("
-        SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta
+        SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->postmeta}
         WHERE meta_key = 'likes'
     ");
     $format_count = fn($num) => number_format($num);
-    return '<p>👍 Likes: <strong style="color: red;">' . $format_count($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</p>';
+    $output = '<p>👍 Likes: <strong style="color: red;">' . $format_count($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</p>';
+    set_transient($cache_key, $output, HOUR_IN_SECONDS);
+    return $output;
 }
 add_shortcode('today_total_likes', 'er_today_total_likes_shortcode');
 
 // Shortcode to display Dislikes on Frontend
 function er_today_total_dislikes_shortcode() {
     global $wpdb;
+    $cache_key = 'er_dislikes_stats_' . date('Y-m-d-H');
+    $cached = get_transient($cache_key);
+    if ($cached !== false) {
+        return $cached;
+    }
     $dislikes_today = $wpdb->get_var("
-        SELECT COUNT(*) FROM {$wpdb->prefix}postmeta
+        SELECT COUNT(*) FROM {$wpdb->postmeta}
         WHERE meta_key = 'dislike_timestamp' AND DATE(meta_value) = CURDATE()
     ");
     $dislikes_total = $wpdb->get_var("
-        SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta
+        SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->postmeta}
         WHERE meta_key = 'dislikes'
     ");
     $format_count = fn($num) => number_format($num);
-    return '<p>👎 Dislikes: <strong style="color: red;">' . $format_count($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</p>';
+    $output = '<p>👎 Dislikes: <strong style="color: red;">' . $format_count($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</p>';
+    set_transient($cache_key, $output, HOUR_IN_SECONDS);
+    return $output;
 }
 add_shortcode('today_total_dislikes', 'er_today_total_dislikes_shortcode');
 
 // Introduce Increments for Likes
 function increment_likes() {
-    $args = array('post_type' => get_post_types(['public' => true]), 'posts_per_page' => -1);
-    $posts = get_posts($args);
-    foreach ($posts as $post) {
-        $post_id = $post->ID;
-        $likes = get_post_meta($post_id, 'likes', true) ?: 500;
-        $increment = rand(10, 20);
-        $likes += $increment;
-        update_post_meta($post_id, 'likes', $likes);
-        // Add Timestamp for incremented Likes
-		update_post_meta($post_id, 'like_timestamp', current_time('mysql'));
-    }
+    global $wpdb;
+    $wpdb->query("
+        UPDATE {$wpdb->postmeta} pm
+        INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+        SET pm.meta_value = CAST(pm.meta_value AS UNSIGNED) + FLOOR(10 + RAND() * 11)
+        WHERE pm.meta_key = 'likes'
+        AND p.post_status = 'publish'
+    ");
+    $current_time = current_time('mysql');
+    $wpdb->query($wpdb->prepare("
+        UPDATE {$wpdb->postmeta} pm
+        INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+        SET pm.meta_value = %s
+        WHERE pm.meta_key = 'like_timestamp'
+        AND p.post_status = 'publish'
+    ", $current_time));
 }
 
 // Schedule automatic Increments for Likes
+add_action('increment_likes_event', 'increment_likes');
 if (!wp_next_scheduled('increment_likes_event')) {
     wp_schedule_event(time(), 'weekly', 'increment_likes_event');
 }
-add_action('increment_likes_event', 'increment_likes');
 
 // Introduce Increments for Dislikes
 function increment_dislikes() {
-    $args = array('post_type' => get_post_types(['public' => true]), 'posts_per_page' => -1);
-    $posts = get_posts($args);
-    foreach ($posts as $post) {
-        $post_id = $post->ID;
-        $dislikes = get_post_meta($post_id, 'dislikes', true) ?: 5;
-        $increment = rand(1, 2);
-        $dislikes += $increment;
-        update_post_meta($post_id, 'dislikes', $dislikes);
-        // Add Timestamp for incremented Dislikes
-		update_post_meta($post_id, 'dislike_timestamp', current_time('mysql'));
-    }
+    global $wpdb;
+    $wpdb->query("
+        UPDATE {$wpdb->postmeta} pm
+        INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+        SET pm.meta_value = CAST(pm.meta_value AS UNSIGNED) + FLOOR(1 + RAND() * 2)
+        WHERE pm.meta_key = 'dislikes'
+        AND p.post_status = 'publish'
+    ");
+    $current_time = current_time('mysql');
+    $wpdb->query($wpdb->prepare("
+        UPDATE {$wpdb->postmeta} pm
+        INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+        SET pm.meta_value = %s
+        WHERE pm.meta_key = 'dislike_timestamp'
+        AND p.post_status = 'publish'
+    ", $current_time));
 }
 
 // Schedule automatic Increments for Dislikes
+add_action('increment_dislikes_event', 'increment_dislikes');
 if (!wp_next_scheduled('increment_dislikes_event')) {
     wp_schedule_event(time(), 'monthly', 'increment_dislikes_event');
 }
-add_action('increment_dislikes_event', 'increment_dislikes');
