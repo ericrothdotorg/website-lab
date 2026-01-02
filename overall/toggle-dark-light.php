@@ -3,11 +3,21 @@ add_action('wp_head', function() {
   ?>
   <style>
 	/* Dark Mode Toggle Button */
-	#dark-mode-toggle-btn {display: -webkit-box; display: -webkit-flex; display: flex; -webkit-box-align: center; -webkit-align-items: center; align-items: center;}
-	#dark-mode-toggle-btn input#change-mode-switch {display: none;}
+	#dark-mode-toggle-btn {display: flex; align-items: center; gap: 10px;}
+	#dark-mode-toggle-btn img {opacity: 0.5;}
+	#dark-mode-toggle-btn input[type='checkbox'] {
+	  position: absolute;
+	  opacity: 0;
+	  width: 0;
+	  height: 0;
+	}
+	#dark-mode-toggle-btn input[type='checkbox']:focus + .toggle-visual {
+	  outline: 1px solid #FFFFFF;
+	  outline-offset: 2px;
+	}
 	#dark-mode-toggle-btn .toggle-visual {
-	  background: #3a4f66;
-	  border: 1px solid #192a3d;
+	  background: #3A4F66;
+	  border: 1px solid #192A3D;
 	  border-radius: 50px;
 	  cursor: pointer;
 	  display: inline-block;
@@ -17,9 +27,8 @@ add_action('wp_head', function() {
 	  width: 50px;
 	  height: 25px;
 	}
-	#dark-mode-toggle-btn input#change-mode-switch + .toggle-visual {margin-left: 10px;}
 	#dark-mode-toggle-btn .toggle-visual::after {
-	  background: #192a3d;
+	  background: #192A3D;
 	  border-radius: 50%;
 	  content: '';
 	  cursor: pointer;
@@ -32,8 +41,8 @@ add_action('wp_head', function() {
 	  width: 21px;
 	  height: 21px;
 	}
-	#change-mode-switch:checked + .toggle-visual {background: #0f1924; border-color: #3a4f66;}
-	#change-mode-switch:checked + .toggle-visual::after {background: #3a4f66; -webkit-transform: translateX(25px); transform: translateX(25px);}
+	#change-mode-switch:checked + .toggle-visual {background: #0f1924; border-color: #3A4F66;}
+	#change-mode-switch:checked + .toggle-visual::after {background: #3A4F66; -webkit-transform: translateX(25px); transform: translateX(25px);}
 
 	/* Dark Mode Accessibility Labels */
 	#dark-mode-status, .dark-mode-toggle-btn-accessibility-label {
@@ -202,6 +211,7 @@ add_action('wp_footer', function () {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
           const isDark = document.body.classList.toggle('dark-mode');
+          const statusEl = document.getElementById('dark-mode-status');
           if (changeModeSwitch) changeModeSwitch.checked = isDark;
           
           // Update aria-checked on all accessible elements
@@ -210,6 +220,11 @@ add_action('wp_footer', function () {
             if (changeModeButton) changeModeButton.setAttribute('aria-checked', isDark);
           };
           updateAriaChecked();
+          
+          // === Status announcement ===
+          if (statusEl) {
+            statusEl.textContent = isDark ? 'Dark mode enabled' : 'Light mode enabled';
+          }
           
           try {
             localStorage.setItem('changeMode', isDark);
