@@ -29,7 +29,7 @@ add_action("wp_head", function () {
     a:link:hover {color: #c53030;}
 
     /* HTML & BODY BASICS */
-    html {-webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-behavior: smooth;}
+    html {text-size-adjust: 100%; scroll-behavior: smooth;}
     p {text-align: justify;}
     code {background: none !important; border: none; padding: 0;}
     
@@ -44,35 +44,24 @@ add_action("wp_head", function () {
     /* BRANDING */
     
     /* Site Logo (Without Text and rotate 3D) */
-    .site-logo {-webkit-animation: rotate3d 5s linear infinite; animation: rotate3d 5s linear infinite; will-change: transform;}
-    .site-logo:hover {-webkit-animation-play-state: paused; animation-play-state: paused;}
-    @-webkit-keyframes rotate3d {
-		from {-webkit-transform: rotate3d(0, 0, 0, 0deg); transform: rotate3d(0, 0, 0, 0deg);}
-		to {-webkit-transform: rotate3d(1, 1, 1, 360deg); transform: rotate3d(1, 1, 1, 360deg);}
-    }
+    .site-logo {animation: rotate3d 5s linear infinite; will-change: transform;}
+    .site-logo:hover {animation-play-state: paused;}
     @keyframes rotate3d {
-		from {-webkit-transform: rotate3d(0, 0, 0, 0deg); transform: rotate3d(0, 0, 0, 0deg);}
-		to {-webkit-transform: rotate3d(1, 1, 1, 360deg); transform: rotate3d(1, 1, 1, 360deg);}
+		from {transform: rotate3d(0, 0, 0, 0deg);}
+		to {transform: rotate3d(1, 1, 1, 360deg);}
     }
     
     /* Site Logo (With Text and rotate 2D) */
     .octagon-text-outside {
-		-webkit-animation-name: rotate-image-frontpage;
 		animation-name: rotate-image-frontpage;
-		-webkit-animation-duration: 15s;
 		animation-duration: 15s;
-		-webkit-animation-iteration-count: 1;
 		animation-iteration-count: 1;
 		will-change: transform;
     }
-    .octagon-text-outside:hover {-webkit-animation-play-state: paused; animation-play-state: paused;}
-    @-webkit-keyframes rotate-image-frontpage {
-		0% {-webkit-transform: rotate(0deg); transform: rotate(0deg);}
-		100% {-webkit-transform: rotate(360deg); transform: rotate(360deg);}
-    }
+    .octagon-text-outside:hover {animation-play-state: paused;}
     @keyframes rotate-image-frontpage {
-		0% {-webkit-transform: rotate(0deg); transform: rotate(0deg);}
-		100% {-webkit-transform: rotate(360deg); transform: rotate(360deg);}
+		0% {transform: rotate(0deg);}
+		100% {transform: rotate(360deg);}
     }
     
     /* COLUMNS - BASIC STRUCTURE */
@@ -87,9 +76,7 @@ add_action("wp_head", function () {
     /* USER'S MOTION PREFERENCES */
     @media (prefers-reduced-motion: reduce) {
 		.site-logo, .octagon-text-outside, .blob-animation img, .animate__animated, .er-social-link-icon {
-			-webkit-animation: none !important;
 			animation: none !important;
-			-webkit-transition: none !important;
 			transition: none !important;
         }
     }
@@ -141,7 +128,6 @@ add_action("wp_footer", function () {
     .flexy-arrow-next, .flexy-arrow-prev {
 		width: 30px;
 		height: 30px;
-		-webkit-transform: none;
 		transform: none;
 		opacity: 0.75;
 		background: #afc2cf;
@@ -156,7 +142,7 @@ add_action("wp_footer", function () {
 	/* == NOT THEME RELATED == */
     
     /* Used for Photo Album */
-    .flex-item-country-icons {-webkit-box-flex: 0; -webkit-flex: 0 0 60px; flex: 0 0 60px;}
+    .flex-item-country-icons {flex: 0 0 60px;}
     
     /* Format built-in Separator */
     .wp-block-separator:not(.is-style-dots) {height: 1px; background: #e1e8ed;}
@@ -197,7 +183,7 @@ add_action("wp_footer", function () {
     .page-links {padding-bottom: 50px;}
     .page-links a, .page-links .current, .page-links .post-pages-label {border: none; font-size: 14px;}
     .page-links a {color: #1e73be;}
-    .page-links a:hover {-webkit-box-shadow: 0 0 0 1px #1e73be; box-shadow: 0 0 0 1px #1e73be;}
+    .page-links a:hover {box-shadow: 0 0 0 1px #1e73be;}
     .page-links .current {border-color: #1e73be; background: #1e73be; color: #fff;}
     .post-pages-label {text-transform: uppercase;}
     
@@ -213,9 +199,9 @@ add_action("wp_footer", function () {
     }
     
     /* FLEXBOX */
-    .flex-container {display: -webkit-box; display: -webkit-flex; display: flex; -webkit-box-align: center; -webkit-align-items: center; align-items: center; -webkit-flex-flow: row wrap; flex-flow: row wrap;}
-    .flex-container.left-align {-webkit-box-pack: start; -webkit-justify-content: flex-start; justify-content: flex-start;}
-    .flex-container.center-align {-webkit-box-pack: center; -webkit-justify-content: center; justify-content: center;}
+    .flex-container {display: flex; align-items: center; flex-flow: row wrap;}
+    .flex-container.left-align {justify-content: flex-start;}
+    .flex-container.center-align {justify-content: center;}
     
     /* TABLES */
     .wp-block-table thead {background-color: #f2f5f7;}
@@ -231,35 +217,23 @@ add_action("wp_footer", function () {
     .details-button summary {
 		color: #fff !important;
 		background: #1e73be;
-		display: -webkit-box;
-		display: -webkit-flex;
 		display: flex;
-		-webkit-box-align: center;
-		-webkit-align-items: center;
 		align-items: center;
-		-webkit-box-pack: center;
-		-webkit-justify-content: center;
 		justify-content: center;
 		margin: auto;
 		padding: 10px 20px;
 		border-radius: 4px;
 		text-align: center;
-		max-width: -webkit-fit-content;
-		max-width: -moz-fit-content;
 		max-width: fit-content;
     }
     .details-button summary:hover {background: #c53030;}
     
     /* Details for Accordion */
-    .details-accordion {-webkit-transition: margin-bottom 0.5s ease-in-out; transition: margin-bottom 0.5s ease-in-out; margin-bottom: 0.5rem;}
+    .details-accordion {transition: margin-bottom 0.5s ease-in-out; margin-bottom: 0.5rem;}
     .details-accordion + .details-accordion {margin-top: -0.6rem;}
     .details-accordion[open] {padding-bottom: 0.75rem;}
     .details-accordion summary {
-		display: -webkit-box;
-		display: -webkit-flex;
 		display: flex;
-		-webkit-box-align: center;
-		-webkit-align-items: center;
 		align-items: center;
 		font-size: 1rem;
 		line-height: 1.35;
@@ -285,15 +259,13 @@ add_action("wp_footer", function () {
     
     /* Text as Columns */
     .two-columns-text, .three-columns-text, .four-columns-text {
-		-webkit-column-gap: 40px;
 		column-gap: 40px;
-		-webkit-column-rule: 1px solid #808080;
 		column-rule: 1px solid #808080;
     }
-    .two-columns-text {-webkit-column-count: 2; column-count: 2;}
-    .three-columns-text {-webkit-column-count: 3; column-count: 3;}
-    .four-columns-text {-webkit-column-count: 4; column-count: 4;}
-    @media (max-width:768px) {.two-columns-text,.three-columns-text,.four-columns-text{-webkit-column-count: 1; column-count: 1; -webkit-column-gap: 0; column-gap: 0; -webkit-column-rule: none; column-rule: none;}}
+    .two-columns-text {column-count: 2;}
+    .three-columns-text {column-count: 3;}
+    .four-columns-text {column-count: 4;}
+    @media (max-width:768px) {.two-columns-text,.three-columns-text,.four-columns-text{column-count: 1; column-gap: 0; column-rule: none;}}
 	
     /* (Emphasized) Design Blocks */
     .emphasized-design-green, .emphasized-design-red, .emphasized-design-orange {
@@ -311,8 +283,6 @@ add_action("wp_footer", function () {
     .wp-block-quote {
 		position: relative;
 		width: 85%;
-		max-width: -webkit-fit-content;
-		max-width: -moz-fit-content;
 		max-width: fit-content;
 		margin: 35px auto 70px;
 		padding: 0 25px;
@@ -331,7 +301,7 @@ add_action("wp_footer", function () {
     :root :where(.is-layout-flow) > :last-child.wp-block-quote {margin-block-end: 25px;}
     
     /* Styling for Pullquotes */
-    figure.wp-block-pullquote {position: relative; max-width: -webkit-fit-content; max-width: -moz-fit-content; max-width: fit-content; margin: -25px 0 0; border: none;}
+    figure.wp-block-pullquote {position: relative; max-width: fit-content; margin: -25px 0 0; border: none;}
     .wp-block-pullquote blockquote {border-inline-start: none !important;}
     .wp-block-pullquote blockquote p {text-align: left; font-family: Georgia, serif; font-weight: normal; color: #339966; line-height: 1.6;}
     .wp-block-pullquote blockquote cite {position: absolute; right: 25px; font-family: sans-serif; font-size: 1rem; font-style: normal;}
@@ -350,7 +320,6 @@ add_action("wp_footer", function () {
 		border: 1px solid #1e73be;
 		border-radius: 100px;
 		display: inline-block;
-		-webkit-transition: background 0.2s ease;
 		transition: background 0.2s ease;
     }
     .tag-cloud a:hover {background: #e1e8ed; color: #c53030;}
@@ -359,23 +328,17 @@ add_action("wp_footer", function () {
     /* IMAGE STYLES & EFFECTS */
     
     /* Zoom */
-    .zoom {width: 35%; -webkit-transition: width 1.5s ease-in-out; transition: width 1.5s ease-in-out; will-change: width;}
+    .zoom {width: 35%; transition: width 1.5s ease-in-out; will-change: width;}
     .zoom:hover {width: 100% !important;}
-    .zoom-x2 {-webkit-transition: -webkit-transform 1.5s ease-in-out; transition: -webkit-transform 1.5s ease-in-out; transition: transform 1.5s ease-in-out; transition: transform 1.5s ease-in-out, -webkit-transform 1.5s ease-in-out; will-change: transform;}
-    .zoom-x2:hover {-webkit-transform: scale(2); transform: scale(2);}
+    .zoom-x2 {transition: transform 1.5s ease-in-out; will-change: transform;}
+    .zoom-x2:hover {transform: scale(2);}
     
 	/* er-social-link-icon */
 	@media (prefers-reduced-motion: no-preference) {.er-social-link-icon {transition: transform 0.1s ease;} .er-social-link-icon:hover {transform: scale(1.1);}}
 	
     /* Blob Animation */
-    .blob-animation img {-webkit-animation: animate-blob 7.5s ease-in-out infinite alternate; animation: animate-blob 7.5s ease-in-out infinite alternate; will-change: border-radius;}
-    .blob-animation img:hover {-webkit-animation-play-state: paused; animation-play-state: paused;}
-    @-webkit-keyframes animate-blob {
-		0%, 100% {border-radius: 20% 80% 70% 30% / 60% 40% 60% 40%;}
-		25% {border-radius: 60% 40% 30% 70% / 40% 60% 40% 60%;}
-		50% {border-radius: 60% 40% 30% 70% / 60% 40% 60% 40%;}
-		75% {border-radius: 20% 80% 70% 30% / 40% 60% 40% 60%;}
-    }
+    .blob-animation img {animation: animate-blob 7.5s ease-in-out infinite alternate; will-change: border-radius;}
+    .blob-animation img:hover {animation-play-state: paused;}
     @keyframes animate-blob {
 		0%, 100% {border-radius: 20% 80% 70% 30% / 60% 40% 60% 40%;}
 		25% {border-radius: 60% 40% 30% 70% / 40% 60% 40% 60%;}
@@ -387,11 +350,11 @@ add_action("wp_footer", function () {
     /* Imitate DPS - Bill Erickson */
     .image-bedps {clear: both; overflow: hidden; background: #fafbfc; border: 1px solid #e1e8ed; border-radius: 25px;}
     .image-bedps:hover {background: #f2f5f7;}
-    .image-bedps img {aspect-ratio: 16 / 9; -webkit-transition: -webkit-transform 0.3s ease; transition: -webkit-transform 0.3s ease; transition: transform 0.3s ease; transition: transform 0.3s ease, -webkit-transform 0.3s ease; will-change: transform;}
+    .image-bedps img {aspect-ratio: 16 / 9; transition: transform 0.3s ease; will-change: transform;}
     @supports not (aspect-ratio: 16 / 9) {
 		.image-bedps img {width: 100%; height: auto;}
     }
-    .image-bedps img:hover {-webkit-transform: scale(1.05); transform: scale(1.05);}
+    .image-bedps img:hover {transform: scale(1.05);}
     .image-bedps figcaption {margin-top: 16px; margin-bottom: 16px; font-size: 1.125rem; font-weight: bold;}
     
     /* EMBEDS & VIDEO */
@@ -412,36 +375,29 @@ add_action("wp_footer", function () {
     .wp-block-button__link, .button a, .smaller-button a {
 		color: #fff !important;
 		background-color: #1e73be;
-		display: -webkit-box;
-		display: -webkit-flex;
 		display: flex;
-		-webkit-box-align: center;
-		-webkit-align-items: center;
 		align-items: center;
-		-webkit-box-pack: center;
-		-webkit-justify-content: center;
 		justify-content: center;
 		padding: 10px 20px;
 		border-radius: 4px;
 		text-align: center;
 		text-decoration: none;
 		border: 2px solid transparent;
-		-webkit-transition: background-color 0.2s ease, color 0.2s ease;
 		transition: background-color 0.2s ease, color 0.2s ease;
     }
     .wp-block-button__link:hover, .button a:hover, .smaller-button a:hover {background-color: #c53030;}
-    .button a {margin: auto; max-width: -webkit-fit-content; max-width: -moz-fit-content; max-width: fit-content;}
+    .button a {margin: auto; max-width: fit-content;}
     .smaller-button a {cursor: pointer; min-height: 25px; padding: 5px 10px 7.5px;}
     
     /* BOXES */
     .text-box {overflow: hidden; padding: 25px; margin-bottom: 25px;}
     .resizable-box {height: 333px; resize: vertical; overflow: auto; padding: 25px; border: 0.5px solid #808080;}
-    .box-background {background: #fafbfc; border: 1px solid #e1e8ed; -webkit-transition: background 0.2s ease; transition: background 0.2s ease;}
+    .box-background {background: #fafbfc; border: 1px solid #e1e8ed; transition: background 0.2s ease;}
     .box-background:hover {background: #f2f5f7;}
-    .box-shadow {-webkit-box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.25); box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.25);}
+    .box-shadow {box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.25);}
     
     /* FORMS & INPUTS */
-    select, input[type=search], input[type=email] {border: 1px solid #bfbfbf; -webkit-transition: border 0.2s ease; transition: border 0.2s ease;}
+    select, input[type=search], input[type=email] {border: 1px solid #bfbfbf; transition: border 0.2s ease;}
     select:focus, input[type=email]:focus {border: 1px solid #bfbfbf; outline: none;}
     input[type=search]:is(:visited, :hover, :focus, :active),
     input[type=search].modal-field {border: none; border-bottom: 1px solid #bfbfbf;}
@@ -450,7 +406,7 @@ add_action("wp_footer", function () {
     /* FOOTER */
     
     /* Radius on Hover */
-    #footer {-webkit-transition: border-radius 1s ease; transition: border-radius 1s ease; will-change: border-radius;}
+    #footer {transition: border-radius 1s ease; will-change: border-radius;}
     #footer:hover {border-top-right-radius: 15vw;}
 
 	/* Flex Container and Items */
@@ -459,8 +415,6 @@ add_action("wp_footer", function () {
 	.flex-item-footer-middle,
 	.flex-item-footer-right {
 		max-width: 430px;
-		-webkit-box-flex: 1;
-		-webkit-flex: 1 1 auto;
 		flex: 1 1 auto;
 	}
 
@@ -498,18 +452,7 @@ add_action("wp_footer", function () {
 	.content-text {color: #FF9900;}
 
     /* Animate Footer Text */
-    .content-text::before {content: "content"; -webkit-animation: content-words 10s linear infinite; animation: content-words 10s linear infinite; will-change: content;}
-    @-webkit-keyframes content-words {
-		10% {content: " posts";}
-		20% {content: " traits";}
-		30% {content: " projects";}
-		40% {content: " topics";}
-		50% {content: " galleries";}
-		60% {content: " feeds";}
-		70% {content: " pages";}
-		80% {content: " things";}
-		90% {content: " visitors";}
-    }
+    .content-text::before {content: "content"; animation: content-words 10s linear infinite; will-change: content;}
     @keyframes content-words {
 		10% {content: " posts";}
 		20% {content: " traits";}
