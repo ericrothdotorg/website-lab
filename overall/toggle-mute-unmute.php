@@ -22,7 +22,6 @@ add_action('wp_head', function() {
 	  cursor: pointer;
 	  display: inline-block;
 	  position: relative;
-	  -webkit-transition: all ease-in-out 0.3s;
 	  transition: all ease-in-out 0.3s;
 	  width: 50px;
 	  height: 25px;
@@ -36,13 +35,12 @@ add_action('wp_head', function() {
 	  position: absolute;
 	  left: 1px;
 	  top: 1px;
-	  -webkit-transition: all ease-in-out 0.3s;
 	  transition: all ease-in-out 0.3s;
 	  width: 21px;
 	  height: 21px;
 	}
 	#tts-toggle-btn input[type='checkbox']:checked + .toggle-visual {background: #0f1924; border-color: #3A4F66;}
-	#tts-toggle-btn input[type='checkbox']:checked + .toggle-visual::after {background: #3A4F66; -webkit-transform: translateX(25px); transform: translateX(25px);}
+	#tts-toggle-btn input[type='checkbox']:checked + .toggle-visual::after {background: #3A4F66; transform: translateX(25px);}
 
 	/* TTS Accessibility Labels */
 	#tts-status, .tts-toggle-btn-accessibility-label {
