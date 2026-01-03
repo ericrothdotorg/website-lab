@@ -22,7 +22,6 @@ add_action('wp_head', function() {
 	  cursor: pointer;
 	  display: inline-block;
 	  position: relative;
-	  -webkit-transition: all ease-in-out 0.3s;
 	  transition: all ease-in-out 0.3s;
 	  width: 50px;
 	  height: 25px;
@@ -36,13 +35,12 @@ add_action('wp_head', function() {
 	  position: absolute;
 	  left: 1px;
 	  top: 1px;
-	  -webkit-transition: all ease-in-out 0.3s;
 	  transition: all ease-in-out 0.3s;
 	  width: 21px;
 	  height: 21px;
 	}
 	#change-mode-switch:checked + .toggle-visual {background: #0f1924; border-color: #3A4F66;}
-	#change-mode-switch:checked + .toggle-visual::after {background: #3A4F66; -webkit-transform: translateX(25px); transform: translateX(25px);}
+	#change-mode-switch:checked + .toggle-visual::after {background: #3A4F66; transform: translateX(25px);}
 
 	/* Dark Mode Accessibility Labels */
 	#dark-mode-status, .dark-mode-toggle-btn-accessibility-label {
@@ -97,7 +95,7 @@ add_action('wp_footer', function () {
     body.dark-mode[data-header*="type-1"] [data-id="trigger"] {--icon-color: #ffffff; --icon-hover-color: #bfbfbf;}
     
     /* Search Results */
-    body.dark-mode .ct-search-results {background: rgba(0, 0, 0, 0.9); -webkit-box-shadow: none; box-shadow: none;}
+    body.dark-mode .ct-search-results {background: rgba(0, 0, 0, 0.9); box-shadow: none;}
     
     /* Sidebar */
     body.dark-mode aside[data-type='type-4']:after {background: #0d0d0d;}
@@ -171,12 +169,12 @@ add_action('wp_footer', function () {
     body.dark-mode .text-box:hover {background: #000000;}
     body.dark-mode .box-background {background: #1a1a1a; border: 1px solid #1a1a1a;}
     body.dark-mode .box-background:hover {background: #0d0d0d;}
-    body.dark-mode .box-shadow {-webkit-box-shadow: none; box-shadow: none;}
+    body.dark-mode .box-shadow {box-shadow: none;}
     
     /* VARIOUS ELEMENTS */
     
     /* Image Effects */
-    body.dark-mode .image-invert {-webkit-filter: invert(1); filter: invert(1);}
+    body.dark-mode .image-invert {filter: invert(1);}
     
     /* Logo Swaps */
     body.dark-mode .wp-image-122531 {content: url("https://ericroth.org/wp-content/uploads/2024/07/SBB_NEG_2F_RGB_100.svg");} /* SBB logo in My World */
