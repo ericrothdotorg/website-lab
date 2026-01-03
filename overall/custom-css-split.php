@@ -435,7 +435,6 @@ add_action("wp_footer", function () {
 
 	/* Search Inputs - Modal Search Field Variant */
 	input[type=search].modal-field {border: none; border-bottom: 1px solid #bfbfbf;}
-	input[type=search].modal-field:focus-visible {outline: none; border-bottom: 1px solid #1e73be;}
 
 	/* Search Inputs - Special Styling without Top / Sides Borders */
 	input[type=search]:not(.modal-field) {border: none; border-bottom: 1px solid #bfbfbf;}
