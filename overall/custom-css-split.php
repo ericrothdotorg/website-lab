@@ -26,8 +26,8 @@ add_action("wp_head", function () {
 
     /* NAVIGATION */
     a:link {font-weight: bold; color: #1e73be;}
-    a:link:hover {color: #c53030;}
-	a:focus-visible {outline: 1px solid #1e73be; outline-offset: 2px;}
+	a:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	a:focus:not(:focus-visible) {outline: none;}
 
     /* HTML & BODY BASICS */
     html {text-size-adjust: 100%; scroll-behavior: smooth;}
@@ -38,54 +38,20 @@ add_action("wp_head", function () {
     .row::after {content: ""; display: table; clear: both;}
     .clearfix::after {content: ""; clear: both; display: table;}
     
-    /* RESPONSIVE VISIBILITY */
-    @media (max-width: 768px) {.hide-on-small {display: none;}}
-    @media (min-width: 768px) {.hide-on-big {display: none;}}
-    
-    /* BRANDING */
-    
-    /* Site Logo (Without Text and rotate 3D) */
-    .site-logo {animation: rotate3d 5s linear infinite;}
-    .site-logo:hover {animation-play-state: paused;}
-    @keyframes rotate3d {
-		from {transform: rotate3d(0, 0, 0, 0deg);}
-		to {transform: rotate3d(1, 1, 1, 360deg);}
-    }
-    
-    /* Site Logo (With Text and rotate 2D) */
-    .octagon-text-outside {
-		animation-name: rotate-image-frontpage;
-		animation-duration: 15s;
-		animation-iteration-count: 1;
-    }
-    .octagon-text-outside:hover {animation-play-state: paused;}
-    @keyframes rotate-image-frontpage {
-		0% {transform: rotate(0deg);}
-		100% {transform: rotate(360deg);}
-    }
-    
     /* COLUMNS - BASIC STRUCTURE */
     .two-columns, .three-columns, .four-columns {float: left;}
     .two-columns {width: 49%;}
     .two-columns:first-child {margin-right: 1%;}
     .two-columns:last-child {margin-left: 1%;}
     
+    /* FLEXBOX */
+    .flex-container {display: flex; align-items: center; flex-flow: row wrap;}
+    .flex-container.left-align {justify-content: flex-start;}
+    .flex-container.center-align {justify-content: center;}
+    
     /* SOME MISC STUFF */
     .display-total-number-of-posts {font-weight: normal;}
     
-    /* USER'S MOTION PREFERENCES */
-	@media (prefers-reduced-motion: reduce) {
-		.site-logo, 
-		.octagon-text-outside, 
-		.blob-animation img, 
-		.animate__animated, 
-		.er-social-link-icon,
-		.content-text::before {
-			animation: none !important;
-			transition: none !important;
-			transform: none !important;
-		}
-	}
     </style>
     <?php
 }, 5); // Load critical Styles in Head early
@@ -161,10 +127,40 @@ add_action("wp_footer", function () {
 		top: -55px;
     }
     .flexy-arrow-next:hover, .flexy-arrow-prev:hover {opacity: 1; background: #afc2cf;}
+    .flexy-arrow-next:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+    .flexy-arrow-next:focus:not(:focus-visible) {outline: none;}
+    .flexy-arrow-prev:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+    .flexy-arrow-prev:focus:not(:focus-visible) {outline: none;}
     .flexy-arrow-next {right: 10px; left: auto;}
     .flexy-arrow-prev {right: 60px; left: auto;}
 
 	/* == NOT THEME RELATED == */
+    
+    /* RESPONSIVE VISIBILITY */
+    @media (max-width: 768px) {.hide-on-small {display: none;}}
+    @media (min-width: 768px) {.hide-on-big {display: none;}}
+    
+    /* BRANDING */
+    
+    /* Site Logo (Without Text and rotate 3D) */
+    .site-logo {animation: rotate3d 5s linear infinite;}
+    .site-logo:hover {animation-play-state: paused;}
+    @keyframes rotate3d {
+		from {transform: rotate3d(0, 0, 0, 0deg);}
+		to {transform: rotate3d(1, 1, 1, 360deg);}
+    }
+    
+    /* Site Logo (With Text and rotate 2D) */
+    .octagon-text-outside {
+		animation-name: rotate-image-frontpage;
+		animation-duration: 15s;
+		animation-iteration-count: 1;
+    }
+    .octagon-text-outside:hover {animation-play-state: paused;}
+    @keyframes rotate-image-frontpage {
+		0% {transform: rotate(0deg);}
+		100% {transform: rotate(360deg);}
+    }
     
     /* Used for Photo Album */
     .flex-item-country-icons {flex: 0 0 60px;}
@@ -181,6 +177,8 @@ add_action("wp_footer", function () {
     .wp-block-term.is-layout-flow:hover {background: #f2f5f7;}
 
     /* NAVIGATION */
+    
+    a:link:hover {color: #c53030;}
     
     /* External Link Indicator (Functionality is in functions.php) */
     a.external-link::after {
@@ -209,6 +207,8 @@ add_action("wp_footer", function () {
     .page-links a, .page-links .current, .page-links .post-pages-label {border: none; font-size: 14px;}
     .page-links a {color: #1e73be;}
     .page-links a:hover {box-shadow: 0 0 0 1px #1e73be;}
+    .page-links a:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+    .page-links a:focus:not(:focus-visible) {outline: none;}
     .page-links .current {border-color: #1e73be; background: #1e73be; color: #fff;}
     .post-pages-label {text-transform: uppercase;}
     
@@ -223,11 +223,6 @@ add_action("wp_footer", function () {
 		.four-columns {width: 49%;}
     }
     
-    /* FLEXBOX */
-    .flex-container {display: flex; align-items: center; flex-flow: row wrap;}
-    .flex-container.left-align {justify-content: flex-start;}
-    .flex-container.center-align {justify-content: center;}
-    
     /* TABLES */
     .wp-block-table thead {background-color: #f2f5f7;}
     .wp-block-table tr:hover {background-color: #f2f5f7;}
@@ -235,6 +230,8 @@ add_action("wp_footer", function () {
     /* DETAILS & SUMMARY */
     summary {color: #1e73be; font-weight: bold; cursor: pointer;}
     summary:hover {color: #c53030;}
+    summary:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+    summary:focus:not(:focus-visible) {outline: none;}
     
     /* Details for Text etc. */
     .details-center summary {font-weight: 700; font-size: 20px; line-height: 1.5; text-align: center;}
@@ -252,7 +249,8 @@ add_action("wp_footer", function () {
 		max-width: fit-content;
     }
     .details-button summary:hover {background: #c53030;}
-	.details-button summary:focus-visible {outline: 1px solid #1e73be; outline-offset: 2px;}
+	.details-button summary:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	.details-button summary:focus:not(:focus-visible) {outline: none;}
     
     /* Details for Accordion */
     .details-accordion {transition: margin-bottom 0.5s ease-in-out; margin-bottom: 0.5rem;}
@@ -267,7 +265,8 @@ add_action("wp_footer", function () {
 		border-top: 1px solid #bfbfbf;
 		border-bottom: 1px solid #bfbfbf;
     }
-	.details-accordion summary:focus-visible {outline: 1px solid #1e73be; outline-offset: 2px;}
+	.details-accordion summary:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	.details-accordion summary:focus:not(:focus-visible) {outline: none;}
     .details-accordion summary > * {margin-left: 0.5rem;}
     .details-accordion summary > *:first-child {margin-left: 0;}
     .details-accordion summary::before {content: "+"; font-weight: bold; color: #1e73be; margin-right: 0.5rem;}
@@ -350,7 +349,8 @@ add_action("wp_footer", function () {
 		transition: background 0.2s ease;
     }
     .tag-cloud a:hover {background: #e1e8ed; color: #c53030;}
-	.tag-cloud a:focus-visible {outline: 1px solid #1e73be; outline-offset: 2px; background: #e1e8ed;}
+	.tag-cloud a:focus {outline: 1px solid #1e73be; outline-offset: 2px; background: #e1e8ed;}
+	.tag-cloud a:focus:not(:focus-visible) {outline: none; background: #f2f5f7;}
     .left-align {text-align: left;}
     
     /* IMAGE STYLES & EFFECTS */
@@ -414,7 +414,8 @@ add_action("wp_footer", function () {
 		transition: background-color 0.2s ease, color 0.2s ease;
     }
     .wp-block-button__link:hover, .button a:hover, .smaller-button a:hover {background-color: #c53030;}
-	.wp-block-button__link:focus-visible, .button a:focus-visible, .smaller-button a:focus-visible {outline: 1px solid #1e73be; outline-offset: 2px;}
+	.wp-block-button__link:focus, .button a:focus, .smaller-button a:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	.wp-block-button__link:focus:not(:focus-visible), .button a:focus:not(:focus-visible), .smaller-button a:focus:not(:focus-visible) {outline: none;}
     .button a {margin: auto; max-width: fit-content;}
     .smaller-button a {cursor: pointer; min-height: 25px; padding: 5px 10px 7.5px;}
     
@@ -431,14 +432,22 @@ add_action("wp_footer", function () {
 	select, input[type=search], input[type=email], input[type=text] {border: 1px solid #bfbfbf; transition: border 0.2s ease;}
 
 	/* Standard Inputs - Keep Border, add Outline on Keyboard Focus */
-	select:focus-visible, input[type=email]:focus-visible, input[type=text]:focus-visible {outline: 1px solid #1e73be; outline-offset: 2px;}
+	select:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	select:focus:not(:focus-visible) {outline: none;}
+	input[type=email]:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	input[type=email]:focus:not(:focus-visible) {outline: none;}
+	input[type=text]:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	input[type=text]:focus:not(:focus-visible) {outline: none;}
 
 	/* Search Inputs - Modal Search Field Variant */
 	input[type=search].modal-field {border: none; border-bottom: 1px solid #bfbfbf;}
+	input[type=search].modal-field:focus {outline: none;}
+	input[type=search].modal-field:focus:not(:focus-visible) {outline: none;}
 
 	/* Search Inputs - Special Styling without Top / Sides Borders */
 	input[type=search]:not(.modal-field) {border: none; border-bottom: 1px solid #bfbfbf;}
-	input[type=search]:not(.modal-field):focus-visible {outline: 1px solid #1e73be; outline-offset: 2px;}
+	input[type=search]:not(.modal-field):focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	input[type=search]:not(.modal-field):focus:not(:focus-visible) {outline: none;}
 
     /* FOOTER */
     
@@ -501,6 +510,20 @@ add_action("wp_footer", function () {
 		80% {content: " things";}
 		90% {content: " visitors";}
     }
+    
+    /* USER'S MOTION PREFERENCES */
+	@media (prefers-reduced-motion: reduce) {
+		.site-logo, 
+		.octagon-text-outside, 
+		.blob-animation img, 
+		.animate__animated, 
+		.er-social-link-icon,
+		.content-text::before {
+			animation: none !important;
+			transition: none !important;
+			transform: none !important;
+		}
+	}
     </style>
     <?php
 }, 15); // Load deferred Footer Styles after Theme defaults
