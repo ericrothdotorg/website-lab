@@ -11,8 +11,8 @@ add_action('wp_head', function() {
 	  width: 0;
 	  height: 0;
 	}
-	#dark-mode-toggle-btn input[type='checkbox']:focus + .toggle-visual {
-	  outline: 1px solid #FFFFFF;
+	#dark-mode-toggle-btn input[type='checkbox']:focus-visible + .toggle-visual {
+	  outline: 1px solid #1e73be;
 	  outline-offset: 2px;
 	}
 	#dark-mode-toggle-btn .toggle-visual {
