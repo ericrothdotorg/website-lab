@@ -520,6 +520,16 @@ add_action('wp_footer', function () {
         });
     </script>
 
+    <!-- Fix - aria-hidden - focusable Elements -->
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('[aria-hidden="true"] a, [aria-hidden="true"] button, [aria-hidden="true"] input, [aria-hidden="true"] select, [aria-hidden="true"] textarea, [aria-hidden="true"] [tabindex]:not([tabindex="-1"])').forEach(function(el) {
+                el.setAttribute('tabindex', '-1');
+            });
+        });
+    </script>
+
     <!-- Scroll Progress Indicator -->
 
     <style>
