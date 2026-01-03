@@ -78,6 +78,7 @@ add_action("wp_head", function () {
 		.site-logo, .octagon-text-outside, .blob-animation img, .animate__animated, .er-social-link-icon {
 			animation: none !important;
 			transition: none !important;
+			transform: none !important;
         }
     }
     </style>
@@ -89,6 +90,25 @@ add_action("wp_head", function () {
 add_action("wp_footer", function () {
     ?>
     <style>
+
+    /* == BROWSER RELATED == */
+
+	/* Fallback: Disable animations if modern CSS not supported */
+	@supports not (animation: none) {
+		.site-logo, .octagon-text-outside, .blob-animation img, .animate__animated, .er-social-link-icon {
+			animation: none !important;
+		}
+	}
+	@supports not (transition: none) {
+		.site-logo, .octagon-text-outside, .blob-animation img, .animate__animated, .er-social-link-icon {
+			transition: none !important;
+		}
+	}
+	@supports not (transform: none) {
+		.site-logo, .octagon-text-outside, .blob-animation img, .animate__animated, .er-social-link-icon {
+			transform: none !important;
+		}
+	}
 
     /* == THEME RELATED == */
     
