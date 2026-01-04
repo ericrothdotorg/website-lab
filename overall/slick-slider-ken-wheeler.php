@@ -75,7 +75,7 @@ add_action('wp_footer', function () {
         .layer-content-procurement-consulting {margin-right: 7.5px;}
         .layer-content-industries-served {font-size: 150%; color: #ffffff; padding: 0 0.75%;}
 
-		/* Prevent hidden slides from being focusable */
+		/* Prevent hidden Slides from being focusable */
 		.slick-slide[aria-hidden="true"] {pointer-events: none;}
 		.slick-slide[aria-hidden="true"] a {tabindex: -1 !important;}
     </style>
