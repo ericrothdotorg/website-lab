@@ -1,6 +1,5 @@
 <?php
-
-// Enqueue Slick Slider assets from local files
+// Enqueue Slick Slider Assets from local Files
 add_action('wp_enqueue_scripts', function () {
     $theme_uri = get_stylesheet_directory_uri();
 	wp_enqueue_style('slick-css', home_url('/my-assets/slick-slider/slick.css'), [], '1.9.0');
@@ -8,7 +7,7 @@ add_action('wp_enqueue_scripts', function () {
 	wp_enqueue_script('slick-js', home_url('/my-assets/slick-slider/slick.js'), ['jquery'], '1.9.0', true);
 }, 20);
 
-// Add defer attribute to Slick.js to prevent render blocking
+// Add Defer Attribute to Slick.js to prevent Render Blocking
 add_filter('script_loader_tag', function($tag, $handle) {
     if ('slick-js' === $handle) {
         return str_replace(' src', ' defer src', $tag);
@@ -16,13 +15,13 @@ add_filter('script_loader_tag', function($tag, $handle) {
     return $tag;
 }, 10, 2);
 
-// Ignore slider images in LiteSpeed Cache – let Slick's lazyLoad: 'ondemand' handle them
+// Ignore Slider Images in LiteSpeed Cache – Let Slick's LazyLoad: 'ondemand' handle them
 add_filter('litespeed_optimize_html_excluded_selectors', function($excludes) {
     $excludes[] = '.slick-slider img';
     return $excludes;
 });
 
-// Initialize Slick sliders and add custom styles in the footer
+// Initialize Slick Sliders and add custom Styles in the Footer
 add_action('wp_footer', function () {
     ?>
     <style>
@@ -67,12 +66,17 @@ add_action('wp_footer', function () {
         .slideshow-multiple-items-center-mode img {padding: 0 0.75% 0 0.75%;}
 
         /* Style Slideshows with WP Columns */
-        .slideshow-single-item .wp-block-columns {align-items: center;}
+        .slideshow-single-item .wp-block-columns {align-items: center;}								   							   
+		.dummy-columns {display: none !important;}								   
 
         /* Style Slideshows with Layers */
         .layer-container {position: relative; margin: 0 auto;}
         .layer-content-procurement-consulting {margin-right: 7.5px;}
         .layer-content-industries-served {font-size: 150%; color: #ffffff; padding: 0 0.75%;}
+
+		/* Prevent hidden slides from being focusable */
+		.slick-slide[aria-hidden="true"] {pointer-events: none;}
+		.slick-slide[aria-hidden="true"] a {tabindex: -1 !important;}
     </style>
 
     <script>
@@ -82,14 +86,24 @@ add_action('wp_footer', function () {
                 return;
             }
             var $ = jQuery;
-            // Common config to reduce repetition
+			
+			// Function to fix - aria-hidden - Tabindex Issues
+			function fixAriaHiddenTabindex() {
+				$('[aria-hidden="true"]').find('a, [tabindex]:not([tabindex="-1"])').attr('tabindex', '-1');
+			}
+			
+            // Common Config to reduce Repetition
             var baseConfig = {
                 lazyLoad: 'ondemand',
                 autoplay: true,
                 autoplaySpeed: 2000,
                 infinite: true,
-                swipeToSlide: true
+                swipeToSlide: true,
+				accessibility: true,
+				focusOnSelect: false
             };
+			
+			// Config for Single Items
             $('.slideshow-single-item').slick($.extend({}, baseConfig, {
                 arrows: false,
                 dots: true,
@@ -97,7 +111,9 @@ add_action('wp_footer', function () {
                 adaptiveHeight: true,
                 slidesToShow: 1,
                 slidesToScroll: 1
-            }));
+            })).on('init afterChange', fixAriaHiddenTabindex);
+			
+			// Config for Single Items without Dots
             $('.slideshow-single-item-no-dots').slick($.extend({}, baseConfig, {
                 arrows: false,
                 dots: false,
@@ -105,7 +121,9 @@ add_action('wp_footer', function () {
                 adaptiveHeight: true,
                 slidesToShow: 1,
                 slidesToScroll: 1
-            }));
+            })).on('init afterChange', fixAriaHiddenTabindex);
+			
+			// Config for Multiple Items (horizontal)
             $('.slideshow-multiple-items').slick($.extend({}, baseConfig, {
                 arrows: true,
                 dots: false,
@@ -119,7 +137,9 @@ add_action('wp_footer', function () {
                     { breakpoint: 768, settings: { slidesToShow: 3 } },
                     { breakpoint: 992, settings: { slidesToShow: 4 } }
                 ]
-            }));
+            })).on('init afterChange', fixAriaHiddenTabindex);
+			
+			// Config for Multiple Items (vertical)
             $('.slideshow-multiple-items-vertical').slick($.extend({}, baseConfig, {
                 arrows: false,
                 dots: false,
@@ -129,7 +149,9 @@ add_action('wp_footer', function () {
                 verticalSwiping: true,
                 slidesToShow: 3,
                 slidesToScroll: 1
-            }));
+            })).on('init afterChange', fixAriaHiddenTabindex);
+			
+			// Config for Multiple Items (center mode)
             $('.slideshow-multiple-items-center-mode').slick($.extend({}, baseConfig, {
                 arrows: false,
                 dots: true,
@@ -145,9 +167,12 @@ add_action('wp_footer', function () {
                     { breakpoint: 768, settings: { centerPadding: '75px' } },
                     { breakpoint: 992, settings: { centerPadding: '175px' } }
                 ]
-            }));
+            })).on('init afterChange', fixAriaHiddenTabindex);
+			
+			// Run once after all Sliders are initialized
+			fixAriaHiddenTabindex();
         }
-        // Use requestIdleCallback for non-critical initialization
+        // Use requestIdleCallback for non-critical Initialization
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
                 if ('requestIdleCallback' in window) {
