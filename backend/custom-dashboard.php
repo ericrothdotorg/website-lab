@@ -140,7 +140,7 @@ function initialize_custom_dashboard() {
 
 			// Define URLs for external Tools
 			$site_url = 'https://ericroth.org/';
-			$pagespeed_url = 'https://pagespeed.web.dev/report?url=' . urlencode($site_url);
+			$pagespeed_url = 'https://pagespeed.web.dev/report?url=' . urlencode($site_url) . '&hl=en';
 			$webpagetest_url = 'https://www.webpagetest.org/?url=' . urlencode($site_url);
 			$wave_url = 'https://wave.webaim.org/report#/' . urlencode($site_url);
 			$clarity_url = 'https://clarity.microsoft.com/projects/view/eic7b2e9o1/dashboard';
