@@ -33,6 +33,7 @@ add_action('wp_footer', function () {
         .slick-prev {right: 70px; left: auto;}
         .slick-dots li button:before {font-size: 15px; margin-top: 15px; opacity: 0.5; color: #afc2cf;}
         .slick-dots li.slick-active button:before {opacity: 1; color: #afc2cf;}
+		.slick-autoplay-toggle-button {display: none;}
 
         /* Style Height Transition*/
         .slideshow-single-item {transition: height 0.4s ease;}
