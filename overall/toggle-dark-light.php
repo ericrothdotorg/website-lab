@@ -57,27 +57,21 @@ add_action('wp_head', function() {
   try {
     const storedPreference = localStorage.getItem('changeMode');
     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-	if (storedPreference === 'true' || (storedPreference === null && prefersDark)) {
-	  document.documentElement.classList.add('dark-mode-loading');
-	}
+    if (storedPreference === 'true' || (storedPreference === null && prefersDark)) {
+      document.documentElement.style.background = '#0d0d0d';
+      document.documentElement.style.color = '#bfbfbf';
+    }
   } catch(e) {
     console.warn('Dark mode initialization failed:', e);
   }
 })();
 </script>
-
-  <style>
-    html.dark-mode-loading body {background: #0d0d0d; color: #bfbfbf;}
-	html.dark-mode-loading body .toggle-mode {color: #bfbfbf !important;}
-	html.dark-mode-loading body :is(h1, h2, h3, h4, h5, h6) {color: #bfbfbf;}
-  </style>
   <?php
 });
 
 add_action('wp_footer', function () {
   ?>
   <style>
-
     /* Dark Mode Basics */
     body.dark-mode {background: #0d0d0d; color: #bfbfbf;}
     body.dark-mode .toggle-mode {color: #bfbfbf !important;}
@@ -204,68 +198,9 @@ add_action('wp_footer', function () {
       const changeModeSwitch = document.getElementById('change-mode-switch');
       const changeModeButton = document.getElementById('change-mode-button');
       const visualToggle = document.querySelector('#dark-mode-toggle-btn .toggle-visual');
-      let debounceTimer;
-      const changeMode = () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          const isDark = document.body.classList.toggle('dark-mode');
-          const statusEl = document.getElementById('dark-mode-status');
-          if (changeModeSwitch) changeModeSwitch.checked = isDark;
-
-          // Update aria-checked on all accessible elements
-          const updateAriaChecked = () => {
-            if (changeModeSwitch) changeModeSwitch.setAttribute('aria-checked', isDark);
-            if (changeModeButton) changeModeButton.setAttribute('aria-checked', isDark);
-          };
-          updateAriaChecked();
-          
-          // === Status announcement ===
-          if (statusEl) {
-            statusEl.textContent = isDark ? 'Dark mode enabled' : 'Light mode enabled';
-          }
-          try {
-            localStorage.setItem('changeMode', isDark ? 'true' : 'false');
-          } catch (e) {
-            console.warn('LocalStorage unavailable');
-          }
-        }, 150);
-      };
-      const applyAccessibility = (el) => {
-        if (!el) return;
-        el.setAttribute('role', 'switch');
-        el.setAttribute('aria-checked', document.body.classList.contains('dark-mode'));
-        el.setAttribute('tabindex', '0');
-        el.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            el.click();
-          }
-        });
-      };
-      applyAccessibility(changeModeSwitch);
-      applyAccessibility(changeModeButton);
+      const statusEl = document.getElementById('dark-mode-status');
       
-      // Mark visual toggle as decorative only
-      if (visualToggle) {
-        visualToggle.setAttribute('aria-hidden', 'true');
-      }
-      if (changeModeSwitch) {
-        changeModeSwitch.addEventListener('change', changeMode);
-      }
-      if (changeModeButton) changeModeButton.addEventListener('click', changeMode);
-      if (visualToggle) {
-        visualToggle.addEventListener('click', () => {
-          if (changeModeSwitch) {
-            changeModeSwitch.checked = !changeModeSwitch.checked;
-          }
-          changeMode();
-        });
-      }
-      
-      // Remove Loading Class - dark mode will be applied below
-      document.documentElement.classList.remove('dark-mode-loading');
-      
-      // Apply dark mode to body if it was stored
+      // Apply dark mode from localStorage
       try {
         const storedPreference = localStorage.getItem('changeMode');
         if (storedPreference === 'true') {
@@ -275,10 +210,54 @@ add_action('wp_footer', function () {
         console.warn('Could not load dark mode preference');
       }
       
-      // Sync toggle state with current mode (already set by inline script)
-      if (changeModeSwitch) {
-        changeModeSwitch.checked = document.body.classList.contains('dark-mode');
-      }
+      // Sync toggle with current state
+      const isDark = document.body.classList.contains('dark-mode');
+      if (changeModeSwitch) changeModeSwitch.checked = isDark;
+      
+      // Toggle function
+      const changeMode = () => {
+        const isDark = document.body.classList.toggle('dark-mode');
+        
+        if (changeModeSwitch) {
+          changeModeSwitch.checked = isDark;
+          changeModeSwitch.setAttribute('aria-checked', isDark);
+        }
+        if (changeModeButton) changeModeButton.setAttribute('aria-checked', isDark);
+        if (statusEl) statusEl.textContent = isDark ? 'Dark mode enabled' : 'Light mode enabled';
+        
+        try {
+          localStorage.setItem('changeMode', isDark ? 'true' : 'false');
+        } catch (e) {
+          console.warn('LocalStorage unavailable');
+        }
+      };
+      
+      // Accessibility setup
+      const addAccessibility = (el) => {
+        if (!el) return;
+        el.setAttribute('role', 'switch');
+        el.setAttribute('aria-checked', document.body.classList.contains('dark-mode'));
+        el.setAttribute('tabindex', '0');
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            changeMode();
+          }
+        });
+      };
+      
+      addAccessibility(changeModeSwitch);
+      addAccessibility(changeModeButton);
+      
+      if (visualToggle) visualToggle.setAttribute('aria-hidden', 'true');
+      
+      // Event listeners
+      if (changeModeSwitch) changeModeSwitch.addEventListener('change', changeMode);
+      if (changeModeButton) changeModeButton.addEventListener('click', changeMode);
+      if (visualToggle) visualToggle.addEventListener('click', () => {
+        if (changeModeSwitch) changeModeSwitch.checked = !changeModeSwitch.checked;
+        changeMode();
+      });
     });
   </script>
   <?php
