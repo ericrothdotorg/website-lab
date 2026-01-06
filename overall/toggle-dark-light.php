@@ -57,10 +57,9 @@ add_action('wp_head', function() {
   try {
     const storedPreference = localStorage.getItem('changeMode');
     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (storedPreference === 'true' || (storedPreference === null && prefersDark)) {
-      document.documentElement.classList.add('dark-mode-loading');
-      document.body.classList.add('dark-mode');
-    }
+	if (storedPreference === 'true' || (storedPreference === null && prefersDark)) {
+	  document.documentElement.classList.add('dark-mode-loading');
+	}
   } catch(e) {
     console.warn('Dark mode initialization failed:', e);
   }
@@ -178,7 +177,7 @@ add_action('wp_footer', function () {
     
     /* Logo Swaps */
     body.dark-mode .wp-image-122531 {content: url("https://ericroth.org/wp-content/uploads/2024/07/SBB_NEG_2F_RGB_100.svg");} /* SBB logo in My World */
-    body.dark-mode .wp-image-148107 {content: url("https://ericroth.org/wp-content/uploads/2025/07/github-mark-white.png");} /* Github logo in HTML, CSS, JS & Co. */
+    body.dark-mode .wp-image-148107 {content: url("https://ericroth.org/wp-content/uploads/2025/07/github-mark-white.png");} /* Github logo in Happy Coding! */
     
     /* Text & Categories */
     body.dark-mode .cat-prefix {color: #bfbfbf;}
@@ -196,14 +195,15 @@ add_action('wp_footer', function () {
     /* Code & Columns */
     body.dark-mode code {background: none;}
     body.dark-mode .text-column-front {background: #1a1a1a !important;}
-  </style>
 
+	/* Intro Pitches */
+	body.dark-mode .intro-pitches {background-color: #1a1a1a !important;}
+  </style>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const changeModeSwitch = document.getElementById('change-mode-switch');
       const changeModeButton = document.getElementById('change-mode-button');
       const visualToggle = document.querySelector('#dark-mode-toggle-btn .toggle-visual');
-      
       let debounceTimer;
       const changeMode = () => {
         clearTimeout(debounceTimer);
@@ -211,7 +211,7 @@ add_action('wp_footer', function () {
           const isDark = document.body.classList.toggle('dark-mode');
           const statusEl = document.getElementById('dark-mode-status');
           if (changeModeSwitch) changeModeSwitch.checked = isDark;
-          
+
           // Update aria-checked on all accessible elements
           const updateAriaChecked = () => {
             if (changeModeSwitch) changeModeSwitch.setAttribute('aria-checked', isDark);
@@ -223,15 +223,13 @@ add_action('wp_footer', function () {
           if (statusEl) {
             statusEl.textContent = isDark ? 'Dark mode enabled' : 'Light mode enabled';
           }
-          
           try {
-            localStorage.setItem('changeMode', isDark);
+            localStorage.setItem('changeMode', isDark ? 'true' : 'false');
           } catch (e) {
             console.warn('LocalStorage unavailable');
           }
         }, 150);
       };
-      
       const applyAccessibility = (el) => {
         if (!el) return;
         el.setAttribute('role', 'switch');
@@ -244,7 +242,6 @@ add_action('wp_footer', function () {
           }
         });
       };
-      
       applyAccessibility(changeModeSwitch);
       applyAccessibility(changeModeButton);
       
@@ -252,7 +249,6 @@ add_action('wp_footer', function () {
       if (visualToggle) {
         visualToggle.setAttribute('aria-hidden', 'true');
       }
-      
       if (changeModeSwitch) {
         changeModeSwitch.addEventListener('change', changeMode);
       }
@@ -266,8 +262,18 @@ add_action('wp_footer', function () {
         });
       }
       
-      // Remove Loading Class - mode already applied in head
+      // Remove Loading Class - dark mode will be applied below
       document.documentElement.classList.remove('dark-mode-loading');
+      
+      // Apply dark mode to body if it was stored
+      try {
+        const storedPreference = localStorage.getItem('changeMode');
+        if (storedPreference === 'true') {
+          document.body.classList.add('dark-mode');
+        }
+      } catch (e) {
+        console.warn('Could not load dark mode preference');
+      }
       
       // Sync toggle state with current mode (already set by inline script)
       if (changeModeSwitch) {
