@@ -75,51 +75,6 @@ add_action('wp_head', function() {
     <?php
 });
 
-// Article Schema - Blog posts and my-interests CPT
-add_action('wp_head', function() {
-    if (!is_singular(array('post', 'my-interests'))) return;
-    
-    global $post;
-    $image_url = get_the_post_thumbnail_url($post->ID, 'full');
-    ?>
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Article",
-      "headline": "<?php echo esc_js(get_the_title()); ?>",
-      "author": {
-        "@type": "Person",
-        "name": "Eric Roth",
-        "url": "<?php echo esc_url(home_url('/')); ?>"
-      },
-      "datePublished": "<?php echo get_the_date('c'); ?>",
-      "dateModified": "<?php echo get_the_modified_date('c'); ?>",
-      "publisher": {
-        "@type": "Person",
-        "name": "Eric Roth",
-        "url": "<?php echo esc_url(home_url('/')); ?>",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "<?php echo esc_url(get_site_icon_url()); ?>"
-        }
-      },
-      "description": "<?php echo esc_js(wp_trim_words(get_the_excerpt(), 30)); ?>",
-      "mainEntityOfPage": {
-        "@type": "WebPage",
-        "@id": "<?php echo esc_url(get_permalink()); ?>"
-      }
-      <?php if ($image_url): ?>
-      ,
-      "image": {
-        "@type": "ImageObject",
-        "url": "<?php echo esc_url($image_url); ?>"
-      }
-      <?php endif; ?>
-    }
-    </script>
-    <?php
-});
-
 // FAQ Schema - FAQ page
 add_action('wp_footer', function() {
     if (!is_page(array('59525')) && !is_page('faqs')) return;
