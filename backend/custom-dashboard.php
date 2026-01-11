@@ -188,7 +188,7 @@ function initialize_custom_dashboard() {
 			echo '<div style="margin-top: 15px;">';
 				// START Design Blocks and Site Analytics Row
 				echo '<div style="margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap;">';
-					echo '<a href="https://ericroth.org/wp-admin/tools.php?page=design-block-tracker" class="button">🎨 Design Blocks</a>';
+					echo '<a href="https://ericroth.org/wp-admin/themes.php?page=design-block-tracker" class="button">🎨 Design Blocks</a>';
 					echo '<a href="' . esc_url($clarity_url) . '" target="_blank" class="button">📈 MS Clarity</a>';
 				echo '</div>'; // END Design Blocks and Site Analytics Row
 				// START Action Buttons Row
