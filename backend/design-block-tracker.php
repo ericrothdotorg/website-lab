@@ -1,5 +1,4 @@
 <?php
-
 defined('ABSPATH') || exit;
 
 // Add admin menu
@@ -7,7 +6,7 @@ add_action('admin_menu', function() {
     if (!current_user_can('manage_options')) return;
     
     add_submenu_page(
-        'tools.php',
+        'themes.php',
         'Design Block Tracker',
         'Design Block Tracker',
         'manage_options',
@@ -318,20 +317,20 @@ function render_design_block_tracker() {
 
     // === Styles ===
     echo '<style>
-        .dbt-stats {background: #f0f4f8; padding: 20px; border-radius: 8px; margin: 20px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;}
+        .dbt-stats {background: #ffffff; padding: 20px; border-radius: 8px; margin: 20px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;}
         .dbt-stat {text-align: center;}
-        .dbt-stat-value {font-size: 2em; font-weight: bold; color: #2271b1;}
-        .dbt-stat-label {color: #666; margin-top: 5px;}
+        .dbt-stat-value {font-size: 2em; font-weight: bold; color: #1e73be;}
+        .dbt-stat-label {color: #192a3d; margin-top: 5px;}
         .patterns-grid {display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 12px;}
-        details {background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 6px; transition: box-shadow 0.2s;}
+        details {background: #ffffff; padding: 15px; border: 1px solid #e1e8ed; border-radius: 6px; transition: box-shadow 0.2s;}
         details:hover {box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);}
         details summary {font-weight: bold; cursor: pointer; margin-bottom: 6px; user-select: none;}
-        details summary:hover {color: #2271b1;}
-        details[open] summary {margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #eee;}
+        details summary:hover {color: #1e73be;}
+        details[open] summary {margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e1e8ed;}
         ul {margin: 8px 0 0 1em; padding: 0; list-style: disc;}
         ul li {margin: 4px 0; line-height: 1.6;}
         .section {margin-bottom: 28px;}
-        .tag {display: inline-block; background: #eef2f7; color: #334; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-left: 8px;}
+        .tag {display: inline-block; background: #e1e8ed; color: #3A4F66; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-left: 8px;}
         .tag-post {background: #e7f5e7;}
         .tag-page {background: #fff4e6;}
         .tag-template {background: #f0e6ff;}
@@ -339,17 +338,17 @@ function render_design_block_tracker() {
         .tag-wp_template {background: #f0e6ff;}
         .tag-wp_template_part {background: #f0e6ff;}
         .search-box {margin: 20px 0;}
-        .search-box input {padding: 8px 12px; width: 300px; border: 1px solid #ddd; border-radius: 4px;}
-        .empty-state {padding: 40px; text-align: center; background: #f9f9f9; border-radius: 8px; color: #666;}
-        .pattern-item {background: #f8f9fa; padding: 12px; border-left: 3px solid #2271b1; margin-bottom: 12px; border-radius: 4px;}
+        .search-box input {padding: 8px 12px; width: 300px; border: 1px solid #e1e8ed; border-radius: 4px;}
+        .empty-state {padding: 40px; text-align: center; background: #ffffff; border-radius: 8px; color: #192a3d;}
+        .pattern-item {background: #ffffff; padding: 12px; border-left: 3px solid #1e73be; margin-bottom: 12px; border-radius: 4px;}
         .pattern-title {font-weight: bold; margin-bottom: 8px;}
         .usage-list {margin-top: 8px; padding-left: 20px;}
-        .usage-item {color: #666; font-size: 14px;}
-        .no-usage {color: #999; font-style: italic;}
-        .pattern-edit-link {float: right; font-size: 12px; color: #2271b1; text-decoration: none;}
+        .usage-item {color: #192a3d; font-size: 14px;}
+        .no-usage {color: #3A4F66; font-style: italic;}
+        .pattern-edit-link {float: right; font-size: 12px; color: #1e73be; text-decoration: none;}
         .pattern-edit-link:hover {text-decoration: underline;}
         .loading {opacity: 0.6; pointer-events: none;}
-        .success-message {background: #d4edda; color: #155724; padding: 8px 12px; border-radius: 4px; margin: 10px 0;}
+        .success-message {background: #e1e8ed; color: #3A4F66; padding: 8px 12px; border-radius: 4px; margin: 10px 0;}
     </style>';
 
     // === JS ===
@@ -417,7 +416,7 @@ function render_design_block_tracker() {
     }
     </script></div>';
 
-    echo '<p style="text-align:center;color:#666;margin-top:40px;">Block data last refreshed: '.current_time('mysql').'</p>';
+    echo '<p style="text-align: center; color: #192a3d; margin-top: 40px;">Block data last refreshed: '.current_time('mysql').'</p>';
     echo '</div>'; // .wrap
 }
 
