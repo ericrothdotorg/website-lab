@@ -140,6 +140,8 @@ function initialize_custom_dashboard() {
 
 			// Define URLs for external Tools
 			$site_url = 'https://ericroth.org/';
+			$googlerich_url = 'https://search.google.com/test/rich-results?url=' . urlencode($site_url);
+			$schemaorg_url = 'https://validator.schema.org/?url=' . urlencode($site_url);
 			$pagespeed_url = 'https://pagespeed.web.dev/report?url=' . urlencode($site_url) . '&hl=en';
 			$webpagetest_url = 'https://www.webpagetest.org/?url=' . urlencode($site_url);
 			$wave_url = 'https://wave.webaim.org/report#/' . urlencode($site_url);
@@ -148,8 +150,12 @@ function initialize_custom_dashboard() {
 
 			// START External Analytics Buttons Section
 			echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
+				echo '<a href="' . esc_url($googlerich_url) . '" target="_blank" class="button">🧩 Google Rich</a>';
+				echo '<a href="' . esc_url($schemaorg_url) . '" target="_blank" class="button">🧩 schema.org</a>';
+			echo '</div>';
+			echo '<div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">';
 				echo '<a href="' . esc_url($pagespeed_url) . '" target="_blank" class="button">🚀 PageSpeed</a>';
-				echo '<a href="' . esc_url($webpagetest_url) . '" target="_blank" class="button">🔥 WebPageTest</a>';
+				echo '<a href="' . esc_url($webpagetest_url) . '" target="_blank" class="button">🚀 WebPageTest</a>';
 				echo '<a href="' . esc_url($wave_url) . '" target="_blank" class="button">♿ Accessibility</a>';
 			echo '</div>';
 			// END External Analytics Buttons Section
