@@ -454,30 +454,30 @@ function initialize_custom_dashboard() {
 		// Delete old spam comments
 		$deleted_total += $safe_delete("
 			DELETE FROM {$wpdb->comments}
-			WHERE comment_approved = 'spam' AND comment_date < NOW() - INTERVAL 30 DAY
+			WHERE comment_approved = 'spam' AND comment_date < NOW() - INTERVAL 1 DAY
 		", 'Spam comments cleanup');
 		// Delete old like timestamps
 		$deleted_total += $safe_delete("
 			DELETE FROM {$wpdb->postmeta}
 			WHERE meta_key = 'like_timestamp' 
-			AND meta_value < DATE_SUB(NOW(), INTERVAL 30 DAY)
+			AND meta_value < DATE_SUB(NOW(), INTERVAL 1 DAY)
 		", 'Old like timestamps cleanup');
 		// Delete old dislike timestamps
 		$deleted_total += $safe_delete("
 			DELETE FROM {$wpdb->postmeta}
 			WHERE meta_key = 'dislike_timestamp' 
-			AND meta_value < DATE_SUB(NOW(), INTERVAL 30 DAY)
+			AND meta_value < DATE_SUB(NOW(), INTERVAL 1 DAY)
 		", 'Old dislike timestamps cleanup');
 		// Delete old view timestamps
 		$deleted_total += $safe_delete("
 			DELETE FROM {$wpdb->postmeta}
 			WHERE meta_key = 'view_timestamp' 
-			AND meta_value < DATE_SUB(NOW(), INTERVAL 30 DAY)
+			AND meta_value < DATE_SUB(NOW(), INTERVAL 1 DAY)
 		", 'Old view timestamps cleanup');
 		// Delete old trash posts
 		$deleted_total += $safe_delete("
 			DELETE FROM {$wpdb->posts}
-			WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 30 DAY
+			WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 1 DAY
 		", 'Trash posts cleanup');
 		// Optimize main tables
 		$tables = ['postmeta', 'usermeta', 'options', 'term_relationships'];
