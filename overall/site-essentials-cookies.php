@@ -346,7 +346,7 @@ add_filter('the_content', function ($content) {
     // Domains to exclude from external Link Processing
     $exclude = ['ericroth.org', 'ericroth-org', '1drv.ms', 'paypal.com', 'librarything.com',
                 'themoviedb.org', 'facebook.com', 'github.com', 'linkedin.com',
-                'patreon.com', 'bsky.app', 'bsky.social', 'about.me'];
+                'patreon.com', 'bsky.app', 'bsky.social', 'about.me', 'buymeacoffee.com'];
 	// STEP 1: Pre-process Content for 'neli' Class and Figure Links (wp-block-image, wp-block-embed)
 	$content = preg_replace_callback('/<(figure|div)[^>]*class=["\'][^"\']*neli[^"\']*["\'][^>]*>(.*?)<\/\1>/is', 
         function($m) {
