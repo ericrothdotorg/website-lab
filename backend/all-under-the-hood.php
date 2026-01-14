@@ -14,16 +14,6 @@ if (!defined('WP_POST_REVISIONS')) {
     define('WP_POST_REVISIONS', 1);
 }
 
-// Force LiteSpeed Purge on Content Save
-add_action('save_post', function($post_id) {
-    if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
-        return;
-    }
-    if (function_exists('LiteSpeed_Cache_API') && method_exists('LiteSpeed_Cache_API', 'purge_all')) {
-        LiteSpeed_Cache_API::purge_all();
-    }
-}, 999);
-
 // Stay logged in longer
 function er_stay_logged_in($expiration, $user_id) {
     $user = get_userdata($user_id);
@@ -33,6 +23,16 @@ function er_stay_logged_in($expiration, $user_id) {
     return $expiration; // Default for others
 }
 add_filter('auth_cookie_expiration', 'er_stay_logged_in', 99, 2);
+
+// Force LiteSpeed Purge on Content Save
+add_action('save_post', function($post_id) {
+    if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+        return;
+    }
+    if (function_exists('LiteSpeed_Cache_API') && method_exists('LiteSpeed_Cache_API', 'purge_all')) {
+        LiteSpeed_Cache_API::purge_all();
+    }
+}, 999);
 
 // Prevent cached previews (with timestamp)
 add_filter('preview_post_link', function($url){
