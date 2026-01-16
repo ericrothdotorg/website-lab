@@ -57,7 +57,7 @@ add_action('init', function() {
 
 // Optimize LCP for Blocksy: Prioritize real Content Images, skip Logos / Icons
 add_action('template_redirect', function () {
-    if (is_admin() || is_feed() || wp_doing_ajax()) {
+    if (is_admin() || is_feed() || wp_doing_ajax() || is_archive() || is_search()) {
         return;
     }
     // Internal Threshold: Images smaller than this are never LCP Candidates
