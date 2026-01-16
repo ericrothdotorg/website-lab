@@ -490,48 +490,21 @@ add_action('wp_footer', function () {
 	<!-- Cookie Consent Logic -->
 
 	<script>
+		// Cookie helper functions (defined outside DOMContentLoaded)
 		(function() {
-			function setCookie(value) {
+			window.setCookie = function(value) {
 				const isSecure = location.protocol === 'https:' ? '; Secure' : '';
 				document.cookie = "cookieaccepted=" + value + "; max-age=31536000; path=/; SameSite=Lax" + isSecure;
-			}
-			function hideBanner() {
+			};
+			window.hideCookieBanner = function() {
 				const notice = document.getElementById("cookie-notice");
 				if (notice) {
 					notice.style.visibility = "hidden";
 					notice.setAttribute("aria-hidden", "true");
 				}
-			}
-			document.addEventListener('DOMContentLoaded', function () {
-				const hasConsent = document.cookie.indexOf("cookieaccepted=") >= 0;
-				if (!hasConsent) {
-					const notice = document.getElementById("cookie-notice");
-					if (notice) {
-						notice.style.visibility = "visible";
-						notice.setAttribute("aria-hidden", "false");
-						document.getElementById("cookie-accept").addEventListener('click', function() {
-							setCookie(1);
-							hideBanner();
-						});
-						document.getElementById("cookie-reject").addEventListener('click', function() {
-							setCookie(0);
-							hideBanner();
-						});
-					}
-				}
-			});
+			};
 		})();
 	</script>
-
-    <!-- Fix - aria-hidden - focusable Elements -->
-
-    <script>
-		document.addEventListener('DOMContentLoaded', function() {
-			document.querySelectorAll('[aria-hidden="true"] a, [aria-hidden="true"] button, [aria-hidden="true"] input, [aria-hidden="true"] select, [aria-hidden="true"] textarea, [aria-hidden="true"] *[tabindex]:not([tabindex="-1"])').forEach(function(el) {
-				el.setAttribute('tabindex', '-1');
-			});
-		});
-    </script>
 
 	<!-- Scroll Progress Indicator -->
 
@@ -565,124 +538,113 @@ add_action('wp_footer', function () {
 		<div class="scroll-indicator-bar" id="my_scroll_indicator"></div>
 	</div>
 
-    <!-- Auto-Insert Current Year -->
+	<!-- Tabs Styles (Conditional Load) -->
 
-    <script>
-        const yearEl = document.getElementById("current-year");
-        if (yearEl) yearEl.textContent = new Date().getFullYear();
-    </script>
+	<?php if (is_page(array('17552'))) { ?>
+	<style>
+		.tabs {overflow: hidden}
+		.tabs button {float: left; padding: 7.5px 10px; margin: 0px 2.5px; color: #1e73be; font-weight: bold; background: rgb(255, 255, 255); background: linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgba(230, 230, 230, 0.75) 100%); border: solid #c5c5c5; border-width: 1px 1px 0 1px; border-radius: 5px 5px 0 0; cursor: pointer}
+		.tabs button:hover {color: #c53030}
+		.tab-content {display: none; border: 1px solid #c5c5c5; border-radius: 5px 15px 15px 15px; padding: 2.5rem 1.5rem 2.5rem 2.5rem}
+		body.dark-mode .tabs button {background: linear-gradient(0deg, rgba(26, 26, 26, 1) 0%, rgba(51, 51, 51, 0.75) 100%); border: solid #404040; border-width: 1px 1px 0 1px}
+		body.dark-mode .tab-content {border: 1px solid #404040}
+	</style>
+	<?php } ?>
 
-    <!-- Accordion (One Open at a Time) -->
+	<!-- Consolidated JavaScript - Single DOMContentLoaded -->
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const details = document.querySelectorAll("details.details-accordion");
-            if (!details.length) return;
-            details.forEach(detail => {
-                detail.addEventListener("toggle", () => {
-                    if (detail.open) {
-                        details.forEach(other => {
-                            if (other !== detail) other.removeAttribute("open");
-                        });
-                    }
-                });
-                const summary = detail.querySelector("summary");
-                if (summary) {
-                    summary.setAttribute("tabindex", "0");
-                    summary.addEventListener("keydown", e => {
-                        if (["Enter", " "].includes(e.key)) {
-                            e.preventDefault();
-                            detail.open = !detail.open;
-                        }
-                    });
-                }
-            });
-        });
-    </script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function() {
 
-    <!-- Flexy Animation (Blocksy) -->
+			// Cookie Consent Banner
+			const hasConsent = document.cookie.indexOf("cookieaccepted=") >= 0;
+			if (!hasConsent) {
+				const notice = document.getElementById("cookie-notice");
+				if (notice) {
+					notice.style.visibility = "visible";
+					notice.setAttribute("aria-hidden", "false");
+					document.getElementById("cookie-accept").addEventListener('click', function() {
+						window.setCookie(1);
+						window.hideCookieBanner();
+					});
+					document.getElementById("cookie-reject").addEventListener('click', function() {
+						window.setCookie(0);
+						window.hideCookieBanner();
+					});
+				}
+			}
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const elements = document.querySelectorAll('.flexy-container');
-            if (!elements.length) return;
-            const observer = new IntersectionObserver(entries => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('daneden-slideInUp');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.1 });
-            elements.forEach(el => observer.observe(el));
-        });
-    </script>
+			// Fix aria-hidden focusable Elements
+			document.querySelectorAll('[aria-hidden="true"] a, [aria-hidden="true"] button, [aria-hidden="true"] input, [aria-hidden="true"] select, [aria-hidden="true"] textarea, [aria-hidden="true"] *[tabindex]:not([tabindex="-1"])').forEach(function(el) {
+				el.setAttribute('tabindex', '-1');
+			});
 
-    <!-- Tabs (Conditional Load) -->
+			// Auto-insert current Year
+			const yearEl = document.getElementById("current-year");
+			if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-    <?php if (is_page(array('17552')) || is_single(array(''))) { ?>
-    <style>
-        .tabs {
-            overflow: hidden;
-        }
-        .tabs button {
-            float: left;
-            padding: 7.5px 10px;
-            margin: 0px 2.5px;
-            color: #1e73be;
-            font-weight: bold;
-            background: rgb(255, 255, 255);
-            background: linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgba(230, 230, 230, 0.75) 100%);
-            border: solid #c5c5c5;
-            border-width: 1px 1px 0 1px;
-            border-radius: 5px 5px 0 0;
-            cursor: pointer;
-        }
-        .tabs button:hover {
-            color: #c53030;
-        }
-        .tab-content {
-            display: none;
-            border: 1px solid #c5c5c5;
-            border-radius: 5px 15px 15px 15px;
-            padding: 2.5rem 1.5rem 2.5rem 2.5rem;
-        }
-        body.dark-mode .tabs button {
-            background: linear-gradient(0deg, rgba(26, 26, 26, 1) 0%, rgba(51, 51, 51, 0.75) 100%);
-            border: solid #404040;
-            border-width: 1px 1px 0 1px;
-        }
-        body.dark-mode .tab-content {
-            border: 1px solid #404040;
-        }
-    </style>
-    <script>
-        function setupTabs(containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            const tabs = container.querySelectorAll('.tab-links');
-            const tabContents = container.querySelectorAll('.tab-content');
-            if (tabContents.length > 0) {
-                tabContents[0].style.display = 'block';
-            }
-            tabs.forEach(tab => {
-                tab.addEventListener('mouseover', () => {
-                    const tabId = tab.getAttribute('data-tab');
-                    tabContents.forEach(content => {
-                        if (content.id === tabId) {
-                            content.style.display = 'block';
-                        } else {
-                            content.style.display = 'none';
-                        }
-                    });
-                });
-            });
-        }
-        document.addEventListener('DOMContentLoaded', () => {
-            setupTabs('countries-tabs');
-            setupTabs('cities-tabs');
-        });
-    </script>
-    <?php } ?>
+			// Accordion (one open at a time)
+			const details = document.querySelectorAll("details.details-accordion");
+			if (details.length) {
+				details.forEach(detail => {
+					detail.addEventListener("toggle", () => {
+						if (detail.open) {
+							details.forEach(other => {
+								if (other !== detail) other.removeAttribute("open");
+							});
+						}
+					});
+					const summary = detail.querySelector("summary");
+					if (summary) {
+						summary.setAttribute("tabindex", "0");
+						summary.addEventListener("keydown", e => {
+							if (["Enter", " "].includes(e.key)) {
+								e.preventDefault();
+								detail.open = !detail.open;
+							}
+						});
+					}
+				});
+			}
+
+			// Flexy Animation
+			const flexyElements = document.querySelectorAll('.flexy-container');
+			if (flexyElements.length) {
+				const observer = new IntersectionObserver(entries => {
+					entries.forEach(entry => {
+						if (entry.isIntersecting) {
+							entry.target.classList.add('daneden-slideInUp');
+							observer.unobserve(entry.target);
+						}
+					});
+				}, { threshold: 0.1 });
+				flexyElements.forEach(el => observer.observe(el));
+			}
+			<?php if (is_page(array('17552'))) { ?>
+
+			// Tabs Setup
+			function setupTabs(containerId) {
+				const container = document.getElementById(containerId);
+				if (!container) return;
+				const tabs = container.querySelectorAll('.tab-links');
+				const tabContents = container.querySelectorAll('.tab-content');
+				if (tabContents.length > 0) {
+					tabContents[0].style.display = 'block';
+				}
+				tabs.forEach(tab => {
+					tab.addEventListener('mouseover', () => {
+						const tabId = tab.getAttribute('data-tab');
+						tabContents.forEach(content => {
+							content.style.display = (content.id === tabId) ? 'block' : 'none';
+						});
+					});
+				});
+			}
+			setupTabs('countries-tabs');
+			setupTabs('cities-tabs');
+			<?php } ?>
+		});
+
+	</script>
     <?php
 });
