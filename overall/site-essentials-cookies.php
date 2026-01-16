@@ -266,7 +266,17 @@ add_shortcode('post_stats', function() {
 });
 // Clear [post_stats] Cache when Post is updated
 add_action('save_post', function($post_id) {
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
     delete_transient('post_stats_' . $post_id);
+    // Trigger the Shortcode to pre-cache the Stats
+    $post = get_post($post_id);
+    if ($post && $post->post_status === 'publish') {
+        global $post;
+        $temp = $post;
+        $post = get_post($post_id);
+        do_shortcode('[post_stats]'); // This runs the Shortcode and caches it
+        $post = $temp;
+    }
 });
 
 // ======================================
