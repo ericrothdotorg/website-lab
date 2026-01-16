@@ -61,7 +61,7 @@ add_action('template_redirect', function () {
         return;
     }
     // Internal Threshold: Images smaller than this are never LCP Candidates
-    $min_width = 600;
+    $min_width = LCP_IMAGE_MIN_WIDTH;
     ob_start(function ($html) use ($min_width) {
         $lcp_found = false;
         return preg_replace_callback('/<img\b[^>]*>/i', function ($match) use (&$lcp_found, $min_width) {
