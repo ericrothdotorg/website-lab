@@ -116,8 +116,15 @@ add_filter('render_block', function($html, $block) {
     );
 }, 10, 2);
 
+// Ensure LCP Output Buffer always flushes
+add_action('shutdown', function () {
+    if (ob_get_level() > 0) {
+        @ob_end_flush();
+    }
+});
+
 // Set responsive Image Sizes (aligned with Blocksy Breakpoints)
-add_filter('wp_get_attachment_image_attributes', function ($attr) {
+add_filter('wp_get_attachment_image_attributes', function ($attr, $attachment, $size) {
     $attr['sizes'] = '(max-width: 480px) 300px, (max-width: 768px) 768px, (max-width: 1024px) 1024px, 1536px';
     return $attr;
 }, 10, 3);
@@ -152,8 +159,13 @@ add_action('wp_enqueue_scripts', function() {
 // FRONTEND ASSETS
 // ======================================
 
-// Enable dashicons on frontend (for icons in content)
-add_action('wp_enqueue_scripts', fn() => wp_enqueue_style('dashicons'));
+// Enable Dashicons on Frontend (for Icons in Content)
+add_action('wp_enqueue_scripts', function () {
+    global $post;
+    if ($post && strpos($post->post_content, 'dashicons-') !== false) {
+        wp_enqueue_style('dashicons');
+    }
+});
 
 // Preconnect to external Services + MS Clarity
 add_action('wp_head', function () {
@@ -370,7 +382,11 @@ add_filter('the_content', function ($content) {
             return $tag;
         }
         $href = $href_match[1];
-		
+		// Normalize protocol-relative URLs
+		if (strpos($href, '//') === 0) {
+			$href = (is_ssl() ? 'https:' : 'http:') . $href;
+		}
+
         // --- SKIP CONDITIONS (return Link unchanged) ---
         
 		// Skip: Whitelisted Domains
