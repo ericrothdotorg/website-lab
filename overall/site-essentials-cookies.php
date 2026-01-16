@@ -60,6 +60,7 @@ add_action('template_redirect', function () {
     if (is_admin() || is_feed() || wp_doing_ajax() || is_archive() || is_search()) {
         return;
     }
+	if (!is_singular()) return;
     // Internal Threshold: Images smaller than this are never LCP Candidates
     $min_width = LCP_IMAGE_MIN_WIDTH;
     ob_start(function ($html) use ($min_width) {
@@ -266,17 +267,7 @@ add_shortcode('post_stats', function() {
 });
 // Clear [post_stats] Cache when Post is updated
 add_action('save_post', function($post_id) {
-    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
     delete_transient('post_stats_' . $post_id);
-    // Trigger the Shortcode to pre-cache the Stats
-    $post = get_post($post_id);
-    if ($post && $post->post_status === 'publish') {
-        global $post;
-        $temp = $post;
-        $post = get_post($post_id);
-        do_shortcode('[post_stats]'); // This runs the Shortcode and caches it
-        $post = $temp;
-    }
 });
 
 // ======================================
@@ -468,67 +459,69 @@ add_action('template_redirect', function() {
 add_action('wp_footer', function () {
     ?>
     
-    <!-- Cookie Consent Banner -->
+	<!-- Cookie Consent Banner -->
 
-    <p id="cookie-notice" role="region" aria-live="polite" aria-label="Cookie notice" aria-hidden="true" style="visibility: hidden;">
-        We serve <strong>cookies</strong> to enhance your browsing experience. Learn more in our 
-        <a href="https://ericroth.org/this-site/site-policies/">Site Policies</a><br>
-        <span style="display: block; text-align: center;">
-            <button type="button" onclick="acceptCookie();" aria-label="Accept all cookies"><span>Accept</span></button>
-            <button type="button" onclick="rejectCookie();" aria-label="Reject optional cookies" class="reject-btn"><span>Essentials</span></button>
-        </span>
-    </p>
-    
-    <style>
-        #cookie-notice {text-align: justify; color: #fff; font-family: inherit; background: rgba(0,0,0,0.75); padding: 20px; position: fixed; bottom: 15px; left: 15px; width: 100%; max-width: 300px; border-radius: 5px; z-index: 10000; box-sizing: border-box}
-        #cookie-notice button {font-weight: normal; color: #fff; background: #1e73be; border-radius: 5px; padding: 8px; margin-top: 15px; width: 48%; cursor: pointer; border: none; margin-left: 2%; display: inline-block}
-        #cookie-notice button:first-child {margin-left: 0}
-        #cookie-notice button:hover {background: #c53030}
-        #cookie-notice button:hover span {display: none}
-        #cookie-notice button:hover::before {content: "All"}
-        #cookie-notice button.reject-btn {background: #262626}
-        #cookie-notice button.reject-btn:hover {background: #262626}
-        #cookie-notice button.reject-btn:hover::before {content: "Only"}
-        #cookie-notice button:focus-visible {outline: 2px solid #fff; outline-offset: 2px}
-        @media (max-width: 480px) {
-            #cookie-notice {max-width: 100%; bottom: 0; left: 0; border-radius: 0}
-            #cookie-notice button {width: 48%; font-size: 14px; padding: 8px 5px}
-        }
-    </style>
+	<p id="cookie-notice" role="region" aria-live="polite" aria-label="Cookie notice" aria-hidden="true" style="visibility: hidden;">
+		We serve <strong>cookies</strong> to enhance your browsing experience. Learn more in our 
+		<a href="https://ericroth.org/this-site/site-policies/">Site Policies</a><br>
+		<span style="display: block; text-align: center;">
+			<button type="button" id="cookie-accept" aria-label="Accept all cookies"><span>Accept</span></button>
+			<button type="button" id="cookie-reject" aria-label="Reject optional cookies" class="reject-btn"><span>Essentials</span></button>
+		</span>
+	</p>
 
-    <!-- Cookie Consent Logic -->
+	<style>
+		#cookie-notice {text-align: justify; color: #fff; font-family: inherit; background: rgba(0,0,0,0.75); padding: 20px; position: fixed; bottom: 15px; left: 15px; width: 100%; max-width: 300px; border-radius: 5px; z-index: 10000; box-sizing: border-box}
+		#cookie-notice button {font-weight: normal; color: #fff; background: #1e73be; border-radius: 5px; padding: 8px; margin-top: 15px; width: 48%; cursor: pointer; border: none; margin-left: 2%; display: inline-block}
+		#cookie-notice button:first-child {margin-left: 0}
+		#cookie-notice button:hover {background: #c53030}
+		#cookie-notice button:hover span {display: none}
+		#cookie-notice button:hover::before {content: "All"}
+		#cookie-notice button.reject-btn {background: #262626}
+		#cookie-notice button.reject-btn:hover {background: #262626}
+		#cookie-notice button.reject-btn:hover::before {content: "Only"}
+		#cookie-notice button:focus-visible {outline: 2px solid #fff; outline-offset: 2px}
+		@media (max-width: 480px) {
+			#cookie-notice {max-width: 100%; bottom: 0; left: 0; border-radius: 0}
+			#cookie-notice button {width: 48%; font-size: 14px; padding: 8px 5px}
+		}
+	</style>
 
-    <script>
-        function acceptCookie() {
-            const isSecure = location.protocol === 'https:' ? '; Secure' : '';
-            document.cookie = "cookieaccepted=1; max-age=31536000; path=/; SameSite=Lax" + isSecure;
-            const notice = document.getElementById("cookie-notice");
-            if (notice) {
-                notice.style.visibility = "hidden";
-                notice.setAttribute("aria-hidden", "true");
-            }
-        }
-        function rejectCookie() {
-            const isSecure = location.protocol === 'https:' ? '; Secure' : '';
-            document.cookie = "cookieaccepted=0; max-age=31536000; path=/; SameSite=Lax" + isSecure;
-            const notice = document.getElementById("cookie-notice");
-            if (notice) {
-                notice.style.visibility = "hidden";
-                notice.setAttribute("aria-hidden", "true");
-            }
-        }
-        document.addEventListener('DOMContentLoaded', function () {
-            const hasConsent = document.cookie.indexOf("cookieaccepted=") >= 0;
-            // Show Banner if no consent yet
-            if (!hasConsent) {
-                const notice = document.getElementById("cookie-notice");
-                if (notice) {
-                    notice.style.visibility = "visible";
-                    notice.setAttribute("aria-hidden", "false");
-                }
-            }
-        });
-    </script>
+	<!-- Cookie Consent Logic -->
+
+	<script>
+		(function() {
+			function setCookie(value) {
+				const isSecure = location.protocol === 'https:' ? '; Secure' : '';
+				document.cookie = "cookieaccepted=" + value + "; max-age=31536000; path=/; SameSite=Lax" + isSecure;
+			}
+			function hideBanner() {
+				const notice = document.getElementById("cookie-notice");
+				if (notice) {
+					notice.style.visibility = "hidden";
+					notice.setAttribute("aria-hidden", "true");
+				}
+			}
+			document.addEventListener('DOMContentLoaded', function () {
+				const hasConsent = document.cookie.indexOf("cookieaccepted=") >= 0;
+				if (!hasConsent) {
+					const notice = document.getElementById("cookie-notice");
+					if (notice) {
+						notice.style.visibility = "visible";
+						notice.setAttribute("aria-hidden", "false");
+						document.getElementById("cookie-accept").addEventListener('click', function() {
+							setCookie(1);
+							hideBanner();
+						});
+						document.getElementById("cookie-reject").addEventListener('click', function() {
+							setCookie(0);
+							hideBanner();
+						});
+					}
+				}
+			});
+		})();
+	</script>
 
     <!-- Fix - aria-hidden - focusable Elements -->
 
@@ -540,32 +533,37 @@ add_action('wp_footer', function () {
 		});
     </script>
 
-    <!-- Scroll Progress Indicator -->
+	<!-- Scroll Progress Indicator -->
 
-    <style>
-        .scroll-indicator-bar {will-change: width; width: 0%; position: fixed; bottom: 0; height: 5px; background: #c53030; z-index: 5000}
-    </style>
+	<style>
+		.scroll-indicator-bar {will-change: width; width: 0%; position: fixed; bottom: 0; height: 5px; background: #c53030; z-index: 5000}
+	</style>
 
-    <script>
-        let ticking = false;
-        function updateScroll() {
-            const scroll = document.documentElement.scrollTop || document.body.scrollTop;
-            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-            const indicator = document.getElementById("my_scroll_indicator");
-            if (indicator) indicator.style.width = (scroll / height) * 100 + "%";
-            ticking = false;
-        }
-        window.addEventListener("scroll", () => {
-            if (!ticking) {
-                requestAnimationFrame(updateScroll);
-                ticking = true;
-            }
-        }, { passive: true });
-    </script>
+	<script>
+		(function() {
+			let ticking = false;
+			function updateScroll() {
+				const scroll = document.documentElement.scrollTop || document.body.scrollTop;
+				const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+				const percentage = Math.round((scroll / height) * 100);
+				const indicator = document.getElementById("my_scroll_indicator");
+				const container = indicator?.parentElement;
+				if (indicator) indicator.style.width = percentage + "%";
+				if (container) container.setAttribute("aria-valuenow", percentage);
+				ticking = false;
+			}
+			window.addEventListener("scroll", () => {
+				if (!ticking) {
+					requestAnimationFrame(updateScroll);
+					ticking = true;
+				}
+			}, { passive: true });
+		})();
+	</script>
 
-    <div class="scroll-indicator-container">
-        <div class="scroll-indicator-bar" id="my_scroll_indicator"></div>
-    </div>
+	<div class="scroll-indicator-container" role="progressbar" aria-label="Page scroll progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+		<div class="scroll-indicator-bar" id="my_scroll_indicator"></div>
+	</div>
 
     <!-- Auto-Insert Current Year -->
 
