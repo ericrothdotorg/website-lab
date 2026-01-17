@@ -549,7 +549,7 @@ add_action('wp_footer', function () {
 	<!-- Cookie Consent Logic -->
 
 	<script>
-		// Cookie helper functions (defined outside DOMContentLoaded)
+		// Cookie Helper Functions (defined outside DOMContentLoaded)
 		(function() {
 			window.setCookie = function(value) {
 				const isSecure = location.protocol === 'https:';
@@ -575,14 +575,24 @@ add_action('wp_footer', function () {
 	<script>
 		(function() {
 			let ticking = false;
+			let lastPercentage = -1; // Track last Value to avoid unnecessary Updates
 			function updateScroll() {
-				const scroll = document.documentElement.scrollTop || document.body.scrollTop;
-				const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-				const percentage = Math.round((scroll / height) * 100);
+				// Read ALL Layout Properties ONCE per Frame
+				const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+				const scrollHeight = document.documentElement.scrollHeight;
+				const clientHeight = document.documentElement.clientHeight;
+				const height = scrollHeight - clientHeight;
+				const percentage = height > 0 ? Math.round((scrollTop / height) * 100) : 0;
 				const indicator = document.getElementById("my_scroll_indicator");
 				const container = indicator?.parentElement;
-				if (indicator) indicator.style.width = percentage + "%";
-				if (container) container.setAttribute("aria-valuenow", percentage);
+				// Only update if Percentage actually changed
+				if (indicator && percentage !== lastPercentage) {
+					indicator.style.width = percentage + "%";
+					lastPercentage = percentage;
+				}
+				if (container) {
+					container.setAttribute("aria-valuenow", percentage);
+				}
 				ticking = false;
 			}
 			window.addEventListener("scroll", () => {
@@ -718,6 +728,7 @@ add_action('wp_footer', function () {
 			(function(c,l,a,r,i,t,y){
 				c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
 				t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+				t.rel = 'noopener';
 				y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
 			})(window, document, "clarity", "script", "<?php echo CLARITY_ID; ?>");
 		}
