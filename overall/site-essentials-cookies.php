@@ -4,13 +4,48 @@
 // ======================================
 
 // Content & SEO
-define('ALT_TEXT_MAX_LENGTH', 100);          // Maximum characters for image alt text
-define('READING_SPEED_WPM', 200);            // Words per minute for read time calculation
-define('LCP_IMAGE_MIN_WIDTH', 300);          // Minimum width (px) to consider image for LCP optimization
-// Cache Durations (in seconds)
-define('CACHE_POST_STATS', 3600);            // 1 hour - Post statistics cache
-define('CACHE_POST_COUNT', 3600);            // 1 hour - Post count cache
-define('CACHE_LCP_HTML', 3600);              // 1 hour - LCP optimized HTML cache
+define('ALT_TEXT_MAX_LENGTH', 100);          // Maximum Characters for Image ALT Text
+define('READING_SPEED_WPM', 200);            // Words per Minute for read Time Calculation
+define('LCP_IMAGE_MIN_WIDTH', 300);          // Minimum Width (px) to consider Image for LCP Optimization
+
+// Cache Durations (in Seconds)
+define('CACHE_POST_STATS', 3600);            // 1 hour - Post Statistics Cache
+define('CACHE_POST_COUNT', 3600);            // 1 hour - Post Count Cache
+define('CACHE_LCP_HTML', 3600);              // 1 hour - LCP optimized HTML Cache
+
+// Cookie & Analytics
+define('COOKIE_MAX_AGE', 31536000);          // 1 year in Seconds
+define('CLARITY_TIMEOUT', 2000);             // Clarity load Timeout (MS)
+define('CLARITY_ID', 'eic7b2e9o1');          // Microsoft Clarity ID
+
+// Regex Patterns (compiled once for Performance)
+define('REGEX_DECORATIVE_IMAGES', '/(divider|icon|bg|decor|spacer)/i');
+define('REGEX_LOGO_PATTERNS', '/logo|icon|avatar|emoji|placeholder|data:image\/svg/i');
+define('REGEX_BLOCKSY_LCP', '/ct-featured-image|wp-post-image|ct-image-container|ct-media-container/i');
+
+// ======================================
+// HELPER FUNCTIONS
+// ======================================
+
+// Get cached post count for a post type
+function get_post_count_cached($type) {
+    $cache_key = 'post_count_' . $type;
+    $count = get_transient($cache_key);
+    if ($count === false) {
+        $count = wp_count_posts($type)->publish;
+        set_transient($cache_key, $count, CACHE_POST_COUNT);
+    }
+    return $count;
+}
+
+// Add external-link Class to Anchor Tag
+function add_external_link_class($tag) {
+    $attrs = $tag;
+    if (strpos($attrs, 'class=') !== false) {
+        return preg_replace('/class=(["\'])(.*?)\1/', 'class=$1$2 external-link$1', $attrs);
+    }
+    return str_replace('<a ', '<a class="external-link" ', $attrs);
+}
 
 // ======================================
 // JQUERY & CORE SCRIPTS
@@ -25,7 +60,7 @@ if (!is_admin()) {
             'in_footer' => true,
         ]);
         wp_enqueue_script('jquery');
-    }, 11); // Leave as is cuz: WP core enqueues jQuery at priority 10
+    }, 11); // Priority 11 required: WP core enqueues jQuery at priority 10
 }
 
 // ======================================
@@ -55,53 +90,72 @@ add_action('init', function() {
     }, 10, 2);
 });
 
+// Defer non-critical CSS to reduce render-blocking
+add_filter('style_loader_tag', function($html, $handle) {
+    // Critical Styles that should NOT be deferred
+    $critical_handles = ['ct-main-styles', 'ct-theme-options-styles', 'global-styles'];
+    if (in_array($handle, $critical_handles)) {
+        return $html;
+    }
+    // Defer non-critical Stylesheets
+    return str_replace("rel='stylesheet'", "rel='preload' as='style' onload=\"this.onload=null;this.rel='stylesheet'\"", $html);
+}, 10, 2);
+
 // Optimize LCP for Blocksy: Prioritize real Content Images, skip Logos / Icons
 add_action('template_redirect', function () {
     if (is_admin() || is_feed() || wp_doing_ajax() || is_archive() || is_search()) {
         return;
     }
 	if (!is_singular()) return;
+    // Ensure clean Buffer State
+    while (ob_get_level() > 0) {
+        ob_end_flush();
+    }
     // Internal Threshold: Images smaller than this are never LCP Candidates
     $min_width = LCP_IMAGE_MIN_WIDTH;
     ob_start(function ($html) use ($min_width) {
         $lcp_found = false;
-        return preg_replace_callback('/<img\b[^>]*>/i', function ($match) use (&$lcp_found, $min_width) {
-            $img = $match[0];
-            // Skip decorative Images
-            if (preg_match('/logo|icon|avatar|emoji|placeholder|data:image\/svg/i', $img)) {
-                return $img;
-            }
-            // Skip Images without width Attribute
-            if (!preg_match('/width=["\'](\d+)["\']/', $img, $w)) {
-                return $img;
-            }
-            $width = (int)$w[1];
-            // Blocksy LCP Candidates
-            $is_blocksy_lcp =
-                preg_match('/ct-featured-image|wp-post-image|ct-image-container|ct-media-container/i', $img);
-            // First real Content Image
-            if (!$lcp_found && ($is_blocksy_lcp || $width >= $min_width)) {
-                $lcp_found = true;
-                // Remove Lazy Loading
-                $img = preg_replace('/\sloading=["\']lazy["\']/', '', $img);
-                $img = preg_replace('/\blazyload\b/i', '', $img);
-                // Add fetchpriority
-                if (strpos($img, 'fetchpriority') === false) {
-                    $img = str_replace('<img', '<img fetchpriority="high"', $img);
+        try {
+            return preg_replace_callback('/<img\b[^>]*>/i', function ($match) use (&$lcp_found, $min_width) {
+                $img = $match[0];
+                // Skip decorative Images
+                if (preg_match(REGEX_LOGO_PATTERNS, $img)) {
+                    return $img;
                 }
-                // Add Sizes if missing
-                if (strpos($img, 'sizes=') === false) {
-                    $img = str_replace(
-                        '<img',
-                        '<img sizes="(max-width: 600px) 100vw, (max-width: 1024px) 80vw, 1000px"',
-                        $img
-                    );
+                // Skip Images without width Attribute
+                if (!preg_match('/width=["\'](\d+)["\']/', $img, $w)) {
+                    return $img;
                 }
-            }
-            return $img;
-        }, $html);
+                $width = (int)$w[1];
+                // Blocksy LCP Candidates
+                $is_blocksy_lcp = preg_match(REGEX_BLOCKSY_LCP, $img);
+                // First real Content Image
+                if (!$lcp_found && ($is_blocksy_lcp || $width >= $min_width)) {
+                    $lcp_found = true;
+                    // Remove Lazy Loading
+                    $img = preg_replace('/\sloading=["\']lazy["\']/', '', $img);
+                    $img = preg_replace('/\blazyload\b/i', '', $img);
+                    // Add fetchpriority
+                    if (strpos($img, 'fetchpriority') === false) {
+                        $img = str_replace('<img', '<img fetchpriority="high"', $img);
+                    }
+                    // Add Sizes if missing
+                    if (strpos($img, 'sizes=') === false) {
+                        $img = str_replace(
+                            '<img',
+                            '<img sizes="(max-width: 600px) 100vw, (max-width: 1024px) 80vw, 1000px"',
+                            $img
+                        );
+                    }
+                }
+                return $img;
+            }, $html);
+        } catch (Exception $e) {
+            error_log('LCP optimization error: ' . $e->getMessage());
+            return $html;
+        }
     });
-});
+}, 99); // High priority: Start before most Plugins but after Theme
 
 // Optimize LCP by adding Class - priority-high - to chosen Images
 add_filter('render_block', function($html, $block) {
@@ -118,8 +172,11 @@ add_filter('render_block', function($html, $block) {
 
 // Ensure LCP Output Buffer always flushes
 add_action('shutdown', function () {
-    if (ob_get_level() > 0) {
+    $max_levels = 10; // Safety Limit
+    $levels = 0;
+    while (ob_get_level() > 0 && $levels < $max_levels) {
         @ob_end_flush();
+        $levels++;
     }
 });
 
@@ -169,8 +226,9 @@ add_action('wp_enqueue_scripts', function () {
 
 // Preconnect to external Services
 add_action('wp_head', function () {
-    echo '<link rel="dns-prefetch" href="https://secure.gravatar.com">';
-    echo '<link rel="dns-prefetch" href="https://www.clarity.ms">';
+    echo '<link rel="dns-prefetch" href="https://secure.gravatar.com">' . "\n";
+    echo '<link rel="dns-prefetch" href="https://www.clarity.ms">' . "\n";
+    echo '<link rel="preconnect" href="https://www.clarity.ms" crossorigin>' . "\n";
 }, 10);
 
 // ======================================
@@ -186,8 +244,12 @@ add_shortcode('reusable', 'get_reusable_block');
 add_shortcode('blocksy_content_block', 'get_reusable_block');
 function get_reusable_block($atts) {
     $atts = shortcode_atts(['id' => ''], $atts);
-    $post = get_post(intval($atts['id']));
-    return $post ? apply_filters('the_content', $post->post_content) : '';
+    $id = absint($atts['id']);
+    if (!$id) return '';
+    // Additional Security: Check Post Type
+    $post = get_post($id);
+    if (!$post || $post->post_status !== 'publish' || $post->post_type !== 'wp_block') return '';
+    return apply_filters('the_content', $post->post_content);
 }
 
 // [total_post], [total_page], etc. - Display Post Type Counts
@@ -195,25 +257,13 @@ if (!is_admin()) {
     add_action('init', function() {
         foreach (['post', 'page', 'my-interests', 'my-traits'] as $type) {
             add_shortcode('total_' . str_replace('-', '_', $type), function() use ($type) {
-                $cache_key = 'post_count_' . $type;
-                $count = get_transient($cache_key);
-                if ($count === false) {
-                    $count = wp_count_posts($type)->publish;
-                    set_transient($cache_key, $count, CACHE_POST_COUNT);
-                }
-                return $count;
+                return get_post_count_cached($type);
             });
         }
     });
 }
-// Clear [total_post] Cache when Posts are published / deleted
-add_action('transition_post_status', function($new_status, $old_status, $post) {
-    if ($new_status !== $old_status) {
-        delete_transient('post_count_' . $post->post_type);
-    }
-}, 10, 3);
 
-// [post_stats] - Comprehensive content statistics
+// [post_stats] - Comprehensive Content Statistics
 add_shortcode('post_stats', function() {
     global $post;
     if (!$post) return '';
@@ -226,9 +276,10 @@ add_shortcode('post_stats', function() {
     $content = apply_filters('the_content', $post->post_content);
     $text = strip_tags(strip_shortcodes($content));
     // Calculate Statistics
+    $word_count = str_word_count($text);
     $stats = [
-        'words' => str_word_count($text),
-        'minutes' => ceil(str_word_count($text) / READING_SPEED_WPM),
+        'words' => $word_count,
+        'minutes' => ceil($word_count / READING_SPEED_WPM),
         'chars' => strlen($text),
         'paragraphs' => substr_count($content, '</p>'),
         'images' => substr_count($content, '<img'),
@@ -264,8 +315,19 @@ add_shortcode('post_stats', function() {
     set_transient($cache_key, $output, CACHE_POST_STATS);
     return $output;
 });
+
+// Clear [total_post] Cache when Posts are published / deleted
+add_action('transition_post_status', function($new_status, $old_status, $post) {
+    if ($new_status !== $old_status) {
+        delete_transient('post_count_' . $post->post_type);
+    }
+}, 10, 3);
+
 // Clear [post_stats] Cache when Post is updated
 add_action('save_post', function($post_id) {
+    // Security Checks
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+    if (!current_user_can('edit_post', $post_id)) return;
     delete_transient('post_stats_' . $post_id);
 });
 
@@ -278,7 +340,7 @@ add_filter('wp_get_attachment_image', function($html, $attachment_id) {
     $alt = get_post_meta($attachment_id, '_wp_attachment_image_alt', true);
     $src = wp_get_attachment_url($attachment_id);
     // Mark decorative Images with empty ALT
-    if (preg_match('/(divider|icon|bg|decor|spacer)/i', $src)) {
+    if (preg_match(REGEX_DECORATIVE_IMAGES, $src)) {
         $alt = '';
     } elseif (empty($alt)) {
         $alt = get_the_title($attachment_id);
@@ -347,7 +409,7 @@ add_filter('the_content', function ($content) {
     $exclude = ['ericroth.org', 'ericroth-org', '1drv.ms', 'paypal.com', 'librarything.com',
                 'themoviedb.org', 'facebook.com', 'github.com', 'linkedin.com',
                 'patreon.com', 'bsky.app', 'bsky.social', 'about.me', 'buymeacoffee.com'];
-	// STEP 1: Pre-process Content for 'neli' Class and Figure Links (wp-block-image, wp-block-embed)
+    // STEP 1: Pre-process Content for 'neli' Class and Figure Links (wp-block-image, wp-block-embed)
 	$content = preg_replace_callback('/<(figure|div)[^>]*class=["\'][^"\']*neli[^"\']*["\'][^>]*>(.*?)<\/\1>/is', 
         function($m) {
             return preg_replace('/<a\s+/', '<a data-neli="true" ', $m[0]);
@@ -391,7 +453,7 @@ add_filter('the_content', function ($content) {
 		if (strpos($attrs, 'data-figure-link="true"') !== false) {
 			return str_replace(' data-figure-link="true"', '', $tag);
 		}
-		// Skip: Other WordPress UI Elements
+		// Skip: Other WP UI Elements
         if (preg_match('/class=["\'][^"\']*(wp-block-button__link|button|page-numbers|wp-block-social-link|wp-social-link|wp-social-link-youtube)[^"\']*["\']/', $attrs)) {
             return $tag;
         }
@@ -403,13 +465,7 @@ add_filter('the_content', function ($content) {
         
         // --- PROCESS LINKS (return Link changed) ---
         
-        $modified = $tag;
-        // Add 'external-link' Class
-        if (strpos($attrs, 'class=') !== false) {
-            $modified = preg_replace('/class=(["\'])(.*?)\1/', 'class=$1$2 external-link$1', $modified);
-        } else {
-            $modified = str_replace('<a ', '<a class="external-link" ', $modified);
-        }
+        $modified = add_external_link_class($tag);
         // Add Title Attribute for Links opening in new Tab
         if (strpos($attrs, 'target="_blank"') !== false && strpos($attrs, 'title=') === false) {
             $modified = str_replace('<a ', '<a title="Opens in a new tab" ', $modified);
@@ -433,7 +489,7 @@ add_filter('the_content', function ($content) {
         },
         $content
     );
-}, 11); // Leave as is cuz: Runs after the external Link Filter above
+}, 11); // Priority 11 required: Runs after the external Link Filter above
 
 // ======================================
 // REDIRECTS
@@ -496,8 +552,9 @@ add_action('wp_footer', function () {
 		// Cookie helper functions (defined outside DOMContentLoaded)
 		(function() {
 			window.setCookie = function(value) {
-				const isSecure = location.protocol === 'https:' ? '; Secure' : '';
-				document.cookie = "cookieaccepted=" + value + "; max-age=31536000; path=/; SameSite=Lax" + isSecure;
+				const isSecure = location.protocol === 'https:';
+				const cookie = 'cookieaccepted=' + value + '; max-age=<?php echo COOKIE_MAX_AGE; ?>; path=/; SameSite=Lax' + (isSecure ? '; Secure' : '');
+				document.cookie = cookie;
 			};
 			window.hideCookieBanner = function() {
 				const notice = document.getElementById("cookie-notice");
@@ -610,7 +667,7 @@ add_action('wp_footer', function () {
 				});
 			}
 
-			// Flexy Animation
+			// Flexy Animation (Blocksy Theme)
 			const flexyElements = document.querySelectorAll('.flexy-container');
 			if (flexyElements.length) {
 				const observer = new IntersectionObserver(entries => {
@@ -662,10 +719,10 @@ add_action('wp_footer', function () {
 				c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
 				t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
 				y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-			})(window, document, "clarity", "script", "eic7b2e9o1");
+			})(window, document, "clarity", "script", "<?php echo CLARITY_ID; ?>");
 		}
 		if ('requestIdleCallback' in window) {
-			requestIdleCallback(loadClarity, { timeout: 2000 });
+			requestIdleCallback(loadClarity, { timeout: <?php echo CLARITY_TIMEOUT; ?> });
 		} else {
 			setTimeout(loadClarity, 1500);
 		}
