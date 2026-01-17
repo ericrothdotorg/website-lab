@@ -66,15 +66,16 @@ function initialize_custom_dashboard() {
     });
 
     // ======================================
-	// 🌀 ADD HOSTINGER STUFF BUTTONS
+	// 🌀 HOSTING & CODE REPO
 	// ======================================
 
     add_action('wp_dashboard_setup', function() {
-        wp_add_dashboard_widget('custom_hostinger_stuff', '🌀 Hostinger Stuff', function() {
+        wp_add_dashboard_widget('hosting_code_repo', '🌀 Hosting & Code Repo', function() {
             echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
             echo '<a href="https://auth.hostinger.com/login" target="_blank" class="button">🔐 Login</a>';
             echo '<a href="https://mail.hostinger.com/" target="_blank" class="button">📬 Webmail</a>';
             echo '<a href="https://ericroth.org/wp-admin/admin.php?page=hostinger-ai-assistant" target="_blank" class="button">🧠 AI</a>';
+			echo '<a href="https://github.com/ericrothdotorg" target="_blank" class="button">💾 GitHub</a>';
             echo '</div>';
         });
     });
