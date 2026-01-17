@@ -80,6 +80,21 @@ function initialize_custom_dashboard() {
     });
 
     // ======================================
+	// 🤖 AI CHATBOT BUTTONS
+	// ======================================
+
+    add_action('wp_dashboard_setup', function() {
+        wp_add_dashboard_widget('ai_chatbots', '🤖 AI Chatbots', function() {
+            echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
+            echo '<a href="https://copilot.microsoft.com/" target="_blank" class="button">Copilot</a>';
+            echo '<a href="https://chatgpt.com/" target="_blank" class="button">ChatGPT</a>';
+            echo '<a href="https://claude.ai/" target="_blank" class="button">Claude</a>';
+            echo '<a href="https://chat.deepseek.com/" target="_blank" class="button">DeepSeek</a>';
+            echo '</div>';
+        });
+    });
+
+    // ======================================
 	// 🗓️ ADD RECENT SITE ACTIVITY
 	// ======================================
 
