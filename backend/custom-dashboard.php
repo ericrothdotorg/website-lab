@@ -99,10 +99,14 @@ function initialize_custom_dashboard() {
 	// 🗓️ ADD RECENT SITE ACTIVITY
 	// ======================================
 
-    add_action('wp_dashboard_setup', function () {
-        wp_add_dashboard_widget('custom_activity_alerts', '🗓️ Recent Site Activity', function () {
+	add_action('wp_dashboard_setup', function () {
+        wp_add_dashboard_widget('custom_activity_alerts', '🗓️ Recent Site Activity', 'custom_render_activity_widget');
+    });
+    function custom_render_activity_widget() {
+        $cached_stats = get_transient('custom_activity_stats');
+        $format_count = fn($num) => number_format_i18n($num, 0);
+        if ($cached_stats === false) {
             global $wpdb;
-            $format_count = fn($num) => number_format_i18n($num, 0);
             // 📬 Contact Messages
             $contact_today = $wpdb->get_var("
                 SELECT COUNT(*) FROM {$wpdb->prefix}contact_messages
@@ -111,7 +115,7 @@ function initialize_custom_dashboard() {
             $contact_total = $wpdb->get_var("
                 SELECT COUNT(*) FROM {$wpdb->prefix}contact_messages
             ");
-			// 👁️ Views
+            // 👁️ Views
             $views_today = $wpdb->get_var("
                 SELECT COUNT(*) FROM {$wpdb->prefix}postmeta
                 WHERE meta_key = 'view_timestamp' AND DATE(meta_value) = CURDATE()
@@ -138,14 +142,25 @@ function initialize_custom_dashboard() {
                 SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta
                 WHERE meta_key = 'dislikes'
             ");
-            echo '<ul style="font-size: 14px; line-height: 1.5;">';
-			echo '<li>📬 Contact Messages: <strong style="color: red;">' . $format_count($contact_today) . '</strong> today / <strong>' . $format_count($contact_total) . '</strong> total</li>';
-			echo '<li>👁️ Views: <strong style="color: red;">' . $format_count($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</li>';
-			echo '<li>👍 Likes: <strong style="color: red;">' . $format_count($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</li>';
-			echo '<li>👎 Dislikes: <strong style="color: red;">' . $format_count($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</li>';
-            echo '</ul>';
-        });
-    });
+            $cached_stats = [
+                'contact_today' => $contact_today,
+                'contact_total' => $contact_total,
+                'views_today' => $views_today,
+                'views_total' => $views_total,
+                'likes_today' => $likes_today,
+                'likes_total' => $likes_total,
+                'dislikes_today' => $dislikes_today,
+                'dislikes_total' => $dislikes_total
+            ];
+            set_transient('custom_activity_stats', $cached_stats, 5 * MINUTE_IN_SECONDS);
+        }
+        echo '<ul style="font-size: 14px; line-height: 1.5;">';
+        echo '<li>📬 Contact Messages: <strong style="color: red;">' . $format_count($cached_stats['contact_today']) . '</strong> today / <strong>' . $format_count($cached_stats['contact_total']) . '</strong> total</li>';
+        echo '<li>👁️ Views: <strong style="color: red;">' . $format_count($cached_stats['views_today']) . '</strong> today / <strong>' . $format_count($cached_stats['views_total']) . '</strong> total</li>';
+        echo '<li>👍 Likes: <strong style="color: red;">' . $format_count($cached_stats['likes_today']) . '</strong> today / <strong>' . $format_count($cached_stats['likes_total']) . '</strong> total</li>';
+        echo '<li>👎 Dislikes: <strong style="color: red;">' . $format_count($cached_stats['dislikes_today']) . '</strong> today / <strong>' . $format_count($cached_stats['dislikes_total']) . '</strong> total</li>';
+        echo '</ul>';
+    }
 
     // ======================================
 	// 📊 ADD ANALYTICS TOOLKIT
@@ -216,6 +231,7 @@ function initialize_custom_dashboard() {
 				// START Action Buttons Row
 				echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
 					echo '<form method="post" style="margin: 0;">';
+						wp_nonce_field('check_broken_yt_action', 'check_broken_yt_nonce');
 						echo '<button type="submit" name="check_broken_yt" class="button">🔍 Broken YT Links</button>';
 					echo '</form>';
 					echo '<a href="' . esc_url($w3_url) . '" target="_blank" class="button">🛠️ W3.org Dev Tools</a>';
@@ -223,12 +239,17 @@ function initialize_custom_dashboard() {
 			echo '</div>';
 			// END Tools & Actions Section
 
+			// ======================================
+			// 🔴 BROKEN YOUTUBE LINKS CHECKER
+			// ======================================
+
 			// Always get latest cached Results
 			$cached_results = get_option('custom_broken_yt_results', []);
 			$last_check = get_option('custom_last_yt_check', 0);
 			$check_type = get_option('custom_yt_check_type', '');
 			// Run manual Check if Button pressed
 			if (isset($_POST['check_broken_yt'])) {
+				check_admin_referer('check_broken_yt_action', 'check_broken_yt_nonce');
 				$result = custom_check_broken_yt_links();
 				update_option('custom_broken_yt_results', $result);
 				update_option('custom_last_yt_check', time());
@@ -272,28 +293,46 @@ function initialize_custom_dashboard() {
 	function custom_check_broken_yt_links() {
 		$broken_links = 0;
 		$broken_posts = [];
+		$checked_videos = []; // Cache to avoid checking same video multiple times
 		$args = [
 			'post_type' => ['post', 'page', 'my-interests', 'my-traits'],
 			'posts_per_page' => -1,
 		];
 		$query = new WP_Query($args);
-		foreach ($query->posts as $post) {
-			preg_match_all('/https:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $post->post_content, $matches);
-			if (!empty($matches[1])) {
-				$excluded_video_ids = ['-cW']; // Add Video IDs to exclude from Check
-				foreach ($matches[1] as $video_id) {
-					if (in_array($video_id, $excluded_video_ids)) {
-						continue;
-					}
-					$url = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={$video_id}&format=json";
-					$response = wp_remote_get($url);
-					if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
-						$broken_links++;
-						$broken_posts[$post->ID][] = $video_id;
+		if ($query->have_posts()) {
+			foreach ($query->posts as $post) {
+				preg_match_all('/https:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $post->post_content, $matches);
+				if (!empty($matches[1])) {
+					$excluded_video_ids = ['-cW']; // Add Video IDs to exclude from Check
+					foreach ($matches[1] as $video_id) {
+						if (in_array($video_id, $excluded_video_ids)) {
+							continue;
+						}
+						// Skip if already checked this video
+						if (isset($checked_videos[$video_id])) {
+							if ($checked_videos[$video_id] === false) {
+								$broken_links++;
+								if (!in_array($video_id, $broken_posts[$post->ID] ?? [])) {
+									$broken_posts[$post->ID][] = $video_id;
+								}
+							}
+							continue;
+						}
+						$url = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={$video_id}&format=json";
+						$response = wp_remote_get($url, ['timeout' => 10]);
+						$is_broken = is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200;
+						$checked_videos[$video_id] = !$is_broken;
+						if ($is_broken) {
+							$broken_links++;
+							if (!in_array($video_id, $broken_posts[$post->ID] ?? [])) {
+								$broken_posts[$post->ID][] = $video_id;
+							}
+						}
 					}
 				}
 			}
 		}
+		wp_reset_postdata();
 		return [
 			'broken_count' => $broken_links,
 			'broken_posts' => $broken_posts
@@ -565,6 +604,7 @@ function initialize_custom_dashboard() {
                     echo '<p style="margin: 5px 0;">' . esc_html($excerpt) . '</p>';
                     echo '</div>';
                 }
+				unset($rss);
             } else {
                 echo '<p>🚫 Error fetching feed: ' . esc_html($rss->get_error_message()) . '</p>';
             }
