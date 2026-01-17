@@ -180,12 +180,6 @@ add_action('shutdown', function () {
     }
 });
 
-// Set responsive Image Sizes (aligned with Blocksy Breakpoints)
-add_filter('wp_get_attachment_image_attributes', function ($attr, $attachment, $size) {
-    $attr['sizes'] = '(max-width: 480px) 300px, (max-width: 768px) 768px, (max-width: 1024px) 1024px, 1536px';
-    return $attr;
-}, 10, 3);
-
 // ======================================
 // BLOCKSY THEME OPTIMIZATIONS
 // ======================================
