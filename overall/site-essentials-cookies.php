@@ -167,23 +167,10 @@ add_action('wp_enqueue_scripts', function () {
     }
 });
 
-// Preconnect to external Services + MS Clarity
+// Preconnect to external Services
 add_action('wp_head', function () {
-    // DNS Prefetch for faster Loading
     echo '<link rel="dns-prefetch" href="https://secure.gravatar.com">';
     echo '<link rel="dns-prefetch" href="https://www.clarity.ms">';
-    // MS Clarity Analytics - Loads for all Visitors except Admins
-    if (!current_user_can('administrator')) {
-    ?>
-    <script type="text/javascript">
-        (function(c,l,a,r,i,t,y){
-            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-        })(window, document, "clarity", "script", "eic7b2e9o1");
-    </script>
-    <?php
-    }
 }, 10);
 
 // ======================================
@@ -662,5 +649,29 @@ add_action('wp_footer', function () {
 		});
 
 	</script>
-    <?php
+
+	<!-- MS Clarity Analytics -->
+
+	<?php if (!current_user_can('administrator')) : ?>
+	<script>
+	(function(){
+		if (document.documentElement.dataset.clarityLoaded) return;
+		document.documentElement.dataset.clarityLoaded = "1";
+		function loadClarity(){
+			(function(c,l,a,r,i,t,y){
+				c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+				t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+				y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+			})(window, document, "clarity", "script", "eic7b2e9o1");
+		}
+		if ('requestIdleCallback' in window) {
+			requestIdleCallback(loadClarity, { timeout: 2000 });
+		} else {
+			setTimeout(loadClarity, 1500);
+		}
+	})();
+	</script>
+	<?php endif; ?>
+
+<?php
 });
