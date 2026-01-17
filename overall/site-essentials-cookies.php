@@ -27,7 +27,7 @@ define('REGEX_BLOCKSY_LCP', '/ct-featured-image|wp-post-image|ct-image-container
 // HELPER FUNCTIONS
 // ======================================
 
-// Get cached post count for a post type
+// Get cached Post Count for a Post Type
 function get_post_count_cached($type) {
     $cache_key = 'post_count_' . $type;
     $count = get_transient($cache_key);
