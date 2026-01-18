@@ -6,12 +6,10 @@
 // Content & SEO
 define('ALT_TEXT_MAX_LENGTH', 100);          // Maximum Characters for Image ALT Text
 define('READING_SPEED_WPM', 200);            // Words per Minute for read Time Calculation
-define('LCP_IMAGE_MIN_WIDTH', 300);          // Minimum Width (px) to consider Image for LCP Optimization
 
 // Cache Durations (in Seconds)
 define('CACHE_POST_STATS', 3600);            // 1 hour - Post Statistics Cache
 define('CACHE_POST_COUNT', 3600);            // 1 hour - Post Count Cache
-define('CACHE_LCP_HTML', 3600);              // 1 hour - LCP optimized HTML Cache
 
 // Cookie & Analytics
 define('COOKIE_MAX_AGE', 31536000);          // 1 year in Seconds
@@ -21,13 +19,41 @@ define('CLARITY_ID', 'eic7b2e9o1');          // Microsoft Clarity ID
 // Regex Patterns (compiled once for Performance)
 define('REGEX_DECORATIVE_IMAGES', '/(divider|icon|bg|decor|spacer)/i');
 define('REGEX_LOGO_PATTERNS', '/logo|icon|avatar|emoji|placeholder|data:image\/svg/i');
-define('REGEX_BLOCKSY_LCP', '/ct-featured-image|wp-post-image|ct-image-container|ct-media-container/i');
 
 // ======================================
 // HELPER FUNCTIONS
 // ======================================
 
-// Get cached Post Count for a Post Type
+// Helper: Recursively find all Image Blocks with priority-high Class
+function find_priority_high_images($blocks, &$images = []) {
+    foreach ($blocks as $block) {
+        // Check if this Block is an Image with priority-high
+        if ($block['blockName'] === 'core/image') {
+            $class = $block['attrs']['className'] ?? '';
+            if (strpos($class, 'priority-high') !== false) {
+                // Try to get Image URL from Block Attributes
+                $image_id = $block['attrs']['id'] ?? null;
+                if ($image_id) {
+                    $image_url = wp_get_attachment_image_url($image_id, 'full');
+                    if ($image_url) {
+                        $images[] = $image_url;
+                    }
+                }
+                // Fallback: Parse HTML for src
+                elseif (isset($block['innerHTML']) && preg_match('/src=["\']([^"\']+)["\']/', $block['innerHTML'], $match)) {
+                    $images[] = $match[1];
+                }
+            }
+        }
+        // Recursively search innerBlocks (for nested Blocks like Columns, Groups, etc.)
+        if (!empty($block['innerBlocks'])) {
+            find_priority_high_images($block['innerBlocks'], $images);
+        }
+    }
+    return $images;
+}
+
+// Helper: Get cached Post Count for a Post Type
 function get_post_count_cached($type) {
     $cache_key = 'post_count_' . $type;
     $count = get_transient($cache_key);
@@ -38,7 +64,7 @@ function get_post_count_cached($type) {
     return $count;
 }
 
-// Add external-link Class to Anchor Tag
+// Helper: Add external-link Class to Anchor Tag
 function add_external_link_class($tag) {
     $attrs = $tag;
     if (strpos($attrs, 'class=') !== false) {
@@ -91,98 +117,85 @@ add_action('init', function() {
 });
 
 // Defer non-critical CSS to reduce render-blocking
-add_filter('style_loader_tag', function($html, $handle) {
-    // Critical Styles that should NOT be deferred
-    $critical_handles = ['ct-main-styles', 'ct-theme-options-styles', 'global-styles'];
-    if (in_array($handle, $critical_handles)) {
+$critical_css_handles = [
+    'blocksy-dynamic-global',	// CRITICAL - Blocksy Layout / Positioning
+    'ct-main-styles',			// Blocksy core Styles
+    'global-styles',			// WordPress global Styles
+    'ct-page-title-styles',		// Page Title (above Fold)
+    'ct-flexy-styles',			// Flexy Animations
+    'wp-block-library',			// Gutenberg Blocks (if used in Content)
+];
+add_filter('style_loader_tag', function($html, $handle) use ($critical_css_handles) {
+    if (in_array($handle, $critical_css_handles)) {
         return $html;
     }
     // Defer non-critical Stylesheets
     return str_replace("rel='stylesheet'", "rel='preload' as='style' onload=\"this.onload=null;this.rel='stylesheet'\"", $html);
 }, 10, 2);
 
-// Optimize LCP for Blocksy: Prioritize real Content Images, skip Logos / Icons
-add_action('template_redirect', function () {
-    if (is_admin() || is_feed() || wp_doing_ajax() || is_archive() || is_search()) {
-        return;
-    }
-	if (!is_singular()) return;
-    // Ensure clean Buffer State
-    while (ob_get_level() > 0) {
-        ob_end_flush();
-    }
-    // Internal Threshold: Images smaller than this are never LCP Candidates
-    $min_width = LCP_IMAGE_MIN_WIDTH;
-    ob_start(function ($html) use ($min_width) {
-        $lcp_found = false;
-        try {
-            return preg_replace_callback('/<img\b[^>]*>/i', function ($match) use (&$lcp_found, $min_width) {
-                $img = $match[0];
-                // Skip decorative Images
-                if (preg_match(REGEX_LOGO_PATTERNS, $img)) {
-                    return $img;
-                }
-                // Skip Images without width Attribute
-                if (!preg_match('/width=["\'](\d+)["\']/', $img, $w)) {
-                    return $img;
-                }
-                $width = (int)$w[1];
-                // Blocksy LCP Candidates
-                $is_blocksy_lcp = preg_match(REGEX_BLOCKSY_LCP, $img);
-                // First real Content Image
-                if (!$lcp_found && ($is_blocksy_lcp || $width >= $min_width)) {
-                    $lcp_found = true;
-                    // Remove Lazy Loading
-                    $img = preg_replace('/\sloading=["\']lazy["\']/', '', $img);
-                    $img = preg_replace('/\blazyload\b/i', '', $img);
-                    // Add fetchpriority
-                    if (strpos($img, 'fetchpriority') === false) {
-                        $img = str_replace('<img', '<img fetchpriority="high"', $img);
-                    }
-                    // Add Sizes if missing
-                    if (strpos($img, 'sizes=') === false) {
-                        $img = str_replace(
-                            '<img',
-                            '<img sizes="(max-width: 600px) 100vw, (max-width: 1024px) 80vw, 1000px"',
-                            $img
-                        );
-                    }
-                }
-                return $img;
-            }, $html);
-        } catch (Exception $e) {
-            error_log('LCP optimization error: ' . $e->getMessage());
-            return $html;
-        }
-    });
-}, 99); // High priority: Start before most Plugins but after Theme
+// ======================================
+// LCP OPTIMIZATIONS
+// ======================================
 
-// Optimize LCP by adding Class - priority-high - to chosen Images
+// Preload LCP Images in <head> (early Priority for maximum Impact)
+add_action('wp_head', function() {
+    global $post;
+    // Only on single Posts / Pages
+    if (!is_singular() || !$post) return;
+    $preload_images = [];
+    // 1. Add featured Image to preload List
+    if (has_post_thumbnail()) {
+        $image_id = get_post_thumbnail_id();
+        $image_url = wp_get_attachment_image_url($image_id, 'full');
+        if ($image_url) {
+            $preload_images[] = $image_url;
+        }
+    }
+    // 2. Find Images with priority-high Class in Content (recursively)
+    if (has_blocks($post->post_content)) {
+        $blocks = parse_blocks($post->post_content);
+        $priority_images = find_priority_high_images($blocks);
+        $preload_images = array_merge($preload_images, $priority_images);
+    }
+    // 3. Output preload Links for all collected Images
+    $preload_images = array_unique($preload_images); // Remove Duplicates
+    foreach ($preload_images as $url) {
+        echo '<link rel="preload" as="image" href="' . esc_url($url) . '" fetchpriority="high">' . "\n";
+    }
+}, 1);
+
+// Add fetchpriority="high" and loading="eager" to priority-high Images in HTML
 add_filter('render_block', function($html, $block) {
     if ($block['blockName'] !== 'core/image') return $html;
     $cls = $block['attrs']['className'] ?? '';
     if (strpos($cls, 'priority-high') === false) return $html;
     return preg_replace(
         '/<img(?![^>]*fetchpriority)([^>]+)>/',
-        '<img$1 class="priority-high" fetchpriority="high" loading="eager">',
+        '<img$1 fetchpriority="high" loading="eager">',
         $html,
         1
     );
 }, 10, 2);
 
-// Ensure LCP Output Buffer always flushes
-add_action('shutdown', function () {
-    $max_levels = 10; // Safety Limit
-    $levels = 0;
-    while (ob_get_level() > 0 && $levels < $max_levels) {
-        @ob_end_flush();
-        $levels++;
-    }
-});
-
 // ======================================
 // BLOCKSY THEME OPTIMIZATIONS
 // ======================================
+
+// Switch from lazy to eager for featured Images (ct-media-container)
+add_filter('blocksy:frontend:dynamic-data:post-featured-image:html', function($html) {
+    if (!is_singular()) return $html;
+    // Remove loading="lazy"
+    $html = preg_replace('/\s*loading=["\']lazy["\']/', '', $html);
+    // Add fetchpriority="high" if not present
+    if (strpos($html, 'fetchpriority') === false) {
+        $html = str_replace('<img', '<img fetchpriority="high"', $html);
+    }
+    // Add loading="eager"
+    if (strpos($html, 'loading=') === false) {
+        $html = str_replace('<img', '<img loading="eager"', $html);
+    }
+    return $html;
+}, 10);
 
 // Disable Google Fonts (using local Fonts instead)
 add_filter('blocksy:typography:google:use-remote', '__return_false');
