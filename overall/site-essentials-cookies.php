@@ -143,24 +143,43 @@ add_action('wp_head', function() {
     // Only on single Posts / Pages
     if (!is_singular() || !$post) return;
     $preload_images = [];
+    
     // 1. Add featured Image to preload List
     if (has_post_thumbnail()) {
         $image_id = get_post_thumbnail_id();
-        $image_url = wp_get_attachment_image_url($image_id, 'full');
-        if ($image_url) {
-            $preload_images[] = $image_url;
+        $mobile_url = wp_get_attachment_image_url($image_id, 'large');
+        $desktop_url = wp_get_attachment_image_url($image_id, 'full');
+        if ($mobile_url && $desktop_url) {
+            $preload_images[] = [
+                'mobile' => $mobile_url,
+                'desktop' => $desktop_url,
+                'type' => 'responsive'
+            ];
         }
     }
+    
     // 2. Find Images with priority-high Class in Content (recursively)
     if (has_blocks($post->post_content)) {
         $blocks = parse_blocks($post->post_content);
         $priority_images = find_priority_high_images($blocks);
-        $preload_images = array_merge($preload_images, $priority_images);
+        foreach ($priority_images as $url) {
+            $preload_images[] = [
+                'url' => $url,
+                'type' => 'single'
+            ];
+        }
     }
+    
     // 3. Output preload Links for all collected Images
-    $preload_images = array_unique($preload_images); // Remove Duplicates
-    foreach ($preload_images as $url) {
-        echo '<link rel="preload" as="image" href="' . esc_url($url) . '" fetchpriority="high">' . "\n";
+    foreach ($preload_images as $img) {
+        if ($img['type'] === 'responsive') {
+            // Preload 'large' for Mobile, 'full' for Desktop
+            echo '<link rel="preload" as="image" href="' . esc_url($img['mobile']) . '" media="(max-width: 768px)" fetchpriority="high">' . "\n";
+            echo '<link rel="preload" as="image" href="' . esc_url($img['desktop']) . '" media="(min-width: 769px)" fetchpriority="high">' . "\n";
+        } else {
+            // For priority-high Images, use single URL (already in content)
+            echo '<link rel="preload" as="image" href="' . esc_url($img['url']) . '" fetchpriority="high">' . "\n";
+        }
     }
 }, 1);
 
