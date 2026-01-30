@@ -1,6 +1,29 @@
 <?php
 defined('ABSPATH') || exit;
 
+// ======================================
+// WORDPRESS CORE OPTIMIZATIONS
+// ======================================
+
+// Disable WordPress emoji Scripts and Styles
+add_action('init', function() {
+    remove_action('wp_head', 'print_emoji_detection_script', 7);
+    remove_action('admin_print_scripts', 'print_emoji_detection_script');
+    remove_action('wp_print_styles', 'print_emoji_styles');
+    remove_action('admin_print_styles', 'print_emoji_styles');
+    remove_filter('the_content_feed', 'wp_staticize_emoji');
+    remove_filter('comment_text_rss', 'wp_staticize_emoji');
+    remove_filter('wp_mail', 'wp_staticize_emoji_for_email');
+    add_filter('tiny_mce_plugins', fn($plugins) => is_array($plugins) ? array_diff($plugins, ['wpemoji']) : []);
+    add_filter('wp_resource_hints', function($urls, $relation_type) {
+        if ($relation_type === 'dns-prefetch') {
+            $emoji_url = apply_filters('emoji_svg_url', 'https://s.w.org/images/core/emoji/2/svg/');
+            $urls = array_diff($urls, [$emoji_url]);
+        }
+        return $urls;
+    }, 10, 2);
+});
+
 // Remove "Edit" Link for non-logged-in Users
 add_filter('edit_post_link', '__return_false');
 
@@ -14,6 +37,10 @@ if (!defined('WP_POST_REVISIONS')) {
     define('WP_POST_REVISIONS', 1);
 }
 
+// ======================================
+// AUTHENTICATION & SECURITY
+// ======================================
+
 // Stay logged in longer
 function er_stay_logged_in($expiration, $user_id) {
     $user = get_userdata($user_id);
@@ -23,6 +50,13 @@ function er_stay_logged_in($expiration, $user_id) {
     return $expiration; // Default for others
 }
 add_filter('auth_cookie_expiration', 'er_stay_logged_in', 99, 2);
+
+// Remove Site Health Access
+remove_filter('user_has_cap', 'wp_maybe_grant_site_health_caps', 1, 4);
+
+// ======================================
+// CACHE MANAGEMENT
+// ======================================
 
 // Force LiteSpeed Purge on Content Save
 add_action('save_post', function($post_id) {
@@ -34,24 +68,9 @@ add_action('save_post', function($post_id) {
     }
 }, 999);
 
-// Prevent cached previews (with timestamp)
-add_filter('preview_post_link', function($url){
-    return add_query_arg('ts', time(), $url);
-});
-
-// Prevent cached frontend for logged-in editors
-add_action('template_redirect', function () {
-    if (!is_user_logged_in()) return;
-    if (!current_user_can('edit_posts')) return;
-    nocache_headers();
-});
-
-// Unregister Tags
-function er_unregister_tags() {
-    if (!is_admin()) return;
-    unregister_taxonomy_for_object_type('post_tag', 'post');
-}
-add_action('init', 'er_unregister_tags');
+// ======================================
+// ADMIN INTERFACE CUSTOMIZATION
+// ======================================
 
 // Change Post Order
 function er_custom_post_order($query) {
@@ -120,6 +139,3 @@ function er_remove_comments_menu() {
     remove_menu_page('edit-comments.php');
 }
 add_action('admin_menu', 'er_remove_comments_menu');
-
-// Remove Site Health Access
-remove_filter('user_has_cap', 'wp_maybe_grant_site_health_caps', 1, 4);
