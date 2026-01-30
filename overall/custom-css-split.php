@@ -428,26 +428,27 @@ add_action("wp_footer", function () {
 
 	/* FORMS & INPUTS */
 
-	/* Base Styles for all Form Elements */
-	select, input[type=search], input[type=email], input[type=text] {border: 1px solid #bfbfbf; transition: border 0.2s ease;}
+	/* Base Styles */
+	select,
+	input[type=search],
+	input[type=email],
+	input[type=text],
+	textarea {background: #ffffff; border: 1px solid #bfbfbf; transition: border 0.2s ease;}
 
-	/* Standard Inputs - Keep Border, add Outline on Keyboard Focus */
+	/* Focus States - Keyboard Accessibility */
 	select:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
 	select:focus:not(:focus-visible) {outline: none;}
 	input[type=email]:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
 	input[type=email]:focus:not(:focus-visible) {outline: none;}
 	input[type=text]:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
 	input[type=text]:focus:not(:focus-visible) {outline: none;}
+	textarea:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	textarea:focus:not(:focus-visible) {outline: none;}
+	input[type=search]:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	input[type=search]:focus:not(:focus-visible) {outline: none;}
 
-	/* Search Inputs - Modal Search Field Variant */
-	input[type=search].modal-field {border: none; border-bottom: 1px solid #bfbfbf;}
-	input[type=search].modal-field:focus {outline: none;}
-	input[type=search].modal-field:focus:not(:focus-visible) {outline: none;}
-
-	/* Search Inputs - Special Styling without Top / Sides Borders */
-	input[type=search]:not(.modal-field) {border: none; border-bottom: 1px solid #bfbfbf;}
-	input[type=search]:not(.modal-field):focus {outline: 1px solid #1e73be; outline-offset: 2px;}
-	input[type=search]:not(.modal-field):focus:not(:focus-visible) {outline: none;}
+	/* Exception: Modal Search Field */
+	input[type=search].modal-field {background: none; border: none; border-bottom: 1px solid #bfbfbf; outline: none; transition: none;}
 
     /* FOOTER */
     
