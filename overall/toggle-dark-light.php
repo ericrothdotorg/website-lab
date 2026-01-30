@@ -136,19 +136,30 @@ add_action('wp_footer', function () {
     body.dark-mode .tag-cloud a {background: #1a1a1a;}
     body.dark-mode .tag-cloud a:hover {background: none;}
     
-    /* FORMS & INPUTS */
-    
-    /* Select Dropdowns */
-    body.dark-mode select {background: #1a1a1a; color: #bfbfbf; border: 1px solid #404040;}
-    body.dark-mode select:focus {border: 1px solid #404040;}
-    body.dark-mode option {background: #1a1a1a; color: #bfbfbf;}
-    
-    /* Search & Email Inputs */
-    body.dark-mode input[type=search] {background: #1a1a1a; color: #bfbfbf; border: 1px solid #404040;}
-    body.dark-mode input[type=search]:is(:visited, :hover, :focus, :active) {border: 1px solid #404040;}
-    body.dark-mode input[type=email] {color: #bfbfbf; border: 1px solid #404040;}
-    body.dark-mode input[type=search].modal-field {border: none; border-bottom: 1px solid #bfbfbf;}
-    body.dark-mode input[type=search].modal-field:is(:visited, :hover, :focus, :active) {border: none; border-bottom: 1px solid #bfbfbf;}
+	/* FORMS & INPUTS */
+
+	/* Base Styles */
+	body.dark-mode select,
+	body.dark-mode input[type=search],
+	body.dark-mode input[type=email],
+	body.dark-mode input[type=text],
+	body.dark-mode textarea {background: #1a1a1a; color: #bfbfbf; border: 1px solid #404040;}
+	body.dark-mode option {background: #1a1a1a; color: #bfbfbf;}
+
+	/* Focus States - Keyboard Accessibility */
+	body.dark-mode select:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	body.dark-mode select:focus:not(:focus-visible) {outline: none;}
+	body.dark-mode input[type=email]:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	body.dark-mode input[type=email]:focus:not(:focus-visible) {outline: none;}
+	body.dark-mode input[type=text]:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	body.dark-mode input[type=text]:focus:not(:focus-visible) {outline: none;}
+	body.dark-mode textarea:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	body.dark-mode textarea:focus:not(:focus-visible) {outline: none;}
+	body.dark-mode input[type=search]:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
+	body.dark-mode input[type=search]:focus:not(:focus-visible) {outline: none;}
+
+	/* Exception: Modal Search Field */
+	body.dark-mode input[type=search].modal-field {background: none; border: none; border-bottom: 1px solid #404040; outline: none; transition: none;}
     
     /* TABLES */
     body.dark-mode .wp-block-table thead {background-color: #1a1a1a; border: 1px solid #262626; border-bottom: 3px solid #262626;}
