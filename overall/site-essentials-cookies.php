@@ -97,25 +97,6 @@ if (!is_admin()) {
 add_filter('style_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
 add_filter('script_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
 
-// Disable WordPress emoji Scripts and Styles
-add_action('init', function() {
-    remove_action('wp_head', 'print_emoji_detection_script', 7);
-    remove_action('admin_print_scripts', 'print_emoji_detection_script');
-    remove_action('wp_print_styles', 'print_emoji_styles');
-    remove_action('admin_print_styles', 'print_emoji_styles');
-    remove_filter('the_content_feed', 'wp_staticize_emoji');
-    remove_filter('comment_text_rss', 'wp_staticize_emoji');
-    remove_filter('wp_mail', 'wp_staticize_emoji_for_email');
-    add_filter('tiny_mce_plugins', fn($plugins) => is_array($plugins) ? array_diff($plugins, ['wpemoji']) : []);
-    add_filter('wp_resource_hints', function($urls, $relation_type) {
-        if ($relation_type === 'dns-prefetch') {
-            $emoji_url = apply_filters('emoji_svg_url', 'https://s.w.org/images/core/emoji/2/svg/');
-            $urls = array_diff($urls, [$emoji_url]);
-        }
-        return $urls;
-    }, 10, 2);
-});
-
 // Defer non-critical CSS to reduce render-blocking
 $critical_css_handles = [
     'blocksy-dynamic-global',	// CRITICAL - Blocksy Layout / Positioning
@@ -256,6 +237,18 @@ add_action('wp_head', function () {
     echo '<link rel="dns-prefetch" href="https://www.clarity.ms">' . "\n";
     echo '<link rel="preconnect" href="https://www.clarity.ms" crossorigin>' . "\n";
 }, 10);
+
+// Prevent cached previews (with timestamp)
+add_filter('preview_post_link', function($url){
+    return add_query_arg('ts', time(), $url);
+});
+
+// Prevent cached frontend for logged-in editors
+add_action('template_redirect', function () {
+    if (!is_user_logged_in()) return;
+    if (!current_user_can('edit_posts')) return;
+    nocache_headers();
+});
 
 // ======================================
 // SHORTCODES
