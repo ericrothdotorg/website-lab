@@ -96,16 +96,16 @@ function initialize_custom_dashboard() {
 
 	function custom_render_hosting_repo_widget() {
         $urls = [
-            'login' => 'https://auth.hostinger.com/login',
-            'webmail' => 'https://mail.hostinger.com/',
-            'ai' => 'https://ericroth.org/wp-admin/admin.php?page=hostinger-ai-assistant',
-            'github' => 'https://github.com/ericrothdotorg'
+            'Login' => 'https://auth.hostinger.com/login',
+            'Webmail' => 'https://mail.hostinger.com/',
+            'AI' => 'https://ericroth.org/wp-admin/admin.php?page=hostinger-ai-assistant',
+            'GitHub' => 'https://github.com/ericrothdotorg'
         ];
         echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
-        echo '<a href="' . esc_url($urls['login']) . '" target="_blank" class="button">🔐 Login</a>';
-        echo '<a href="' . esc_url($urls['webmail']) . '" target="_blank" class="button">📬 Webmail</a>';
-        echo '<a href="' . esc_url($urls['ai']) . '" target="_blank" class="button">🧠 AI</a>';
-		echo '<a href="' . esc_url($urls['github']) . '" target="_blank" class="button">💾 GitHub</a>';
+        echo '<a href="' . esc_url($urls['Login']) . '" target="_blank" class="button">🔐 Login</a>';
+        echo '<a href="' . esc_url($urls['Webmail']) . '" target="_blank" class="button">📬 Webmail</a>';
+        echo '<a href="' . esc_url($urls['AI']) . '" target="_blank" class="button">🧠 AI</a>';
+		echo '<a href="' . esc_url($urls['GitHub']) . '" target="_blank" class="button">💾 GitHub</a>';
         echo '</div>';
     }
 
@@ -124,6 +124,29 @@ function initialize_custom_dashboard() {
             'ChatGPT' => 'https://chatgpt.com/',
             'Claude' => 'https://claude.ai/',
             'DeepSeek' => 'https://chat.deepseek.com/'
+        ];
+        echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
+        foreach ($bots as $label => $url) {
+            echo '<a href="' . esc_url($url) . '" target="_blank" class="button">' . esc_html($label) . '</a>';
+        }
+        echo '</div>';
+    }
+
+    // ======================================
+	// 🎁 SPONSOR CHANNELS
+	// ======================================
+
+	add_action('wp_dashboard_setup', 'custom_register_sponsor_channels_widget');
+	function custom_register_sponsor_channels_widget() {
+        wp_add_dashboard_widget('sponsor_channels', '🎁 Sponsor Channels', 'custom_render_sponsor_channels_widget');
+    }
+
+	function custom_render_sponsor_channels_widget() {
+        $bots = [
+            'GitHub' => 'https://github.com/ericrothdotorg',
+			'Patreon' => 'https://www.patreon.com/cw/ericrothdotorg',
+            'PayPal' => 'https://www.paypal.com/paypalme/ericrothdotorg',
+            'BMC' => 'https://buymeacoffee.com/ericrothdotorg'
         ];
         echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
         foreach ($bots as $label => $url) {
