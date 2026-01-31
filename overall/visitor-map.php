@@ -1,5 +1,9 @@
 <?php
-// *** Track current visitor with filtering
+// ======================================
+// CORE TRACKING FUNCTIONS
+// ======================================
+
+// Track current visitor with filtering - NOW WITH BACKGROUND PROCESSING
 function lum_track_visitor() {
     if (is_admin() || wp_doing_ajax()) {
         return;
@@ -11,29 +15,84 @@ function lum_track_visitor() {
     if (defined('REST_REQUEST') && REST_REQUEST) {
         return;
     }
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'live_visitors';
-    $ip_address = lum_get_client_ip();
-    $ip_address = lum_anonymize_ip($ip_address);
+    
     $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
     // Filter out unwanted requests
     if (lum_should_skip_tracking($request_uri)) {
         return;
     }
-    // Clean the URL - Remove query parameters for cleaner display
+    
+    // Instead of processing immediately, queue it for background execution
+    lum_schedule_background_tracking();
+}
+add_action('template_redirect', 'lum_track_visitor');
+
+// ======================================
+// BACKGROUND PROCESSING
+// ======================================
+
+// Schedule background tracking via AJAX
+function lum_schedule_background_tracking() {
+    // Use a small inline script to fire off an async request
+    add_action('wp_footer', function() {
+        $nonce = wp_create_nonce('lum_track_nonce');
+        ?>
+        <script>
+        (function() {
+            // Don't track if user is a bot (client-side check)
+            if (/(bot|crawl|spider|slurp)/i.test(navigator.userAgent)) {
+                return;
+            }
+            
+            // Fire async tracking request
+            setTimeout(function() {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '<?php echo admin_url('admin-ajax.php'); ?>');
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function() {
+                    // Optional: handle response if needed
+                };
+                xhr.send('action=lum_background_track&nonce=<?php echo $nonce; ?>');
+            }, 1000); // Small delay to ensure page loads first
+        })();
+        </script>
+        <?php
+    }, 99); // Low priority to execute last
+}
+
+// Background tracking handler
+function lum_background_track() {
+    // Verify nonce
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'lum_track_nonce')) {
+        wp_die('Invalid request');
+    }
+    
+    // Now do the actual tracking (moved from original lum_track_visitor)
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'live_visitors';
+    $ip_address = lum_get_client_ip();
+    $ip_address = lum_anonymize_ip($ip_address);
+    $request_uri = isset($_SERVER['HTTP_REFERER']) ? parse_url($_SERVER['HTTP_REFERER'], PHP_URL_PATH) : '/';
+    
+    // Clean the URL
     $page_url = lum_clean_page_url($request_uri);
     $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field($_SERVER['HTTP_USER_AGENT']) : '';
-    // Skip known bots
+    
+    // Skip known bots (double-check server-side)
     if (lum_is_bot($user_agent)) {
-        return;
+        wp_die('Bot detected');
     }
+    
     $geo_data = lum_get_geolocation($ip_address);
+    
     if ($geo_data) {
         $existing = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM $table_name WHERE ip_address = %s ORDER BY last_seen DESC LIMIT 1",
             $ip_address
         ));
+        
         $current_time = current_time('mysql');
+        
         if ($existing) {
             $wpdb->update(
                 $table_name,
@@ -66,10 +125,17 @@ function lum_track_visitor() {
             );
         }
     }
+    
+    wp_die('OK'); // Important for AJAX
 }
-add_action('template_redirect', 'lum_track_visitor');
+add_action('wp_ajax_lum_background_track', 'lum_background_track');
+add_action('wp_ajax_nopriv_lum_background_track', 'lum_background_track');
 
-// *** Check if request should be skipped
+// ======================================
+// FILTERING & UTILITIES
+// ======================================
+
+// Check if request should be skipped
 function lum_should_skip_tracking($uri) {
     // File extensions to ignore (assets)
     $skip_extensions = array(
@@ -124,7 +190,7 @@ function lum_should_skip_tracking($uri) {
     return false;
 }
 
-// *** Clean and normalize page URLs
+// Clean and normalize page URLs
 function lum_clean_page_url($uri) {
     // Remove query parameters for cleaner display (optional)
     $clean_uri = strtok($uri, '?');
@@ -138,7 +204,7 @@ function lum_clean_page_url($uri) {
     return $site_url . $clean_uri;
 }
 
-// *** Detect if user agent is a bot
+// Detect if user agent is a bot
 function lum_is_bot($user_agent) {
     if (empty($user_agent)) {
         return true;
@@ -163,7 +229,11 @@ function lum_is_bot($user_agent) {
     return false;
 }
 
-// *** Cleanup old visitor records daily
+// ======================================
+// DATABASE MAINTENANCE
+// ======================================
+
+// Cleanup old visitor records daily
 function lum_cleanup_old_visitors() {
     global $wpdb;
     $table_name = $wpdb->prefix . 'live_visitors';
@@ -180,7 +250,7 @@ function lum_cleanup_old_visitors() {
 }
 add_action('lum_daily_cleanup', 'lum_cleanup_old_visitors');
 
-// *** Schedule daily cleanup
+// Schedule daily cleanup
 function lum_schedule_cleanup() {
     if (!wp_next_scheduled('lum_daily_cleanup')) {
         wp_schedule_event(time(), 'daily', 'lum_daily_cleanup');
@@ -188,7 +258,11 @@ function lum_schedule_cleanup() {
 }
 add_action('init', 'lum_schedule_cleanup');
 
-// *** Get client IP address
+// ======================================
+// IP & GEOLOCATION HANDLING
+// ======================================
+
+// Get client IP address
 function lum_get_client_ip() {
     $ip_keys = array('HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_FORWARDED_FOR', 'HTTP_FORWARDED', 'REMOTE_ADDR');
     foreach ($ip_keys as $key) {
@@ -204,7 +278,7 @@ function lum_get_client_ip() {
     return isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '0.0.0.0';
 }
 
-// *** Anonymize IP address (IPv4 and IPv6)
+// Anonymize IP address (IPv4 and IPv6)
 function lum_anonymize_ip($ip) {
     if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
         return preg_replace('/\.\d+$/', '.0', $ip);
@@ -219,41 +293,74 @@ function lum_anonymize_ip($ip) {
     return $ip;
 }
 
-// *** Get geolocation from IP
+// Get geolocation from IP - OPTIMIZED VERSION
 function lum_get_geolocation($ip) {
     if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
         return false;
     }
+    
     $transient_key = 'lum_geo_' . md5($ip);
     $cached = get_transient($transient_key);
+    
     if ($cached !== false) {
         return $cached;
     }
+    
+    // Use a local file-based cache for even faster subsequent lookups
+    $cache_dir = WP_CONTENT_DIR . '/cache/lum-geo/';
+    if (!file_exists($cache_dir)) {
+        wp_mkdir_p($cache_dir);
+    }
+    
+    $cache_file = $cache_dir . md5($ip) . '.json';
+    
+    if (file_exists($cache_file) && (time() - filemtime($cache_file)) < 30 * DAY_IN_SECONDS) {
+        $cached_data = json_decode(file_get_contents($cache_file), true);
+        if ($cached_data) {
+            set_transient($transient_key, $cached_data, 30 * DAY_IN_SECONDS);
+            return $cached_data;
+        }
+    }
+    
     // Add a lock to prevent duplicate requests
     $lock_key = $transient_key . '_lock';
     if (get_transient($lock_key)) {
         return false; // Another request is processing
     }
+    
     set_transient($lock_key, true, 30); // 30 second lock
+    
     $response = wp_remote_get("http://ip-api.com/json/{$ip}?fields=status,country,countryCode,city,lat,lon", array(
-        'timeout' => 10, // Increased timeout
+        'timeout' => 5, // Reduced timeout for background processing
         'sslverify' => false
     ));
+    
     delete_transient($lock_key);
+    
     if (is_wp_error($response)) {
         error_log('LUM Geo Error: ' . $response->get_error_message());
         return false;
     }
+    
     $body = wp_remote_retrieve_body($response);
     $data = json_decode($body, true);
+    
     if (isset($data['status']) && $data['status'] === 'success') {
+        // Cache to file for persistence
+        file_put_contents($cache_file, json_encode($data));
+        
         set_transient($transient_key, $data, 30 * DAY_IN_SECONDS);
         return $data;
     }
+    
     return false;
 }
 
-// *** AJAX endpoint to get map data
+// ======================================
+// AJAX ENDPOINTS
+// ======================================
+
+// AJAX endpoint to get map data
 function lum_get_map_data() {
     // More permissive nonce check
     if (!isset($_REQUEST['nonce']) || !wp_verify_nonce($_REQUEST['nonce'], 'lum_map_nonce')) {
@@ -308,7 +415,11 @@ function lum_get_map_data() {
 add_action('wp_ajax_lum_get_map_data', 'lum_get_map_data');
 add_action('wp_ajax_nopriv_lum_get_map_data', 'lum_get_map_data');
 
-// *** Shortcode
+// ======================================
+// FRONTEND DISPLAY
+// ======================================
+
+// Shortcode
 function lum_map_shortcode($atts) {
     $atts = shortcode_atts(array(
         'height' => '600px',
