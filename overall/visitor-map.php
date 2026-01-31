@@ -3,7 +3,7 @@
 // CORE TRACKING FUNCTIONS
 // ======================================
 
-// Track current visitor with filtering - NOW WITH BACKGROUND PROCESSING
+// Track current visitor with filtering
 function lum_track_visitor() {
     if (is_admin() || wp_doing_ajax()) {
         return;
