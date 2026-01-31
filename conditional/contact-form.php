@@ -1,5 +1,4 @@
 <?php
-
 // CREATE DATABASE TABLE TO STORE STUFF
 
 add_action('init', function () {
@@ -94,7 +93,7 @@ add_action('wp_footer', function () {
         if (honeypot && honeypot.value.trim() !== "") return;
         submitBtn.disabled = true;
         const formData = new FormData(form);
-        fetch("<?php echo admin_url('admin-ajax.php'); ?>", {
+        fetch("<?php echo esc_url(admin_url('admin-ajax.php')); ?>", {
           method: "POST",
           body: formData
         })
@@ -105,7 +104,7 @@ add_action('wp_footer', function () {
             confirmation.textContent = "Thanks! Your message has been sent.";
             confirmation.style.display = "block";
           } else {
-            confirmation.textContent = "Something went wrong. Please try again.";
+            confirmation.textContent = data.data && data.data.message ? data.data.message : "Something went wrong. Please try again.";
             confirmation.style.display = "block";
           }
         })
@@ -127,6 +126,16 @@ add_action('wp_footer', function () {
 
 add_action('template_redirect', function () {
   if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'], $_POST['message'])) {
+    // CSRF check for legacy form
+    if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'contact_form_submit')) {
+      wp_die('Security check failed');
+    }
+    // Rate limiting check
+    $ip = $_SERVER['REMOTE_ADDR'];
+    $last_submission = get_transient('contact_form_ip_' . md5($ip));
+    if ($last_submission) {
+      wp_die('Please wait before submitting again.');
+    }
     $honeypot = trim($_POST['middle_name'] ?? '');
     $math_check = trim($_POST['math_check'] ?? '');
     if ($honeypot !== '' || $math_check !== '7') return;
@@ -134,9 +143,15 @@ add_action('template_redirect', function () {
     $email = sanitize_email($_POST['email'] ?? '');
     $subject = sanitize_text_field($_POST['subject'] ?? '');
     $message = sanitize_textarea_field($_POST['message'] ?? '');
+    // Validate email format
+    if (!is_email($email)) {
+      wp_die('Invalid email address');
+    }
     if (!$email || !$message) return;
+    // Set rate limit (60 seconds)
+    set_transient('contact_form_ip_' . md5($ip), time(), 60);
     global $wpdb;
-    $wpdb->insert(
+    $result = $wpdb->insert(
       $wpdb->prefix . 'contact_messages',
       [
         'name' => $name,
@@ -146,6 +161,10 @@ add_action('template_redirect', function () {
       ],
       ['%s', '%s', '%s', '%s']
     );
+    // Error handling for database insert
+    if ($result === false) {
+      error_log('Contact form DB insert failed: ' . $wpdb->last_error);
+    }
     $admin_email = get_option('admin_email');
     $subject_line = 'New Contact Form Submission';
     $email_body = "Name: $name\n";
@@ -154,7 +173,11 @@ add_action('template_redirect', function () {
       $email_body .= "Subject: $subject\n";
     }
     $email_body .= "Message:\n$message";
-    wp_mail($admin_email, $subject_line, $email_body);
+    $mail_sent = wp_mail($admin_email, $subject_line, $email_body);
+    // Error handling for email send
+    if (!$mail_sent) {
+      error_log('Contact form email failed to send');
+    }
     // Inline Fallback Confirmation Message
     add_action('wp_footer', function() {
       ?>
@@ -180,6 +203,16 @@ add_action('wp_ajax_submit_contact_form_ajax', 'handle_contact_form_ajax');
 add_action('wp_ajax_nopriv_submit_contact_form_ajax', 'handle_contact_form_ajax');
 
 function handle_contact_form_ajax() {
+  // CSRF verification
+  if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'contact_form_nonce')) {
+    wp_send_json_error(array('message' => 'Security check failed'));
+  }
+  // Rate limiting check
+  $ip = $_SERVER['REMOTE_ADDR'];
+  $last_submission = get_transient('contact_form_ip_' . md5($ip));
+  if ($last_submission) {
+    wp_send_json_error(array('message' => 'Please wait before submitting again.'));
+  }
   $honeypot = trim($_POST['middle_name'] ?? '');
   $math_check = trim($_POST['math_check'] ?? '');
   if ($honeypot !== '' || $math_check !== '7') {
@@ -189,11 +222,17 @@ function handle_contact_form_ajax() {
   $email = sanitize_email($_POST['email'] ?? '');
   $subject = sanitize_text_field($_POST['subject'] ?? '');
   $message = sanitize_textarea_field($_POST['message'] ?? '');
-  if (!$email || !$message) {
-    wp_send_json_error();
+  // Validate email format
+  if (!is_email($email)) {
+    wp_send_json_error(array('message' => 'Invalid email address'));
   }
+  if (!$email || !$message) {
+    wp_send_json_error(array('message' => 'Email and message are required'));
+  }
+  // Set rate limit (60 seconds)
+  set_transient('contact_form_ip_' . md5($ip), time(), 60);
   global $wpdb;
-  $wpdb->insert(
+  $result = $wpdb->insert(
     $wpdb->prefix . 'contact_messages',
     [
       'name' => $name,
@@ -203,6 +242,11 @@ function handle_contact_form_ajax() {
     ],
     ['%s', '%s', '%s', '%s']
   );
+  // Error handling for database insert
+  if ($result === false) {
+    error_log('Contact form DB insert failed: ' . $wpdb->last_error);
+    wp_send_json_error(array('message' => 'Failed to save message'));
+  }
   $admin_email = get_option('admin_email');
   $subject_line = 'New Contact Form Submission';
   $email_body = "Name: $name\n";
@@ -211,7 +255,12 @@ function handle_contact_form_ajax() {
     $email_body .= "Subject: $subject\n";
   }
   $email_body .= "Message:\n$message";
-  wp_mail($admin_email, $subject_line, $email_body);
+  $mail_sent = wp_mail($admin_email, $subject_line, $email_body);
+  // Error handling for email send
+  if (!$mail_sent) {
+    error_log('Contact form email failed to send');
+    // Still return success since message was saved to DB
+  }
   wp_send_json_success();
 }
 
@@ -239,8 +288,9 @@ function display_contact_messages() {
   global $wpdb;
   $table = $wpdb->prefix . 'contact_messages';
   if (isset($_POST['bulk_delete'], $_POST['message_ids'], $_POST['_wpnonce']) && check_admin_referer('contact_messages_action', '_wpnonce')) {
-    $ids = implode(',', array_map('intval', $_POST['message_ids']));
-    $wpdb->query("DELETE FROM $table WHERE id IN ($ids)");
+    $ids = array_map('intval', $_POST['message_ids']);
+    $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+    $wpdb->query($wpdb->prepare("DELETE FROM $table WHERE id IN ($placeholders)", ...$ids));
     echo '<div class="updated"><p>Selected messages have been deleted.</p></div>';
   }
   $search = isset($_POST['search_term']) ? sanitize_text_field($_POST['search_term']) : '';
@@ -251,7 +301,9 @@ function display_contact_messages() {
     $query = $wpdb->prepare("SELECT * FROM $table WHERE name LIKE %s OR email LIKE %s OR subject LIKE %s OR message LIKE %s ORDER BY submitted_at DESC LIMIT %d OFFSET %d",
       "%$search%", "%$search%", "%$search%", "%$search%", $per_page, $offset);
     $messages = $wpdb->get_results($query);
-    $total = count($messages);
+    $count_query = $wpdb->prepare("SELECT COUNT(*) FROM $table WHERE name LIKE %s OR email LIKE %s OR subject LIKE %s OR message LIKE %s",
+      "%$search%", "%$search%", "%$search%", "%$search%");
+    $total = $wpdb->get_var($count_query);
   } else {
     $messages = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table ORDER BY submitted_at DESC LIMIT %d OFFSET %d", $per_page, $offset));
     $total = $wpdb->get_var("SELECT COUNT(*) FROM $table");
