@@ -359,11 +359,11 @@ add_filter('wp_get_attachment_image', function($html, $attachment_id) {
     $alt = get_post_meta($attachment_id, '_wp_attachment_image_alt', true);
     $src = wp_get_attachment_url($attachment_id);
     // Mark decorative Images with empty ALT
-    if (preg_match(REGEX_DECORATIVE_IMAGES, $src)) {
-        $alt = '';
-    } elseif (empty($alt)) {
-        $alt = get_the_title($attachment_id);
-    }
+	if (preg_match(REGEX_DECORATIVE_IMAGES, $src) || preg_match(REGEX_LOGO_PATTERNS, $src)) {
+		$alt = '';
+	} elseif (empty($alt)) {
+		$alt = get_the_title($attachment_id);
+	}
     // Remove ALT if Link has visible Text that matches the ALT (avoids Redundancy)
     if (preg_match('/<a[^>]*>([^<]+)<img/i', $html, $link_text_match)) {
         $link_text = trim(strip_tags($link_text_match[1]));
