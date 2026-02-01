@@ -591,7 +591,7 @@ add_action('wp_footer', function () {
 		.scroll-indicator-bar {will-change: width; width: 0%; position: fixed; bottom: 0; height: 5px; background: #c53030; z-index: 5000}
 	</style>
 
-	<script>
+	<script defer>
 		(function() {
 			let ticking = false;
 			let lastPercentage = -1; // Track last Value to avoid unnecessary Updates
