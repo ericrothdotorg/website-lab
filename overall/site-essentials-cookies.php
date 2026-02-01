@@ -778,20 +778,18 @@ add_action('wp_footer', function () {
 
 	<script>
 	(function(){
-		if (document.documentElement.dataset.clarityLoaded) return;
-		document.documentElement.dataset.clarityLoaded = "1";
 		function loadClarity(){
 			(function(c,l,a,r,i,t,y){
 				c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
 				t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-				t.rel = 'noopener';
+				t.rel='noopener';
 				y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
 			})(window, document, "clarity", "script", "<?php echo CLARITY_ID; ?>");
 		}
-		if ('requestIdleCallback' in window) {
-			requestIdleCallback(loadClarity, { timeout: <?php echo CLARITY_TIMEOUT; ?> });
-		} else {
-			setTimeout(loadClarity, 1500);
+		if('requestIdleCallback'in window){
+			requestIdleCallback(loadClarity,{timeout:<?php echo CLARITY_TIMEOUT;?>});
+		}else{
+			setTimeout(loadClarity,1500);
 		}
 	})();
 	</script>
