@@ -282,6 +282,13 @@ if (!is_admin()) {
     });
 }
 
+// [total_post], [total_page], etc. - Clear Cache when published / deleted
+add_action('transition_post_status', function($new_status, $old_status, $post) {
+    if ($new_status !== $old_status) {
+        delete_transient('post_count_' . $post->post_type);
+    }
+}, 10, 3);
+
 // [post_stats] - Comprehensive Content Statistics
 add_shortcode('post_stats', function() {
     global $post;
@@ -292,8 +299,11 @@ add_shortcode('post_stats', function() {
     if ($cached_output !== false) {
         return $cached_output;
     }
-    $content = apply_filters('the_content', $post->post_content);
-    $text = strip_tags(strip_shortcodes($content));
+    // Process shortcodes first, then blocks (avoids heavy content filters)
+    $content = do_shortcode($post->post_content);
+    $content = do_blocks($content);
+    $text = wp_strip_all_tags($content);
+    
     // Calculate Statistics
     $word_count = str_word_count($text);
     $stats = [
@@ -335,20 +345,41 @@ add_shortcode('post_stats', function() {
     return $output;
 });
 
-// Clear [total_post] Cache when Posts are published / deleted
-add_action('transition_post_status', function($new_status, $old_status, $post) {
-    if ($new_status !== $old_status) {
-        delete_transient('post_count_' . $post->post_type);
-    }
-}, 10, 3);
-
-// Clear [post_stats] Cache when Post is updated
+// [post_stats] - Clear Cache when Post is updated
 add_action('save_post', function($post_id) {
     // Security Checks
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
     if (!current_user_can('edit_post', $post_id)) return;
     delete_transient('post_stats_' . $post_id);
 });
+
+// ======================================
+// CONTENT PROCESSING CACHE START (Read)
+// ======================================
+
+// Cache Wrapper - Runs FIRST to check for cached Content
+add_filter('the_content', function($content) {
+    global $post;
+    // Don't cache for logged-in Editors (to see Changes immediately)
+    if (is_user_logged_in() && current_user_can('edit_posts')) {
+        return $content;
+    }
+    // Don't cache if no Post Object
+    if (!$post) {
+        return $content;
+    }
+    // Create unique Cache Key based on Post ID and Content Hash
+    $cache_key = 'processed_content_' . $post->ID . '_' . md5($post->post_content);
+    $cached = get_transient($cache_key);
+    // If cached Version exists, return it and skip ALL other Content Filters
+    if ($cached !== false) {
+        // Remove all subsequent Content Filters to prevent double-processing
+        remove_all_filters('the_content');
+        return $cached;
+    }
+    // No Cache found - Let Content pass through to be processed by defined Filters
+    return $content;
+}, 1); // Priority 1 - Runs FIRST, before all other Filters
 
 // ======================================
 // SEO & ACCESSIBILITY
@@ -509,6 +540,43 @@ add_filter('the_content', function ($content) {
         $content
     );
 }, 11); // Priority 11 required: Runs after the external Link Filter above
+
+// ======================================
+// CONTENT PROCESSING CACHE END (Write)
+// ======================================
+
+// Cache Wrapper - Runs LAST to store processed Content
+add_filter('the_content', function($content) {
+    global $post;
+    // Don't cache for logged-in Editors
+    if (is_user_logged_in() && current_user_can('edit_posts')) {
+        return $content;
+    }
+    // Don't cache if no Post Object
+    if (!$post) {
+        return $content;
+    }
+    // Store processed Content in Cache (1 hour)
+    $cache_key = 'processed_content_' . $post->ID . '_' . md5($post->post_content);
+    set_transient($cache_key, $content, 3600);
+    return $content;
+}, 999); // Priority 999 - Runs LAST, after all Content processing
+
+// Clear processed Content Cache when Post is saved
+add_action('save_post', function($post_id) {
+    // Security Checks
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+    if (!current_user_can('edit_post', $post_id)) return;
+    // Delete all cached Versions for this Post (use Wildcard Pattern because the Hash changes when Content changes)
+    global $wpdb;
+    $wpdb->query($wpdb->prepare(
+        "DELETE FROM {$wpdb->options} 
+         WHERE option_name LIKE %s 
+         OR option_name LIKE %s",
+        '_transient_processed_content_' . $post_id . '_%',
+        '_transient_timeout_processed_content_' . $post_id . '_%'
+    ));
+});
 
 // ======================================
 // REDIRECTS
