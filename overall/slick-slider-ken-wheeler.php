@@ -21,6 +21,31 @@ add_filter('litespeed_optimize_html_excluded_selectors', function($excludes) {
     return $excludes;
 });
 
+// Very early Fix for aria-hidden Slides
+add_action('wp_head', function() {
+    ?>
+    <script>
+    (function() {
+        function fixHiddenSlides() {
+            var hidden = document.querySelectorAll('.slick-slide[aria-hidden="true"]');
+            hidden.forEach(function(slide) {
+                var els = slide.querySelectorAll('a, button, [tabindex]');
+                els.forEach(function(el) {
+                    el.setAttribute('tabindex', '-1');
+                });
+            });
+        }
+        // Run immediately if Slides exist
+        fixHiddenSlides();
+        // Run again after DOM loads (in case Slides added later)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fixHiddenSlides);
+        }
+    })();
+    </script>
+    <?php
+}, 1);
+
 // Initialize Slick Sliders and add custom Styles in the Footer
 add_action('wp_footer', function () {
     ?>
