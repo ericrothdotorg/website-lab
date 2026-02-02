@@ -97,6 +97,9 @@ if (!is_admin()) {
 add_filter('style_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
 add_filter('script_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
 
+// Load Block CSS individually (only Blocks actually used on Page)
+add_filter('should_load_separate_core_block_assets', '__return_true');
+
 // Defer non-critical CSS to reduce render-blocking
 $critical_css_handles = [
     'blocksy-dynamic-global',	// CRITICAL - Blocksy Layout / Positioning
@@ -104,7 +107,6 @@ $critical_css_handles = [
     'global-styles',			// WordPress global Styles
     'ct-page-title-styles',		// Page Title (above Fold)
     'ct-flexy-styles',			// Flexy Animations
-    'wp-block-library',			// Gutenberg Blocks (if used in Content)
 ];
 add_filter('style_loader_tag', function($html, $handle) use ($critical_css_handles) {
     if (in_array($handle, $critical_css_handles)) {
