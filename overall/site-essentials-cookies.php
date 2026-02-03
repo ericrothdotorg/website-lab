@@ -596,7 +596,7 @@ add_action('wp_footer', function () {
 		.scroll-indicator-bar {will-change: width; width: 0%; position: fixed; bottom: 0; height: 5px; background: #c53030; z-index: 5000}
 	</style>
 
-	<script defer>
+	<script>
 		(function() {
 			let ticking = false;
 			let lastPercentage = -1; // Track last Value to avoid unnecessary Updates
@@ -655,11 +655,6 @@ add_action('wp_footer', function () {
 				}
 			}
 
-			// Fix aria-hidden focusable Elements
-			document.querySelectorAll('[aria-hidden="true"] a, [aria-hidden="true"] button, [aria-hidden="true"] input, [aria-hidden="true"] select, [aria-hidden="true"] textarea, [aria-hidden="true"] *[tabindex]:not([tabindex="-1"])').forEach(function(el) {
-				el.setAttribute('tabindex', '-1');
-			});
-
 			// Auto-insert current Year
 			const yearEl = document.getElementById("current-year");
 			if (yearEl) yearEl.textContent = new Date().getFullYear();
@@ -703,6 +698,52 @@ add_action('wp_footer', function () {
 			}
 
 		});
+	</script>
+
+	<!-- Global ARIA-Hidden Tabindex Fix (Sliders, Modals, Dynamic Content) -->
+	<script>
+	(function() {
+		'use strict';
+		function fixAriaHiddenFocus() {
+			document.querySelectorAll('[aria-hidden="true"]').forEach(container => {
+				// CRITICAL: Fix the Container itself if it has a tabindex (e.g. Slick Slide Containers)
+				if (container.hasAttribute('tabindex') && container.getAttribute('tabindex') !== '-1') {
+					container.setAttribute('tabindex', '-1');
+				}
+				// Fix focusable Elements inside the Container
+				const focusable = container.querySelectorAll(
+					'a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
+				);
+				focusable.forEach(el => el.setAttribute('tabindex', '-1'));
+			});
+		}
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', fixAriaHiddenFocus);
+		} else {
+			fixAriaHiddenFocus();
+		}
+		const observer = new MutationObserver(mutations => {
+			const hasAriaChange = mutations.some(m => 
+				m.type === 'attributes' && m.attributeName === 'aria-hidden'
+			);
+			if (hasAriaChange) fixAriaHiddenFocus();
+		});
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', () => {
+				observer.observe(document.body, {
+					attributes: true,
+					attributeFilter: ['aria-hidden'],
+					subtree: true
+				});
+			});
+		} else {
+			observer.observe(document.body, {
+				attributes: true,
+				attributeFilter: ['aria-hidden'],
+				subtree: true
+			});
+		}
+	})();
 	</script>
 
 	<!-- Tabs Styles & Script (Conditional Load) -->
