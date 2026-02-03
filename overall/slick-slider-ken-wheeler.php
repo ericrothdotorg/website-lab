@@ -21,31 +21,6 @@ add_filter('litespeed_optimize_html_excluded_selectors', function($excludes) {
     return $excludes;
 });
 
-// Very early Fix for aria-hidden Slides
-add_action('wp_head', function() {
-    ?>
-    <script>
-    (function() {
-        function fixHiddenSlides() {
-            var hidden = document.querySelectorAll('.slick-slide[aria-hidden="true"]');
-            hidden.forEach(function(slide) {
-                var els = slide.querySelectorAll('a, button, [tabindex]');
-                els.forEach(function(el) {
-                    el.setAttribute('tabindex', '-1');
-                });
-            });
-        }
-        // Run immediately if Slides exist
-        fixHiddenSlides();
-        // Run again after DOM loads (in case Slides added later)
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', fixHiddenSlides);
-        }
-    })();
-    </script>
-    <?php
-}, 1);
-
 // Initialize Slick Sliders and add custom Styles in the Footer
 add_action('wp_footer', function () {
     ?>
@@ -92,8 +67,8 @@ add_action('wp_footer', function () {
         .slideshow-multiple-items-center-mode img {padding: 0 0.75% 0 0.75%;}
 
         /* Style Slideshows with WP Columns */
-        .slideshow-single-item .wp-block-columns {align-items: center;}								   							   
-		.dummy-columns {display: none !important;}								   
+        .slideshow-single-item .wp-block-columns {align-items: center;}
+		.dummy-columns {display: none !important;}
 
         /* Style Slideshows with Layers */
         .layer-container {position: relative; margin: 0 auto;}
@@ -101,8 +76,9 @@ add_action('wp_footer', function () {
         .layer-content-industries-served {font-size: 150%; color: #ffffff; padding: 0 0.75%;}
 
 		/* Prevent hidden Slides from being focusable */
+		/* Extra Layer of Protection (CSS-based) - Main Fix is in Site_Essentials via MutationObserver */
 		.slick-slide[aria-hidden="true"] {pointer-events: none;}
-		.slick-slide[aria-hidden="true"] a {tabindex: -1 !important;}
+		.slick-slide[aria-hidden="true"] a {tabindex: -1;}
     </style>
 
     <script>
@@ -112,11 +88,6 @@ add_action('wp_footer', function () {
                 return;
             }
             var $ = jQuery;
-			
-			// Function to fix - aria-hidden - Tabindex Issues
-			function fixAriaHiddenTabindex() {
-				$('[aria-hidden="true"]').find('a, [tabindex]:not([tabindex="-1"])').attr('tabindex', '-1');
-			}
 			
             // Common Config to reduce Repetition
             var baseConfig = {
@@ -137,7 +108,7 @@ add_action('wp_footer', function () {
                 adaptiveHeight: true,
                 slidesToShow: 1,
                 slidesToScroll: 1
-            })).on('init afterChange', fixAriaHiddenTabindex);
+            }));
 			
 			// Config for Single Items without Dots
             $('.slideshow-single-item-no-dots').slick($.extend({}, baseConfig, {
@@ -147,7 +118,7 @@ add_action('wp_footer', function () {
                 adaptiveHeight: true,
                 slidesToShow: 1,
                 slidesToScroll: 1
-            })).on('init afterChange', fixAriaHiddenTabindex);
+            }));
 			
 			// Config for Multiple Items (horizontal)
             $('.slideshow-multiple-items').slick($.extend({}, baseConfig, {
@@ -163,7 +134,7 @@ add_action('wp_footer', function () {
                     { breakpoint: 768, settings: { slidesToShow: 3 } },
                     { breakpoint: 992, settings: { slidesToShow: 4 } }
                 ]
-            })).on('init afterChange', fixAriaHiddenTabindex);
+            }));
 			
 			// Config for Multiple Items (vertical)
             $('.slideshow-multiple-items-vertical').slick($.extend({}, baseConfig, {
@@ -175,7 +146,7 @@ add_action('wp_footer', function () {
                 verticalSwiping: true,
                 slidesToShow: 3,
                 slidesToScroll: 1
-            })).on('init afterChange', fixAriaHiddenTabindex);
+            }));
 			
 			// Config for Multiple Items (center mode)
             $('.slideshow-multiple-items-center-mode').slick($.extend({}, baseConfig, {
@@ -193,10 +164,8 @@ add_action('wp_footer', function () {
                     { breakpoint: 768, settings: { centerPadding: '75px' } },
                     { breakpoint: 992, settings: { centerPadding: '175px' } }
                 ]
-            })).on('init afterChange', fixAriaHiddenTabindex);
+            }));
 			
-			// Run once after all Sliders are initialized
-			fixAriaHiddenTabindex();
         }
         // Use requestIdleCallback for non-critical Initialization
         if (document.readyState === 'loading') {
