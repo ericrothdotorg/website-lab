@@ -646,7 +646,8 @@ add_action('wp_footer', function () {
 						// Exclusion with Class neli (Data attr or Class)
 						link.hasAttribute('data-neli') || attrs.includes('neli'),
 						// Figure / Embed Links (Image & Video Blocks)
-						link.closest('figure.wp-block-image, figure.wp-block-embed'),
+						link.closest('figure.wp-block-image') || 
+						link.closest('.wp-block-embed__wrapper'),
 						// WP UI / Button / Social Links
 						className.includes('wp-block-button__link') ||
 						className.includes('button') ||
