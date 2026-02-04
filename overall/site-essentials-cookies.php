@@ -64,15 +64,6 @@ function get_post_count_cached($type) {
     return $count;
 }
 
-// Helper: Add external-link Class to Anchor Tag
-function add_external_link_class($tag) {
-    $attrs = $tag;
-    if (strpos($attrs, 'class=') !== false) {
-        return preg_replace('/class=(["\'])(.*?)\1/', 'class=$1$2 external-link$1', $attrs);
-    }
-    return str_replace('<a ', '<a class="external-link" ', $attrs);
-}
-
 // ======================================
 // JQUERY & CORE SCRIPTS
 // ======================================
@@ -112,8 +103,13 @@ add_filter('style_loader_tag', function($html, $handle) use ($critical_css_handl
     if (in_array($handle, $critical_css_handles)) {
         return $html;
     }
-    // Defer non-critical Stylesheets
-    return str_replace("rel='stylesheet'", "rel='preload' as='style' onload=\"this.onload=null;this.rel='stylesheet'\"", $html);
+    // Defer non-critical Stylesheets with noscript Fallback
+    $preload_html = str_replace(
+        "rel='stylesheet'", 
+        "rel='preload' as='style' onload=\"this.onload=null;this.rel='stylesheet'\"",
+        $html
+    );
+    return $preload_html . '<noscript>' . $html . '</noscript>';
 }, 10, 2);
 
 // ======================================
@@ -240,12 +236,12 @@ add_action('wp_head', function () {
     echo '<link rel="preconnect" href="https://www.clarity.ms" crossorigin>' . "\n";
 }, 10);
 
-// Prevent cached previews (with timestamp)
+// Prevent cached Previews (with timestamp)
 add_filter('preview_post_link', function($url){
     return add_query_arg('ts', time(), $url);
 });
 
-// Prevent cached frontend for logged-in editors
+// Prevent cached Frontend for logged-in Editors
 add_action('template_redirect', function () {
     if (!is_user_logged_in()) return;
     if (!current_user_can('edit_posts')) return;
@@ -301,11 +297,11 @@ add_shortcode('post_stats', function() {
     if ($cached_output !== false) {
         return $cached_output;
     }
-    // Process shortcodes first, then blocks (avoids heavy content filters)
-    $content = do_shortcode($post->post_content);
-    $content = do_blocks($content);
+    // Get the RAW Post Content
+    $raw_content = $post->post_content;
+    // Get the RENDERED Content for Text / HTML counting
+    $content = apply_filters('the_content', $post->post_content);
     $text = wp_strip_all_tags($content);
-    
     // Calculate Statistics
     $word_count = str_word_count($text);
     $stats = [
@@ -313,10 +309,14 @@ add_shortcode('post_stats', function() {
         'minutes' => ceil($word_count / READING_SPEED_WPM),
         'chars' => strlen($text),
         'paragraphs' => substr_count($content, '</p>'),
-        'images' => substr_count($content, '<img'),
-        'videos' => preg_match_all('/<video[^>]*>/i', $content) + preg_match_all('/<iframe[^>]*(?:youtube\.com|vimeo\.com)[^>]*>/i', $content),
-        'titles' => preg_match_all('/<h[1-6][^>]*>.*?<\/h[1-6]>/', $content)
     ];
+    // Count Images from rendered Content
+    $stats['images'] = substr_count($content, '<img');
+    // Count Videos - Simply count Figures with is-type-video Class
+    $stats['videos'] = substr_count($raw_content, 'is-type-video');
+    // Count Titles
+    $title_matches = [];
+    $stats['titles'] = preg_match_all('/<h[1-6][^>]*>.*?<\/h[1-6]>/s', $content, $title_matches);
     // Count Links
     preg_match_all('/<a\s[^>]*href=["\']([^"\']+)["\']/i', $content, $matches);
     $site_url = home_url();
@@ -325,7 +325,7 @@ add_shortcode('post_stats', function() {
         (strpos($url, $site_url) === 0 || strpos($url, '/') === 0) ? $internal++ : $external++;
     }
     // Sentence Analysis
-    $sentences = preg_split('/[.!?]+/', $text, -1, PREG_SPLIT_NO_EMPTY);
+    $sentences = preg_split('/[.!?]+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
     $sentence_count = count($sentences);
     $avg_words = $sentence_count > 0 ? round($stats['words'] / $sentence_count, 1) : 0;
     // Format Output with Thousands Separators
@@ -349,7 +349,6 @@ add_shortcode('post_stats', function() {
 
 // [post_stats] - Clear Cache when Post is updated
 add_action('save_post', function($post_id) {
-    // Security Checks
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
     if (!current_user_can('edit_post', $post_id)) return;
     delete_transient('post_stats_' . $post_id);
@@ -364,7 +363,7 @@ add_filter('wp_get_attachment_image', function($html, $attachment_id) {
     $alt = get_post_meta($attachment_id, '_wp_attachment_image_alt', true);
     $src = wp_get_attachment_url($attachment_id);
     // Mark decorative Images with empty ALT
-	if (preg_match(REGEX_DECORATIVE_IMAGES, $src) || preg_match(REGEX_LOGO_PATTERNS, $src)) {
+	if ($src && (preg_match(REGEX_DECORATIVE_IMAGES, $src) || preg_match(REGEX_LOGO_PATTERNS, $src))) {
 		$alt = '';
 	} elseif (empty($alt)) {
 		$alt = get_the_title($attachment_id);
@@ -377,7 +376,7 @@ add_filter('wp_get_attachment_image', function($html, $attachment_id) {
         }
     }
     $alt = esc_attr(mb_substr(wp_strip_all_tags($alt), 0, ALT_TEXT_MAX_LENGTH));
-    return preg_replace('/alt=["\'](.*?)["\']/', 'alt="' . $alt . '"', $html);
+    return preg_replace('/alt=["\'](.*?)["\']/', 'alt="' . $alt . '"', $html, 1);
 }, 10, 2);
 
 // Ensure all Image Links have accessible Names
@@ -424,98 +423,6 @@ add_filter('the_content', function ($content) {
 }, 15);
 
 // ======================================
-// LINK PROCESSING
-// ======================================
-
-// Process external Links (combined: Add Class + Title Attribute)
-add_filter('the_content', function ($content) {
-    // Domains to exclude from external Link Processing
-    $exclude = ['ericroth.org', 'ericroth-org', '1drv.ms', 'paypal.com', 'librarything.com',
-                'themoviedb.org', 'facebook.com', 'github.com', 'linkedin.com',
-                'patreon.com', 'bsky.app', 'bsky.social', 'about.me', 'buymeacoffee.com'];
-    // STEP 1: Pre-process Content for 'neli' Class and Figure Links (wp-block-image, wp-block-embed)
-	$content = preg_replace_callback('/<(figure|div)[^>]*class=["\'][^"\']*neli[^"\']*["\'][^>]*>(.*?)<\/\1>/is', 
-        function($m) {
-            return preg_replace('/<a\s+/', '<a data-neli="true" ', $m[0]);
-        }, 
-        $content
-    );
-	$content = preg_replace_callback('/<figure[^>]*class=["\'][^"\']*(wp-block-image|wp-block-embed)[^"\']*["\'][^>]*>(.*?)<\/figure>/is', 
-		function($m) {
-			return preg_replace('/<a\s+/', '<a data-figure-link="true" ', $m[0]);
-		}, 
-		$content
-	);
-    // STEP 2: Process all Links
-	return preg_replace_callback('/<a\s+([^>]+)>/i', function ($m) use ($exclude) {
-        $tag = $m[0];
-        $attrs = $m[1];
-        // Extract href (if no href, skip Processing)
-        if (!preg_match('/href=["\']([^"\']+)["\']/i', $attrs, $href_match)) {
-            return $tag;
-        }
-        $href = $href_match[1];
-		// Normalize protocol-relative URLs
-		if (strpos($href, '//') === 0) {
-			$href = (is_ssl() ? 'https:' : 'http:') . $href;
-		}
-
-        // --- SKIP CONDITIONS (return Link unchanged) ---
-        
-		// Skip: Whitelisted Domains
-        foreach ($exclude as $domain) {
-            if (strpos($href, $domain) !== false) return $tag;
-        }
-        // Skip: 'neli' Exclusion
-        if (strpos($attrs, 'data-neli="true"') !== false) {
-            return str_replace(' data-neli="true"', '', $tag);
-        }
-        if (preg_match('/class=["\'][^"\']*\bneli\b[^"\']*["\']/', $attrs)) {
-            return $tag;
-        }
-		// Skip: Figure Links (wp-block-image, wp-block-embed)
-		if (strpos($attrs, 'data-figure-link="true"') !== false) {
-			return str_replace(' data-figure-link="true"', '', $tag);
-		}
-		// Skip: Other WP UI Elements
-        if (preg_match('/class=["\'][^"\']*(wp-block-button__link|button|page-numbers|wp-block-social-link|wp-social-link|wp-social-link-youtube)[^"\']*["\']/', $attrs)) {
-            return $tag;
-        }
-        // Skip: Internal / Special Links
-        if ($href[0] === '#' || $href[0] === '/' || strpos($href, 'tel:') === 0 || 
-            stripos($href, 'javascript') !== false || strpos($href, '?cat=') !== false) {
-            return $tag;
-        }
-        
-        // --- PROCESS LINKS (return Link changed) ---
-        
-        $modified = add_external_link_class($tag);
-        // Add Title Attribute for Links opening in new Tab
-        if (strpos($attrs, 'target="_blank"') !== false && strpos($attrs, 'title=') === false) {
-            $modified = str_replace('<a ', '<a title="Opens in a new tab" ', $modified);
-        }
-        return $modified;
-    }, $content);
-}, 10);
-
-// Remove external-Link Class from iFrame Wrappers (for embedded Vids)
-add_filter('the_content', function ($content) {
-    // Remove external-link Class from any <a> Tags that wrap iFrames
-	return preg_replace_callback(
-        '/<a\s+([^>]*class=["\'][^"\']*external-link[^"\']*["\'][^>]*)>\s*<iframe/i',
-        function ($matches) {
-            $attrs = $matches[1];
-            // Remove external-link Class
-            $attrs = preg_replace('/\bexternal-link\b\s*/', '', $attrs);
-            // Clean up double Spaces in Class Attribute
-            $attrs = preg_replace('/class=(["\'])\s+/', 'class=$1', $attrs);
-            return "<a $attrs><iframe";
-        },
-        $content
-    );
-}, 11); // Priority 11 required: Runs after the external Link Filter above
-
-// ======================================
 // REDIRECTS
 // ======================================
 
@@ -528,7 +435,7 @@ add_action('template_redirect', function() {
         '/my-blog/'       => '/personal/my-blog/',
         '/my-interests/'  => '/personal/my-interests/',
     ];
-    $uri = trailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+    $uri = isset($_SERVER['REQUEST_URI']) ? trailingslashit(parse_url(sanitize_text_field($_SERVER['REQUEST_URI']), PHP_URL_PATH)) : '';
     if (isset($redirects[$uri])) {
         wp_redirect($redirects[$uri], 301);
         exit;
@@ -697,10 +604,77 @@ add_action('wp_footer', function () {
 				flexyElements.forEach(el => observer.observe(el));
 			}
 
+			// External Link Processing - Client-side Version
+				const siteUrl = '<?php echo esc_js(home_url('/')); ?>';
+				const excludeDomains = [
+					'ericroth.org',
+					'ericroth-org',
+					'1drv.ms',
+					'paypal.com',
+					'librarything.com',
+					'themoviedb.org',
+					'facebook.com',
+					'github.com',
+					'linkedin.com',
+					'patreon.com',
+					'bsky.app',
+					'bsky.social',
+					'about.me',
+					'buymeacoffee.com'
+					// ← Add any other Domains if needed
+				];
+				document.querySelectorAll('a[href]').forEach(function(link) {
+					let href = link.getAttribute('href');
+					if (!href) return;
+					// Normalize protocol-relative URLs (//example.com → https://example.com or http://)
+					if (href.startsWith('//')) {
+						href = window.location.protocol + href;
+					}
+					// Extract Classes once (cheaper than repeated className checks)
+					const className = link.className || '';
+					const attrs = link.getAttribute('class') || ''; // for contains checks
+					// Quick Skip Conditions (mirroring your PHP logic)
+					const skipReasons = [
+						// Structural / Special Links
+						href.startsWith('#'),
+						href.startsWith('/'),
+						href.startsWith('tel:'),
+						href.startsWith('javascript'),
+						href.includes('?cat='),
+						// Excluded Domains
+						excludeDomains.some(domain => href.includes(domain)),
+						// Exclusion with Class neli (Data attr or Class)
+						link.hasAttribute('data-neli') || attrs.includes('neli'),
+						// Figure / Embed Links (Image & Video Blocks)
+						link.closest('figure.wp-block-image, figure.wp-block-embed'),
+						// WP UI / Button / Social Links
+						className.includes('wp-block-button__link') ||
+						className.includes('button') ||
+						className.includes('page-numbers') ||
+						className.includes('wp-block-social-link') ||
+						className.includes('wp-social-link'),
+						// Links that wrap iframes (YouTube / Vimeo Embeds etc.)
+						link.querySelector('iframe')
+					];
+					if (skipReasons.some(Boolean)) {
+						// Optional: Clean up temporary Data Attributes
+						if (link.hasAttribute('data-neli'))      link.removeAttribute('data-neli');
+						if (link.hasAttribute('data-figure-link')) link.removeAttribute('data-figure-link');
+						return;
+					}
+					// Apply the Changes we actually want
+					link.classList.add('external-link');
+					// Add Title for new-tab Links if missing
+					if (link.target === '_blank' && !link.hasAttribute('title')) {
+						link.setAttribute('title', 'Opens in a new tab');
+					}
+				});
+
 		});
 	</script>
 
 	<!-- Global ARIA-Hidden Tabindex Fix (Sliders, Modals, Dynamic Content) -->
+
 	<script>
 	(function() {
 		'use strict';
