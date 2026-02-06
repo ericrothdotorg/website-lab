@@ -96,10 +96,10 @@ function initialize_custom_dashboard() {
 
 	function custom_render_ai_chatbots_widget() {
         $bots = [
-            'Copilot' => 'https://copilot.microsoft.com/',
-            'ChatGPT' => 'https://chatgpt.com/',
-            'Claude' => 'https://claude.ai/',
-            'DeepSeek' => 'https://chat.deepseek.com/'
+            '✨ Copilot' => 'https://copilot.microsoft.com/',
+            '✨ ChatGPT' => 'https://chatgpt.com/',
+            '✨ Claude' => 'https://claude.ai/',
+            '✨ DS' => 'https://chat.deepseek.com/'
         ];
         echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
         foreach ($bots as $label => $url) {
@@ -119,10 +119,10 @@ function initialize_custom_dashboard() {
 
 	function custom_render_sponsor_channels_widget() {
         $channels = [
-            'GitHub' => 'https://github.com/ericrothdotorg',
-			'Patreon' => 'https://www.patreon.com/cw/ericrothdotorg',
-            'PayPal' => 'https://www.paypal.com/paypalme/ericrothdotorg',
-            'BMC' => 'https://buymeacoffee.com/ericrothdotorg'
+            '💰 GitHub' => 'https://github.com/ericrothdotorg',
+			'💰 Patreon' => 'https://www.patreon.com/cw/ericrothdotorg',
+            '💰 PayPal' => 'https://www.paypal.com/paypalme/ericrothdotorg',
+            '💰 BMC' => 'https://buymeacoffee.com/ericrothdotorg'
         ];
         echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
         foreach ($channels as $label => $url) {
@@ -511,44 +511,52 @@ function initialize_custom_dashboard() {
 			esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</em></p>';
 	}
 
-    // ======================================
-	// 📡 RSS FEED: BLOG & INTERESTS
+	// ======================================
+	// 📰 RSS FEED: MY BLOG
 	// ======================================
 
-	add_action('wp_dashboard_setup', 'custom_register_rss_widget');
-	function custom_register_rss_widget() {
-        wp_add_dashboard_widget('custom_rss_widget', '📡 RSS Feed: Blog & Interests', 'custom_render_rss_widget');
+	add_action('wp_dashboard_setup', 'custom_register_blog_rss_widget');
+	function custom_register_blog_rss_widget() {
+        wp_add_dashboard_widget('custom_blog_rss_widget', '📰 RSS Feed: My Blog', 'custom_render_blog_rss_widget');
     }
 
-	function custom_render_rss_widget() {
-        $feeds = [
-            ['label' => 'My Blog', 'url' => 'https://ericroth.org/feed/'],
-            ['label' => 'My Interests', 'url' => 'https://ericroth.org/feed/?post_type=my-interests']
+	function custom_render_blog_rss_widget() {
+        $tabs = [
+            ['label' => 'Blog', 'url' => 'https://ericroth.org/feed/']
         ];
-        $max_items = max(1, (int) get_option('posts_per_rss') ?: 10);
         
-        echo '<div class="rss-widget-wrapper external" style="font-size: 14px;">';
-        echo '<ul class="rss-tab-nav" style="display: flex; gap: 10px; list-style: none; margin: 0 0 10px;">';
-        foreach ($feeds as $i => $feed) {
-            echo '<li><button class="rss-tab-btn" data-tab="external-tab-' . $i . '" style="padding: 6px 12px;">' . esc_html($feed['label']) . '</button></li>';
-        }
-        echo '</ul>';
+        echo '<div class="rss-widget-wrapper" style="font-size: 14px;">';
+		echo '<div class="rss-tab-nav" style="display: flex; align-items: center; margin: 0 0 10px;"><span class="rss-counter"></span></div>';
         
-        foreach ($feeds as $i => $feed) {
-            echo '<div id="external-tab-' . $i . '" class="rss-tab-content" style="display: none;">';
-            $items = custom_get_rss_items($feed['url'], $max_items);
+        $max_items = 40;
+        
+        foreach ($tabs as $i => $tab) {
+            echo '<div id="tab-blog-' . $i . '" class="rss-tab-content" style="display: none;">';
+            $items = custom_get_rss_items($tab['url'], $max_items);
             
             if (!is_wp_error($items)) {
                 foreach ($items as $index => $item) {
                     $title = esc_html($item->get_title());
-                    $link = esc_url($item->get_permalink());
+                    $link = esc_url($item->get_link());
                     $desc = wp_strip_all_tags($item->get_description());
                     $excerpt = $desc ? wp_trim_words($desc, 30) : 'No description available';
                     $date = $item->get_date('U') ? date_i18n('F j, Y', $item->get_date('U')) : 'Unknown date';
                     
+					$post_id = '';
+                    $edit_link = '';
+                    $guid = $item->get_id();
+                    if (preg_match('/p=(\d+)/', $guid, $matches)) {
+                        $post_id = $matches[1];
+                        $edit_link = 'https://ericroth.org/wp-admin/post.php?post=' . $post_id . '&action=edit';
+                    }
+                    
                     echo '<div class="rss-item" data-index="' . $index . '" style="display: none; margin-bottom: 15px;">';
                     echo '<div><a href="' . $link . '" target="_blank" style="font-weight: bold;">' . $title . '</a> – ';
-                    echo '<span style="color: #666; font-size: 12px;">🗓️ Published: <strong>' . esc_html($date) . '</strong></span></div>';
+                    echo '<span style="color: #666; font-size: 12px;">🗓️ Published: <strong>' . esc_html($date) . '</strong></span>';
+                    if ($edit_link) {
+                        echo ' – <a href="' . esc_url($edit_link) . '" target="_blank" style="color: #2271b1;">Edit</a>';
+                    }
+                    echo '</div>';
                     echo '<p style="margin: 5px 0;">' . esc_html($excerpt) . '</p>';
                     echo '</div>';
                 }
@@ -560,6 +568,67 @@ function initialize_custom_dashboard() {
         echo '</div>';
     }
 
+	// ======================================
+	// 📰 RSS FEED: MY INTERESTS
+	// ======================================
+
+	add_action('wp_dashboard_setup', 'custom_register_interests_rss_widget');
+	function custom_register_interests_rss_widget() {
+        wp_add_dashboard_widget('custom_interests_rss_widget', '📰 RSS Feed: My Interests', 'custom_render_interests_rss_widget');
+    }
+
+	function custom_render_interests_rss_widget() {
+        $tabs = [
+            ['label' => 'Interests', 'url' => 'https://ericroth.org/my-interests/feed/']
+        ];
+        
+        echo '<div class="rss-widget-wrapper" style="font-size: 14px;">';
+		echo '<div class="rss-tab-nav" style="display: flex; align-items: center; margin: 0 0 10px;"><span class="rss-counter"></span></div>';
+        
+        $max_items = 40;
+        
+        foreach ($tabs as $i => $tab) {
+            echo '<div id="tab-interests-' . $i . '" class="rss-tab-content" style="display: none;">';
+            $items = custom_get_rss_items($tab['url'], $max_items);
+            
+            if (!is_wp_error($items)) {
+                foreach ($items as $index => $item) {
+                    $title = esc_html($item->get_title());
+                    $link = esc_url($item->get_link());
+                    $desc = wp_strip_all_tags($item->get_description());
+                    $excerpt = $desc ? wp_trim_words($desc, 30) : 'No description available';
+                    $date = $item->get_date('U') ? date_i18n('F j, Y', $item->get_date('U')) : 'Unknown date';
+                    
+					$post_id = '';
+                    $edit_link = '';
+                    $guid = $item->get_id();
+                    if (preg_match('/p=(\d+)/', $guid, $matches)) {
+                        $post_id = $matches[1];
+                        $edit_link = 'https://ericroth.org/wp-admin/post.php?post=' . $post_id . '&action=edit';
+                    }
+                    
+                    echo '<div class="rss-item" data-index="' . $index . '" style="display: none; margin-bottom: 15px;">';
+                    echo '<div><a href="' . $link . '" target="_blank" style="font-weight: bold;">' . $title . '</a> – ';
+                    echo '<span style="color: #666; font-size: 12px;">🗓️ Published: <strong>' . esc_html($date) . '</strong></span>';
+                    if ($edit_link) {
+                        echo ' – <a href="' . esc_url($edit_link) . '" target="_blank" style="color: #2271b1;">Edit</a>';
+                    }
+                    echo '</div>';
+                    echo '<p style="margin: 5px 0;">' . esc_html($excerpt) . '</p>';
+                    echo '</div>';
+                }
+            } else {
+                echo '<p>🚫 Error fetching feed: ' . esc_html($items->get_error_message()) . '</p>';
+            }
+            echo '</div>';
+        }
+        echo '</div>';
+    }
+
+	// ======================================
+	// --- RSS FEED: SHARED FUNCTION ---
+	// ======================================
+
 	function custom_get_rss_items($feed_url, $max_items) {
         if (!function_exists('fetch_feed')) {
             require_once ABSPATH . WPINC . '/feed.php';
@@ -568,62 +637,6 @@ function initialize_custom_dashboard() {
         $rss = fetch_feed($feed_url);
         if (is_wp_error($rss)) return $rss;
         return $rss->get_items(0, $max_items);
-    }
-
-    // ======================================
-	// 🗂️ PAGES & TRAITS SNAPSHOT
-	// ======================================
-
-	add_action('wp_dashboard_setup', 'custom_register_snapshot_widget');
-	function custom_register_snapshot_widget() {
-        wp_add_dashboard_widget('custom_snapshot_widget', '🗂️ Pages & Traits Snapshot', 'custom_render_snapshot_widget');
-    }
-
-	function custom_render_snapshot_widget() {
-        $tabs = [
-            ['label' => 'My Pages', 'type' => 'page', 'exclude' => [179, 14581]],
-            ['label' => 'My Traits', 'type' => 'my-traits', 'exclude' => []]
-        ];
-        
-        echo '<div class="rss-widget-wrapper local" style="font-size:14px;">';
-        echo '<ul class="rss-tab-nav" style="display:flex; gap:10px; list-style:none; margin:0 0 10px;">';
-        foreach ($tabs as $i => $tab) {
-            echo '<li><button class="rss-tab-btn" data-tab="local-tab-' . $i . '" style="padding:6px 12px;">' . esc_html($tab['label']) . '</button></li>';
-        }
-        echo '</ul>';
-        
-        foreach ($tabs as $i => $tab) {
-            echo '<div id="local-tab-' . $i . '" class="rss-tab-content" style="display:none;">';
-            $query = new WP_Query([
-                'post_type' => $tab['type'],
-                'post_status' => 'publish',
-                'posts_per_page' => 250,
-                'orderby' => 'modified',
-                'order' => 'DESC',
-                'post__not_in' => $tab['exclude']
-            ]);
-            
-            if ($query->have_posts()) {
-                foreach ($query->posts as $index => $post) {
-                    setup_postdata($post);
-                    $title = esc_html(get_the_title($post));
-                    $link = esc_url(get_permalink($post));
-                    $desc = wp_strip_all_tags(do_shortcode($post->post_content));
-                    $excerpt = get_the_excerpt($post) ?: wp_trim_words($desc, 25);
-                    $date = get_the_modified_date('U', $post) ? date_i18n('F j, Y', get_the_modified_date('U', $post)) : 'Unknown date';
-                    
-                    echo '<div class="rss-item" data-index="' . $index . '" style="display:none; margin-bottom:15px;">';
-                    echo '<div><a href="' . $link . '" target="_blank" style="font-weight:bold;">' . $title . '</a> – <span style="color:#666; font-size:12px;">✏️ Updated: <strong>' . esc_html($date) . '</strong></span></div>';
-                    echo '<p style="margin:5px 0;">' . esc_html($excerpt) . '</p>';
-                    echo '</div>';
-                }
-                wp_reset_postdata();
-            } else {
-                echo '<p>No published items found for ' . esc_html($tab['label']) . '.</p>';
-            }
-            echo '</div>';
-        }
-        echo '</div>';
     }
 
 	// ======================================
@@ -647,63 +660,71 @@ function initialize_custom_dashboard() {
 document.addEventListener('DOMContentLoaded', function () {
 	document.querySelectorAll('.rss-widget-wrapper').forEach(widget => {
 		const tabNav = widget.querySelector('.rss-tab-nav');
-		const tabButtons = widget.querySelectorAll('.rss-tab-btn');
-		const tabContents = widget.querySelectorAll('.rss-tab-content');
+		const tabContent = widget.querySelector('.rss-tab-content');
+		
+		if (!tabNav || !tabContent) return;
+		
 		const navGroup = document.createElement('div');
 		navGroup.style.marginLeft = 'auto';
 		navGroup.style.display = 'flex';
 		navGroup.style.gap = '6px';
+		
 		const prevBtn = document.createElement('button');
 		prevBtn.innerHTML = '⬅️';
 		prevBtn.title = 'Previous';
 		prevBtn.style.padding = '6px';
 		prevBtn.style.cursor = 'pointer';
+		
 		const nextBtn = document.createElement('button');
 		nextBtn.innerHTML = '➡️';
 		nextBtn.title = 'Next';
 		nextBtn.style.padding = '6px';
 		nextBtn.style.cursor = 'pointer';
+		
 		navGroup.appendChild(prevBtn);
 		navGroup.appendChild(nextBtn);
 		tabNav.appendChild(navGroup);
-		tabNav.style.display = 'flex';
-		tabNav.style.flexWrap = 'wrap';
-		tabNav.style.alignItems = 'center';
-		tabButtons.forEach(btn => {
-			btn.addEventListener('click', () => {
-				tabContents.forEach(tab => tab.style.display = 'none');
-				const target = widget.querySelector('#' + btn.dataset.tab);
-				if (target) {
-					target.style.display = 'block';
-					target.resetPagination();
-				}
+		
+		const items = tabContent.querySelectorAll('.rss-item');
+		
+		if (items.length === 0) {
+			const counter = widget.querySelector('.rss-counter');
+			if (counter) counter.textContent = 'No items found';
+			return;
+		}
+		
+		let currentStart = 0;
+		const batchSize = 4;
+		
+		function renderBatch(start) {
+			items.forEach((item, i) => {
+				item.style.display = (i >= start && i < start + batchSize) ? 'block' : 'none';
 			});
-		});
-		if (tabButtons.length) tabButtons[0].click();
-		tabContents.forEach(tab => {
-			const items = tab.querySelectorAll('.rss-item');
-			let currentStart = 0;
-			const batchSize = 5;
-			function renderBatch(start) {
-				items.forEach((item, i) => {
-					item.style.display = (i >= start && i < start + batchSize) ? 'block' : 'none';
-				});
-				currentStart = start;
-				prevBtn.style.display = currentStart === 0 ? 'none' : 'inline-block';
-				nextBtn.style.display = currentStart + batchSize >= items.length ? 'none' : 'inline-block';
+			currentStart = start;
+			
+			const counter = widget.querySelector('.rss-counter');
+			if (counter) {
+				const endItem = Math.min(start + batchSize, items.length);
+				counter.textContent = 'Showing ' + (start + 1) + '-' + endItem + ' of ' + items.length;
 			}
-			tab.resetPagination = () => renderBatch(0);
-			renderBatch(0);
-			prevBtn.addEventListener('click', () => {
-				if (tab.style.display === 'block' && currentStart - batchSize >= 0) {
-					renderBatch(currentStart - batchSize);
-				}
-			});
-			nextBtn.addEventListener('click', () => {
-				if (tab.style.display === 'block' && currentStart + batchSize < items.length) {
-					renderBatch(currentStart + batchSize);
-				}
-			});
+			
+			prevBtn.style.display = currentStart === 0 ? 'none' : 'inline-block';
+			nextBtn.style.display = currentStart + batchSize >= items.length ? 'none' : 'inline-block';
+		}
+		
+		renderBatch(0);
+		tabContent.style.display = 'block';
+		
+		prevBtn.addEventListener('click', () => {
+			if (currentStart - batchSize >= 0) {
+				renderBatch(currentStart - batchSize);
+			}
+		});
+		
+		nextBtn.addEventListener('click', () => {
+			if (currentStart + batchSize < items.length) {
+				renderBatch(currentStart + batchSize);
+			}
 		});
 	});
 });
