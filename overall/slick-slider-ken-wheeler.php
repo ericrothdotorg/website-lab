@@ -74,6 +74,7 @@ add_action('wp_footer', function () {
         .layer-container {position: relative; margin: 0 auto;}
         .layer-content-procurement-consulting {margin-right: 7.5px;}
         .layer-content-industries-served {font-size: 150%; color: #ffffff; padding: 0 0.75%;}
+		.layer-content-ninja-services {padding: 0 0.75%;}
 
 		/* Prevent hidden Slides from being focusable */
 		/* Extra Layer of Protection (CSS-based) - Main Fix is in Site_Essentials via MutationObserver */
