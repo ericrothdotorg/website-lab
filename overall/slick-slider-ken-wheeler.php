@@ -72,9 +72,15 @@ add_action('wp_footer', function () {
 
         /* Style Slideshows with Layers */
         .layer-container {position: relative; margin: 0 auto;}
-        .layer-content-procurement-consulting {margin-right: 7.5px;}
-        .layer-content-industries-served {font-size: 150%; color: #ffffff; padding: 0 0.75%;}
-		.layer-content-ninja-services {padding: 0 0.75%;}
+		.layer-content-procurement-consulting h5 {text-align: justify;}
+		.layer-content-procurement-consulting p {text-align: justify; padding-top: 5px;}
+		.layer-content-procurement-consulting .emphasized-design-red {padding-top: 15px;}
+        .layer-content-industries-served {color: #FFFFFF; padding: 0 0.75%; font-size: clamp(1.125rem, 3vw, 1.5rem);}
+		.layer-content-industries-served > div {height: 150px; display: flex; justify-content: center; align-items: center; padding: 0 25px;}
+		.layer-content-industries-served p {margin: 0; text-align: center;}
+		.layer-content-ninja-services {color: #FFFFFF; padding: 0 0.75%; font-size: clamp(1rem, 5vw, 3rem);}
+		.layer-content-ninja-services > div {height: 150px; display: flex; justify-content: center; align-items: center; padding: 0 25px;}
+		.layer-content-ninja-services p {margin: 0; text-align: center;}
 
 		/* Prevent hidden Slides from being focusable */
 		/* Extra Layer of Protection (CSS-based) - Main Fix is in Site_Essentials via MutationObserver */
