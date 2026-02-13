@@ -43,10 +43,8 @@ add_action('wp_footer', function () {
         .slideshow-single-item-no-dots,
         .slideshow-multiple-items,
         .slideshow-multiple-items-vertical,
-        .slideshow-multiple-items-center-mode {
-            visibility: hidden;
-        }
-        .slick-initialized { visibility: visible; }
+        .slideshow-multiple-items-center-mode {visibility: hidden;}
+        .slick-initialized {visibility: visible;}
 
         /* Optimize Slider Animations */
         .slick-track {will-change: transform;}
