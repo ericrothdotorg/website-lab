@@ -237,21 +237,23 @@ function initialize_custom_admin_columns() {
             case 'id':
                 echo $post_id;
                 break;
-            case 'uploaded_to':
-                $parent_id = wp_get_post_parent_id($post_id);
-                if ($parent_id) {
-                    $title = get_the_title($parent_id) ?: __('(no title)');
-                    $url = get_edit_post_link($parent_id);
-                    echo '<strong><a href="' . esc_url($url) . '" target="_blank" rel="noopener noreferrer">' . esc_html($title) . '</a></strong>';
-                } else {
-                    echo '<em>' . __('(Unattached)') . '</em>';
-                    // Native "Attach" link
-                    if (current_user_can('edit_post', $post_id)) {
-                        $url = admin_url('upload.php?attach=' . $post_id);
-                        echo '<br><a class="hide-if-no-js" onclick="findPosts.open(\'media[]\', \'' . esc_attr($post_id) . '\');return false;" href="' . esc_url($url) . '">' . __('Attach') . '</a>';
-                    }
-                }
-                break;
+			case 'uploaded_to':
+				$parent_id = wp_get_post_parent_id($post_id);
+				if ($parent_id) {
+					$title = get_the_title($parent_id) ?: __('(no title)');
+					$url = get_edit_post_link($parent_id);
+					echo '<strong><a href="' . esc_url($url) . '" target="_blank" rel="noopener noreferrer">' . esc_html($title) . '</a></strong>';
+					if (current_user_can('edit_post', $post_id)) {
+						echo '<br><a class="hide-if-no-js" onclick="findPosts.open(\'media[]\', \'' . esc_attr($post_id) . '\');return false;" href="#">' . __('Re-attach') . '</a>';
+					}
+				} else {
+					echo '<em>' . __('(Unattached)') . '</em>';
+					if (current_user_can('edit_post', $post_id)) {
+						$url = admin_url('upload.php?attach=' . $post_id);
+						echo '<br><a class="hide-if-no-js" onclick="findPosts.open(\'media[]\', \'' . esc_attr($post_id) . '\');return false;" href="' . esc_url($url) . '">' . __('Attach') . '</a>';
+					}
+				}
+				break;
             case 'dimensions':
                 $meta = wp_get_attachment_metadata($post_id);
                 echo isset($meta['width']) ? "{$meta['width']}×{$meta['height']}" : '—';
