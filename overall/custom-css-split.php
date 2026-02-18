@@ -191,12 +191,6 @@ add_action("wp_footer", function () {
     }
     
     /* Exclude from Page List Block (hide specific Navigation Items) */
-    .wp-block-page-list.english > li:nth-child(1) > ul > li:nth-child(n+2):nth-child(-n+4),
-    .wp-block-page-list.english > li:not(:nth-child(1)):not(:nth-child(6)),
-    .wp-block-page-list.english > li:nth-child(6) > ul > li:nth-child(1),
-    .wp-block-page-list.english > li:nth-child(6) > ul > li:nth-child(1) > ul > li:nth-child(-n+2),
-    .wp-block-page-list.deutsch > li:nth-child(1),
-    .wp-block-page-list.deutsch > li:nth-child(n+3):nth-child(-n+7),
     .wp-block-page-list.site-overview > li:nth-child(2),
     .wp-block-page-list.site-overview > li:nth-child(3),
     .wp-block-page-list.site-overview > li:nth-child(4),
