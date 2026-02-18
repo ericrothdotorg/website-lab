@@ -200,9 +200,6 @@ add_action('wp_footer', function () {
     /* Code & Columns */
     body.dark-mode code {background: none;}
     body.dark-mode .text-column-front {background: #1a1a1a !important;}
-
-	/* Intro Pitches */
-	body.dark-mode .intro-pitches {background-color: #1a1a1a !important;}
   </style>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
