@@ -1,5 +1,8 @@
 <?php
-// ✅ Register Custom TAXONOMY for Pages
+// =======================================
+// REGISTER TAXONOMY: PAGES
+// =======================================
+
 function page_register_taxonomy() {
     $rewrite = array(
         'slug'         => 'things',
@@ -44,7 +47,10 @@ function page_register_taxonomy() {
 }
 add_action( 'init', 'page_register_taxonomy', 0 );
 
-// ✅ Register Custom TAXONOMY for My Interests
+// =======================================
+// REGISTER TAXONOMY: MY INTERESTS
+// =======================================
+
 function mi_register_topics_taxonomy() {
     $rewrite = array(
         'slug'         => 'topics',
@@ -123,7 +129,10 @@ function mi_register_tags_taxonomy() {
 }
 add_action( 'init', 'mi_register_tags_taxonomy', 0 );
 
-// ✅ Register Custom POST TYPE for My Interests
+// =======================================
+// REGISTER CPT: MY INTERESTS
+// =======================================
+
 function mi_register_post_type() {
     $args = array(
         'label'  => esc_html__( 'My Interests', 'textdomain' ),
@@ -173,7 +182,10 @@ function mi_register_post_type() {
 }
 add_action( 'init', 'mi_register_post_type' );
 
-// ✅ Register Custom TAXONOMY for My Traits
+// =======================================
+// REGISTER TAXONOMY: MY TRAITS
+// =======================================
+
 function mt_register_taxonomy() {
     $rewrite = array(
         'slug'         => 'types',
@@ -218,7 +230,10 @@ function mt_register_taxonomy() {
 }
 add_action( 'init', 'mt_register_taxonomy', 0 );
 
-// ✅ Register Custom POST TYPE for My Traits
+// =======================================
+// REGISTER CPT: MY TRAITS
+// =======================================
+
 function mt_register_post_type() {
     $args = array(
         'label'  => esc_html__( 'My Traits', 'textdomain' ),
