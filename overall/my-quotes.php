@@ -242,27 +242,38 @@ function q_get_all_quotes( $category = '' ) {
 function q_output_styles() {
 	if ( ! q_should_load_assets() ) return;
     ?>
-    <style>
+	<style>
+		/* Slick slider: Hidden until initialized to prevent Flash */
 		.slideshow-quotes {visibility: hidden;}
 		.slideshow-quotes.slick-initialized {visibility: visible;}
+		/* Slide Layout: Image left (33%), Content right (66%) */
 		.my-quote-slide-inner {display: flex; flex-direction: row; align-items: stretch; gap: 1.5em;}
 		.my-quote-slide-dps {flex: 0 0 33.33%; max-width: 33.33%;}
 		.my-quote-slide-dps .display-posts-listing {margin: 0;}
 		.my-quote-slide-dps .display-posts-listing img {display: block; width: 100%; height: auto;}
+		/* Content Card Styling */
 		.my-quote-slide-content {flex: 0 0 calc(66.66% - 1.5em); max-width: calc(66.66% - 1.5em); padding: 1.5em; box-sizing: border-box; background: #F2F5F7; border-radius: 25px; display: flex; flex-direction: column; justify-content: center;}
+		/* [quotes_slider]: Typography and List Offset inside Card */
 		.my-quote-slide-content .wp-block-quote {margin: 0 auto !important;}
 		.my-quote-slide-content .wp-block-quote p,
 		.my-quote-slide-content .wp-block-quote ul,
 		.my-quote-slide-content .wp-block-quote li {font-size: clamp(1rem, 1.25vw + 0.5rem, 1.25rem);}
 		.my-quote-slide-content .wp-block-quote ul,
 		.my-quote-slide-content .wp-block-quote li {margin-left: -15px;}
+		/* [quote_text]: List Offset to match that of [quotes_slider] */
+		.my-quote-text-content .wp-block-quote p,
+		.my-quote-text-content .wp-block-quote ul,
+		.my-quote-text-content .wp-block-quote li {font-size: 1rem;}
+		.my-quote-text-content .wp-block-quote ul,
+		.my-quote-text-content .wp-block-quote li {margin-left: -15px;}
+		/* Mobile: Stack Image above Content */
 		@media (max-width: 768px) {
 			.my-quote-slide-inner {flex-direction: column; gap: 1.5em;}
 			.my-quote-slide-dps,
 			.my-quote-slide-content {flex: 0 0 100%; max-width: 100%;}
 			.my-quote-slide-content {padding: 1.5em; border-radius: 25px;}
 		}
-    </style>
+	</style>
     <?php
 }
 add_action( 'wp_head', 'q_output_styles' );
@@ -316,7 +327,7 @@ function q_shortcode_quote_text( $atts ) {
     $quote     = q_get_quote_for( $lookup_id, $atts['category'] );
     if ( ! $quote ) return '';
     $text = q_render_content( $quote );
-    return $text ?: '';
+	return '<div class="my-quote-text-content">' . $text . '</div>';
 }
 add_shortcode( 'quote_text', 'q_shortcode_quote_text' );
 
