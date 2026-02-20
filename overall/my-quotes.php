@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 function q_register_taxonomy() {
 
-    register_taxonomy( 'quote_category', array( 'quotes' ), array(
+    register_taxonomy( 'quote_category', array( 'my-quotes' ), array(
         'labels' => array(
             'name'                       => esc_html_x( 'Quote Categories', 'taxonomy general name', 'textdomain' ),
             'singular_name'              => esc_html_x( 'Quote Category', 'taxonomy singular name', 'textdomain' ),
@@ -53,7 +53,7 @@ add_action( 'init', 'q_register_taxonomy', 0 );
 
 function q_register_post_type() {
 
-    register_post_type( 'quotes', array(
+    register_post_type( 'my-quotes', array(
         'labels' => array(
 			'name'					=> esc_html__( 'Quotes', 'textdomain' ),
             'menu_name'				=> esc_html__( 'My Quotes', 'textdomain' ),
@@ -82,7 +82,7 @@ function q_register_post_type() {
         'show_in_menu'			=> true,
         'map_meta_cap'			=> true,
         'menu_icon'				=> 'dashicons-format-quote',
-        'supports'	=> array( 'title', 'editor', 'thumbnail', 'custom-fields', 'revisions' ),
+        'supports'	=> array( 'title', 'editor', 'thumbnail', 'custom-fields', 'revisions', 'post-formats' ),
         'taxonomies'	=> array( 'quote_category' ),
         'rewrite'	=> array(
             'slug'			=> 'my-quotes',
@@ -103,7 +103,7 @@ function q_add_metabox() {
         'q_related_content',
         esc_html__( 'Linked Content', 'textdomain' ),
         'q_metabox_callback',
-        'quotes',
+        'my-quotes',
         'side',
         'default'
     );
@@ -152,7 +152,9 @@ function q_save_related_content( $post_id ) {
         delete_post_meta( $post_id, 'related_content' );
     }
 }
-add_action( 'save_post_quotes', 'q_save_related_content' );
+add_action( 'save_post', function( $post_id ) {
+    if ( get_post_type( $post_id ) === 'my-quotes' ) q_save_related_content( $post_id );
+});
 
 /* =======================================
    HELPERS
@@ -191,12 +193,12 @@ function q_dps_card( $post_id ) {
 function q_get_quote_for( $content_id, $category = '' ) {
     $content_id = (int) $content_id;
     if ( ! $content_id ) return null;
-    if ( get_post_type( $content_id ) === 'quotes' ) {
+    if ( get_post_type( $content_id ) === 'my-quotes' ) {
         $post = get_post( $content_id );
         return ( $post && $post->post_status === 'publish' ) ? $post : null;
     }
     $args = array(
-        'post_type'      => 'quotes',
+        'post_type'      => 'my-quotes',
         'post_status'    => 'publish',
         'posts_per_page' => 1,
         'orderby'        => 'date',
@@ -219,7 +221,7 @@ function q_get_quote_for( $content_id, $category = '' ) {
 // Used by the [quotes_slider] Shortcode. No pagination — fine unless Quote Count grows large
 function q_get_all_quotes( $category = '' ) {
     $args = array(
-        'post_type'      => 'quotes',
+        'post_type'      => 'my-quotes',
         'post_status'    => 'publish',
         'posts_per_page' => -1,
         'orderby'        => 'date',
@@ -379,12 +381,12 @@ function q_admin_columns( $columns ) {
         'date'       => $columns['date'],
     );
 }
-add_filter( 'manage_quotes_posts_columns', 'q_admin_columns' );
+add_filter( 'manage_my-quotes_posts_columns', 'q_admin_columns' );
 
 // This Thumbnail Column is only applied on the Quotes List Screen
 function q_admin_column_styles() {
     $screen = get_current_screen();
-    if ( ! $screen || $screen->post_type !== 'quotes' ) return;
+    if ( ! $screen || $screen->post_type !== 'my-quotes' ) return;
     echo '<style>
 		.column-cb			{ width: 3%; }
 		.column-q_id		{ width: 5%; }
@@ -427,4 +429,4 @@ function q_admin_column_content( $column, $post_id ) {
             break;
     }
 }
-add_action( 'manage_quotes_posts_custom_column', 'q_admin_column_content', 10, 2 );
+add_action( 'manage_my-quotes_posts_custom_column', 'q_admin_column_content', 10, 2 );
