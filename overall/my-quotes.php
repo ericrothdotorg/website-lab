@@ -153,11 +153,23 @@ add_action( 'save_post_quotes', 'q_save_related_content' );
    HELPERS
    ======================================= */
 
+// Returns true only on Singular Pages / Posts that actually contain a Quotes Shortcode
+// Guards both q_output_styles() and q_output_scripts() — Update here if add more Shortcodes
+function q_should_load_assets() {
+    $post = get_post();
+    if ( ! $post ) return false;
+    if ( ! is_singular() ) return false;
+    return has_shortcode( $post->post_content, 'quotes_slider' )
+        || has_shortcode( $post->post_content, 'quote_text' );
+}
+
+// Renders a Quote's Block Content as safe HTML. Handles Gutenberg Blocks via do_blocks()
 function q_render_content( $post_obj ) {
     if ( empty( $post_obj->post_content ) ) return '';
     return wp_kses_post( do_blocks( $post_obj->post_content ) );
 }
 
+// Builds a Display Posts Card for a given post ID. Auto-detects Post Type
 function q_dps_card( $post_id ) {
     $post_type = get_post_type( (int) $post_id );
     if ( ! $post_type ) return '';
@@ -168,10 +180,12 @@ function q_dps_card( $post_id ) {
     ) );
 }
 
+// Finds the most recent published Quote linked to a given Content ID
+// If the ID itself is a Quote, returns it directly (Edge Case: Shortcode on the Quote Post itself)
+// Optionally filtered by Category Slug
 function q_get_quote_for( $content_id, $category = '' ) {
     $content_id = (int) $content_id;
     if ( ! $content_id ) return null;
-    // Edge Case: Shortcode is placed directly on the Quote Post itself
     if ( get_post_type( $content_id ) === 'quotes' ) {
         $post = get_post( $content_id );
         return ( $post && $post->post_status === 'publish' ) ? $post : null;
@@ -196,6 +210,8 @@ function q_get_quote_for( $content_id, $category = '' ) {
     return ! empty( $results ) ? $results[0] : null;
 }
 
+// Returns all published Quotes, newest first. Optionally filtered by Category Slug
+// Used by the [quotes_slider] Shortcode. No pagination — fine unless Quote Count grows large
 function q_get_all_quotes( $category = '' ) {
     $args = array(
         'post_type'      => 'quotes',
@@ -219,8 +235,7 @@ function q_get_all_quotes( $category = '' ) {
    ======================================= */
 
 function q_output_styles() {
-    // Only output on Singular Pages / Posts and Pages using the Shortcodes
-    if ( ! is_singular() && ! has_shortcode( get_post()->post_content ?? '', 'quotes_slider' ) ) return;
+	if ( ! q_should_load_assets() ) return;
     ?>
     <style>
 		.slideshow-quotes {visibility: hidden;}
@@ -248,7 +263,7 @@ function q_output_styles() {
 add_action( 'wp_head', 'q_output_styles' );
 
 function q_output_scripts() {
-    if ( ! is_singular() && ! has_shortcode( get_post()->post_content ?? '', 'quotes_slider' ) ) return;
+	if ( ! q_should_load_assets() ) return;
     ?>
     <script>
     (function() {
@@ -262,6 +277,8 @@ function q_output_scripts() {
                 swipeToSlide: true,
                 accessibility: true,
                 focusOnSelect: false,
+				pauseOnHover: true,
+				pauseOnFocus: true,
                 arrows: false,
                 dots: true,
                 fade: true,
@@ -353,15 +370,15 @@ function q_admin_column_styles() {
     $screen = get_current_screen();
     if ( ! $screen || $screen->post_type !== 'quotes' ) return;
     echo '<style>
-        .column-cb			{ width: 3%; }
+		.column-cb			{ width: 3%; }
 		.column-q_id		{ width: 5%; }
-        .column-q_thumb		{ width: 8%; }
-        .column-q_thumb img	{ width: 65px; height: auto; border-radius: 4px; }
-        .column-title		{ width: 12%; }
-        .column-q_related	{ width: 10%; }
-        .column-q_category	{ width: 10%; }
-        .column-q_preview	{ width: 25%; }
-        .column-date		{ width: 10%; }
+		.column-q_thumb		{ width: 8%; }
+		.column-q_thumb img	{ width: 65px; height: auto; border-radius: 4px; }
+		.column-title		{ width: 12%; }
+		.column-q_related	{ width: 10%; }
+		.column-q_category	{ width: 10%; }
+		.column-q_preview	{ width: 25%; }
+		.column-date		{ width: 10%; }
     </style>';
 }
 add_action( 'admin_head', 'q_admin_column_styles' );
@@ -389,7 +406,8 @@ function q_admin_column_content( $column, $post_id ) {
             break;
         case 'q_preview':
             $content = strip_tags( get_post_field( 'post_content', $post_id ) );
-            echo esc_html( mb_strlen( $content ) > 80 ? mb_substr( $content, 0, 80 ) . '&hellip;' : $content );
+            echo esc_html( mb_strlen( $content ) > 80 ? mb_substr( $content, 0, 80 ) : $content );
+			if ( mb_strlen( $content ) > 80 ) echo '&hellip;';
             break;
     }
 }
