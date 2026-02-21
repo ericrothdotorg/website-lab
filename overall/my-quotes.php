@@ -176,8 +176,31 @@ function q_render_content( $post_obj ) {
     return wp_kses_post( do_blocks( $post_obj->post_content ) );
 }
 
-// Builds a Display Posts Card for a given post ID. Auto-detects Post Type
-function q_dps_card( $post_id ) {
+// Returns all published Quotes, newest first. Optionally filtered by Category Slug
+// Used by the [quotes_slider] Shortcode. No pagination — fine unless Quote Count grows large
+function q_get_quotes_for_slider( $category = '' ) {
+    $args = array(
+        'post_type'      => 'my-quotes',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    );
+    if ( $category ) {
+        // Split comma-separated slugs into an array
+        $terms = array_filter( array_map( 'sanitize_title', explode( ',', $category ) ) );
+        $args['tax_query'] = array( array(
+            'taxonomy' => 'quote_category',
+            'field'    => 'slug',
+            'terms'    => $terms,
+            'operator' => 'IN',
+        ) );
+    }
+    return get_posts( $args );
+}
+
+// Builds a DPS for a given post ID. Auto-detects Post Type
+function q_dps_slider_card( $post_id ) {
     $post_type = get_post_type( (int) $post_id );
     if ( ! $post_type ) return '';
     return do_shortcode( sprintf(
@@ -189,8 +212,7 @@ function q_dps_card( $post_id ) {
 
 // Finds the most recent published Quote linked to a given Content ID
 // If the ID itself is a Quote, returns it directly (Edge Case: Shortcode on the Quote Post itself)
-// Optionally filtered by Category Slug
-function q_get_quote_for( $content_id, $category = '' ) {
+function q_get_quote_for( $content_id ) {
     $content_id = (int) $content_id;
     if ( ! $content_id ) return null;
     if ( get_post_type( $content_id ) === 'my-quotes' ) {
@@ -206,35 +228,8 @@ function q_get_quote_for( $content_id, $category = '' ) {
         'meta_key'       => 'related_content',
         'meta_value'     => $content_id,
     );
-    if ( $category ) {
-        $args['tax_query'] = array( array(
-            'taxonomy' => 'quote_category',
-            'field'    => 'slug',
-            'terms'    => sanitize_text_field( $category ),
-        ) );
-    }
     $results = get_posts( $args );
     return ! empty( $results ) ? $results[0] : null;
-}
-
-// Returns all published Quotes, newest first. Optionally filtered by Category Slug
-// Used by the [quotes_slider] Shortcode. No pagination — fine unless Quote Count grows large
-function q_get_all_quotes( $category = '' ) {
-    $args = array(
-        'post_type'      => 'my-quotes',
-        'post_status'    => 'publish',
-        'posts_per_page' => -1,
-        'orderby'        => 'date',
-        'order'          => 'DESC',
-    );
-    if ( $category ) {
-        $args['tax_query'] = array( array(
-            'taxonomy' => 'quote_category',
-            'field'    => 'slug',
-            'terms'    => sanitize_text_field( $category ),
-        ) );
-    }
-    return get_posts( $args );
 }
 
 /* =======================================
@@ -322,14 +317,20 @@ add_action( 'wp_footer', 'q_output_scripts', 100 );
 
 function q_shortcode_quote_text( $atts ) {
     $atts = shortcode_atts( array(
-        'id'       => 0,
-        'category' => '',
+        'id' => 0,
     ), $atts, 'quote_text' );
-    $lookup_id = (int) $atts['id'] ?: get_the_ID();
-    $quote     = q_get_quote_for( $lookup_id, $atts['category'] );
+    $raw_ids = array_filter( array_map( 'intval', explode( ',', $atts['id'] ) ) );
+    if ( empty( $raw_ids ) ) {
+        $raw_ids = array( get_the_ID() );
+    }
+    $quote = null;
+    foreach ( $raw_ids as $lookup_id ) {
+        $quote = q_get_quote_for( $lookup_id );
+        if ( $quote ) break;
+    }
     if ( ! $quote ) return '';
     $text = q_render_content( $quote );
-	return '<div class="my-quote-text-content">' . $text . '</div>';
+    return '<div class="my-quote-text-content">' . $text . '</div>';
 }
 add_shortcode( 'quote_text', 'q_shortcode_quote_text' );
 
@@ -339,14 +340,14 @@ add_shortcode( 'quote_text', 'q_shortcode_quote_text' );
 
 function q_shortcode_quotes_slider( $atts ) {
     $atts   = shortcode_atts( array( 'category' => '' ), $atts, 'quotes_slider' );
-    $quotes = q_get_all_quotes( $atts['category'] );
+    $quotes = q_get_quotes_for_slider( $atts['category'] );
     if ( empty( $quotes ) ) return '';
     ob_start(); ?>
     <div class="slideshow-quotes">
         <?php foreach ( $quotes as $quote_post ) :
             $text       = q_render_content( $quote_post );
             $related_id = (int) get_post_meta( $quote_post->ID, 'related_content', true );
-            $dps_card   = $related_id ? q_dps_card( $related_id ) : '';
+            $dps_card   = $related_id ? q_dps_slider_card( $related_id ) : '';
             if ( ! $text && ! $dps_card ) continue;
         ?>
             <div class="my-quote-slide">
