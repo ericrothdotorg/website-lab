@@ -1,5 +1,5 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) exit;
+defined('ABSPATH') || exit;
 
 // =======================================
 // REGISTER TAXONOMY: PAGES
@@ -97,6 +97,8 @@ function mi_register_topics_taxonomy() {
 }
 add_action( 'init', 'mi_register_topics_taxonomy', 0 );
 
+// Add Tags
+
 function mi_register_tags_taxonomy() {
     $labels = array(
         'name'                       => esc_html_x( 'Interest Tags', 'textdomain' ),
@@ -147,7 +149,7 @@ function mi_register_post_type() {
             'new_item'           => esc_html__( 'New Interest', 'textdomain' ),
             'edit_item'          => esc_html__( 'Edit Interest', 'textdomain' ),
             'view_item'          => esc_html__( 'View Interest', 'textdomain' ),
-            'update_item'        => esc_html__( 'View Interest', 'textdomain' ),
+            'update_item'        => esc_html__( 'Update Interest', 'textdomain' ),
             'all_items'          => esc_html__( 'All Interests', 'textdomain' ),
             'search_items'       => esc_html__( 'Search Interests', 'textdomain' ),
             'parent_item_colon'  => esc_html__( 'Parent Interest', 'textdomain' ),
@@ -166,7 +168,6 @@ function mi_register_post_type() {
         'can_export'          => true,
         'show_in_menu'        => true,
         'map_meta_cap'        => true,
-        'menu_position'       => 20,
         'menu_icon'           => 'dashicons-portfolio',
         'supports' => array(
             'title', 'editor', 'author', 'excerpt', 'thumbnail',
@@ -183,6 +184,106 @@ function mi_register_post_type() {
     register_post_type( 'my-interests', $args );
 }
 add_action( 'init', 'mi_register_post_type' );
+
+// =======================================
+// REGISTER TAXONOMY: MY QUOTES
+// =======================================
+
+function mq_register_taxonomy() {
+    $rewrite = array(
+        'slug'         => 'groups',
+        'with_front'   => true,
+        'hierarchical' => true,
+    );
+    $labels = array(
+        'name'                       => esc_html_x( 'Groups', 'taxonomy general name', 'textdomain' ),
+        'singular_name'              => esc_html_x( 'Group', 'taxonomy singular name', 'textdomain' ),
+        'menu_name'                  => esc_html__( 'Groups', 'textdomain' ),
+        'all_items'                  => esc_html__( 'All Groups', 'textdomain' ),
+        'parent_item'                => esc_html__( 'Parent Group', 'textdomain' ),
+        'parent_item_colon'          => esc_html__( 'Parent Group:', 'textdomain' ),
+        'new_item_name'              => esc_html__( 'New Group Name', 'textdomain' ),
+        'add_new_item'               => esc_html__( 'Add New Group', 'textdomain' ),
+        'edit_item'                  => esc_html__( 'Edit Group', 'textdomain' ),
+        'update_item'                => esc_html__( 'Update Group', 'textdomain' ),
+        'view_item'                  => esc_html__( 'View Group', 'textdomain' ),
+        'separate_items_with_commas' => esc_html__( 'Separate Groups with Commas', 'textdomain' ),
+        'add_or_remove_items'        => esc_html__( 'Add or remove Groups', 'textdomain' ),
+        'choose_from_most_used'      => esc_html__( 'Choose from the most used', 'textdomain' ),
+        'popular_items'              => esc_html__( 'Popular Groups', 'textdomain' ),
+        'search_items'               => esc_html__( 'Search Groups', 'textdomain' ),
+        'not_found'                  => esc_html__( 'No Groups found', 'textdomain' ),
+        'no_terms'                   => esc_html__( 'No Groups', 'textdomain' ),
+        'items_list'                 => esc_html__( 'Groups List', 'textdomain' ),
+        'items_list_navigation'      => esc_html__( 'Groups List Navigation', 'textdomain' ),
+    );
+    $args = array(
+        'labels'            => $labels,
+        'hierarchical'      => true,
+        'public'            => true,
+        'show_ui'           => true,
+        'show_in_rest'      => true,
+        'query_var'         => true,
+        'rewrite'           => $rewrite,
+        'show_admin_column' => true,
+        'show_in_nav_menus' => true,
+        'show_tagcloud'     => true,
+    );
+    register_taxonomy( 'groups', array( 'my-quotes' ), $args );
+}
+add_action( 'init', 'mq_register_taxonomy', 0 );
+
+// =======================================
+// REGISTER CPT: MY QUOTES
+// =======================================
+
+function mq_register_post_type() {
+    $args = array(
+        'label'  => esc_html__( 'My Quotes', 'textdomain' ),
+        'labels' => array(
+            'name'               => esc_html__( 'Quotes', 'textdomain' ),
+            'menu_name'          => esc_html__( 'My Quotes', 'textdomain' ),
+            'singular_name'      => esc_html__( 'Quote', 'textdomain' ),
+            'add_new'            => esc_html__( 'Add Quote', 'textdomain' ),
+            'add_new_item'       => esc_html__( 'Add New Quote', 'textdomain' ),
+            'new_item'           => esc_html__( 'New Quote', 'textdomain' ),
+            'edit_item'          => esc_html__( 'Edit Quote', 'textdomain' ),
+            'view_item'          => esc_html__( 'View Quote', 'textdomain' ),
+            'update_item'        => esc_html__( 'Update Quote', 'textdomain' ),
+            'all_items'          => esc_html__( 'All My Quotes', 'textdomain' ),
+            'search_items'       => esc_html__( 'Search Quotes', 'textdomain' ),
+            'parent_item_colon'  => esc_html__( 'Parent Quote', 'textdomain' ),
+            'not_found'          => esc_html__( 'No Quotes found', 'textdomain' ),
+            'not_found_in_trash' => esc_html__( 'No Quotes found in Trash', 'textdomain' ),
+        ),
+        'public'              => true,
+        'show_ui'             => true,
+        'show_in_rest'        => true,
+        'query_var'           => true,
+        'publicly_queryable'  => true,
+        'exclude_from_search' => true,
+        'has_archive'         => true,
+        'capability_type'     => 'post',
+        'hierarchical'        => true,
+        'can_export'          => true,
+        'show_in_menu'        => true,
+        'map_meta_cap'        => true,
+        'menu_icon'           => 'dashicons-format-quote',
+        'supports' => array(
+            'title', 'editor', 'thumbnail',
+            'custom-fields', 'revisions', 'post-formats',
+        ),
+        'taxonomies' => array( 'groups' ),
+        'rewrite'    => array(
+            'slug'       => 'my-quotes',
+            'with_front' => true,
+            'feeds'      => false,
+            'pages'      => true,
+        ),
+    );
+    register_post_type( 'my-quotes', $args );
+}
+add_action( 'init', 'mq_register_post_type' );
 
 // =======================================
 // REGISTER TAXONOMY: MY TRAITS
@@ -248,7 +349,7 @@ function mt_register_post_type() {
             'new_item'           => esc_html__( 'New Trait', 'textdomain' ),
             'edit_item'          => esc_html__( 'Edit Trait', 'textdomain' ),
             'view_item'          => esc_html__( 'View Trait', 'textdomain' ),
-            'update_item'        => esc_html__( 'View Trait', 'textdomain' ),
+            'update_item'        => esc_html__( 'Update Trait', 'textdomain' ),
             'all_items'          => esc_html__( 'All My Traits', 'textdomain' ),
             'search_items'       => esc_html__( 'Search My Traits', 'textdomain' ),
             'parent_item_colon'  => esc_html__( 'Parent Trait', 'textdomain' ),
@@ -267,7 +368,6 @@ function mt_register_post_type() {
         'can_export'          => true,
         'show_in_menu'        => true,
         'map_meta_cap'        => true,
-        'menu_position'       => 20,
         'menu_icon'           => 'dashicons-star-filled',
         'supports' => array(
             'title', 'editor', 'author', 'excerpt', 'thumbnail',
