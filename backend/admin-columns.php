@@ -56,9 +56,12 @@ function initialize_custom_admin_columns() {
             case 'featured_image':
                 echo get_the_post_thumbnail($post_id, [65, 65], ['style' => 'border-radius:4px;']);
                 break;
-            case 'custom_excerpt':
-                echo wp_trim_words(get_the_excerpt($post_id), 35);
-                break;
+			case 'custom_excerpt':
+				$content = get_post_field('post_content', $post_id);
+				$content = wp_strip_all_tags(strip_shortcodes($content));
+				$content = preg_replace('/\s+/', ' ', $content); // Collapse Whitespace
+				echo wp_trim_words(trim($content), 35);
+				break;
             case 'word_count':
                 if (!isset($word_counts[$post_id])) {
                     $word_counts[$post_id] = str_word_count(strip_tags(get_post_field('post_content', $post_id)));
