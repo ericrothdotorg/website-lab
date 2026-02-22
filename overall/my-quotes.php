@@ -1,9 +1,9 @@
 <?php
 defined('ABSPATH') || exit;
 
-/* =======================================
-   META BOX: LINKED CONTENT
-   ======================================= */
+// =======================================
+// META BOX: LINKED CONTENT
+// =======================================
 
 function q_add_metabox() {
     add_meta_box(
@@ -63,9 +63,9 @@ add_action( 'save_post', function( $post_id ) {
     if ( get_post_type( $post_id ) === 'my-quotes' ) q_save_related_content( $post_id );
 });
 
-/* =======================================
-   HELPERS
-   ======================================= */
+// =======================================
+// HELPERS
+// =======================================
 
 // Returns true only on Singular Pages / Posts that actually contain a Quotes Shortcode
 // Guards both q_output_styles() and q_output_scripts() — Update here if add more Shortcodes
@@ -172,9 +172,9 @@ function q_get_quote_for( $content_id ) {
     return ! empty( $results ) ? $results[0] : null;
 }
 
-/* =======================================
-   ADMIN COLUMN: LINKED CONTENT
-   ======================================= */
+// =======================================
+// ADMIN COLUMN: LINKED CONTENT
+// =======================================
 
 // Column definition and rendering kept here as both are tightly coupled to the related_content meta
 add_filter( 'manage_my-quotes_posts_columns', function( $columns ) {
@@ -197,9 +197,9 @@ function q_admin_column_linked_content( $column, $post_id ) {
 }
 add_action( 'manage_my-quotes_posts_custom_column', 'q_admin_column_linked_content', 10, 2 );
 
-/* =======================================
-   FRONTEND STYLES
-   ======================================= */
+// =======================================
+// FRONTEND STYLES
+// =======================================
 
 function q_output_styles() {
 	if ( ! q_should_load_assets() ) return;
@@ -276,9 +276,9 @@ function q_output_scripts() {
 }
 add_action( 'wp_footer', 'q_output_scripts', 100 );
 
-/* =======================================
-   SHORTCODE: [quote_text]
-   ======================================= */
+// =======================================
+// SHORTCODE: [quote_text]
+// =======================================
 
 function q_shortcode_quote_text( $atts ) {
     $atts = shortcode_atts( array(
@@ -299,9 +299,9 @@ function q_shortcode_quote_text( $atts ) {
 }
 add_shortcode( 'quote_text', 'q_shortcode_quote_text' );
 
-/* =======================================
-   SHORTCODE: [quotes_slider]
-   ======================================= */
+// =======================================
+// SHORTCODE: [quotes_slider]
+// =======================================
 
 function q_shortcode_quotes_slider( $atts ) {
     $atts   = shortcode_atts( array( 'category' => '' ), $atts, 'quotes_slider' );
