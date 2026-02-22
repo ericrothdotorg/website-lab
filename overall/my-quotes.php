@@ -1,98 +1,5 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) exit;
-
-/* =======================================
-   REGISTER TAXONOMY: QUOTE CATEGORY
-   ======================================= */
-
-function q_register_taxonomy() {
-
-    register_taxonomy( 'quote_category', array( 'my-quotes' ), array(
-        'labels' => array(
-            'name'                       => esc_html_x( 'Quote Categories', 'taxonomy general name', 'textdomain' ),
-            'singular_name'              => esc_html_x( 'Quote Category', 'taxonomy singular name', 'textdomain' ),
-            'menu_name'                  => esc_html__( 'Quote Categories', 'textdomain' ),
-            'all_items'                  => esc_html__( 'All Categories', 'textdomain' ),
-            'parent_item'                => esc_html__( 'Parent Category', 'textdomain' ),
-            'parent_item_colon'          => esc_html__( 'Parent Category:', 'textdomain' ),
-            'new_item_name'              => esc_html__( 'New Category Name', 'textdomain' ),
-            'add_new_item'               => esc_html__( 'Add New Category', 'textdomain' ),
-            'edit_item'                  => esc_html__( 'Edit Category', 'textdomain' ),
-            'update_item'                => esc_html__( 'Update Category', 'textdomain' ),
-            'view_item'                  => esc_html__( 'View Category', 'textdomain' ),
-            'separate_items_with_commas' => esc_html__( 'Separate Categories with Commas', 'textdomain' ),
-            'add_or_remove_items'        => esc_html__( 'Add or remove Categories', 'textdomain' ),
-            'choose_from_most_used'      => esc_html__( 'Choose from the most used', 'textdomain' ),
-            'popular_items'              => esc_html__( 'Popular Categories', 'textdomain' ),
-            'search_items'               => esc_html__( 'Search Categories', 'textdomain' ),
-            'not_found'                  => esc_html__( 'No Categories found', 'textdomain' ),
-            'no_terms'                   => esc_html__( 'No Categories', 'textdomain' ),
-            'items_list'                 => esc_html__( 'Categories List', 'textdomain' ),
-            'items_list_navigation'      => esc_html__( 'Categories List Navigation', 'textdomain' ),
-        ),
-        'hierarchical'      => true,
-        'public'            => true,
-        'show_ui'           => true,
-        'show_in_rest'      => true,
-        'query_var'         => true,
-        'show_admin_column' => true,
-        'show_in_nav_menus' => true,
-        'show_tagcloud'     => true,
-        'rewrite'           => array(
-            'slug'         => 'quote-category',
-            'with_front'   => true,
-            'hierarchical' => true,
-        ),
-    ) );
-}
-add_action( 'init', 'q_register_taxonomy', 0 );
-
-/* =======================================
-   REGISTER CPT: QUOTES
-   ======================================= */
-
-function q_register_post_type() {
-
-    register_post_type( 'my-quotes', array(
-        'labels' => array(
-			'name'					=> esc_html__( 'Quotes', 'textdomain' ),
-            'menu_name'				=> esc_html__( 'My Quotes', 'textdomain' ),
-            'singular_name'			=> esc_html__( 'Quote', 'textdomain' ),
-            'add_new'				=> esc_html__( 'Add Quote', 'textdomain' ),
-            'add_new_item'			=> esc_html__( 'Add New Quote', 'textdomain' ),
-            'new_item'				=> esc_html__( 'New Quote', 'textdomain' ),
-            'edit_item'				=> esc_html__( 'Edit Quote', 'textdomain' ),
-            'view_item'				=> esc_html__( 'View Quote', 'textdomain' ),
-            'update_item'			=> esc_html__( 'Update Quote', 'textdomain' ),
-            'all_items'				=> esc_html__( 'All My Quotes', 'textdomain' ),
-            'search_items'			=> esc_html__( 'Search Quotes', 'textdomain' ),
-            'not_found'				=> esc_html__( 'No Quotes found', 'textdomain' ),
-            'not_found_in_trash'	=> esc_html__( 'No Quotes found in Trash', 'textdomain' ),
-        ),
-        'public'				=> true,
-        'show_ui'				=> true,
-        'show_in_rest'			=> true,
-        'query_var'				=> true,
-        'publicly_queryable'	=> true,
-        'exclude_from_search'	=> true,
-        'has_archive'			=> true,
-        'capability_type'		=> 'page',
-		'hierarchical'			=> true,
-		'can_export'			=> true,
-        'show_in_menu'			=> true,
-        'map_meta_cap'			=> true,
-        'menu_icon'				=> 'dashicons-format-quote',
-        'supports'	=> array( 'title', 'editor', 'thumbnail', 'custom-fields', 'revisions', 'page-attributes' ),
-        'taxonomies'	=> array( 'quote_category' ),
-        'rewrite'	=> array(
-            'slug'			=> 'my-quotes',
-            'with_front'	=> true,
-            'feeds'			=> false,
-            'pages'			=> true,
-        ),
-    ) );
-}
-add_action( 'init', 'q_register_post_type' );
+defined('ABSPATH') || exit;
 
 /* =======================================
    META BOX: LINKED CONTENT
@@ -166,9 +73,42 @@ function q_should_load_assets() {
     $post = get_post();
     if ( ! $post ) return false;
     if ( ! is_singular() ) return false;
+    // Always load on Single Quote Pages (Slider is injected by quote_text Shortcode)
+    if ( is_singular( 'my-quotes' ) ) return true;
     return has_shortcode( $post->post_content, 'quotes_slider' )
         || has_shortcode( $post->post_content, 'quote_text' );
 }
+
+// Content to load on Single Quote Pages (Slider is injected by quote_text Shortcode)
+function q_append_slider_on_single_quote( $content ) {
+    if ( ! is_singular( 'my-quotes' ) || ! in_the_loop() || ! is_main_query() ) {
+        return $content;
+    }
+    // Prepend: Linked Content Title + Permalink before the Quote Text
+    $related_id = (int) get_post_meta( get_the_ID(), 'related_content', true );
+    $prefix     = '';
+    if ( $related_id ) {
+        $related_url   = get_permalink( $related_id );
+        $related_title = get_the_title( $related_id );
+        if ( $related_url && $related_title ) {
+            $prefix = '<h3><a href="' . esc_url( $related_url ) . '">' . esc_html( $related_title ) . '</a></h3>';
+        }
+    }
+	// Append: Load the Rest of the Content
+    $personal     = do_shortcode( '[quotes_slider category="personal"]' );
+    $professional = do_shortcode( '[quotes_slider category="professional"]' );
+    $output = '';
+    if ( $personal ) {
+        $output .= '<h3><a href="' . esc_url( home_url( '/personal/' ) ) . '">Personal</a></h3>';
+        $output .= $personal;
+    }
+    if ( $professional ) {
+        $output .= '<h3><a href="' . esc_url( home_url( '/professional/' ) ) . '">Professional</a></h3>';
+        $output .= $professional;
+    }
+    return $prefix . $content . $output;
+}
+add_filter( 'the_content', 'q_append_slider_on_single_quote' );
 
 // Renders a Quote's Block Content as safe HTML. Handles Gutenberg Blocks via do_blocks()
 function q_render_content( $post_obj ) {
@@ -190,7 +130,7 @@ function q_get_quotes_for_slider( $category = '' ) {
         // Split comma-separated slugs into an array
         $terms = array_filter( array_map( 'sanitize_title', explode( ',', $category ) ) );
         $args['tax_query'] = array( array(
-            'taxonomy' => 'quote_category',
+            'taxonomy' => 'groups',
             'field'    => 'slug',
             'terms'    => $terms,
             'operator' => 'IN',
@@ -231,6 +171,31 @@ function q_get_quote_for( $content_id ) {
     $results = get_posts( $args );
     return ! empty( $results ) ? $results[0] : null;
 }
+
+/* =======================================
+   ADMIN COLUMN: LINKED CONTENT
+   ======================================= */
+
+// Column definition and rendering kept here as both are tightly coupled to the related_content meta
+add_filter( 'manage_my-quotes_posts_columns', function( $columns ) {
+    $new = array();
+    foreach ( $columns as $key => $value ) {
+        $new[ $key ] = $value;
+        if ( $key === 'title' ) {
+            $new['q_related'] = __( 'Linked Content' );
+        }
+    }
+    return $new;
+}, 20 );
+
+function q_admin_column_linked_content( $column, $post_id ) {
+    if ( $column !== 'q_related' ) return;
+    $related = get_post_meta( $post_id, 'related_content', true );
+    echo $related
+        ? sprintf( '<a href="%s">%s</a>', esc_url( get_edit_post_link( $related ) ), esc_html( get_the_title( $related ) ) )
+        : '&mdash;';
+}
+add_action( 'manage_my-quotes_posts_custom_column', 'q_admin_column_linked_content', 10, 2 );
 
 /* =======================================
    FRONTEND STYLES
@@ -365,69 +330,3 @@ function q_shortcode_quotes_slider( $atts ) {
     <?php return ob_get_clean();
 }
 add_shortcode( 'quotes_slider', 'q_shortcode_quotes_slider' );
-
-/* =======================================
-   DASHBOARD ADMIN COLUMNS
-   ======================================= */
-
-function q_admin_columns( $columns ) {
-    return array(
-        'cb'         => $columns['cb'],
-        'q_id'       => 'ID',
-        'q_thumb'    => 'Image',
-        'title'      => $columns['title'],
-        'q_related'  => 'Linked Content',
-        'q_category' => 'Category',
-        'q_preview'  => 'Preview',
-        'date'       => $columns['date'],
-    );
-}
-add_filter( 'manage_my-quotes_posts_columns', 'q_admin_columns' );
-
-// This Thumbnail Column is only applied on the Quotes List Screen
-function q_admin_column_styles() {
-    $screen = get_current_screen();
-    if ( ! $screen || $screen->post_type !== 'my-quotes' ) return;
-    echo '<style>
-		.column-cb			{ width: 3%; }
-		.column-q_id		{ width: 5%; }
-		.column-q_thumb		{ width: 8%; }
-		.column-q_thumb img	{ width: 65px; height: auto; border-radius: 4px; }
-		.column-title		{ width: 12%; }
-		.column-q_related	{ width: 10%; }
-		.column-q_category	{ width: 10%; }
-		.column-q_preview	{ width: 25%; }
-		.column-date		{ width: 10%; }
-    </style>';
-}
-add_action( 'admin_head', 'q_admin_column_styles' );
-
-function q_admin_column_content( $column, $post_id ) {
-    switch ( $column ) {
-        case 'q_id':
-            echo (int) $post_id;
-            break;
-        case 'q_thumb':
-            $thumb_id = get_post_thumbnail_id( $post_id );
-            echo $thumb_id ? wp_get_attachment_image( $thumb_id, array( 65, 65 ) ) : '&mdash;';
-            break;
-        case 'q_related':
-            $related = get_post_meta( $post_id, 'related_content', true );
-            echo $related
-                ? sprintf( '<a href="%s">%s</a>', esc_url( get_edit_post_link( $related ) ), esc_html( get_the_title( $related ) ) )
-                : '&mdash;';
-            break;
-        case 'q_category':
-            $terms = get_the_terms( $post_id, 'quote_category' );
-            echo ( $terms && ! is_wp_error( $terms ) )
-                ? esc_html( implode( ', ', wp_list_pluck( $terms, 'name' ) ) )
-                : '&mdash;';
-            break;
-        case 'q_preview':
-            $content = strip_tags( get_post_field( 'post_content', $post_id ) );
-            echo esc_html( mb_strlen( $content ) > 80 ? mb_substr( $content, 0, 80 ) : $content );
-			if ( mb_strlen( $content ) > 80 ) echo '&hellip;';
-            break;
-    }
-}
-add_action( 'manage_my-quotes_posts_custom_column', 'q_admin_column_content', 10, 2 );
