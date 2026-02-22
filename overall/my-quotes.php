@@ -79,7 +79,7 @@ function q_should_load_assets() {
         || has_shortcode( $post->post_content, 'quote_text' );
 }
 
-// Content to load on Single Quote Pages (Slider is injected by quote_text Shortcode)
+// Prepends linked Content Title, appends Personal / Professional Sliders
 function q_append_slider_on_single_quote( $content ) {
     if ( ! is_singular( 'my-quotes' ) || ! in_the_loop() || ! is_main_query() ) {
         return $content;
@@ -106,7 +106,7 @@ function q_append_slider_on_single_quote( $content ) {
         $output .= '<h3><a href="' . esc_url( home_url( '/professional/' ) ) . '">Professional</a></h3>';
         $output .= $professional;
     }
-    return $prefix . $content . $output;
+    return $prefix . '<div class="my-quote-text-content">' . $content . '</div>' . $output;
 }
 add_filter( 'the_content', 'q_append_slider_on_single_quote' );
 
