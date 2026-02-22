@@ -127,7 +127,7 @@ function q_get_quotes_for_slider( $category = '' ) {
         'order'          => 'DESC',
     );
     if ( $category ) {
-        // Split comma-separated slugs into an array
+        // Split comma-separated Slugs into an Array
         $terms = array_filter( array_map( 'sanitize_title', explode( ',', $category ) ) );
         $args['tax_query'] = array( array(
             'taxonomy' => 'groups',
@@ -280,7 +280,7 @@ add_action( 'wp_footer', 'q_output_scripts', 100 );
 // SHORTCODE: [quote_text]
 // =======================================
 
-function q_shortcode_quote_text( $atts ) {
+function mq_shortcode_quote_text( $atts ) {
     $atts = shortcode_atts( array(
         'id' => 0,
     ), $atts, 'quote_text' );
@@ -297,13 +297,13 @@ function q_shortcode_quote_text( $atts ) {
     $text = q_render_content( $quote );
     return '<div class="my-quote-text-content">' . $text . '</div>';
 }
-add_shortcode( 'quote_text', 'q_shortcode_quote_text' );
+add_shortcode( 'quote_text', 'mq_shortcode_quote_text' );
 
 // =======================================
 // SHORTCODE: [quotes_slider]
 // =======================================
 
-function q_shortcode_quotes_slider( $atts ) {
+function mq_shortcode_quotes_slider( $atts ) {
     $atts   = shortcode_atts( array( 'category' => '' ), $atts, 'quotes_slider' );
     $quotes = q_get_quotes_for_slider( $atts['category'] );
     if ( empty( $quotes ) ) return '';
@@ -329,4 +329,4 @@ function q_shortcode_quotes_slider( $atts ) {
     </div>
     <?php return ob_get_clean();
 }
-add_shortcode( 'quotes_slider', 'q_shortcode_quotes_slider' );
+add_shortcode( 'quotes_slider', 'mq_shortcode_quotes_slider' );
