@@ -27,6 +27,8 @@ function initialize_custom_admin_columns() {
 			$columns['interest_tags'] = __('Tags');
         } elseif ($type === 'my-traits') {
             $columns['types'] = __('Types');
+        } elseif ($type === 'my-quotes') {
+            $columns['groups'] = __('Groups');
         }
 
         $columns['custom_excerpt'] = __('Excerpt');
@@ -40,6 +42,7 @@ function initialize_custom_admin_columns() {
     add_filter('manage_post_posts_columns', fn() => define_custom_columns_clean('post'));
     add_filter('manage_my-interests_posts_columns', fn() => define_custom_columns_clean('my-interests'));
     add_filter('manage_my-traits_posts_columns', fn() => define_custom_columns_clean('my-traits'));
+    add_filter('manage_my-quotes_posts_columns', fn() => define_custom_columns_clean('my-quotes'));
 
     // === RENDER CONTENT ===
 
@@ -71,6 +74,7 @@ function initialize_custom_admin_columns() {
             case 'things':
             case 'topics':
             case 'types':
+            case 'groups':
             case 'post_categories':
 			case 'post_tags':
 			case 'interest_tags':
@@ -78,6 +82,7 @@ function initialize_custom_admin_columns() {
                     'things' => 'things',
                     'topics' => 'topics',
                     'types' => 'types',
+                    'groups' => 'groups',
                     'post_categories' => 'category',
 					'post_tags' => 'post_tag',
 					'interest_tags' => 'interest_tag',
@@ -113,6 +118,7 @@ function initialize_custom_admin_columns() {
     add_action('manage_post_posts_custom_column', 'render_column_content', 10, 2);
     add_action('manage_my-interests_posts_custom_column', 'render_column_content', 10, 2);
     add_action('manage_my-traits_posts_custom_column', 'render_column_content', 10, 2);
+    add_action('manage_my-quotes_posts_custom_column', 'render_column_content', 10, 2);
 
     // === MAKE COLUMNS SORTABLE ===
 
@@ -127,6 +133,7 @@ function initialize_custom_admin_columns() {
     add_filter('manage_edit-post_sortable_columns', 'set_sortables');
     add_filter('manage_edit-my-interests_sortable_columns', 'set_sortables');
     add_filter('manage_edit-my-traits_sortable_columns', 'set_sortables');
+    add_filter('manage_edit-my-quotes_sortable_columns', 'set_sortables');
 
 	add_filter('posts_clauses', function($clauses, $query) {
 		global $wpdb;
@@ -208,6 +215,17 @@ function initialize_custom_admin_columns() {
                 .post-type-my-traits .column-word_count { width: 6%; }
                 .post-type-my-traits .column-read_time { width: 5%; }
                 .post-type-my-traits .column-date { width: 10%; }
+            ',
+            'my-quotes' => '
+                .post-type-my-quotes .column-id { width: 5%; }
+                .post-type-my-quotes .column-featured_image { width: 8%; }
+                .post-type-my-quotes .column-title { width: 12%; }
+                .post-type-my-quotes .column-q_related { width: 10%; }
+                .post-type-my-quotes .column-groups { width: 8%; }
+                .post-type-my-quotes .column-custom_excerpt { width: 25%; }
+                .post-type-my-quotes .column-word_count { width: 5%; }
+                .post-type-my-quotes .column-read_time { width: 5%; }
+                .post-type-my-quotes .column-date { width: 10%; }
             '
         ];
         echo '<style>' . ($styles[$typenow] ?? '') . '
@@ -309,7 +327,7 @@ function initialize_custom_admin_columns() {
 
 	// === ADD FEATURED IMGs TO TAX COLUMNS ===
 
-	$taxonomies = ['category', 'post_tag', 'topics', 'interest_tag'];
+	$taxonomies = ['category', 'post_tag', 'topics', 'interest_tag', 'groups'];
 	
 	// Add featured IMG Column
 	foreach ($taxonomies as $tax) {
@@ -344,7 +362,7 @@ function initialize_custom_admin_columns() {
 
 	add_action('admin_head-edit-tags.php', function () {
 		$screen = get_current_screen();
-		if ($screen && in_array($screen->taxonomy, ['category', 'post_tag', 'topics', 'interest_tag'])) {
+		if ($screen && in_array($screen->taxonomy, ['category', 'post_tag', 'topics', 'interest_tag', 'groups'])) {
 			echo '<style>
 				.column-cb { width: 5%; }
 				.column-featured_image { width: 10%; }
