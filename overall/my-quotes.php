@@ -173,31 +173,6 @@ function q_get_quote_for( $content_id ) {
 }
 
 // =======================================
-// ADMIN COLUMN: LINKED CONTENT
-// =======================================
-
-// Column definition and rendering kept here as both are tightly coupled to the related_content meta
-add_filter( 'manage_my-quotes_posts_columns', function( $columns ) {
-    $new = array();
-    foreach ( $columns as $key => $value ) {
-        $new[ $key ] = $value;
-        if ( $key === 'title' ) {
-            $new['q_related'] = __( 'Linked Content' );
-        }
-    }
-    return $new;
-}, 20 );
-
-function q_admin_column_linked_content( $column, $post_id ) {
-    if ( $column !== 'q_related' ) return;
-    $related = get_post_meta( $post_id, 'related_content', true );
-    echo $related
-        ? sprintf( '<a href="%s">%s</a>', esc_url( get_edit_post_link( $related ) ), esc_html( get_the_title( $related ) ) )
-        : '&mdash;';
-}
-add_action( 'manage_my-quotes_posts_custom_column', 'q_admin_column_linked_content', 10, 2 );
-
-// =======================================
 // FRONTEND STYLES
 // =======================================
 
@@ -222,7 +197,7 @@ function q_output_styles() {
 		.my-quote-slide-content .wp-block-quote li {font-size: clamp(1rem, 1.25vw + 0.5rem, 1.25rem);}
 		.my-quote-slide-content .wp-block-quote ul,
 		.my-quote-slide-content .wp-block-quote li {margin-left: -20px;}
-		/* [quote_text]: List Offset to match that of [quotes_slider] */
+		/* [quote_text]: Typography and List Offset to match that of [quotes_slider] */
 		.my-quote-text-content .wp-block-quote p,
 		.my-quote-text-content .wp-block-quote ul,
 		.my-quote-text-content .wp-block-quote li {font-size: 1rem;}
