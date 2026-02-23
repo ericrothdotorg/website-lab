@@ -1,6 +1,10 @@
 <?php
 defined('ABSPATH') || exit;
 
+// =======================================
+// PREPARE ADMIN COLUMNS
+// =======================================
+
 function initialize_custom_admin_columns() {
     if (!is_admin() || !current_user_can('manage_options')) {
     return;
@@ -28,6 +32,7 @@ function initialize_custom_admin_columns() {
         } elseif ($type === 'my-traits') {
             $columns['types'] = __('Types');
         } elseif ($type === 'my-quotes') {
+			$columns['q_related'] = __('Linked Content');
             $columns['groups'] = __('Groups');
         }
 
@@ -114,6 +119,12 @@ function initialize_custom_admin_columns() {
                     echo __('(None)');
                 }
                 break;
+			case 'q_related':
+				$related = get_post_meta( $post_id, 'related_content', true );
+				echo $related
+					? sprintf( '<a href="%s">%s</a>', esc_url( get_edit_post_link( $related ) ), esc_html( get_the_title( $related ) ) )
+					: '&mdash;';
+				break;
         }
     }
 
@@ -236,7 +247,9 @@ function initialize_custom_admin_columns() {
         </style>';
     });
 
-    // === MEDIA CUSTOM COLUMNS ===
+	// =======================================
+	// MEDIA CUSTOM COLUMNS
+	// =======================================
 
     add_filter('manage_upload_columns', function ($columns) {
         $new = [];
@@ -328,7 +341,9 @@ function initialize_custom_admin_columns() {
         </style>';
     });
 
-	// === ADD FEATURED IMGs TO TAX COLUMNS ===
+	// =======================================
+	// TAXONOMY COLUMNS
+	// =======================================
 
 	$taxonomies = ['category', 'post_tag', 'topics', 'interest_tag', 'groups'];
 	
@@ -361,17 +376,16 @@ function initialize_custom_admin_columns() {
 		}, 10, 3);
 	}
 
-	// === SET COLUMNS WIDTHS IN TAX COLUMNS ===
-
+	// Set Columns Width in Tax Columns
 	add_action('admin_head-edit-tags.php', function () {
 		$screen = get_current_screen();
 		if ($screen && in_array($screen->taxonomy, ['category', 'post_tag', 'topics', 'interest_tag', 'groups'])) {
 			echo '<style>
 				.column-cb { width: 5%; }
-				.column-featured_image { width: 10%; }
-				.column-name { width: 15%; }
-				.column-description { width: 30%; }
-				.column-slug { width: 10%; }
+				.column-featured_image { width: 12%; }
+				.column-name { width: 18%; }
+				.column-description { width: 35%; }
+				.column-slug { width: 8%; }
 				.column-posts { width: 7%; }
 				.wp-list-table { width: 100%; }
 			</style>';
