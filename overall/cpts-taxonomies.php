@@ -261,7 +261,7 @@ function mq_register_post_type() {
         'show_in_rest'        => true,
         'query_var'           => true,
         'publicly_queryable'  => true,
-        'exclude_from_search' => true,
+        'exclude_from_search' => false,
         'has_archive'         => true,
         'capability_type'     => 'post',
         'hierarchical'        => true,
