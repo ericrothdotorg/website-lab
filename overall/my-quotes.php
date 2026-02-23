@@ -215,6 +215,7 @@ function q_output_styles() {
 }
 add_action( 'wp_head', 'q_output_styles' );
 
+// Conditionally loaded — Only on Singular Post / Pages containing [quotes_slider] or [quote_text]
 function q_output_scripts() {
 	if ( ! q_should_load_assets() ) return;
     ?>
