@@ -272,7 +272,7 @@ function get_reusable_block($atts) {
 // [total_post], [total_page], etc. - Display Post Type Counts
 if (!is_admin()) {
     add_action('init', function() {
-        foreach (['post', 'page', 'my-interests', 'my-traits'] as $type) {
+        foreach (['post', 'page', 'my-interests', 'my-quotes', 'my-traits'] as $type) {
             add_shortcode('total_' . str_replace('-', '_', $type), function() use ($type) {
                 return get_post_count_cached($type);
             });
