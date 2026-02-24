@@ -98,10 +98,12 @@ function q_append_slider_on_single_quote( $content ) {
     $personal     = do_shortcode( '[quotes_slider category="personal"]' );
     $professional = do_shortcode( '[quotes_slider category="professional"]' );
     $output = '';
+	$output .= '<div class="section-gap" style="padding-top: 25px;"><hr class="wp-block-separator has-alpha-channel-opacity is-style-wide" style="width: 75%; margin: 0 auto;"/></div>';
     if ( $personal ) {
         $output .= '<h3><a href="' . esc_url( home_url( '/personal/' ) ) . '">Personal</a></h3>';
         $output .= $personal;
     }
+	$output .= '<div class="section-gap" style="padding-top: 75px;"><hr class="wp-block-separator has-alpha-channel-opacity is-style-wide" style="width: 75%; margin: 0 auto;"/></div>';
     if ( $professional ) {
         $output .= '<h3><a href="' . esc_url( home_url( '/professional/' ) ) . '">Professional</a></h3>';
         $output .= $professional;
