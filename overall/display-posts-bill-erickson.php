@@ -148,10 +148,10 @@ function be_dps_option_output_grouped( $output, $atts ) {
 add_filter( 'display_posts_shortcode_output', 'be_dps_option_output_grouped', 10, 2 );
 
 // =====================================
-// POST COUNT DISPLAY
+// TAXONOMY TERM COUNT DISPLAY
 // =====================================
 
-/* Add post counts per category or topic or group */
+/* Append Term Counts to configured Taxonomy Links */
 function posts_count_per_category( $output, $atts ) {
     if ( empty( $atts['show_category_count'] ) || 'true' !== $atts['show_category_count'] ) {
         return $output;
