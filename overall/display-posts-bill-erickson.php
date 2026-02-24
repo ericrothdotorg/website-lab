@@ -28,7 +28,7 @@ add_action( 'the_posts', function( $posts, $query ) {
         return $posts;
     }
     $post_ids = wp_list_pluck( $posts, 'ID' );
-    update_post_term_cache( $post_ids, [ 'category', 'topics' ] );
+    update_post_term_cache( $post_ids, [ 'category', 'topics', 'groups' ] );
     update_post_cache( $posts );
     return $posts;
 }, 10, 2 );
@@ -41,12 +41,13 @@ class DPS_Grouped_Collector {
     public static $instances = [];
 	
     /* Taxonomy mapping for post types */
-    private static function get_group_config( $post_type ) {
+    public static function get_group_config( $post_type ) {
         $configs = [
             'page'          => [ 'term_id' => -100, 'label' => 'My Pages' ],
             'my-traits'     => [ 'term_id' => -200, 'label' => 'My Traits' ],
             'post'          => [ 'taxonomy' => 'category' ],
             'my-interests'  => [ 'taxonomy' => 'topics' ],
+			'my-quotes'  	=> [ 'taxonomy' => 'groups' ],
         ];
         return $configs[ $post_type ] ?? [];
     }
@@ -150,13 +151,15 @@ add_filter( 'display_posts_shortcode_output', 'be_dps_option_output_grouped', 10
 // POST COUNT DISPLAY
 // =====================================
 
-/* Add post counts per category or topic */
+/* Add post counts per category or topic or group */
 function posts_count_per_category( $output, $atts ) {
     if ( empty( $atts['show_category_count'] ) || 'true' !== $atts['show_category_count'] ) {
         return $output;
     }
     global $post;
-    $taxonomy = ( isset( $atts['post_type'] ) && 'my-interests' === $atts['post_type'] ) ? 'topics' : 'category';
+    $post_type = isset( $atts['post_type'] ) ? $atts['post_type'] : '';
+    $config   = DPS_Grouped_Collector::get_group_config( $post_type );
+    $taxonomy = isset( $config['taxonomy'] ) ? $config['taxonomy'] : 'category';
     $terms    = get_the_terms( $post->ID, $taxonomy );
     if ( empty( $terms ) || is_wp_error( $terms ) ) {
         return $output;
