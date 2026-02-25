@@ -243,11 +243,21 @@ function q_output_scripts() {
                 slidesToScroll: 1
             });
         }
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(initQuoteSlick, { timeout: 500 });
-        } else {
-            setTimeout(initQuoteSlick, 200);
-        }
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', function() {
+				if ('requestIdleCallback' in window) {
+					requestIdleCallback(initQuoteSlick, { timeout: 500 });
+				} else {
+					setTimeout(initQuoteSlick, 200);
+				}
+			});
+		} else {
+			if ('requestIdleCallback' in window) {
+				requestIdleCallback(initQuoteSlick, { timeout: 500 });
+			} else {
+				setTimeout(initQuoteSlick, 200);
+			}
+		}
     })();
     </script>
     <?php
