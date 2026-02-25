@@ -62,10 +62,7 @@ function initialize_custom_admin_columns() {
                 echo get_the_post_thumbnail($post_id, [65, 65], ['style' => 'border-radius:4px;']);
                 break;
 			case 'custom_excerpt':
-				$content = get_post_field('post_content', $post_id);
-				$content = wp_strip_all_tags(strip_shortcodes($content));
-				$content = preg_replace('/\s+/', ' ', $content); // Collapse Whitespace
-				echo wp_trim_words(trim($content), 35);
+				echo get_the_excerpt($post_id);
 				break;
             case 'word_count':
                 if (!isset($word_counts[$post_id])) {
@@ -188,15 +185,15 @@ function initialize_custom_admin_columns() {
         $styles = [
             'page' => '
                 .post-type-page .column-id { width: 5%; }
-                .post-type-page .column-featured_image { width: 8%; }
+                .post-type-page .column-featured_image { width: 7%; }
                 .post-type-page .column-title { width: 12%; }
                 .post-type-page .column-things { width: 9%; }
                 .post-type-page .column-depth { width: 3%; }
                 .post-type-page .column-parent { width: 7%; }
-                .post-type-page .column-custom_excerpt { width: 20%; }
-                .post-type-page .column-word_count { width: 6%; }
+                .post-type-page .column-custom_excerpt { width: 25%; }
+                .post-type-page .column-word_count { width: 5%; }
                 .post-type-page .column-read_time { width: 5%; }
-                .post-type-page .column-date { width: 10%; }
+                .post-type-page .column-date { width: 8%; }
             ',
             'post' => '
                 .post-type-post .column-id { width: 5%; }
