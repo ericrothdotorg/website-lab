@@ -87,7 +87,7 @@ function lum_background_track() {
     
     if ($geo_data) {
         $existing = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE ip_address = %s ORDER BY last_seen DESC LIMIT 1",
+            "SELECT id FROM $table_name WHERE ip_address = %s ORDER BY last_seen DESC LIMIT 1",
             $ip_address
         ));
         
@@ -255,6 +255,13 @@ function lum_schedule_cleanup() {
     if (!wp_next_scheduled('lum_daily_cleanup')) {
         wp_schedule_event(time(), 'daily', 'lum_daily_cleanup');
     }
+    // Add indexes once if not already present (speeds up IP lookups and date range queries)
+    if (!get_option('lum_indexes_created')) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'live_visitors';
+        $wpdb->query("ALTER TABLE $table_name ADD INDEX IF NOT EXISTS idx_ip (ip_address), ADD INDEX IF NOT EXISTS idx_last_seen (last_seen)");
+        update_option('lum_indexes_created', true);
+    }
 }
 add_action('init', 'lum_schedule_cleanup');
 
@@ -399,13 +406,21 @@ function lum_get_map_data() {
         AND latitude != 0
         AND longitude != 0
         ORDER BY last_seen DESC
-        LIMIT 1000",
+        LIMIT 500",
         $live_threshold,
         $history_threshold
     ));
+    // Trim coordinate precision to 4 decimal places to reduce JSON payload size
+    $round_coords = function($users) {
+        return array_map(function($u) {
+            $u->latitude  = round((float) $u->latitude,  4);
+            $u->longitude = round((float) $u->longitude, 4);
+            return $u;
+        }, $users);
+    };
     wp_send_json_success(array(
-        'live' => $live_users,
-        'past' => $past_users,
+        'live' => $round_coords($live_users),
+        'past' => $round_coords($past_users),
         'counts' => array(
             'live' => count($live_users),
             'past' => count($past_users)
