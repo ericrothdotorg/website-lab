@@ -49,6 +49,9 @@ add_action('wp_footer', function () {
         /* Optimize Slider Animations */
         .slick-track {will-change: transform;}
 
+        /* Style Slideshows with single Item*/
+		.slideshow-single-item img {border-radius: 25px;}
+
         /* Style Slideshows with multiple Items*/
         .slideshow-multiple-items .slick-list {margin: 0 -12.5px;}
         .slideshow-multiple-items .slick-slide {margin: 0 12.5px;}
