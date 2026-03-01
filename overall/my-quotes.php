@@ -199,10 +199,15 @@ function q_output_styles() {
 		.my-quote-slide-content .wp-block-quote li {font-size: clamp(1rem, 1.25vw + 0.5rem, 1.25rem);}
 		.my-quote-slide-content .wp-block-quote ul,
 		.my-quote-slide-content .wp-block-quote li {margin-left: -20px;}
-		/* [quote_text]: Typography and List Offset to match that of [quotes_slider] */
-		.my-quote-text-content .wp-block-quote p,
-		.my-quote-text-content .wp-block-quote ul,
-		.my-quote-text-content .wp-block-quote li {font-size: 1rem;}
+		/* [quote_text]: Typography to match that of [quotes_slider] → Higher Specificity wins */
+		.single-my-quotes .my-quote-text-content .wp-block-quote p,
+		.single-my-quotes .my-quote-text-content .wp-block-quote ul,
+		.single-my-quotes .my-quote-text-content .wp-block-quote li {font-size: clamp(1rem, 1.25vw + 0.5rem, 1.25rem);}
+        /* [quote_text]: Default Typography for this Shortcode Output */
+        .my-quote-text-content .wp-block-quote p,
+        .my-quote-text-content .wp-block-quote ul,
+        .my-quote-text-content .wp-block-quote li {font-size: 1rem;}
+		/* [quote_text]: List Offset remains the same regardless of Context */
 		.my-quote-text-content .wp-block-quote ul,
 		.my-quote-text-content .wp-block-quote li {margin-left: -20px;}
 		/* Mobile: Stack Image above Content */
