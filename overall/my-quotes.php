@@ -100,12 +100,12 @@ function q_append_slider_on_single_quote( $content ) {
     $output = '';
 	$output .= '<div class="section-gap" style="padding-top: 25px;"><hr class="wp-block-separator has-alpha-channel-opacity is-style-wide" style="width: 75%; margin: 0 auto;"/></div>';
     if ( $personal ) {
-        $output .= '<h3><a href="' . esc_url( home_url( '/personal/' ) ) . '">Personal</a></h3>';
+        $output .= '<h3><a href="' . esc_url( home_url( '/personal/' ) ) . '">Personal Quotes</a></h3>';
         $output .= $personal;
     }
 	$output .= '<div class="section-gap" style="padding-top: 75px;"><hr class="wp-block-separator has-alpha-channel-opacity is-style-wide" style="width: 75%; margin: 0 auto;"/></div>';
     if ( $professional ) {
-        $output .= '<h3><a href="' . esc_url( home_url( '/professional/' ) ) . '">Professional</a></h3>';
+        $output .= '<h3><a href="' . esc_url( home_url( '/professional/' ) ) . '">Professional Quotes</a></h3>';
         $output .= $professional;
     }
     return $prefix . '<div class="my-quote-text-content">' . $content . '</div>' . $output;
@@ -210,6 +210,8 @@ function q_output_styles() {
 		/* [quote_text]: List Offset remains the same regardless of Context */
 		.my-quote-text-content .wp-block-quote ul,
 		.my-quote-text-content .wp-block-quote li {margin-left: -20px;}
+		/* [quote_text]: Style "See all Quotes" Link after cite Eric Roth (only outside .single-my-quotes) */
+		.my-quote-text-content .wp-block-quote cite .q-see-all-link {display: inline-block; margin-left: 0.4rem; font-size: 0.85rem; font-style: italic; font-weight: normal; white-space: nowrap; vertical-align: middle;}
 		/* Mobile: Stack Image above Content */
 		@media (max-width: 768px) {
 			.my-quote-slide-inner {flex-direction: column; gap: 1.5em;}
@@ -264,6 +266,27 @@ function q_output_scripts() {
 			}
 		}
     })();
+	// Inject "See all Quotes" Link after cite Eric Roth (only outside .single-my-quotes)
+	(function() {
+		function injectSeeAllLink() {
+			if (document.body.classList.contains('single-my-quotes')) return;
+			var cites = document.querySelectorAll('.my-quote-text-content .wp-block-quote cite');
+			cites.forEach(function(cite) {
+				if (!cite.textContent.includes('Eric Roth')) return;
+				if (cite.querySelector('.q-see-all-link')) return; // already injected
+				var a = document.createElement('a');
+				a.href = 'https://ericroth.org/about-me/my-quotes/';
+				a.className = 'q-see-all-link';
+				a.textContent = '> See all of Eric\'s Quotes';
+				cite.appendChild(a);
+			});
+		}
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', injectSeeAllLink);
+		} else {
+			injectSeeAllLink();
+		}
+	})();
     </script>
     <?php
 }
