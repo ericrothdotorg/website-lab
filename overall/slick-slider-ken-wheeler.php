@@ -1,4 +1,6 @@
 <?php
+defined('ABSPATH') || exit;
+
 // Enqueue Slick Slider Assets from local Files
 add_action('wp_enqueue_scripts', function () {
     $theme_uri = get_stylesheet_directory_uri();
@@ -53,26 +55,26 @@ add_action('wp_footer', function () {
 		.slideshow-single-item img {border-radius: 25px;}
 
         /* Style Slideshows with multiple Items*/
-        .slideshow-multiple-items .slick-list {margin: 0 -12.5px;}
-        .slideshow-multiple-items .slick-slide {margin: 0 12.5px;}
-        @media (max-width: 600px) {
-            .slideshow-multiple-items .slick-list {margin: 0 -7.5px;}
-            .slideshow-multiple-items .slick-slide {margin: 0 7.5px;}
-        }
-        @media (min-width: 600px) and (max-width: 992px) {
-            .slideshow-multiple-items .slick-list {margin: 0 -10px;}
-            .slideshow-multiple-items .slick-slide {margin: 0 10px;}
-        }
+		.slideshow-multiple-items-3 .slick-list, .slideshow-multiple-items-4 .slick-list { margin: 0 -12.5px; }
+		.slideshow-multiple-items-3 .slick-slide, .slideshow-multiple-items-4 .slick-slide { margin: 0 12.5px; }
+		@media (max-width: 600px) {
+			.slideshow-multiple-items-3 .slick-list, .slideshow-multiple-items-4 .slick-list { margin: 0 -7.5px; }
+			.slideshow-multiple-items-3 .slick-slide, .slideshow-multiple-items-4 .slick-slide { margin: 0 7.5px; }
+		}
+		@media (min-width: 600px) and (max-width: 992px) {
+			.slideshow-multiple-items-3 .slick-list, .slideshow-multiple-items-4 .slick-list { margin: 0 -10px; }
+			.slideshow-multiple-items-3 .slick-slide, .slideshow-multiple-items-4 .slick-slide { margin: 0 10px; }
+		}
         .slideshow-multiple-items-vertical .slick-list {margin: -10px 0;}
         .slideshow-multiple-items-vertical .slick-slide {margin: 10px 0;}
         .slideshow-multiple-items-center-mode img {padding: 0 0.75% 0 0.75%;}
 
         /* Style Slideshows with WP Columns */
         .slideshow-single-item .wp-block-columns {align-items: center;}
-		.dummy-columns {display: none !important;}
 
         /* Style Slideshows with Layers */
         .layer-container {position: relative; margin: 0 auto;}
+		.layer-content-procurement-consulting {margin-right: 10px;}
 		.layer-content-procurement-consulting h5 {text-align: justify;}
 		.layer-content-procurement-consulting p {text-align: justify; padding-top: 5px;}
 		.layer-content-procurement-consulting .emphasized-design-red {padding-top: 15px;}
@@ -96,7 +98,6 @@ add_action('wp_footer', function () {
                 return;
             }
             var $ = jQuery;
-			
             // Common Config to reduce Repetition
             var baseConfig = {
                 lazyLoad: 'ondemand',
@@ -107,7 +108,6 @@ add_action('wp_footer', function () {
 				accessibility: true,
 				focusOnSelect: false
             };
-			
 			// Config for Single Items
             $('.slideshow-single-item').slick($.extend({}, baseConfig, {
                 arrows: false,
@@ -117,7 +117,6 @@ add_action('wp_footer', function () {
                 slidesToShow: 1,
                 slidesToScroll: 1
             }));
-			
 			// Config for Single Items without Dots
             $('.slideshow-single-item-no-dots').slick($.extend({}, baseConfig, {
                 arrows: false,
@@ -127,9 +126,23 @@ add_action('wp_footer', function () {
                 slidesToShow: 1,
                 slidesToScroll: 1
             }));
-			
-			// Config for Multiple Items (horizontal)
-            $('.slideshow-multiple-items').slick($.extend({}, baseConfig, {
+			// Config for 3 Multiple Items (horizontal)
+            $('.slideshow-multiple-items-3').slick($.extend({}, baseConfig, {
+                arrows: true,
+                dots: false,
+                fade: false,
+                adaptiveHeight: false,
+                slidesToShow: 1,
+                slidesToScroll: 1,
+                mobileFirst: true,
+                responsive: [
+                    { breakpoint: 350, settings: { slidesToShow: 1 } },
+                    { breakpoint: 768, settings: { slidesToShow: 2 } },
+                    { breakpoint: 992, settings: { slidesToShow: 3 } }
+                ]
+            }));
+			// Config for 4 Multiple Items (horizontal)
+            $('.slideshow-multiple-items-4').slick($.extend({}, baseConfig, {
                 arrows: true,
                 dots: false,
                 fade: false,
@@ -143,7 +156,6 @@ add_action('wp_footer', function () {
                     { breakpoint: 992, settings: { slidesToShow: 4 } }
                 ]
             }));
-			
 			// Config for Multiple Items (vertical)
             $('.slideshow-multiple-items-vertical').slick($.extend({}, baseConfig, {
                 arrows: false,
@@ -155,7 +167,6 @@ add_action('wp_footer', function () {
                 slidesToShow: 3,
                 slidesToScroll: 1
             }));
-			
 			// Config for Multiple Items (center mode)
             $('.slideshow-multiple-items-center-mode').slick($.extend({}, baseConfig, {
                 arrows: false,
@@ -173,7 +184,6 @@ add_action('wp_footer', function () {
                     { breakpoint: 992, settings: { centerPadding: '175px' } }
                 ]
             }));
-			
         }
         // Use requestIdleCallback for non-critical Initialization
         if (document.readyState === 'loading') {
