@@ -128,8 +128,8 @@ add_action('wp_footer', function () {
             }));
 			// Config for 3 Multiple Items (horizontal)
             $('.slideshow-multiple-items-3').slick($.extend({}, baseConfig, {
-                arrows: true,
-                dots: false,
+                arrows: false,
+                dots: true,
                 fade: false,
                 adaptiveHeight: false,
                 slidesToShow: 1,
