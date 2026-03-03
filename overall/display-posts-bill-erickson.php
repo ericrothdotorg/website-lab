@@ -1,4 +1,6 @@
 <?php
+defined('ABSPATH') || exit;
+
 // =====================================
 // SELECT DROPDOWN FUNCTIONALITY
 // =====================================
@@ -39,7 +41,6 @@ add_action( 'the_posts', function( $posts, $query ) {
 
 class DPS_Grouped_Collector {
     public static $instances = [];
-	
     /* Taxonomy mapping for post types */
     public static function get_group_config( $post_type ) {
         $configs = [
@@ -51,7 +52,6 @@ class DPS_Grouped_Collector {
         ];
         return $configs[ $post_type ] ?? [];
     }
-	
     /* Add post to grouped collection */
     public static function add_post( $atts, $post ) {
         $instance_id = md5( json_encode( $atts ) );
@@ -94,7 +94,6 @@ class DPS_Grouped_Collector {
             'link'  => get_permalink( $post ),
         ];
     }
-	
     /* Render grouped select options */
     public static function render_grouped( $atts ) {
         $instance_id = md5( json_encode( $atts ) );
@@ -177,6 +176,82 @@ function posts_count_per_category( $output, $atts ) {
 add_filter( 'display_posts_shortcode_output', 'posts_count_per_category', 10, 2 );
 
 // =====================================
+// DPS FOR TAXONOMIES
+// =====================================
+
+function display_taxonomies_shortcode( $atts ) {
+    $atts = shortcode_atts( [
+        'taxonomy'      => 'category',
+        'show_count'    => 'false',
+        'image_size'    => '',
+        'orderby'       => 'name',
+        'order'         => 'ASC',
+        'hide_empty'    => 'true',
+        'wrapper'       => 'ul',
+        'wrapper_class' => '',
+        'wrapper_id'    => '',
+    ], $atts, 'display-taxonomies' );
+    // Validate Taxonomy
+    if ( ! taxonomy_exists( $atts['taxonomy'] ) ) {
+        return '';
+    }
+    // Sanitize Wrapper Tag
+    $tag = in_array( $atts['wrapper'], [ 'ul', 'ol', 'div' ], true ) ? $atts['wrapper'] : 'ul';
+    $terms = get_terms( [
+        'taxonomy'   => $atts['taxonomy'],
+        'orderby'    => $atts['orderby'],
+        'order'      => strtoupper( $atts['order'] ),
+        'hide_empty' => 'true' === $atts['hide_empty'],
+    ] );
+    if ( empty( $terms ) || is_wp_error( $terms ) ) {
+        return '';
+    }
+    // Wrapper Attributes — Only add display-posts-listing if not already present in wrapper_class
+    $extra = 'display-taxonomies ' . $atts['wrapper_class'];
+	$classes = strpos( $extra, 'display-posts-listing' ) !== false
+		? trim( $extra )
+		: trim( 'display-posts-listing ' . $extra );
+    $id_attr = $atts['wrapper_id'] ? sprintf( ' id="%s"', esc_attr( $atts['wrapper_id'] ) ) : '';
+    // Child Tag: li for ul / ol, div for div wrapper
+    $child = ( 'div' === $tag ) ? 'div' : 'li';
+    $items = '';
+    foreach ( $terms as $term ) {
+        $link  = get_term_link( $term );
+        if ( is_wp_error( $link ) ) continue;
+        $image = '';
+        if ( ! empty( $atts['image_size'] ) ) {
+            $meta   = get_term_meta( $term->term_id, 'blocksy_taxonomy_meta_options', true );
+            $img_id = ! empty( $meta['image']['attachment_id'] ) ? (int) $meta['image']['attachment_id'] : 0;
+            if ( $img_id ) {
+                $img_html = wp_get_attachment_image( $img_id, $atts['image_size'] );
+                if ( $img_html ) {
+                    $image = sprintf( '<a href="%s" class="image">%s</a>', esc_url( $link ), $img_html );
+                }
+            }
+        }
+        $count = 'true' === $atts['show_count']
+            ? sprintf( ' <span class="term-count">(%d)</span>', (int) $term->count )
+            : '';
+        $items .= sprintf(
+            '<%1$s class="listing-item">%2$s<a class="title" href="%3$s">%4$s%5$s</a></%1$s>',
+            $child,
+            $image,
+            esc_url( $link ),
+            esc_html( $term->name ),
+            $count
+        );
+    }
+    return sprintf(
+        '<%1$s class="%2$s"%3$s>%4$s</%1$s>',
+        $tag,
+        esc_attr( $classes ),
+        $id_attr,
+        $items
+    );
+}
+add_shortcode( 'display-taxonomies', 'display_taxonomies_shortcode' );
+
+// =====================================
 // INLINE STYLES (in Head)
 // =====================================
 
@@ -185,7 +260,6 @@ add_action( 'wp_head', function () {
     <style>
     /* Accessibility */
     .screen-reader-text {position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden;}
-
     /* Base Styles */
     .display-posts-listing {cursor: pointer;}
     .display-posts-listing .listing-item {clear: both; overflow: hidden; background: #fafbfc; border: 1px solid #e1e8ed; border-radius: 25px;}
@@ -196,27 +270,22 @@ add_action( 'wp_head', function () {
     .listing-item .excerpt-dash {display: none;}
     .display-posts-listing .excerpt {clear: right; display: block; text-align: center; margin: 0 16px 20px;}
     .display-posts-listing .category-display, .display-posts-listing.grid .category-display {display: block; font-size: 0.85rem; text-align: center; margin: -8px 0 16px; opacity: 0.75;}
-
     /* Grid Layout (2 columns) */
     .display-posts-listing.grid {display: grid; grid-template-columns: repeat(2, 1fr); grid-gap: 1.75rem 1.5rem;}
     .display-posts-listing.grid img {display: block; max-width: 100%; height: auto;}
     .display-posts-listing.grid .title {margin: 12px 0; font-size: 1.125rem;}
     @media (max-width: 600px) {.display-posts-listing.grid .excerpt {padding: 0 8px; font-size: 0.75rem;}}
     @media (min-width: 600px) {.display-posts-listing.grid .excerpt {padding: 0 16px;}}
-
     /* Grid Layout (3 columns) */
     @media (min-width: 768px) {.display-posts-listing.grid#three-columns {grid-template-columns: repeat(3, 1fr);}}
-	
 	/* Grid Layout (4 columns) */
     @media (min-width: 600px) and (max-width: 992px) {.display-posts-listing.grid#four-columns {grid-template-columns: repeat(2, 1fr);}}
     @media (min-width: 992px) {.display-posts-listing.grid#four-columns {grid-template-columns: repeat(4, 1fr);}}
     @media (min-width: 600px) {.display-posts-listing.grid#four-columns .title {font-size: 1.125rem;}}
-	
 	/* Grid Layout (6 columns) */
     .display-posts-listing.grid#six-columns .title {margin: 8px 0; font-size: 0.75rem;}
     @media (min-width: 600px) and (max-width: 992px) {.display-posts-listing.grid#six-columns {grid-template-columns: repeat(3, 1fr);}}
     @media (min-width: 992px) {.display-posts-listing.grid#six-columns {grid-template-columns: repeat(6, 1fr);}}
-
     /* Layout Variations */
     .display-posts-listing#small-version, .display-posts-listing#notorious-big {overflow: hidden;}
     .display-posts-listing.grid#small-version .listing-item {margin-bottom: 0;}
@@ -224,13 +293,11 @@ add_action( 'wp_head', function () {
     .display-posts-listing#notorious-big .title, .display-posts-listing.grid#notorious-big .title {font-size: 1.5rem; margin: 7.5px 0 2.5px;}
     .display-posts-listing.grid#notorious-big .excerpt {font-size: 1rem;}
     @media (max-width: 768px) {.display-posts-listing.grid#notorious-big {grid-template-columns: 1fr;}}
-
     /* FAQs Layout */
     .display-posts-faqs .listing-item {clear: both; overflow: hidden; margin-bottom: 20px;}
     .display-posts-faqs .image {float: left; margin: 0 16px 0 0;}
     .display-posts-faqs .title {display: block; text-align: justify; font-size: 1rem; margin-top: -4px;}
     .display-posts-faqs .excerpt {display: block; text-align: justify;}
-
     /* Trending Layout */
     .display-posts-trending {display: flex; flex-wrap: wrap; gap: 20px;}
     .display-posts-trending .listing-item {display: flex; align-items: center; justify-content: space-between; flex: 1 1 calc(16.66% - 20px); box-sizing: border-box; margin-bottom: 20px; background: none; border: none;}
@@ -240,16 +307,17 @@ add_action( 'wp_head', function () {
     .display-posts-trending .title {text-align: left; font-size: 1rem; margin: 0; flex: 1; overflow-wrap: anywhere;}
     @media (min-width: 768px) and (max-width: 1200px) {.display-posts-trending .listing-item {flex: 1 1 calc(33.33% - 20px);}}
     @media (max-width: 768px) {.display-posts-trending .listing-item {flex: 1 1 calc(50% - 20px);}}
-
     /* Sidebar Widgets */
     .display-posts-widgets .listing-item .category-display a {font-weight: normal;}
     .ct-sidebar .display-posts-widgets {list-style-type: disc !important; padding-left: 20px;}
     .display-posts-listing#latest > *:not(:first-child):not(:last-child) {margin: 25px 0;}
-
     /* Traits Conclusion */
     .display-posts-listing.grid.traits-conclusion {grid-gap: 0.25rem;}
     .display-posts-listing.grid.traits-conclusion .title {font-size: 0.85rem !important;}
-	
+	/* DPS for Taxonomies */
+	.display-taxonomies .term-count {font-size: 0.85rem; font-weight: normal; font-style: italic;}
+	.display-taxonomies .listing-item a.image {display: block;}
+	.display-taxonomies .listing-item a.image img {width: 100%; height: auto;}
     </style>
     <?php
 } );
