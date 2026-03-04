@@ -190,6 +190,7 @@ function display_taxonomies_shortcode( $atts ) {
         'wrapper'       => 'ul',
         'wrapper_class' => '',
         'wrapper_id'    => '',
+        'include'       => '',
     ], $atts, 'display-taxonomies' );
     // Validate Taxonomy
     if ( ! taxonomy_exists( $atts['taxonomy'] ) ) {
@@ -202,6 +203,9 @@ function display_taxonomies_shortcode( $atts ) {
         'orderby'    => $atts['orderby'],
         'order'      => strtoupper( $atts['order'] ),
         'hide_empty' => 'true' === $atts['hide_empty'],
+        'include'    => ! empty( $atts['include'] )
+                        ? array_map( 'intval', array_filter( array_map( 'trim', explode( ',', $atts['include'] ) ) ) )
+                        : [],
     ] );
     if ( empty( $terms ) || is_wp_error( $terms ) ) {
         return '';
