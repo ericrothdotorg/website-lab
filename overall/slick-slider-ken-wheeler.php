@@ -3,7 +3,6 @@ defined('ABSPATH') || exit;
 
 // Enqueue Slick Slider Assets from local Files
 add_action('wp_enqueue_scripts', function () {
-    $theme_uri = get_stylesheet_directory_uri();
 	wp_enqueue_style('slick-css', home_url('/my-assets/slick-slider/slick.css'), [], '1.9.0');
 	wp_enqueue_style('slick-theme-css', home_url('/my-assets/slick-slider/slick-theme.css'), [], '1.9.0');
 	wp_enqueue_script('slick-js', home_url('/my-assets/slick-slider/slick.js'), ['jquery'], '1.9.0', true);
@@ -23,6 +22,23 @@ add_filter('litespeed_optimize_html_excluded_selectors', function($excludes) {
     return $excludes;
 });
 
+// Initialize Slick Sliders and add custom Styles in the Head
+add_action( 'wp_head', function () {
+    ?>
+    <style>
+    /* Prevent Flash before Slick initializes */
+    .slideshow-single-item,
+    .slideshow-single-item-no-dots,
+    .slideshow-multiple-items,
+    .slideshow-multiple-items-3,
+    .slideshow-multiple-items-4,
+    .slideshow-multiple-items-vertical,
+    .slideshow-multiple-items-center-mode {visibility: hidden;}
+    .slick-initialized {visibility: visible;}
+    </style>
+    <?php
+} );
+
 // Initialize Slick Sliders and add custom Styles in the Footer
 add_action('wp_footer', function () {
     ?>
@@ -39,16 +55,6 @@ add_action('wp_footer', function () {
 
         /* Style Height Transition*/
         .slideshow-single-item {transition: height 0.4s ease;}
-
-        /* Prevent Flash before Slick initializes */
-        .slideshow-single-item,
-        .slideshow-single-item-no-dots,
-        .slideshow-multiple-items,
-		.slideshow-multiple-items-3,
-		.slideshow-multiple-items-4,
-        .slideshow-multiple-items-vertical,
-        .slideshow-multiple-items-center-mode {visibility: hidden;}
-        .slick-initialized {visibility: visible;}
 
         /* Optimize Slider Animations */
         .slick-track {will-change: transform;}
