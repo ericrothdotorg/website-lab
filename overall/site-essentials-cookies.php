@@ -205,18 +205,6 @@ add_filter('blocksy_typography_font_sources', function($sources) {
 // Enable Blocksy Flexy Animation Styles
 add_action('wp_enqueue_scripts', fn() => wp_enqueue_style('ct-flexy-styles'));
 
-// Strip unused Blocksy Extensions for faster Loading
-add_action('wp_enqueue_scripts', function() {
-    $extensions = ['newsletter', 'woocommerce', 'trending', 'cookie-consent', 'local-google-fonts', 
-                   'portfolio', 'shop-extra', 'advanced-menu', 'contact-form', 'popups', 'color-mode-switcher'];
-    foreach ($extensions as $ext) {
-        wp_dequeue_style("blocksy-ext-{$ext}");
-        wp_deregister_style("blocksy-ext-{$ext}");
-        wp_dequeue_script("blocksy-ext-{$ext}");
-        wp_deregister_script("blocksy-ext-{$ext}");
-    }
-}, 100);
-
 // ======================================
 // FRONTEND ASSETS
 // ======================================
