@@ -44,6 +44,8 @@ add_action('wp_footer', function () {
         .slideshow-single-item,
         .slideshow-single-item-no-dots,
         .slideshow-multiple-items,
+		.slideshow-multiple-items-3,
+		.slideshow-multiple-items-4,
         .slideshow-multiple-items-vertical,
         .slideshow-multiple-items-center-mode {visibility: hidden;}
         .slick-initialized {visibility: visible;}
