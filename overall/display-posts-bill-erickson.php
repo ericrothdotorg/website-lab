@@ -5,7 +5,7 @@ defined('ABSPATH') || exit;
 // SELECT DROPDOWN FUNCTIONALITY
 // =====================================
 
-/* Open select wrapper with accessibility features */
+/* Open Select Wrapper with accessibility Features */
 function be_dps_select_open( $output, $atts ) {
     if ( empty( $atts['wrapper'] ) || 'select' !== $atts['wrapper'] ) {
         return $output;
@@ -24,7 +24,7 @@ function be_dps_select_open( $output, $atts ) {
 }
 add_filter( 'display_posts_shortcode_wrapper_open', 'be_dps_select_open', 10, 2 );
 
-/* Preload taxonomy term caches for select wrapper queries */
+/* Preload Taxonomy Term Caches for Select Wrapper Queries */
 add_action( 'the_posts', function( $posts, $query ) {
     if ( is_admin() || $query->is_main_query() || 'select' !== $query->get( 'wrapper' ) || empty( $posts ) ) {
         return $posts;
@@ -41,7 +41,7 @@ add_action( 'the_posts', function( $posts, $query ) {
 
 class DPS_Grouped_Collector {
     public static $instances = [];
-    /* Taxonomy mapping for post types */
+    /* Taxonomy Mapping for Post Types */
     public static function get_group_config( $post_type ) {
         $configs = [
             'page'          => [ 'term_id' => -100, 'label' => 'My Pages' ],
@@ -52,19 +52,19 @@ class DPS_Grouped_Collector {
         ];
         return $configs[ $post_type ] ?? [];
     }
-    /* Add post to grouped collection */
+    /* Add Post to grouped Collection */
     public static function add_post( $atts, $post ) {
         $instance_id = md5( json_encode( $atts ) );
         if ( ! isset( self::$instances[ $instance_id ] ) ) {
             self::$instances[ $instance_id ] = [];
         }
         $config = self::get_group_config( $post->post_type );
-        // Handle manual grouping (pages, traits)
+        // Handle manual Grouping (pages, traits)
         if ( isset( $config['term_id'] ) ) {
             $term_id = $config['term_id'];
             $label   = $config['label'];
         }
-        // Handle taxonomy-based grouping
+        // Handle taxonomy-based Grouping (categories, topics, groups)
         elseif ( isset( $config['taxonomy'] ) ) {
             $terms = get_the_terms( $post->ID, $config['taxonomy'] );
             if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) {
@@ -76,29 +76,29 @@ class DPS_Grouped_Collector {
                 $label   = 'Uncategorized';
             }
         }
-        // Default fallback
+        // Default Fallback
         else {
             $term_id = -999;
             $label   = 'Uncategorized';
         }
-        // Initialize group if needed
+        // Initialize Group if needed
         if ( ! isset( self::$instances[ $instance_id ][ $term_id ] ) ) {
             self::$instances[ $instance_id ][ $term_id ] = [
                 'label' => $label,
                 'posts' => [],
             ];
         }
-        // Add post data
+        // Add Post Data
         self::$instances[ $instance_id ][ $term_id ]['posts'][] = [
             'title' => get_the_title( $post ),
             'link'  => get_permalink( $post ),
         ];
     }
-    /* Render grouped select options */
+    /* Render grouped Select Options */
     public static function render_grouped( $atts ) {
         $instance_id = md5( json_encode( $atts ) );
         $grouped     = self::$instances[ $instance_id ] ?? [];
-        // Sort alphabetically by label
+        // Sort alphabetically by Label
         uasort( $grouped, fn( $a, $b ) => strcasecmp( $a['label'] ?? '', $b['label'] ?? '' ) );
         $output = '';
         foreach ( $grouped as $group ) {
@@ -118,13 +118,13 @@ class DPS_Grouped_Collector {
                 $output .= '</optgroup>';
             }
         }
-        // Cleanup memory
+        // Cleanup Memory
         unset( self::$instances[ $instance_id ] );
         return $output;
     }
 }
 
-/* Close select wrapper with grouped output */
+/* Close Select Wrapper with grouped Output */
 function be_dps_select_close_grouped( $output, $atts ) {
     if ( ! empty( $atts['wrapper'] ) && 'select' === $atts['wrapper'] ) {
         return DPS_Grouped_Collector::render_grouped( $atts ) . '</select>';
@@ -133,7 +133,7 @@ function be_dps_select_close_grouped( $output, $atts ) {
 }
 add_filter( 'display_posts_shortcode_wrapper_close', 'be_dps_select_close_grouped', 10, 2 );
 
-/* Collect post data during output */
+/* Collect Post Data during Output */
 function be_dps_option_output_grouped( $output, $atts ) {
     if ( empty( $atts['wrapper'] ) || 'select' !== $atts['wrapper'] ) {
         return $output;
@@ -315,7 +315,7 @@ add_action( 'wp_head', function () {
     .display-posts-listing.grid.traits-conclusion {grid-gap: 0.25rem;}
     .display-posts-listing.grid.traits-conclusion .title {font-size: 0.85rem !important;}
 	/* DPS for Taxonomies */
-	.display-taxonomies .term-count {font-size: 0.85rem; font-weight: normal; font-style: italic;}
+	.display-taxonomies .term-count {font-weight: normal; font-style: italic;}
 	.display-taxonomies .listing-item a.image {display: block;}
 	.display-taxonomies .listing-item a.image img {width: 100%; height: auto;}
     </style>
@@ -331,7 +331,7 @@ add_action( 'wp_footer', function () {
     <script>
     (function() {
         'use strict';
-        // Adjust sidebar font size to prevent overflow
+        // Adjust Sidebar Font Size to prevent Overflow
         function adjustFontSize() {
             const sidebar = document.querySelector('.ct-sidebar');
             if (!sidebar) return;
@@ -346,13 +346,13 @@ add_action( 'wp_footer', function () {
                 sidebar.style.fontSize = `${fontSize}px`;
             }
         }
-		// Setup ARIA live announcements for select navigation
+		// Setup ARIA live Announcements for Select Navigation
 		function setupSelectAnnouncements() {
     		document.querySelectorAll('.display-posts-listing[data-live-id]').forEach(select => {
         		const live = document.getElementById(select.dataset.liveId);
         		select.addEventListener('change', function() {
             		if (this.value) {
-                		// Announce to screen readers
+                		// Announce to Screen Readers
                 		if (live) {
                     		live.textContent = `Navigating to ${this.options[this.selectedIndex].text}`;
                 		}
@@ -379,7 +379,7 @@ add_action( 'wp_footer', function () {
         } else {
             init();
         }
-        // Debounced resize handler
+        // Debounced Resize Handler
         let resizeTimer;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
