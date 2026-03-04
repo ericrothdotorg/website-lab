@@ -349,6 +349,7 @@ function initialize_custom_admin_columns() {
 		add_filter("manage_edit-{$tax}_columns", function($columns) {
 			$new = [];
 			$new['cb'] = $columns['cb'];
+			$new['id'] = __('ID');
 			$new['featured_image'] = __('Image');
 			foreach ($columns as $key => $value) {
 				if ($key !== 'cb') {
@@ -361,6 +362,9 @@ function initialize_custom_admin_columns() {
 	// Render featured IMG Column Content
 	foreach ($taxonomies as $tax) {
 		add_filter("manage_{$tax}_custom_column", function($content, $column, $term_id) {
+			if ($column === 'id') {
+			echo $term_id;
+			}
 			if ($column === 'featured_image') {
 				$blocksy_meta = get_term_meta($term_id, 'blocksy_taxonomy_meta_options', true);
 				if (is_array($blocksy_meta) && !empty($blocksy_meta['image']['url'])) {
@@ -379,8 +383,9 @@ function initialize_custom_admin_columns() {
 		if ($screen && in_array($screen->taxonomy, ['category', 'post_tag', 'topics', 'interest_tag', 'groups'])) {
 			echo '<style>
 				.column-cb { width: 5%; }
+				.column-id { width: 3%; }
 				.column-featured_image { width: 12%; }
-				.column-name { width: 18%; }
+				.column-name { width: 15%; }
 				.column-description { width: 35%; }
 				.column-slug { width: 8%; }
 				.column-posts { width: 7%; }
