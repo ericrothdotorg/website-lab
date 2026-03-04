@@ -195,13 +195,6 @@ add_filter('blocksy:frontend:dynamic-data:post-featured-image:html', function($h
     return $html;
 }, 10);
 
-// Disable Google Fonts (using local Fonts instead)
-add_filter('blocksy:typography:google:use-remote', '__return_false');
-add_filter('blocksy_typography_font_sources', function($sources) {
-    unset($sources['google']);
-    return $sources;
-});
-
 // Enable Blocksy Flexy Animation Styles
 add_action('wp_enqueue_scripts', fn() => wp_enqueue_style('ct-flexy-styles'));
 
