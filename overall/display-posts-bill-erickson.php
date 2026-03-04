@@ -206,17 +206,12 @@ function display_taxonomies_shortcode( $atts ) {
     if ( empty( $terms ) || is_wp_error( $terms ) ) {
         return '';
     }
-    // Wrapper Attributes — Only add display-posts-listing if not already present in wrapper_class
-    $extra = 'display-taxonomies ' . $atts['wrapper_class'];
-	$classes = strpos( $extra, 'display-posts-listing' ) !== false
-		? trim( $extra )
-		: trim( 'display-posts-listing ' . $extra );
+    // Wrapper Attributes
+    $classes = trim( 'display-taxonomies ' . $atts['wrapper_class'] );
     $id_attr = $atts['wrapper_id'] ? sprintf( ' id="%s"', esc_attr( $atts['wrapper_id'] ) ) : '';
-    // Child Tag: li for ul / ol, div for div wrapper
-    $child = ( 'div' === $tag ) ? 'div' : 'li';
     $items = '';
     foreach ( $terms as $term ) {
-        $link  = get_term_link( $term );
+        $link = get_term_link( $term );
         if ( is_wp_error( $link ) ) continue;
         $image = '';
         if ( ! empty( $atts['image_size'] ) ) {
@@ -233,8 +228,7 @@ function display_taxonomies_shortcode( $atts ) {
             ? sprintf( ' <span class="term-count">(%d)</span>', (int) $term->count )
             : '';
         $items .= sprintf(
-            '<%1$s class="listing-item">%2$s<a class="title" href="%3$s">%4$s%5$s</a></%1$s>',
-            $child,
+            '<div class="listing-item">%1$s<a class="title" href="%2$s">%3$s%4$s</a></div>',
             $image,
             esc_url( $link ),
             esc_html( $term->name ),
