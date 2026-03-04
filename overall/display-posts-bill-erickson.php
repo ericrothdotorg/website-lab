@@ -380,11 +380,13 @@ add_action( 'wp_footer', function () {
             init();
         }
         // Debounced Resize Handler
-        let resizeTimer;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(adjustFontSize, 150);
-        });
+		<?php if ( is_singular( 'post' ) || is_singular( 'my-interests' ) ) : ?>
+		let resizeTimer;
+		window.addEventListener('resize', () => {
+			clearTimeout(resizeTimer);
+			resizeTimer = setTimeout(adjustFontSize, 150);
+		});
+		<?php endif; ?>
     })();
     </script>
     <?php
