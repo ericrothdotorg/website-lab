@@ -342,7 +342,7 @@ function initialize_custom_admin_columns() {
 	// TAXONOMY COLUMNS
 	// =======================================
 
-	$taxonomies = ['category', 'post_tag', 'topics', 'interest_tag', 'groups'];
+	$taxonomies = ['category', 'post_tag', 'things', 'types', 'topics', 'interest_tag', 'groups'];
 	
 	// Add featured IMG Column
 	foreach ($taxonomies as $tax) {
@@ -380,7 +380,7 @@ function initialize_custom_admin_columns() {
 	// Set Columns Width in Tax Columns
 	add_action('admin_head-edit-tags.php', function () {
 		$screen = get_current_screen();
-		if ($screen && in_array($screen->taxonomy, ['category', 'post_tag', 'topics', 'interest_tag', 'groups'])) {
+		if ($screen && in_array($screen->taxonomy, ['category', 'post_tag', 'things', 'types', 'topics', 'interest_tag', 'groups'])) {
 			echo '<style>
 				.column-cb { width: 5%; }
 				.column-id { width: 3%; }
