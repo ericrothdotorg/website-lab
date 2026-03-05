@@ -1,4 +1,5 @@
 <?php
+defined('ABSPATH') || exit;
 
 add_action('wp_footer', function() {
     if (is_page(array('100674','150120')) || is_single(array(''))) {
