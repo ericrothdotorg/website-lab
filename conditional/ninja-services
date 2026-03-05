@@ -1,4 +1,6 @@
 <?php
+defined('ABSPATH') || exit;
+
 // === CONDITIONAL FLAG INJECTION BASED ON PATH ===
 
 function should_inject_lang_script() {
