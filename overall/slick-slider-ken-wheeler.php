@@ -43,60 +43,62 @@ add_action( 'wp_head', function () {
 add_action('wp_footer', function () {
     ?>
     <style>
-        /* Navigation */
-        .slick-slider img {margin: 0 auto;}
-        .slick-next:before, .slick-prev:before {font-size: 35px; color: #afc2cf;}
-        .slick-next, .slick-prev {position: absolute; top: -35px;}
-        .slick-next {right: 20px; left: auto;}
-        .slick-prev {right: 70px; left: auto;}
-        .slick-dots li button:before {font-size: 15px; margin-top: 15px; opacity: 0.5; color: #afc2cf;}
-        .slick-dots li.slick-active button:before {opacity: 1; color: #afc2cf;}
-		.slick-autoplay-toggle-button {display: none;}
+    /* --- NOTE: These styles are mirrored in the 'Shortcode Live Preview' snippet for editor display. Update both when changing. --- */
+		
+    /* Navigation */
+    .slick-slider img {margin: 0 auto;}
+    .slick-next:before, .slick-prev:before {font-size: 35px; color: #afc2cf;}
+    .slick-next, .slick-prev {position: absolute; top: -35px;}
+    .slick-next {right: 20px; left: auto;}
+    .slick-prev {right: 70px; left: auto;}
+    .slick-dots li button:before {font-size: 15px; margin-top: 15px; opacity: 0.5; color: #afc2cf;}
+    .slick-dots li.slick-active button:before {opacity: 1; color: #afc2cf;}
+    .slick-autoplay-toggle-button {display: none;}
 
-        /* Style Height Transition*/
-        .slideshow-single-item {transition: height 0.4s ease;}
+    /* Style Height Transition*/
+    .slideshow-single-item {transition: height 0.4s ease;}
 
-        /* Optimize Slider Animations */
-        .slick-track {will-change: transform;}
+    /* Optimize Slider Animations */
+    .slick-track {will-change: transform;}
 
-        /* Style Slideshows with single Item*/
-		.slideshow-single-item img {border-radius: 25px;}
+    /* Style Slideshows with single Item*/
+    .slideshow-single-item img {border-radius: 25px;}
 
-        /* Style Slideshows with multiple Items*/
-		.slideshow-multiple-items-3 .slick-list, .slideshow-multiple-items-4 .slick-list { margin: 0 -12.5px; }
-		.slideshow-multiple-items-3 .slick-slide, .slideshow-multiple-items-4 .slick-slide { margin: 0 12.5px; }
-		@media (max-width: 600px) {
-			.slideshow-multiple-items-3 .slick-list, .slideshow-multiple-items-4 .slick-list { margin: 0 -7.5px; }
-			.slideshow-multiple-items-3 .slick-slide, .slideshow-multiple-items-4 .slick-slide { margin: 0 7.5px; }
-		}
-		@media (min-width: 600px) and (max-width: 992px) {
-			.slideshow-multiple-items-3 .slick-list, .slideshow-multiple-items-4 .slick-list { margin: 0 -10px; }
-			.slideshow-multiple-items-3 .slick-slide, .slideshow-multiple-items-4 .slick-slide { margin: 0 10px; }
-		}
-        .slideshow-multiple-items-vertical .slick-list {margin: -10px 0;}
-        .slideshow-multiple-items-vertical .slick-slide {margin: 10px 0;}
-        .slideshow-multiple-items-center-mode img {padding: 0 0.75% 0 0.75%;}
+    /* Style Slideshows with multiple Items*/
+    .slideshow-multiple-items-3 .slick-list, .slideshow-multiple-items-4 .slick-list { margin: 0 -12.5px; }
+    .slideshow-multiple-items-3 .slick-slide, .slideshow-multiple-items-4 .slick-slide { margin: 0 12.5px; }
+    @media (max-width: 600px) {
+		.slideshow-multiple-items-3 .slick-list, .slideshow-multiple-items-4 .slick-list { margin: 0 -7.5px; }
+		.slideshow-multiple-items-3 .slick-slide, .slideshow-multiple-items-4 .slick-slide { margin: 0 7.5px; }
+	}
+    @media (min-width: 600px) and (max-width: 992px) {
+		.slideshow-multiple-items-3 .slick-list, .slideshow-multiple-items-4 .slick-list { margin: 0 -10px; }
+		.slideshow-multiple-items-3 .slick-slide, .slideshow-multiple-items-4 .slick-slide { margin: 0 10px; }
+	}
+    .slideshow-multiple-items-vertical .slick-list {margin: -10px 0;}
+    .slideshow-multiple-items-vertical .slick-slide {margin: 10px 0;}
+    .slideshow-multiple-items-center-mode img {padding: 0 0.75% 0 0.75%;}
 
-        /* Style Slideshows with WP Columns */
-        .slideshow-single-item .wp-block-columns {align-items: center;}
+    /* Style Slideshows with WP Columns */
+    .slideshow-single-item .wp-block-columns {align-items: center;}
 
-        /* Style Slideshows with Layers */
-        .layer-container {position: relative; margin: 0 auto;}
-		.layer-content-procurement-consulting {margin-right: 10px;}
-		.layer-content-procurement-consulting h5 {text-align: justify;}
-		.layer-content-procurement-consulting p {text-align: justify; padding-top: 5px;}
-		.layer-content-procurement-consulting .emphasized-design-red {padding-top: 15px;}
-        .layer-content-industries-served {color: #FFFFFF; padding: 0 0.75%; font-size: clamp(1.125rem, 3vw, 1.5rem);}
-		.layer-content-industries-served > div {height: 150px; display: flex; justify-content: center; align-items: center; padding: 0 25px;}
-		.layer-content-industries-served p {margin: 0; text-align: center;}
-		.layer-content-ninja-services {color: #FFFFFF; padding: 0 0.75%; font-size: clamp(1rem, 5vw, 3rem);}
-		.layer-content-ninja-services > div {height: 150px; display: flex; justify-content: center; align-items: center; padding: 0 25px;}
-		.layer-content-ninja-services p {margin: 0; text-align: center;}
+    /* Style Slideshows with Layers */
+    .layer-container {position: relative; margin: 0 auto;}
+    .layer-content-procurement-consulting {margin-right: 10px;}
+    .layer-content-procurement-consulting h5 {text-align: justify;}
+    .layer-content-procurement-consulting p {text-align: justify; padding-top: 5px;}
+    .layer-content-procurement-consulting .emphasized-design-red {padding-top: 15px;}
+    .layer-content-industries-served {color: #FFFFFF; padding: 0 0.75%; font-size: clamp(1.125rem, 3vw, 1.5rem);}
+    .layer-content-industries-served > div {height: 150px; display: flex; justify-content: center; align-items: center; padding: 0 25px;}
+    .layer-content-industries-served p {margin: 0; text-align: center;}
+    .layer-content-ninja-services {color: #FFFFFF; padding: 0 0.75%; font-size: clamp(1rem, 5vw, 3rem);}
+    .layer-content-ninja-services > div {height: 150px; display: flex; justify-content: center; align-items: center; padding: 0 25px;}
+    .layer-content-ninja-services p {margin: 0; text-align: center;}
 
-		/* Prevent hidden Slides from being focusable */
-		/* Extra Layer of Protection (CSS-based) - Main Fix is in Site_Essentials via MutationObserver */
-		.slick-slide[aria-hidden="true"] {pointer-events: none;}
-		.slick-slide[aria-hidden="true"] a {tabindex: -1;}
+    /* Prevent hidden Slides from being focusable */
+    /* Extra Layer of Protection (CSS-based) - Main Fix is in Site_Essentials via MutationObserver */
+    .slick-slide[aria-hidden="true"] {pointer-events: none;}
+    .slick-slide[aria-hidden="true"] a {tabindex: -1;}
     </style>
 
     <script>
