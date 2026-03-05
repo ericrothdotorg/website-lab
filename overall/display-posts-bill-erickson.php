@@ -256,62 +256,75 @@ add_shortcode( 'display-taxonomies', 'display_taxonomies_shortcode' );
 add_action( 'wp_head', function () {
     ?>
     <style>
-    /* Accessibility */
-    .screen-reader-text {position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden;}
-    /* Base Styles */
-    .display-posts-listing {cursor: pointer;}
-    .display-posts-listing .listing-item {clear: both; overflow: hidden; background: #fafbfc; border: 1px solid #e1e8ed; border-radius: 25px;}
-    .display-posts-listing .listing-item:hover {background: #f2f5f7;}
-    .display-posts-listing img {aspect-ratio: 16/9; transition: transform 0.3s ease; will-change: transform;}
-    .display-posts-listing img:hover {transform: scale(1.05);}
-    .display-posts-listing .title {display: block; margin: 16px 0; text-align: center; font-size: 1.125rem; width: 100%;}
-    .listing-item .excerpt-dash {display: none;}
-    .display-posts-listing .excerpt {clear: right; display: block; text-align: center; margin: 0 16px 20px;}
-    .display-posts-listing .category-display, .display-posts-listing.grid .category-display {display: block; font-size: 0.85rem; text-align: center; margin: -8px 0 16px; opacity: 0.75;}
-    /* Grid Layout (2 columns) */
-    .display-posts-listing.grid {display: grid; grid-template-columns: repeat(2, 1fr); grid-gap: 1.75rem 1.5rem;}
-    .display-posts-listing.grid img {display: block; max-width: 100%; height: auto;}
-    .display-posts-listing.grid .title {margin: 12px 0; font-size: 1.125rem;}
-    @media (max-width: 600px) {.display-posts-listing.grid .excerpt {padding: 0 8px; font-size: 0.75rem;}}
-    @media (min-width: 600px) {.display-posts-listing.grid .excerpt {padding: 0 16px;}}
-    /* Grid Layout (3 columns) */
-    @media (min-width: 768px) {.display-posts-listing.grid#three-columns {grid-template-columns: repeat(3, 1fr);}}
+	/* --- NOTE: These styles are mirrored in the 'Shortcode Live Preview' snippet for editor display. Update both when changing. --- */
+    
+	/* Accessibility */
+	.screen-reader-text {position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden;}
+		
+	/* Base Styles */
+	.display-posts-listing {cursor: pointer;}
+	.display-posts-listing .listing-item {clear: both; overflow: hidden; background: #fafbfc; border: 1px solid #e1e8ed; border-radius: 25px;}
+	.display-posts-listing .listing-item:hover {background: #f2f5f7;}
+	.display-posts-listing img {aspect-ratio: 16/9; transition: transform 0.3s ease; will-change: transform;}
+	.display-posts-listing img:hover {transform: scale(1.05);}
+	.display-posts-listing .title {display: block; margin: 16px 0; text-align: center; font-size: 1.125rem; width: 100%;}
+	.listing-item .excerpt-dash {display: none;}
+	.display-posts-listing .excerpt {clear: right; display: block; text-align: center; margin: 0 16px 20px;}
+	.display-posts-listing .category-display, .display-posts-listing.grid .category-display {display: block; font-size: 0.85rem; text-align: center; margin: -8px 0 16px; opacity: 0.75;}
+	
+	/* Grid Layout (2 columns) */
+	.display-posts-listing.grid {display: grid; grid-template-columns: repeat(2, 1fr); grid-gap: 1.75rem 1.5rem;}
+	.display-posts-listing.grid img {display: block; max-width: 100%; height: auto;}
+	.display-posts-listing.grid .title {margin: 12px 0; font-size: 1.125rem;}
+	@media (max-width: 600px) {.display-posts-listing.grid .excerpt {padding: 0 8px; font-size: 0.75rem;}}
+	@media (min-width: 600px) {.display-posts-listing.grid .excerpt {padding: 0 16px;}}
+	
+	/* Grid Layout (3 columns) */
+	@media (min-width: 768px) {.display-posts-listing.grid#three-columns {grid-template-columns: repeat(3, 1fr);}}
+	
 	/* Grid Layout (4 columns) */
-    @media (min-width: 600px) and (max-width: 992px) {.display-posts-listing.grid#four-columns {grid-template-columns: repeat(2, 1fr);}}
-    @media (min-width: 992px) {.display-posts-listing.grid#four-columns {grid-template-columns: repeat(4, 1fr);}}
-    @media (min-width: 600px) {.display-posts-listing.grid#four-columns .title {font-size: 1.125rem;}}
+	@media (min-width: 600px) and (max-width: 992px) {.display-posts-listing.grid#four-columns {grid-template-columns: repeat(2, 1fr);}}
+	@media (min-width: 992px) {.display-posts-listing.grid#four-columns {grid-template-columns: repeat(4, 1fr);}}
+	@media (min-width: 600px) {.display-posts-listing.grid#four-columns .title {font-size: 1.125rem;}}
+	
 	/* Grid Layout (6 columns) */
-    .display-posts-listing.grid#six-columns .title {margin: 8px 0; font-size: 0.75rem;}
-    @media (min-width: 600px) and (max-width: 992px) {.display-posts-listing.grid#six-columns {grid-template-columns: repeat(3, 1fr);}}
-    @media (min-width: 992px) {.display-posts-listing.grid#six-columns {grid-template-columns: repeat(6, 1fr);}}
-    /* Layout Variations */
-    .display-posts-listing#small-version, .display-posts-listing#notorious-big {overflow: hidden;}
-    .display-posts-listing.grid#small-version .listing-item {margin-bottom: 0;}
-    .display-posts-listing.grid#small-version .title {margin: 10px 0; font-size: 0.75rem;}
-    .display-posts-listing#notorious-big .title, .display-posts-listing.grid#notorious-big .title {font-size: 1.5rem; margin: 7.5px 0 2.5px;}
-    .display-posts-listing.grid#notorious-big .excerpt {font-size: 1rem;}
-    @media (max-width: 768px) {.display-posts-listing.grid#notorious-big {grid-template-columns: 1fr;}}
-    /* FAQs Layout */
-    .display-posts-faqs .listing-item {clear: both; overflow: hidden; margin-bottom: 20px;}
-    .display-posts-faqs .image {float: left; margin: 0 16px 0 0;}
-    .display-posts-faqs .title {display: block; text-align: justify; font-size: 1rem; margin-top: -4px;}
-    .display-posts-faqs .excerpt {display: block; text-align: justify;}
-    /* Trending Layout */
-    .display-posts-trending {display: flex; flex-wrap: wrap; gap: 20px;}
-    .display-posts-trending .listing-item {display: flex; align-items: center; justify-content: space-between; flex: 1 1 calc(16.66% - 20px); box-sizing: border-box; margin-bottom: 20px; background: none; border: none;}
-    .display-posts-trending .listing-item:hover {background: none; border: none;}
-    .display-posts-trending .image {width: 80px; height: 80px; margin: 0 15px 0 0; overflow: hidden; border-radius: 50%; display: flex; justify-content: center; align-items: center;}
-    .display-posts-trending .image img {width: 100%; height: 100%; object-fit: cover; border-radius: 50%;}
-    .display-posts-trending .title {text-align: left; font-size: 1rem; margin: 0; flex: 1; overflow-wrap: anywhere;}
-    @media (min-width: 768px) and (max-width: 1200px) {.display-posts-trending .listing-item {flex: 1 1 calc(33.33% - 20px);}}
-    @media (max-width: 768px) {.display-posts-trending .listing-item {flex: 1 1 calc(50% - 20px);}}
-    /* Sidebar Widgets */
-    .display-posts-widgets .listing-item .category-display a {font-weight: normal;}
-    .ct-sidebar .display-posts-widgets {list-style-type: disc !important; padding-left: 20px;}
-    .display-posts-listing#latest > *:not(:first-child):not(:last-child) {margin: 25px 0;}
-    /* Traits Conclusion */
-    .display-posts-listing.grid.traits-conclusion {grid-gap: 0.25rem;}
-    .display-posts-listing.grid.traits-conclusion .title {font-size: 0.85rem !important;}
+	.display-posts-listing.grid#six-columns .title {margin: 8px 0; font-size: 0.75rem;}
+	@media (min-width: 600px) and (max-width: 992px) {.display-posts-listing.grid#six-columns {grid-template-columns: repeat(3, 1fr);}}
+	@media (min-width: 992px) {.display-posts-listing.grid#six-columns {grid-template-columns: repeat(6, 1fr);}}
+	
+	/* Layout Variations */
+	.display-posts-listing#small-version, .display-posts-listing#notorious-big {overflow: hidden;}
+	.display-posts-listing.grid#small-version .listing-item {margin-bottom: 0;}
+	.display-posts-listing.grid#small-version .title {margin: 10px 0; font-size: 0.75rem;}
+	.display-posts-listing#notorious-big .title, .display-posts-listing.grid#notorious-big .title {font-size: 1.5rem; margin: 7.5px 0 2.5px;}
+	.display-posts-listing.grid#notorious-big .excerpt {font-size: 1rem;}
+	@media (max-width: 768px) {.display-posts-listing.grid#notorious-big {grid-template-columns: 1fr;}}
+	
+	/* FAQs Layout */
+	.display-posts-faqs .listing-item {clear: both; overflow: hidden; margin-bottom: 20px;}
+	.display-posts-faqs .image {float: left; margin: 0 16px 0 0;}
+	.display-posts-faqs .title {display: block; text-align: justify; font-size: 1rem; margin-top: -4px;}
+	.display-posts-faqs .excerpt {display: block; text-align: justify;}
+	
+	/* Trending Layout */
+	.display-posts-trending {display: flex; flex-wrap: wrap; gap: 20px;}
+	.display-posts-trending .listing-item {display: flex; align-items: center; justify-content: space-between; flex: 1 1 calc(16.66% - 20px); box-sizing: border-box; margin-bottom: 20px; background: none; border: none;}
+	.display-posts-trending .listing-item:hover {background: none; border: none;}
+	.display-posts-trending .image {width: 80px; height: 80px; margin: 0 15px 0 0; overflow: hidden; border-radius: 50%; display: flex; justify-content: center; align-items: center;}
+	.display-posts-trending .image img {width: 100%; height: 100%; object-fit: cover; border-radius: 50%;}
+	.display-posts-trending .title {text-align: left; font-size: 1rem; margin: 0; flex: 1; overflow-wrap: anywhere;}
+	@media (min-width: 768px) and (max-width: 1200px) {.display-posts-trending .listing-item {flex: 1 1 calc(33.33% - 20px);}}
+	@media (max-width: 768px) {.display-posts-trending .listing-item {flex: 1 1 calc(50% - 20px);}}
+	
+	/* Sidebar Widgets */
+	.display-posts-widgets .listing-item .category-display a {font-weight: normal;}
+	.ct-sidebar .display-posts-widgets {list-style-type: disc !important; padding-left: 20px;}
+	.display-posts-listing#latest > *:not(:first-child):not(:last-child) {margin: 25px 0;}
+	
+	/* Traits Conclusion */
+	.display-posts-listing.grid.traits-conclusion {grid-gap: 0.25rem;}
+	.display-posts-listing.grid.traits-conclusion .title {font-size: 0.85rem !important;}
+	
 	/* DPS for Taxonomies */
 	.display-taxonomies .term-count {font-weight: normal; font-style: italic;}
 	.display-taxonomies .listing-item a.image {display: block;}
