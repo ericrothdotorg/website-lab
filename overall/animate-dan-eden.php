@@ -1,4 +1,5 @@
 <?php
+defined('ABSPATH') || exit;
 
 // Enqueue Animate.css from local files
 add_action('wp_enqueue_scripts', function () {
