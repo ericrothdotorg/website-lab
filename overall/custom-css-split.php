@@ -1,4 +1,6 @@
 <?php
+defined('ABSPATH') || exit;
+
 /* ===== CRITICAL CSS - ABOVE THE FOLD ===== */
 
 add_action("wp_head", function () {
