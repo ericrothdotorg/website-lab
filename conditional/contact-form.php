@@ -1,4 +1,6 @@
 <?php
+defined('ABSPATH') || exit;
+
 // CREATE DATABASE TABLE TO STORE STUFF
 
 add_action('init', function () {
