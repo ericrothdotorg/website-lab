@@ -80,6 +80,25 @@ function dps_get_page_menu_groups( $menu_location = 'menu_1' ) {
 }
 
 // =====================================
+// GERMAN TITLE DETECTOR
+// =====================================
+
+function dps_is_german_title( string $title ): bool {
+    $german_titles = [
+        'Berufswelt',
+        'Mein Hintergrund',
+        'Meine Eigenschaften',
+        'Meine Kompetenzen',
+        'Mein Kompass',
+        'Meine Publikationen',
+        'Meine Verfügbarkeit',
+        'Über Mich',
+        'Kontakt',
+    ];
+    return in_array( trim( $title ), $german_titles, true );
+}
+
+// =====================================
 // GROUPED COLLECTOR CLASS
 // =====================================
 
@@ -111,12 +130,19 @@ class DPS_Grouped_Collector {
                 $term_id    = 'menu_' . sanitize_title( $group_info['label'] );
                 $label      = $group_info['label'];
                 $order      = $group_info['order'];
-            } else {
-                // Page exists but isn't in the Menu — Put at the End
-                $term_id = 'menu_unlisted';
-                $label   = 'Others';
-                $order   = 9999;
-            }
+			} else {
+				// Page exists but isn't in the Menu — Split into In German and Others
+				$title = get_the_title( $post );
+				if ( dps_is_german_title( $title ) ) {
+					$term_id = 'menu_unlisted_de';
+					$label   = 'In German';
+					$order   = 9998;
+				} else {
+					$term_id = 'menu_unlisted';
+					$label   = 'Others';
+					$order   = 9999;
+				}
+			}
         }
         // Handle manual Grouping (traits)
         elseif ( isset( $config['term_id'] ) ) {
