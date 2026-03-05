@@ -36,6 +36,50 @@ add_action( 'the_posts', function( $posts, $query ) {
 }, 10, 2 );
 
 // =====================================
+// MENU-ORDER HELPER FOR PAGES
+// =====================================
+
+function dps_get_page_menu_groups( $menu_location = 'menu_1' ) {
+    static $cache = [];
+    if ( isset( $cache[ $menu_location ] ) ) {
+        return $cache[ $menu_location ];
+    }
+    $locations = get_nav_menu_locations();
+    if ( empty( $locations[ $menu_location ] ) ) {
+        return $cache[ $menu_location ] = [];
+    }
+    $menu_items = wp_get_nav_menu_items( $locations[ $menu_location ] );
+    if ( empty( $menu_items ) ) {
+        return $cache[ $menu_location ] = [];
+    }
+    // Step 1: Index all Items by their own Menu Item ID
+    $by_id = [];
+    foreach ( $menu_items as $item ) {
+        $by_id[ $item->ID ] = $item;
+    }
+    // Step 2: Find the top-level Page Items (menu_item_parent == 0) and map every page_id under them
+    $result = [];
+    foreach ( $menu_items as $item ) {
+        if ( $item->object !== 'page' ) {
+            continue;
+        }
+        // Walk up to the Root
+        $current = $item;
+        while ( ! empty( $current->menu_item_parent )
+                && (int) $current->menu_item_parent !== 0
+                && isset( $by_id[ $current->menu_item_parent ] ) ) {
+            $current = $by_id[ $current->menu_item_parent ];
+        }
+        // $current is now the top-level Ancestor
+        $result[ (int) $item->object_id ] = [
+            'label' => wp_strip_all_tags( $current->title ),
+            'order' => (int) $current->menu_order,
+        ];
+    }
+    return $cache[ $menu_location ] = $result;
+}
+
+// =====================================
 // GROUPED COLLECTOR CLASS
 // =====================================
 
@@ -44,11 +88,11 @@ class DPS_Grouped_Collector {
     /* Taxonomy Mapping for Post Types */
     public static function get_group_config( $post_type ) {
         $configs = [
-            'page'          => [ 'term_id' => -100, 'label' => 'My Pages' ],
+            'page'          => [ 'menu_location' => 'menu_1' ],
             'my-traits'     => [ 'term_id' => -200, 'label' => 'My Traits' ],
             'post'          => [ 'taxonomy' => 'category' ],
             'my-interests'  => [ 'taxonomy' => 'topics' ],
-			'my-quotes'  	=> [ 'taxonomy' => 'groups' ],
+            'my-quotes'     => [ 'taxonomy' => 'groups' ],
         ];
         return $configs[ $post_type ] ?? [];
     }
@@ -59,10 +103,26 @@ class DPS_Grouped_Collector {
             self::$instances[ $instance_id ] = [];
         }
         $config = self::get_group_config( $post->post_type );
-        // Handle manual Grouping (pages, traits)
-        if ( isset( $config['term_id'] ) ) {
+        // Handle menu-based Grouping (pages)
+        if ( isset( $config['menu_location'] ) ) {
+            $page_groups = dps_get_page_menu_groups( $config['menu_location'] );
+            if ( isset( $page_groups[ $post->ID ] ) ) {
+                $group_info = $page_groups[ $post->ID ];
+                $term_id    = 'menu_' . sanitize_title( $group_info['label'] );
+                $label      = $group_info['label'];
+                $order      = $group_info['order'];
+            } else {
+                // Page exists but isn't in the Menu — Put at the End
+                $term_id = 'menu_unlisted';
+                $label   = 'Others';
+                $order   = 9999;
+            }
+        }
+        // Handle manual Grouping (traits)
+        elseif ( isset( $config['term_id'] ) ) {
             $term_id = $config['term_id'];
             $label   = $config['label'];
+            $order   = 0;
         }
         // Handle taxonomy-based Grouping (categories, topics, groups)
         elseif ( isset( $config['taxonomy'] ) ) {
@@ -71,20 +131,24 @@ class DPS_Grouped_Collector {
                 $term    = $terms[0];
                 $term_id = $term->term_id;
                 $label   = $term->name;
+                $order   = $term->term_order ?? $term->term_id;
             } else {
                 $term_id = -1;
                 $label   = 'Uncategorized';
+                $order   = 9998;
             }
         }
         // Default Fallback
         else {
             $term_id = -999;
             $label   = 'Uncategorized';
+            $order   = 9999;
         }
         // Initialize Group if needed
         if ( ! isset( self::$instances[ $instance_id ][ $term_id ] ) ) {
             self::$instances[ $instance_id ][ $term_id ] = [
                 'label' => $label,
+                'order' => $order,
                 'posts' => [],
             ];
         }
@@ -98,12 +162,19 @@ class DPS_Grouped_Collector {
     public static function render_grouped( $atts ) {
         $instance_id = md5( json_encode( $atts ) );
         $grouped     = self::$instances[ $instance_id ] ?? [];
-        // Sort alphabetically by Label
-        uasort( $grouped, fn( $a, $b ) => strcasecmp( $a['label'] ?? '', $b['label'] ?? '' ) );
+        // Sort by Menu Order (for pages), fall back to alphabetical for Taxonomy Groups
+        uasort( $grouped, function( $a, $b ) {
+            $ao = $a['order'] ?? PHP_INT_MAX;
+            $bo = $b['order'] ?? PHP_INT_MAX;
+            if ( $ao !== $bo ) {
+                return $ao <=> $bo;
+            }
+            return strcasecmp( $a['label'] ?? '', $b['label'] ?? '' );
+        } );
         $output = '';
         foreach ( $grouped as $group ) {
-            $label      = $group['label'] ?? '';
-            $has_label  = is_string( $label ) && trim( $label ) !== '';
+            $label     = $group['label'] ?? '';
+            $has_label = is_string( $label ) && trim( $label ) !== '';
             if ( $has_label ) {
                 $output .= sprintf( '<optgroup label="%s">', esc_attr( $label ) );
             }
