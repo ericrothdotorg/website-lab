@@ -85,7 +85,7 @@ function er_today_total_views_shortcode() {
         WHERE meta_key = '_er_post_views'
     ");
     $format_count = fn($num) => number_format($num);
-    $output = '<p>👁️ Views: <strong style="color: red;">' . $format_count($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</p>';
+    $output = '<p>👁️ Views: <strong style="color: #c53030;">' . $format_count($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</p>';
     set_transient($cache_key, $output, HOUR_IN_SECONDS);
     return $output;
 }
@@ -349,7 +349,7 @@ function er_today_total_likes_shortcode() {
         WHERE meta_key = 'likes'
     ");
     $format_count = fn($num) => number_format($num);
-    $output = '<p>👍 Likes: <strong style="color: red;">' . $format_count($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</p>';
+    $output = '<p>👍 Likes: <strong style="color: #c53030;">' . $format_count($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</p>';
     set_transient($cache_key, $output, HOUR_IN_SECONDS);
     return $output;
 }
@@ -372,7 +372,7 @@ function er_today_total_dislikes_shortcode() {
         WHERE meta_key = 'dislikes'
     ");
     $format_count = fn($num) => number_format($num);
-    $output = '<p>👎 Dislikes: <strong style="color: red;">' . $format_count($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</p>';
+    $output = '<p>👎 Dislikes: <strong style="color: #c53030;">' . $format_count($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</p>';
     set_transient($cache_key, $output, HOUR_IN_SECONDS);
     return $output;
 }
