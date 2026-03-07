@@ -494,19 +494,20 @@ add_action("wp_footer", function () {
 	.site-updates-text {padding-left: 35px; margin: 0;}
 	.content-text {color: #FF9900;}
 
-    /* Animate Footer Text */
-    .content-text::before {content: "content"; animation: content-words 10s linear infinite;}
-    @keyframes content-words {
-		10% {content: " posts";}
-		20% {content: " traits";}
-		30% {content: " projects";}
-		40% {content: " topics";}
-		50% {content: " galleries";}
-		60% {content: " feeds";}
-		70% {content: " pages";}
-		80% {content: " things";}
-		90% {content: " visitors";}
-    }
+	/* Animate Footer Text */
+	.content-text::before {content: "content"; animation: content-words 10s linear infinite;}
+	@keyframes content-words {
+		9.09%  {content: " posts";}
+		18.18% {content: " traits";}
+		27.27% {content: " projects";}
+		36.36% {content: " topics";}
+		45.45% {content: " galleries";}
+		54.54% {content: " feeds";}
+		63.63% {content: " pages";}
+		72.72% {content: " things";}
+		81.81% {content: " visitors";}
+		90.90% {content: " quotes";}
+	}
     
     /* USER'S MOTION PREFERENCES */
 	@media (prefers-reduced-motion: reduce) {
