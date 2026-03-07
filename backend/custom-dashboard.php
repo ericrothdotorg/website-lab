@@ -78,7 +78,7 @@ function initialize_custom_dashboard() {
             '🧠 AI' => 'https://ericroth.org/wp-admin/admin.php?page=hostinger-ai-assistant',
             '💾 GitHub' => 'https://github.com/ericrothdotorg'
         ];
-        echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
+        echo '<div class="cd-flex">';
         foreach ($links as $label => $url) {
             echo '<a href="' . esc_url($url) . '" target="_blank" class="button">' . esc_html($label) . '</a>';
         }
@@ -101,7 +101,7 @@ function initialize_custom_dashboard() {
             '✨ Claude' => 'https://claude.ai/',
             '✨ DS' => 'https://chat.deepseek.com/'
         ];
-        echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
+        echo '<div class="cd-flex">';
         foreach ($bots as $label => $url) {
             echo '<a href="' . esc_url($url) . '" target="_blank" class="button">' . esc_html($label) . '</a>';
         }
@@ -124,7 +124,7 @@ function initialize_custom_dashboard() {
             '💰 PayPal' => 'https://www.paypal.com/paypalme/ericrothdotorg',
             '💰 BMC' => 'https://buymeacoffee.com/ericrothdotorg'
         ];
-        echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
+        echo '<div class="cd-flex">';
         foreach ($channels as $label => $url) {
             echo '<a href="' . esc_url($url) . '" target="_blank" class="button">' . esc_html($label) . '</a>';
         }
@@ -183,38 +183,34 @@ function initialize_custom_dashboard() {
 		$format = fn($num) => number_format_i18n($num, 0);
 		$render_today_list = function($posts) {
 			if (empty($posts)) {
-				echo '<li style="color:#999;font-style:italic;">None today.</li>';
+				echo '<li style="font-style: italic;">None today.</li>';
 				return;
 			}
 			foreach ($posts as $p) {
 				$type_label = ucfirst(str_replace('-', ' ', $p->post_type));
-				echo '<li style="margin-bottom:5px;">';
+				echo '<li style="margin-bottom: 5px;">';
 				echo '<a href="' . esc_url(get_edit_post_link($p->ID)) . '" target="_blank">' . esc_html($p->post_title) . '</a>';
-				echo ' <span style="color:#999;font-size:11px;">(' . esc_html($type_label) . ')</span>';
-				echo ' <a href="' . esc_url(get_permalink($p->ID)) . '" target="_blank" style="color:#999;font-size:11px;">↗</a>';
+				echo ' <span class="cd-muted" style="font-size: 11px;">(' . esc_html($type_label) . ')</span>';
+				echo ' <a href="' . esc_url(get_permalink($p->ID)) . '" target="_blank" class="cd-muted" style="font-size: 11px;">↗</a>';
 				echo '</li>';
 			}
 		};
 		
 		echo '<ul style="font-size: 14px; line-height: 1.5;">';
-		echo '<li>📬 Contact Messages: <strong style="color:#c53030;">' . $format($cached['contact_today']) . '</strong> today / <strong>' . $format($cached['contact_total']) . '</strong> total</li>';
-		echo '<li>👁️ Views: <strong style="color: #c53030;">' . $format($cached['views_today']) . '</strong> today / <strong>' . $format($cached['views_total']) . '</strong> total</li>';
+		echo '<li>📬 Contact Messages: <strong class="cd-alert">' . $format($cached['contact_today']) . '</strong> today / <strong>' . $format($cached['contact_total']) . '</strong> total</li>';
+		echo '<li>👁️ Views: <strong class="cd-alert">' . $format($cached['views_today']) . '</strong> today / <strong>' . $format($cached['views_total']) . '</strong> total</li>';
 		// 👍 Likes
-		echo '<li>👍 Likes: ';
-		echo '<details style="display: inline-block; vertical-align: top;">';
-		echo '<summary style="cursor: pointer; color: #1e73be; font-weight: bold; list-style: none;">' . $format($cached['likes_today']) . ' today</summary>';
-		echo '<ul style="margin: 8px 0 4px 16px; font-size: 13px; line-height: 1.8;">';
+		echo '<li>👍 Likes: <span class="cd-toggle cd-summary" data-target="likes-today">' . $format($cached['likes_today']) . ' today</span>';
+		echo ' / <strong>' . $format($cached['likes_total']) . '</strong> total';
+		echo '<ul id="likes-today" style="display:none; margin: 8px 0 4px 16px; font-size: 13px; line-height: 1.8;">';
 		$render_today_list($liked_today);
-		echo '</ul></details>';
-		echo ' / <strong>' . $format($cached['likes_total']) . '</strong> total</li>';
+		echo '</ul></li>';
 		// 👎 Dislikes
-		echo '<li>👎 Dislikes: ';
-		echo '<details style="display: inline-block; vertical-align: top;">';
-		echo '<summary style="cursor: pointer; color: #1e73be; font-weight: bold; list-style: none;">' . $format($cached['dislikes_today']) . ' today</summary>';
-		echo '<ul style="margin: 8px 0 4px 16px; font-size: 13px; line-height: 1.8;">';
+		echo '<li>👎 Dislikes: <span class="cd-toggle cd-summary" data-target="dislikes-today">' . $format($cached['dislikes_today']) . ' today</span>';
+		echo ' / <strong>' . $format($cached['dislikes_total']) . '</strong> total';
+		echo '<ul id="dislikes-today" style="display:none; margin: 8px 0 4px 16px; font-size: 13px; line-height: 1.8;">';
 		$render_today_list($disliked_today);
-		echo '</ul></details>';
-		echo ' / <strong>' . $format($cached['dislikes_total']) . '</strong> total</li>';
+		echo '</ul></li>';
 		echo '</ul>';
 	}
 
@@ -252,11 +248,11 @@ function initialize_custom_dashboard() {
 			'webpagetest' => 'https://www.webpagetest.org/?url=' . urlencode($site_url),
 			'wave' => 'https://wave.webaim.org/report#/' . urlencode($site_url)
 		];
-		echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
+		echo '<div class="cd-flex">';
 		echo '<a href="' . esc_url($urls['googlerich']) . '" target="_blank" class="button">🧩 Google Rich</a>';
 		echo '<a href="' . esc_url($urls['schemaorg']) . '" target="_blank" class="button">🧩 schema.org</a>';
 		echo '</div>';
-		echo '<div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">';
+		echo '<div class="cd-flex" style="margin-top: 10px;">';
 		echo '<a href="' . esc_url($urls['pagespeed']) . '" target="_blank" class="button">🚀 PageSpeed</a>';
 		echo '<a href="' . esc_url($urls['webpagetest']) . '" target="_blank" class="button">🚀 WebPageTest</a>';
 		echo '<a href="' . esc_url($urls['wave']) . '" target="_blank" class="button">♿ Accessibility</a>';
@@ -278,7 +274,7 @@ function initialize_custom_dashboard() {
 		}
 		$plugin_count = count(get_plugins());
 		
-		echo '<div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">';
+		echo '<div class="cd-flex" style="margin-top: 15px;">';
 		echo '<div style="width: calc(50% - 5px);">';
 		echo '<p>🖼️ Media Files: <strong>' . $total_media . '</strong></p>';
 		echo '<p style="margin-top: -5px;">🧵 InnoDB Tables: <strong>' . $db_table_count . '</strong></p>';
@@ -292,12 +288,12 @@ function initialize_custom_dashboard() {
 
 	function custom_render_tools_and_actions() {
 		echo '<div style="margin-top: 15px;">';
-		echo '<div style="margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap;">';
+		echo '<div class="cd-flex" style="margin-bottom: 10px;">';
 		echo '<a href="https://ericroth.org/wp-admin/themes.php?page=design-block-tracker" target="_blank" class="button">🎨 Design Blocks</a>';
 		echo '<a href="https://clarity.microsoft.com/projects/view/eic7b2e9o1/dashboard" target="_blank" class="button">📈 MS Clarity</a>';
 		echo '</div>';
-		echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
-		echo '<form method="post" style="margin: 0;">';
+		echo '<div class="cd-flex">';
+		echo '<form method="post" class="cd-form">';
 		wp_nonce_field('check_broken_yt_action', 'check_broken_yt_nonce');
 		echo '<button type="submit" name="check_broken_yt" class="button">🔍 Broken YT Links</button>';
 		echo '</form>';
@@ -358,7 +354,7 @@ function initialize_custom_dashboard() {
 		$check_type = get_option('custom_yt_check_type', '');
 		echo '<div style="margin-top: 30px;">';
 		$broken_count = !empty($cached_results['broken_count']) ? $cached_results['broken_count'] : 0;
-		echo '<p>🔴 Broken YT Links: <strong style="color: red;">' . $broken_count . '</strong></p>';
+		echo '<p>🔴 Broken YT Links: <strong class="cd-alert">' . $broken_count . '</strong></p>';
 		if ($last_check) {
 			$tag = $check_type ? ' <strong>(' . esc_html($check_type) . ' check)</strong>' : '';
 			echo '<p><em>Last checked: ' . 
@@ -411,8 +407,8 @@ function initialize_custom_dashboard() {
 	}
 
 	function custom_render_action_buttons() {
-		echo '<div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">';
-		echo '<form method="post" style="margin: 0;">';
+		echo '<div class="cd-flex" style="align-items: center;">';
+		echo '<form method="post" class="cd-form">';
 		wp_nonce_field('custom_cleanup_action', 'custom_cleanup_nonce');
 		echo '<button type="submit" name="er_run_full_cleanup" class="button">🧵 InnoDB Cleanup</button>';
 		echo '</form>';
@@ -442,13 +438,13 @@ function initialize_custom_dashboard() {
 	function custom_render_stat_row($label, $count) {
 		$status = custom_get_health_status($count);
 		echo '<p style="margin: 5px 0;">' . $label . ': <strong>' . number_format_i18n($count) . '</strong> ';
-		echo '<span style="color:' . esc_attr($status[0]) . ';">— ' . esc_html($status[1]) . '</span></p>';
+		echo '<span class="' . esc_attr($status[0]) . '">— ' . esc_html($status[1]) . '</span></p>';
 	}
 
 	function custom_get_health_status($count) {
-		if ($count > 50000) return ['#c53030', 'Consider running a cleanup.'];
-		if ($count > 10000) return ['orange', 'Moderate bloat detected.'];
-		return ['green', 'Healthy state.'];
+		if ($count > 50000) return ['cd-alert',   'Consider running a cleanup.'];
+		if ($count > 10000) return ['cd-warning', 'Moderate bloat detected.'];
+		return                     ['cd-success', 'Healthy state.'];
 	}
 
 	function custom_run_innodb_cleanup() {
@@ -552,8 +548,8 @@ function initialize_custom_dashboard() {
 		$last_result = get_option('custom_last_cleanup_result');
 		$last_success = get_option('custom_last_cleanup_success', true);
 		if ($last_result) {
-			$result_color = $last_success ? 'green' : '#c53030';
-			echo '<p style="margin: 10px 0; color: ' . esc_attr($result_color) . ';"><strong>' . esc_html($last_result) . '</strong></p>';
+			$result_class = $last_success ? 'cd-success' : 'cd-alert';
+			echo '<p style="margin: 10px 0;" class="' . esc_attr($result_class) . '"><strong>' . esc_html($last_result) . '</strong></p>';
 		}
 		echo '<p style="margin: 5px 0;"><em>Last cleanup: ' . 
 			esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</em></p>';
@@ -569,45 +565,7 @@ function initialize_custom_dashboard() {
     }
 
 	function custom_render_blog_rss_widget() {
-        $tabs = [
-            ['label' => 'Blog', 'url' => 'https://ericroth.org/feed/']
-        ];
-        echo '<div class="rss-widget-wrapper" style="font-size: 14px;">';
-		echo '<div class="rss-tab-nav" style="display: flex; align-items: center; margin: 0 0 10px;"><span class="rss-counter"></span></div>';
-        $max_items = 40;
-        foreach ($tabs as $i => $tab) {
-            echo '<div id="tab-blog-' . $i . '" class="rss-tab-content" style="display: none;">';
-            $items = custom_get_rss_items($tab['url'], $max_items);
-            if (!is_wp_error($items)) {
-                foreach ($items as $index => $item) {
-                    $title = esc_html($item->get_title());
-                    $link = esc_url($item->get_link());
-                    $desc = wp_strip_all_tags($item->get_description());
-                    $excerpt = $desc ? wp_trim_words($desc, 30) : 'No description available';
-                    $date = $item->get_date('U') ? date_i18n('F j, Y', $item->get_date('U')) : 'Unknown date';
-					$post_id = '';
-                    $edit_link = '';
-                    $guid = $item->get_id();
-                    if (preg_match('/p=(\d+)/', $guid, $matches)) {
-                        $post_id = $matches[1];
-                        $edit_link = 'https://ericroth.org/wp-admin/post.php?post=' . $post_id . '&action=edit';
-                    }
-                    echo '<div class="rss-item" data-index="' . $index . '" style="display: none; margin-bottom: 15px;">';
-                    echo '<div><a href="' . $link . '" target="_blank" style="font-weight: bold;">' . $title . '</a> – ';
-                    echo '<span style="color: #666; font-size: 12px;">🗓️ Published: <strong>' . esc_html($date) . '</strong></span>';
-                    if ($edit_link) {
-                        echo ' – <a href="' . esc_url($edit_link) . '" target="_blank" style="color: #2271b1;">Edit</a>';
-                    }
-                    echo '</div>';
-                    echo '<p style="margin: 5px 0;">' . esc_html($excerpt) . '</p>';
-                    echo '</div>';
-                }
-            } else {
-                echo '<p>🚫 Error fetching feed: ' . esc_html($items->get_error_message()) . '</p>';
-            }
-            echo '</div>';
-        }
-        echo '</div>';
+        custom_render_rss_widget('blog', 'https://ericroth.org/feed/');
     }
 
 	// ======================================
@@ -620,50 +578,46 @@ function initialize_custom_dashboard() {
     }
 
 	function custom_render_interests_rss_widget() {
-        $tabs = [
-            ['label' => 'Interests', 'url' => 'https://ericroth.org/my-interests/feed/']
-        ];
-        echo '<div class="rss-widget-wrapper" style="font-size: 14px;">';
-		echo '<div class="rss-tab-nav" style="display: flex; align-items: center; margin: 0 0 10px;"><span class="rss-counter"></span></div>';
-        $max_items = 40;
-        foreach ($tabs as $i => $tab) {
-            echo '<div id="tab-interests-' . $i . '" class="rss-tab-content" style="display: none;">';
-            $items = custom_get_rss_items($tab['url'], $max_items);
-            if (!is_wp_error($items)) {
-                foreach ($items as $index => $item) {
-                    $title = esc_html($item->get_title());
-                    $link = esc_url($item->get_link());
-                    $desc = wp_strip_all_tags($item->get_description());
-                    $excerpt = $desc ? wp_trim_words($desc, 30) : 'No description available';
-                    $date = $item->get_date('U') ? date_i18n('F j, Y', $item->get_date('U')) : 'Unknown date';
-					$post_id = '';
-                    $edit_link = '';
-                    $guid = $item->get_id();
-                    if (preg_match('/p=(\d+)/', $guid, $matches)) {
-                        $post_id = $matches[1];
-                        $edit_link = 'https://ericroth.org/wp-admin/post.php?post=' . $post_id . '&action=edit';
-                    }
-                    echo '<div class="rss-item" data-index="' . $index . '" style="display: none; margin-bottom: 15px;">';
-                    echo '<div><a href="' . $link . '" target="_blank" style="font-weight: bold;">' . $title . '</a> – ';
-                    echo '<span style="color: #666; font-size: 12px;">🗓️ Published: <strong>' . esc_html($date) . '</strong></span>';
-                    if ($edit_link) {
-                        echo ' – <a href="' . esc_url($edit_link) . '" target="_blank" style="color: #2271b1;">Edit</a>';
-                    }
-                    echo '</div>';
-                    echo '<p style="margin: 5px 0;">' . esc_html($excerpt) . '</p>';
-                    echo '</div>';
-                }
-            } else {
-                echo '<p>🚫 Error fetching feed: ' . esc_html($items->get_error_message()) . '</p>';
-            }
-            echo '</div>';
-        }
-        echo '</div>';
+        custom_render_rss_widget('interests', 'https://ericroth.org/my-interests/feed/');
     }
 
 	// ======================================
-	// --- RSS FEED: SHARED FUNCTION ---
+	// 📰 RSS FEED: - SHARED FUNCTION -
 	// ======================================
+
+	function custom_render_rss_widget($id_prefix, $feed_url) {
+        echo '<div class="rss-widget-wrapper" style="font-size: 14px;">';
+		echo '<div class="rss-tab-nav" style="display: flex; align-items: center; margin: 0 0 10px;"><span class="rss-counter"></span></div>';
+        echo '<div id="tab-' . $id_prefix . '-0" class="rss-tab-content" style="display: none;">';
+        $items = custom_get_rss_items($feed_url, 40);
+        if (!is_wp_error($items)) {
+            foreach ($items as $index => $item) {
+                $title   = esc_html($item->get_title());
+                $link    = esc_url($item->get_link());
+                $desc    = wp_strip_all_tags($item->get_description());
+                $excerpt = $desc ? wp_trim_words($desc, 30) : 'No description available';
+                $date    = $item->get_date('U') ? date_i18n('F j, Y', $item->get_date('U')) : 'Unknown date';
+				$edit_link = '';
+                $guid = $item->get_id();
+                if (preg_match('/p=(\d+)/', $guid, $matches)) {
+                    $edit_link = 'https://ericroth.org/wp-admin/post.php?post=' . $matches[1] . '&action=edit';
+                }
+                echo '<div class="rss-item" data-index="' . $index . '" style="display: none; margin-bottom: 15px;">';
+                echo '<div><a href="' . $link . '" target="_blank" class="cd-bold cd-link">' . $title . '</a> – ';
+                echo '<span class="cd-muted cd-date">🗓️ Published: <strong>' . esc_html($date) . '</strong></span>';
+                if ($edit_link) {
+                    echo ' – <a href="' . esc_url($edit_link) . '" target="_blank" class="cd-link">Edit</a>';
+                }
+                echo '</div>';
+                echo '<p style="margin: 5px 0;">' . esc_html($excerpt) . '</p>';
+                echo '</div>';
+            }
+        } else {
+            echo '<p>🚫 Error fetching feed: ' . esc_html($items->get_error_message()) . '</p>';
+        }
+        echo '</div>';
+        echo '</div>';
+    }
 
 	function custom_get_rss_items($feed_url, $max_items) {
         if (!function_exists('fetch_feed')) {
@@ -676,12 +630,34 @@ function initialize_custom_dashboard() {
     }
 
 	// ======================================
-	// --- INLINE CSS & JAVASCRIPT ---
+	// - INLINE CSS & JAVASCRIPT -
 	// ======================================
 
 	add_action('admin_footer', 'custom_dashboard_inline_assets');
 	function custom_dashboard_inline_assets() {
         echo '<style>
+            /* === Dashboard Color Variables === */
+            #wpwrap {
+                --cd-blue:    #1e73be;
+                --cd-red:     #c53030;
+                --cd-muted:   #666;
+                --cd-green:   green;
+                --cd-orange:  orange;
+            }
+            /* === Utility Classes === */
+            .cd-link             { color: var(--cd-blue); text-decoration: none; }
+            .cd-link:hover       { color: var(--cd-red); }
+            .cd-summary          { color: var(--cd-blue); font-weight: bold; }
+            .cd-summary:hover    { color: var(--cd-red); }
+            .cd-alert            { color: var(--cd-red); }
+            .cd-success          { color: var(--cd-green); }
+            .cd-warning          { color: var(--cd-orange); }
+            .cd-muted            { color: var(--cd-muted); }
+            .cd-bold             { font-weight: bold; }
+            .cd-date             { font-size: 12px; }
+            .cd-flex             { display: flex; gap: 10px; flex-wrap: wrap; }
+            .cd-form             { margin: 0; }
+            /* === Widget Header === */
             [id^="custom_"] .postbox-header .hndle,
             #dashboard_right_now .postbox-header .hndle {
                 display: flex;
@@ -695,80 +671,95 @@ function initialize_custom_dashboard() {
 	echo <<<HTML
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+	// RSS Feed Widgets: Paginated batch navigation (prev/next, 4 items at a time)
 	document.querySelectorAll('.rss-widget-wrapper').forEach(widget => {
 		const tabNav = widget.querySelector('.rss-tab-nav');
 		const tabContent = widget.querySelector('.rss-tab-content');
 		
+		// Bail if Widget Structure is incomplete
 		if (!tabNav || !tabContent) return;
 		
+		// Build the PREV / NEXT Button Group and inject it into the nav Bar
 		const navGroup = document.createElement('div');
 		navGroup.style.marginLeft = 'auto';
 		navGroup.style.display = 'flex';
 		navGroup.style.gap = '6px';
-		
 		const prevBtn = document.createElement('button');
 		prevBtn.innerHTML = '⬅️';
 		prevBtn.title = 'Previous';
 		prevBtn.style.padding = '6px';
 		prevBtn.style.cursor = 'pointer';
-		
 		const nextBtn = document.createElement('button');
 		nextBtn.innerHTML = '➡️';
 		nextBtn.title = 'Next';
 		nextBtn.style.padding = '6px';
 		nextBtn.style.cursor = 'pointer';
-		
 		navGroup.appendChild(prevBtn);
 		navGroup.appendChild(nextBtn);
 		tabNav.appendChild(navGroup);
 		
+		// Get all RSS Items in this Widget
 		const items = tabContent.querySelectorAll('.rss-item');
 		
+		// If no Items found, show Message and stop
 		if (items.length === 0) {
 			const counter = widget.querySelector('.rss-counter');
 			if (counter) counter.textContent = 'No items found';
 			return;
 		}
-		
 		let currentStart = 0;
-		const batchSize = 4;
+		const batchSize = 4; // How many Items to show at once
 		
+		// Show a Batch of Items starting at `start`, hide the Rest
 		function renderBatch(start) {
 			items.forEach((item, i) => {
 				item.style.display = (i >= start && i < start + batchSize) ? 'block' : 'none';
 			});
 			currentStart = start;
 			
+			// Update "Showing X-Y of Z" Counter
 			const counter = widget.querySelector('.rss-counter');
 			if (counter) {
 				const endItem = Math.min(start + batchSize, items.length);
 				counter.textContent = 'Showing ' + (start + 1) + '-' + endItem + ' of ' + items.length;
 			}
 			
+			// Hide PREV Button on first Batch, NEXT Button on last Batch
 			prevBtn.style.display = currentStart === 0 ? 'none' : 'inline-block';
 			nextBtn.style.display = currentStart + batchSize >= items.length ? 'none' : 'inline-block';
 		}
 		
+		// Initialize: Show first Batch and make Content visible
 		renderBatch(0);
 		tabContent.style.display = 'block';
-		
 		prevBtn.addEventListener('click', () => {
 			if (currentStart - batchSize >= 0) {
 				renderBatch(currentStart - batchSize);
 			}
 		});
-		
 		nextBtn.addEventListener('click', () => {
 			if (currentStart + batchSize < items.length) {
 				renderBatch(currentStart + batchSize);
 			}
 		});
 	});
+
+	// Toggle today Lists (Likes / Dislikes)
+	document.querySelectorAll('.cd-toggle').forEach(trigger => {
+		trigger.style.cursor = 'pointer';
+		trigger.addEventListener('click', () => {
+			const target = document.getElementById(trigger.dataset.target);
+			if (!target) return;
+			target.style.display = target.style.display === 'none' ? 'block' : 'none';
+		});
+	});
+
 });
 </script>
 HTML;
     }
 
-} // Close Function: initialize_custom_dashboard
+} // Close Function: Initialize_custom_dashboard
 
 add_action('admin_init', 'initialize_custom_dashboard');
