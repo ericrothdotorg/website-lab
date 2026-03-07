@@ -141,30 +141,82 @@ function initialize_custom_dashboard() {
     }
 
 	function custom_render_activity_widget() {
-        $cached = get_transient('custom_activity_stats');
-        if ($cached === false) {
-            global $wpdb;
-            $cached = [
-                'contact_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}contact_messages WHERE DATE(submitted_at) = CURDATE()"),
-                'contact_total' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}contact_messages"),
-                'views_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}postmeta WHERE meta_key = 'view_timestamp' AND DATE(meta_value) = CURDATE()"),
-                'views_total' => $wpdb->get_var("SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta WHERE meta_key = '_er_post_views'"),
-                'likes_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}postmeta WHERE meta_key = 'like_timestamp' AND DATE(meta_value) = CURDATE()"),
-                'likes_total' => $wpdb->get_var("SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta WHERE meta_key = 'likes'"),
-                'dislikes_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}postmeta WHERE meta_key = 'dislike_timestamp' AND DATE(meta_value) = CURDATE()"),
-                'dislikes_total' => $wpdb->get_var("SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->prefix}postmeta WHERE meta_key = 'dislikes'")
-            ];
-            set_transient('custom_activity_stats', $cached, 5 * MINUTE_IN_SECONDS);
-        }
-        
-        $format = fn($num) => number_format_i18n($num, 0);
-        echo '<ul style="font-size: 14px; line-height: 1.5;">';
-        echo '<li>📬 Contact Messages: <strong style="color: red;">' . $format($cached['contact_today']) . '</strong> today / <strong>' . $format($cached['contact_total']) . '</strong> total</li>';
-        echo '<li>👁️ Views: <strong style="color: red;">' . $format($cached['views_today']) . '</strong> today / <strong>' . $format($cached['views_total']) . '</strong> total</li>';
-        echo '<li>👍 Likes: <strong style="color: red;">' . $format($cached['likes_today']) . '</strong> today / <strong>' . $format($cached['likes_total']) . '</strong> total</li>';
-        echo '<li>👎 Dislikes: <strong style="color: red;">' . $format($cached['dislikes_today']) . '</strong> today / <strong>' . $format($cached['dislikes_total']) . '</strong> total</li>';
-        echo '</ul>';
-    }
+		global $wpdb;
+		$table = $wpdb->prefix . 'er_post_stats';
+		$cached = get_transient('custom_activity_stats');
+		if ($cached === false) {
+			$cached = [
+				'contact_today'  => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}contact_messages WHERE DATE(submitted_at) = CURDATE()"),
+				'contact_total'  => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}contact_messages"),
+				'views_today'    => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'view' AND row_type = 'event' AND DATE(created_at) = CURDATE()"),
+				'views_total'    => $wpdb->get_var("SELECT SUM(count) FROM {$table} WHERE type = 'view' AND row_type = 'total'"),
+				'likes_today'    => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'like' AND row_type = 'event' AND DATE(created_at) = CURDATE()"),
+				'likes_total'    => $wpdb->get_var("SELECT SUM(count) FROM {$table} WHERE type = 'like' AND row_type = 'total'"),
+				'dislikes_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'dislike' AND row_type = 'event' AND DATE(created_at) = CURDATE()"),
+				'dislikes_total' => $wpdb->get_var("SELECT SUM(count) FROM {$table} WHERE type = 'dislike' AND row_type = 'total'"),
+			];
+			set_transient('custom_activity_stats', $cached, 5 * MINUTE_IN_SECONDS);
+		}
+		
+		// Posts liked today
+		$liked_today = $wpdb->get_results("
+			SELECT DISTINCT p.ID, p.post_title, p.post_type
+			FROM {$table} ps
+			JOIN {$wpdb->posts} p ON p.ID = ps.post_id
+			WHERE ps.type = 'like' AND ps.row_type = 'event'
+			AND DATE(ps.created_at) = CURDATE()
+			AND p.post_status = 'publish'
+			ORDER BY p.post_title ASC
+		");
+		
+		// Posts disliked today
+		$disliked_today = $wpdb->get_results("
+			SELECT DISTINCT p.ID, p.post_title, p.post_type
+			FROM {$table} ps
+			JOIN {$wpdb->posts} p ON p.ID = ps.post_id
+			WHERE ps.type = 'dislike' AND ps.row_type = 'event'
+			AND DATE(ps.created_at) = CURDATE()
+			AND p.post_status = 'publish'
+			ORDER BY p.post_title ASC
+		");
+		
+		$format = fn($num) => number_format_i18n($num, 0);
+		$render_today_list = function($posts) {
+			if (empty($posts)) {
+				echo '<li style="color:#999;font-style:italic;">None today.</li>';
+				return;
+			}
+			foreach ($posts as $p) {
+				$type_label = ucfirst(str_replace('-', ' ', $p->post_type));
+				echo '<li style="margin-bottom:5px;">';
+				echo '<a href="' . esc_url(get_edit_post_link($p->ID)) . '" target="_blank">' . esc_html($p->post_title) . '</a>';
+				echo ' <span style="color:#999;font-size:11px;">(' . esc_html($type_label) . ')</span>';
+				echo ' <a href="' . esc_url(get_permalink($p->ID)) . '" target="_blank" style="color:#999;font-size:11px;">↗</a>';
+				echo '</li>';
+			}
+		};
+		
+		echo '<ul style="font-size: 14px; line-height: 1.5;">';
+		echo '<li>📬 Contact Messages: <strong style="color:#c53030;">' . $format($cached['contact_today']) . '</strong> today / <strong>' . $format($cached['contact_total']) . '</strong> total</li>';
+		echo '<li>👁️ Views: <strong style="color: #c53030;">' . $format($cached['views_today']) . '</strong> today / <strong>' . $format($cached['views_total']) . '</strong> total</li>';
+		// 👍 Likes
+		echo '<li>👍 Likes: ';
+		echo '<details style="display: inline-block; vertical-align: top;">';
+		echo '<summary style="cursor: pointer; color: #1e73be; font-weight: bold; list-style: none;">' . $format($cached['likes_today']) . ' today</summary>';
+		echo '<ul style="margin: 8px 0 4px 16px; font-size: 13px; line-height: 1.8;">';
+		$render_today_list($liked_today);
+		echo '</ul></details>';
+		echo ' / <strong>' . $format($cached['likes_total']) . '</strong> total</li>';
+		// 👎 Dislikes
+		echo '<li>👎 Dislikes: ';
+		echo '<details style="display: inline-block; vertical-align: top;">';
+		echo '<summary style="cursor: pointer; color: #1e73be; font-weight: bold; list-style: none;">' . $format($cached['dislikes_today']) . ' today</summary>';
+		echo '<ul style="margin: 8px 0 4px 16px; font-size: 13px; line-height: 1.8;">';
+		$render_today_list($disliked_today);
+		echo '</ul></details>';
+		echo ' / <strong>' . $format($cached['dislikes_total']) . '</strong> total</li>';
+		echo '</ul>';
+	}
 
     // ======================================
 	// 📊 ANALYTICS TOOLKIT
@@ -241,7 +293,7 @@ function initialize_custom_dashboard() {
 	function custom_render_tools_and_actions() {
 		echo '<div style="margin-top: 15px;">';
 		echo '<div style="margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap;">';
-		echo '<a href="https://ericroth.org/wp-admin/themes.php?page=design-block-tracker" class="button">🎨 Design Blocks</a>';
+		echo '<a href="https://ericroth.org/wp-admin/themes.php?page=design-block-tracker" target="_blank" class="button">🎨 Design Blocks</a>';
 		echo '<a href="https://clarity.microsoft.com/projects/view/eic7b2e9o1/dashboard" target="_blank" class="button">📈 MS Clarity</a>';
 		echo '</div>';
 		echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
@@ -373,16 +425,16 @@ function initialize_custom_dashboard() {
 	function custom_render_database_stats() {
 		global $wpdb;
 		$postmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->postmeta}");
-		$commentmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->commentmeta}");
 		$termmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->termmeta}");
 		$usermeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->usermeta}");
-		$total = $postmeta_count + $commentmeta_count + $termmeta_count + $usermeta_count;
+		$er_post_stats_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_post_stats");
+		$total = $postmeta_count + $termmeta_count + $usermeta_count + $er_post_stats_count;
 		
 		echo '<div style="margin-top: 15px;">';
 		custom_render_stat_row('Content Meta Rows', $postmeta_count);
-		custom_render_stat_row('Comment Meta Rows', $commentmeta_count);
 		custom_render_stat_row('Term Meta Rows', $termmeta_count);
 		custom_render_stat_row('User Meta Rows', $usermeta_count);
+		custom_render_stat_row('Post Stats Rows', $er_post_stats_count);
 		echo '<p style="margin: 5px 0;">TOTAL Meta Rows: <strong>' . number_format_i18n($total) . '</strong></p>';
 		echo '</div>';
 	}
@@ -394,7 +446,7 @@ function initialize_custom_dashboard() {
 	}
 
 	function custom_get_health_status($count) {
-		if ($count > 50000) return ['red', 'Consider running a cleanup.'];
+		if ($count > 50000) return ['#c53030', 'Consider running a cleanup.'];
 		if ($count > 10000) return ['orange', 'Moderate bloat detected.'];
 		return ['green', 'Healthy state.'];
 	}
@@ -438,7 +490,6 @@ function initialize_custom_dashboard() {
 		$deleted += $safe_delete("DELETE pm FROM {$wpdb->postmeta} pm LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id WHERE p.ID IS NULL", 'Orphaned postmeta cleanup');
 		$deleted += $safe_delete("DELETE tr FROM {$wpdb->term_relationships} tr LEFT JOIN {$wpdb->posts} p ON p.ID = tr.object_id WHERE p.ID IS NULL", 'Orphaned term relationships cleanup');
 		$deleted += $safe_delete("DELETE um FROM {$wpdb->usermeta} um LEFT JOIN {$wpdb->users} u ON u.ID = um.user_id WHERE u.ID IS NULL", 'Orphaned usermeta cleanup');
-		$deleted += $safe_delete("DELETE cm FROM {$wpdb->commentmeta} cm LEFT JOIN {$wpdb->comments} c ON c.comment_ID = cm.comment_id WHERE c.comment_ID IS NULL", 'Orphaned commentmeta cleanup');
 		$deleted += $safe_delete("DELETE tm FROM {$wpdb->termmeta} tm LEFT JOIN {$wpdb->terms} t ON t.term_id = tm.term_id WHERE t.term_id IS NULL", 'Orphaned termmeta cleanup');
 		return $deleted;
 	}
@@ -475,17 +526,14 @@ function initialize_custom_dashboard() {
 		if ($wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}actionscheduler_actions'") === "{$wpdb->prefix}actionscheduler_actions") {
 			$deleted += $safe_delete("DELETE FROM {$wpdb->prefix}actionscheduler_actions WHERE status = 'complete' AND scheduled_date_gmt < NOW() - INTERVAL 30 DAY", 'ActionScheduler cleanup');
 		}
-		$deleted += $safe_delete("DELETE FROM {$wpdb->posts} WHERE post_status = 'auto-draft' AND post_content = ''", 'Auto-draft cleanup');
-		$deleted += $safe_delete("DELETE FROM {$wpdb->comments} WHERE comment_approved = 'spam' AND comment_date < NOW() - INTERVAL 1 DAY", 'Spam comments cleanup');
-		$deleted += $safe_delete("DELETE FROM {$wpdb->postmeta} WHERE meta_key = 'like_timestamp' AND meta_value < DATE_SUB(NOW(), INTERVAL 1 DAY)", 'Old like timestamps cleanup');
-		$deleted += $safe_delete("DELETE FROM {$wpdb->postmeta} WHERE meta_key = 'dislike_timestamp' AND meta_value < DATE_SUB(NOW(), INTERVAL 1 DAY)", 'Old dislike timestamps cleanup');
-		$deleted += $safe_delete("DELETE FROM {$wpdb->postmeta} WHERE meta_key = 'view_timestamp' AND meta_value < DATE_SUB(NOW(), INTERVAL 1 DAY)", 'Old view timestamps cleanup');
-		$deleted += $safe_delete("DELETE FROM {$wpdb->posts} WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 1 DAY", 'Trash posts cleanup');
+			$deleted += $safe_delete("DELETE FROM {$wpdb->posts} WHERE post_status = 'auto-draft' AND post_content = ''", 'Auto-draft cleanup');
+			$deleted += $safe_delete("DELETE FROM {$wpdb->prefix}er_post_stats WHERE row_type = 'event' AND created_at < CURDATE()", 'Old vote/view event log cleanup');
+			$deleted += $safe_delete("DELETE FROM {$wpdb->posts} WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 1 DAY", 'Trash posts cleanup');
 		return $deleted;
 	}
 
 	function custom_optimize_tables($wpdb, &$errors) {
-		$tables = ['postmeta', 'usermeta', 'options', 'term_relationships'];
+		$tables = ['postmeta', 'usermeta', 'termmeta', 'er_post_stats'];
 		$optimized_count = 0;
 		foreach ($tables as $table) {
 			$result = $wpdb->query("OPTIMIZE TABLE {$wpdb->prefix}{$table}");
@@ -504,7 +552,7 @@ function initialize_custom_dashboard() {
 		$last_result = get_option('custom_last_cleanup_result');
 		$last_success = get_option('custom_last_cleanup_success', true);
 		if ($last_result) {
-			$result_color = $last_success ? 'green' : 'red';
+			$result_color = $last_success ? 'green' : '#c53030';
 			echo '<p style="margin: 10px 0; color: ' . esc_attr($result_color) . ';"><strong>' . esc_html($last_result) . '</strong></p>';
 		}
 		echo '<p style="margin: 5px 0;"><em>Last cleanup: ' . 
@@ -524,16 +572,12 @@ function initialize_custom_dashboard() {
         $tabs = [
             ['label' => 'Blog', 'url' => 'https://ericroth.org/feed/']
         ];
-        
         echo '<div class="rss-widget-wrapper" style="font-size: 14px;">';
 		echo '<div class="rss-tab-nav" style="display: flex; align-items: center; margin: 0 0 10px;"><span class="rss-counter"></span></div>';
-        
         $max_items = 40;
-        
         foreach ($tabs as $i => $tab) {
             echo '<div id="tab-blog-' . $i . '" class="rss-tab-content" style="display: none;">';
             $items = custom_get_rss_items($tab['url'], $max_items);
-            
             if (!is_wp_error($items)) {
                 foreach ($items as $index => $item) {
                     $title = esc_html($item->get_title());
@@ -541,7 +585,6 @@ function initialize_custom_dashboard() {
                     $desc = wp_strip_all_tags($item->get_description());
                     $excerpt = $desc ? wp_trim_words($desc, 30) : 'No description available';
                     $date = $item->get_date('U') ? date_i18n('F j, Y', $item->get_date('U')) : 'Unknown date';
-                    
 					$post_id = '';
                     $edit_link = '';
                     $guid = $item->get_id();
@@ -549,7 +592,6 @@ function initialize_custom_dashboard() {
                         $post_id = $matches[1];
                         $edit_link = 'https://ericroth.org/wp-admin/post.php?post=' . $post_id . '&action=edit';
                     }
-                    
                     echo '<div class="rss-item" data-index="' . $index . '" style="display: none; margin-bottom: 15px;">';
                     echo '<div><a href="' . $link . '" target="_blank" style="font-weight: bold;">' . $title . '</a> – ';
                     echo '<span style="color: #666; font-size: 12px;">🗓️ Published: <strong>' . esc_html($date) . '</strong></span>';
@@ -581,16 +623,12 @@ function initialize_custom_dashboard() {
         $tabs = [
             ['label' => 'Interests', 'url' => 'https://ericroth.org/my-interests/feed/']
         ];
-        
         echo '<div class="rss-widget-wrapper" style="font-size: 14px;">';
 		echo '<div class="rss-tab-nav" style="display: flex; align-items: center; margin: 0 0 10px;"><span class="rss-counter"></span></div>';
-        
         $max_items = 40;
-        
         foreach ($tabs as $i => $tab) {
             echo '<div id="tab-interests-' . $i . '" class="rss-tab-content" style="display: none;">';
             $items = custom_get_rss_items($tab['url'], $max_items);
-            
             if (!is_wp_error($items)) {
                 foreach ($items as $index => $item) {
                     $title = esc_html($item->get_title());
@@ -598,7 +636,6 @@ function initialize_custom_dashboard() {
                     $desc = wp_strip_all_tags($item->get_description());
                     $excerpt = $desc ? wp_trim_words($desc, 30) : 'No description available';
                     $date = $item->get_date('U') ? date_i18n('F j, Y', $item->get_date('U')) : 'Unknown date';
-                    
 					$post_id = '';
                     $edit_link = '';
                     $guid = $item->get_id();
@@ -606,7 +643,6 @@ function initialize_custom_dashboard() {
                         $post_id = $matches[1];
                         $edit_link = 'https://ericroth.org/wp-admin/post.php?post=' . $post_id . '&action=edit';
                     }
-                    
                     echo '<div class="rss-item" data-index="' . $index . '" style="display: none; margin-bottom: 15px;">';
                     echo '<div><a href="' . $link . '" target="_blank" style="font-weight: bold;">' . $title . '</a> – ';
                     echo '<span style="color: #666; font-size: 12px;">🗓️ Published: <strong>' . esc_html($date) . '</strong></span>';
@@ -653,6 +689,7 @@ function initialize_custom_dashboard() {
                 align-items: center;
                 gap: 5px;
             }
+			#custom_activity_alerts strong {font-weight: bold;}
         </style>';
         
 	echo <<<HTML
