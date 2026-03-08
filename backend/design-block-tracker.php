@@ -6,12 +6,13 @@ defined('ABSPATH') || exit;
 // =======================================
 
 add_action('admin_menu', function() {
-    if (!current_user_can('manage_options')) return;
-    
+    if ( ! is_admin() || ! current_user_can('manage_options') ) {
+        return;
+    }
     add_submenu_page(
         'themes.php',
-        'Design Block Tracker',
-        'Design Block Tracker',
+        'Design Block Tracker', // Page Title
+        'Design Blocks', // Menu Title
         'manage_options',
         'design-block-tracker',
         'render_design_block_tracker'
