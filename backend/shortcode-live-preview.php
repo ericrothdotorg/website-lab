@@ -1,10 +1,10 @@
 <?php
 defined('ABSPATH') || exit;
 
-// -----------------------------------------------------------------
+// =================================================================
 // 1. REST API ENDPOINT — Renders the shortcode server-side
 //    Protected: Only logged-in users with edit_posts can call it
-// -----------------------------------------------------------------
+// =================================================================
 
 function shortcode_live_preview_rest_endpoint() {
     register_rest_route( 'custom/v1', '/shortcode-preview', [
@@ -33,10 +33,10 @@ function shortcode_live_preview_render( $request ) {
     return new WP_REST_Response( [ 'html' => $html ], 200 );
 }
 
-// -----------------------------------------------------------------
+// =================================================================
 // 2. EDITOR-ONLY CSS — enqueue_block_editor_assets never
 //    fires on the frontend, so this is 100% admin-only
-// -----------------------------------------------------------------
+// =================================================================
 
 function shortcode_live_preview_editor_css() {
 	
@@ -90,9 +90,9 @@ function shortcode_live_preview_editor_css() {
 }
 add_action( 'enqueue_block_editor_assets', 'shortcode_live_preview_editor_css' );
 
-// -----------------------------------------------------------------
+// =================================================================
 // 3. EDITOR JAVASCRIPT — Only loads in block editor
-// -----------------------------------------------------------------
+// =================================================================
 
 function shortcode_live_preview_editor_assets() {
     $rest_url = esc_url( rest_url( 'custom/v1/shortcode-preview' ) );
