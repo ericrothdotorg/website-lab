@@ -27,7 +27,7 @@ function initialize_custom_dashboard() {
             $count = wp_count_posts($pt->name)->publish;
             if ($count) {
                 $items[] = sprintf(
-                    '<a href="edit.php?post_type=%1$s">%2$s %3$s</a>',
+                    '<a href="edit.php?post_type=%1$s" target="_blank" class="cd-link">%2$s %3$s</a>',
                     esc_attr($pt->name),
                     number_format_i18n($count),
                     esc_html($pt->labels->name)
