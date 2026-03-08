@@ -78,44 +78,31 @@ function lum_background_track() {
     if (lum_is_bot($user_agent)) {
         wp_die('Bot detected');
     }
-    $geo_data = lum_get_geolocation($ip_address);
+	$geo_data = lum_get_geolocation($ip_address);
     if ($geo_data) {
-        $existing = $wpdb->get_row($wpdb->prepare(
-            "SELECT id FROM $table_name WHERE ip_address = %s ORDER BY last_seen DESC LIMIT 1",
-            $ip_address
-        ));
         $current_time = current_time('mysql');
-        if ($existing) {
-            $wpdb->update(
-                $table_name,
-                array(
-                    'last_seen' => $current_time,
-                    'page_url' => $page_url,
-                    'user_agent' => $user_agent
-                ),
-                array('id' => $existing->id),
-                array('%s', '%s', '%s'),
-                array('%d')
-            );
-        } else {
-            $wpdb->insert(
-                $table_name,
-                array(
-                    'visitor_id' => uniqid('visitor_', true),
-                    'ip_address' => $ip_address,
-                    'latitude' => $geo_data['lat'],
-                    'longitude' => $geo_data['lon'],
-                    'city' => $geo_data['city'],
-                    'country' => $geo_data['country'],
-                    'country_code' => $geo_data['countryCode'],
-                    'page_url' => $page_url,
-                    'user_agent' => $user_agent,
-                    'last_seen' => $current_time,
-                    'visit_time' => $current_time
-                ),
-                array('%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%s', '%s', '%s')
-            );
-        }
+        // Single atomic Query - Insert new Visitor or update existing on duplicate IP
+        $wpdb->query($wpdb->prepare(
+            "INSERT INTO $table_name
+                (visitor_id, ip_address, latitude, longitude, city, country, country_code, page_url, user_agent, last_seen, visit_time)
+            VALUES
+                (%s, %s, %f, %f, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                last_seen = VALUES(last_seen),
+                page_url = VALUES(page_url),
+                user_agent = VALUES(user_agent)",
+            uniqid('visitor_', true),
+            $ip_address,
+            $geo_data['lat'],
+            $geo_data['lon'],
+            $geo_data['city'],
+            $geo_data['country'],
+            $geo_data['countryCode'],
+            $page_url,
+            $user_agent,
+            $current_time,
+            $current_time
+        ));
     }
     wp_die('OK'); // Important for AJAX
 }
@@ -245,13 +232,6 @@ add_action('lum_daily_cleanup', 'lum_cleanup_old_visitors');
 function lum_schedule_cleanup() {
     if (!wp_next_scheduled('lum_daily_cleanup')) {
         wp_schedule_event(time(), 'daily', 'lum_daily_cleanup');
-    }
-    // Add indexes once if not already present (speeds up IP lookups and date range queries)
-    if (!get_option('lum_indexes_created')) {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'live_visitors';
-        $wpdb->query("ALTER TABLE $table_name ADD INDEX IF NOT EXISTS idx_ip (ip_address), ADD INDEX IF NOT EXISTS idx_last_seen (last_seen)");
-        update_option('lum_indexes_created', true);
     }
 }
 add_action('init', 'lum_schedule_cleanup');
