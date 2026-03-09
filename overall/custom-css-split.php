@@ -323,14 +323,15 @@ add_action("wp_footer", function () {
     :root :where(.is-layout-flow) > :last-child.wp-block-quote {margin-block-end: 25px;}
     
     /* Styling for Pullquotes */
-    figure.wp-block-pullquote {position: relative; max-width: fit-content; margin: -25px 0 0; border: none;}
+	figure.wp-block-pullquote blockquote:before {margin-left: 25px;}
+    figure.wp-block-pullquote {position: relative; max-width: fit-content; border: none;}
     .wp-block-pullquote blockquote {border-inline-start: none !important;}
-    .wp-block-pullquote blockquote p {text-align: left; font-family: Georgia, serif; font-weight: normal; color: #339966; line-height: 1.6;}
+    .wp-block-pullquote blockquote p {margin-left: 25px; text-align: left; font-family: Georgia, serif; font-weight: normal; color: #339966; line-height: 1.6;}
     .wp-block-pullquote blockquote cite {position: absolute; right: 25px; font-family: sans-serif; font-size: 1rem; font-style: normal;}
     
-    /* Styling for My Quotes */
+    /* Styling for Quotes (except: My Quotes) */
     .quote-text p, .quote-text ul, .quote-text li {font-size: clamp(1rem, 1.25vw + 0.5rem, 1.25rem);}
-    .quote-text ul, .quote-text li {margin-left: -15px;}
+    .quote-text ul, .quote-text li {margin-left: -20px;}
     
     /* TAG CLOUDS */
     .tag-cloud a {
