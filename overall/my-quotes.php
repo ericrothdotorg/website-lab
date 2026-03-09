@@ -79,7 +79,7 @@ function q_should_load_assets() {
         || has_shortcode( $post->post_content, 'quote_text' );
 }
 
-// Prepends linked Content Title, appends Personal / Professional Sliders
+// Prepends linked Content Title, appends About Me / Personal / Professional Sliders
 function q_append_slider_on_single_quote( $content ) {
     if ( ! is_singular( 'my-quotes' ) || ! in_the_loop() || ! is_main_query() ) {
         return $content;
@@ -95,19 +95,26 @@ function q_append_slider_on_single_quote( $content ) {
         }
     }
 	// Append: Load the Rest of the Content
-    $personal     = do_shortcode( '[quotes_slider category="personal"]' );
-    $professional = do_shortcode( '[quotes_slider category="professional"]' );
-    $output = '';
+	$about        = do_shortcode( '[quotes_slider category="about-me" layout="horizontal"]' );
+	$personal     = do_shortcode( '[quotes_slider category="personal" layout="horizontal"]' );
+	$professional = do_shortcode( '[quotes_slider category="professional" layout="horizontal"]' );
+	$output = '';
 	$output .= '<div class="section-gap" style="padding-top: 25px;"><hr class="wp-block-separator has-alpha-channel-opacity is-style-wide" style="width: 75%; margin: 0 auto;"/></div>';
-    if ( $personal ) {
-        $output .= '<h3><a href="' . esc_url( home_url( '/personal/' ) ) . '">Personal Quotes</a></h3>';
-        $output .= $personal;
-    }
+	if ( $about ) {
+		$output .= '<h3><a href="' . esc_url( home_url( '/about-me/' ) ) . '">About Me Quotes</a></h3>';
+		$output .= $about;
+	}
 	$output .= '<div class="section-gap" style="padding-top: 75px;"><hr class="wp-block-separator has-alpha-channel-opacity is-style-wide" style="width: 75%; margin: 0 auto;"/></div>';
-    if ( $professional ) {
-        $output .= '<h3><a href="' . esc_url( home_url( '/professional/' ) ) . '">Professional Quotes</a></h3>';
-        $output .= $professional;
-    }
+	if ( $personal ) {
+		$output .= '<h3><a href="' . esc_url( home_url( '/personal/' ) ) . '">Personal Quotes</a></h3>';
+		$output .= $personal;
+	}
+	$output .= '<div class="section-gap" style="padding-top: 75px;"><hr class="wp-block-separator has-alpha-channel-opacity is-style-wide" style="width: 75%; margin: 0 auto;"/></div>';
+	if ( $professional ) {
+		$output .= '<h3><a href="' . esc_url( home_url( '/professional/' ) ) . '">Professional Quotes</a></h3>';
+		$output .= $professional;
+	}
+		$output .= '<div class="section-gap" style="padding-top: 75px;"><hr class="wp-block-separator has-alpha-channel-opacity is-style-wide" style="width: 75%; margin: 0 auto;"/></div>';
     return $prefix . '<div class="my-quote-text-content">' . $content . '</div>' . $output;
 }
 add_filter( 'the_content', 'q_append_slider_on_single_quote' );
@@ -157,19 +164,20 @@ function q_dps_slider_card( $post_id ) {
 function q_get_quote_for( $content_id ) {
     $content_id = (int) $content_id;
     if ( ! $content_id ) return null;
-    if ( get_post_type( $content_id ) === 'my-quotes' ) {
-        $post = get_post( $content_id );
-        return ( $post && $post->post_status === 'publish' ) ? $post : null;
-    }
+    $is_quote = get_post_type( $content_id ) === 'my-quotes';
     $args = array(
         'post_type'      => 'my-quotes',
         'post_status'    => 'publish',
         'posts_per_page' => 1,
         'orderby'        => 'date',
         'order'          => 'DESC',
-        'meta_key'       => 'related_content',
-        'meta_value'     => $content_id,
     );
+    if ( $is_quote ) {
+        $args['p'] = $content_id;
+    } else {
+        $args['meta_key']   = 'related_content';
+        $args['meta_value'] = $content_id;
+    }
     $results = get_posts( $args );
     return ! empty( $results ) ? $results[0] : null;
 }
@@ -185,40 +193,49 @@ function q_output_styles() {
 		/* Slick slider: Hidden until initialized to prevent Flash */
 		.slideshow-quotes {visibility: hidden;}
 		.slideshow-quotes.slick-initialized {visibility: visible;}
-		/* Slide Layout: Image left (33%), Content right (66%) */
-		.my-quote-slide-inner {display: flex; flex-direction: row; align-items: stretch; gap: 1.5em;}
-		.my-quote-slide-dps {flex: 0 0 33.33%; max-width: 33.33%;}
+		/* Shortcode [quotes_slider]: Shared Layout → For both horizontal and vertical */
 		.my-quote-slide-dps .display-posts-listing {margin: 0;}
 		.my-quote-slide-dps .display-posts-listing img {display: block; width: 100%; height: auto;}
-		/* Content Card Styling */
-		.my-quote-slide-content {flex: 0 0 calc(66.66% - 1.5em); max-width: calc(66.66% - 1.5em); padding: 1.5em; box-sizing: border-box; background: #F2F5F7; border-radius: 25px; display: flex; flex-direction: column; justify-content: center;}
-		/* [quotes_slider]: Typography and List Offset inside Card */
+		.my-quote-slide-content {padding: 1.5em; box-sizing: border-box; background: #F2F5F7; border-radius: 25px; display: flex; flex-direction: column; justify-content: center;}
+		/* Shortcode [quotes_slider]: Horizontal Layout → Image left (33%), Content right (66%) */
+		.my-quote-slide-inner.layout-horizontal {display: flex; flex-direction: row; align-items: stretch; gap: 1.5em;}
+		/* Shortcode [quotes_slider]: Horizontal Layout on Mobile → Stack Image above Content */
+		@media (min-width: 769px) {
+			.my-quote-slide-inner.layout-horizontal .my-quote-slide-dps {flex: 0 0 33.33%; max-width: 33.33%;}
+			.my-quote-slide-inner.layout-horizontal .my-quote-slide-content {flex: 0 0 calc(66.66% - 1.5em); max-width: calc(66.66% - 1.5em);}
+		}
+		@media (max-width: 768px) {
+			.my-quote-slide-inner.layout-horizontal {flex-direction: column; gap: 1.5em;}
+			.my-quote-slide-inner.layout-horizontal .my-quote-slide-dps,
+			.my-quote-slide-inner.layout-horizontal .my-quote-slide-content {flex: 0 0 100%; max-width: 100%;}
+			.my-quote-slide-inner.layout-horizontal .my-quote-slide-content .wp-block-quote {padding-bottom: 0.75em;}
+		}
+		/* Shortcode [quotes_slider]: Vertical Layout → Image top, Content below — Always stacked */
+		.my-quote-slide-inner.layout-vertical {display: flex; flex-direction: column; gap: 1.5em;}
+		.my-quote-slide-inner.layout-vertical .my-quote-slide-content .wp-block-quote p,
+		.my-quote-slide-inner.layout-vertical .my-quote-slide-content .wp-block-quote ul,
+		.my-quote-slide-inner.layout-vertical .my-quote-slide-content .wp-block-quote li {font-size: 1rem;}
+		.my-quote-slide-inner.layout-vertical .my-quote-slide-content .wp-block-quote {padding-bottom: 0.75em;}
+		/* Shortcode [quotes_slider]: Typography and List Offset inside Card */
 		.my-quote-slide-content .wp-block-quote {margin: 0 auto !important;}
 		.my-quote-slide-content .wp-block-quote p,
 		.my-quote-slide-content .wp-block-quote ul,
 		.my-quote-slide-content .wp-block-quote li {font-size: clamp(1rem, 1.25vw + 0.5rem, 1.25rem);}
 		.my-quote-slide-content .wp-block-quote ul,
 		.my-quote-slide-content .wp-block-quote li {margin-left: -20px;}
-		/* [quote_text]: Typography to match that of [quotes_slider] → Higher Specificity wins */
+		/* Shortcode [quote_text]: Typography to match that of [quotes_slider] → Higher Specificity wins */
 		.single-my-quotes .my-quote-text-content .wp-block-quote p,
 		.single-my-quotes .my-quote-text-content .wp-block-quote ul,
 		.single-my-quotes .my-quote-text-content .wp-block-quote li {font-size: clamp(1rem, 1.25vw + 0.5rem, 1.25rem);}
-        /* [quote_text]: Default Typography for this Shortcode Output */
-        .my-quote-text-content .wp-block-quote p,
-        .my-quote-text-content .wp-block-quote ul,
-        .my-quote-text-content .wp-block-quote li {font-size: 1rem;}
-		/* [quote_text]: List Offset remains the same regardless of Context */
+		/* Shortcode [quote_text]: Default Typography for this Output */
+		.my-quote-text-content .wp-block-quote p,
+		.my-quote-text-content .wp-block-quote ul,
+		.my-quote-text-content .wp-block-quote li {font-size: 1rem;}
+		/* Shortcode [quote_text]: List Offset remains the same regardless of Context */
 		.my-quote-text-content .wp-block-quote ul,
 		.my-quote-text-content .wp-block-quote li {margin-left: -20px;}
-		/* [quote_text]: Style "See all Quotes" Link after cite Eric Roth (only outside .single-my-quotes) */
+		/* Shortcode [quote_text]: Style "See all Quotes" Link after cite Eric Roth (only outside .single-my-quotes) */
 		.my-quote-text-content .wp-block-quote cite .q-see-all-link {display: inline-block; margin-left: 0.4rem; font-size: 0.85rem; font-style: italic; font-weight: normal; white-space: nowrap; vertical-align: middle;}
-		/* Mobile: Stack Image above Content */
-		@media (max-width: 768px) {
-			.my-quote-slide-inner {flex-direction: column; gap: 1.5em;}
-			.my-quote-slide-dps,
-			.my-quote-slide-content {flex: 0 0 100%; max-width: 100%;}
-			.my-quote-slide-content {padding: 1.5em; border-radius: 25px;}
-		}
 	</style>
     <?php
 }
@@ -250,21 +267,14 @@ function q_output_scripts() {
                 slidesToScroll: 1
             });
         }
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', function() {
-				if ('requestIdleCallback' in window) {
-					requestIdleCallback(initQuoteSlick, { timeout: 500 });
-				} else {
-					setTimeout(initQuoteSlick, 200);
-				}
-			});
-		} else {
-			if ('requestIdleCallback' in window) {
-				requestIdleCallback(initQuoteSlick, { timeout: 500 });
-			} else {
-				setTimeout(initQuoteSlick, 200);
-			}
+		function maybeInit() {
+			'requestIdleCallback' in window
+				? requestIdleCallback(initQuoteSlick, { timeout: 500 })
+				: setTimeout(initQuoteSlick, 200);
 		}
+		document.readyState === 'loading'
+			? document.addEventListener('DOMContentLoaded', maybeInit)
+			: maybeInit();
     })();
 	// Inject "See all Quotes" Link after cite Eric Roth (only outside .single-my-quotes)
 	(function() {
@@ -320,7 +330,14 @@ add_shortcode( 'quote_text', 'mq_shortcode_quote_text' );
 // =======================================
 
 function mq_shortcode_quotes_slider( $atts ) {
-    $atts   = shortcode_atts( array( 'category' => '' ), $atts, 'quotes_slider' );
+    $atts = shortcode_atts( array(
+    'category' => '',
+    'layout'   => '',
+	), $atts, 'quotes_slider' );
+	$layout = in_array( $atts['layout'], array( 'horizontal', 'vertical' ), true )
+		? $atts['layout']
+		: '';
+	if ( ! $layout ) return '';
     $quotes = q_get_quotes_for_slider( $atts['category'] );
     if ( empty( $quotes ) ) return '';
     ob_start(); ?>
@@ -332,9 +349,9 @@ function mq_shortcode_quotes_slider( $atts ) {
             if ( ! $text && ! $dps_card ) continue;
         ?>
             <div class="my-quote-slide">
-                <div class="my-quote-slide-inner">
+                <div class="my-quote-slide-inner layout-<?php echo esc_attr( $layout ); ?>">
                     <?php if ( $dps_card ) : ?>
-                        <div class="my-quote-slide-dps"><?php echo $dps_card; ?></div>
+                        <div class="my-quote-slide-dps"><?php echo wp_kses_post( $dps_card ); ?></div>
                     <?php endif; ?>
                     <?php if ( $text ) : ?>
                         <div class="my-quote-slide-content"><?php echo $text; ?></div>
