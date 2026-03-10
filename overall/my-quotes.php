@@ -67,7 +67,8 @@ add_action( 'save_post', function( $post_id ) {
 // HELPERS
 // =======================================
 
-// Returns true only on Singular Pages / Posts that actually contain a Quotes Shortcode
+// Returns true on Singular Pages / Posts that either contain a Quotes Shortcode,
+// or have the rendered Block Pattern by Slug appended (which may carry slider content)
 // Guards both q_output_styles() and q_output_scripts() — Update here if add more Shortcodes
 function q_should_load_assets() {
     $post = get_post();
@@ -75,8 +76,27 @@ function q_should_load_assets() {
     if ( ! is_singular() ) return false;
     // Always load on Single Quote Pages (Slider is injected by quote_text Shortcode)
     if ( is_singular( 'my-quotes' ) ) return true;
-    return has_shortcode( $post->post_content, 'quotes_slider' )
-        || has_shortcode( $post->post_content, 'quote_text' );
+    // Check Shortcodes in the Page's own Content
+    if ( has_shortcode( $post->post_content, 'quotes_slider' )
+      || has_shortcode( $post->post_content, 'quote_text' ) ) {
+        return true;
+    }
+    // Also check if the appended Pattern itself contains slider-related Content
+    $pattern_post = get_posts( array(
+        'post_type'      => 'wp_block',
+        'name'           => 'single-quote-appendix',
+        'post_status'    => 'publish',
+        'posts_per_page' => 1,
+    ) );
+    if ( ! empty( $pattern_post ) ) {
+        $pattern_content = $pattern_post[0]->post_content;
+        if ( has_shortcode( $pattern_content, 'quotes_slider' )
+          || has_shortcode( $pattern_content, 'quote_text' )
+          || str_contains( $pattern_content, 'slideshow-quotes' ) ) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // Prepends linked Content Title, appends rendered Block Pattern by Slug
