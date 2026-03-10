@@ -269,6 +269,38 @@ function render_design_block_tracker() {
             }
         }
 
+		// Handle dynamically injected Patterns (via the_content Filter, not stored in post_content)
+		$dynamic_pattern_map = [
+			'single-quote-appendix' => 'my-quotes', // pattern slug => post_type
+		];
+		foreach ($dynamic_pattern_map as $pattern_slug => $post_type) {
+			$pattern_post = get_posts([
+				'post_type'      => 'wp_block',
+				'name'           => $pattern_slug,
+				'post_status'    => 'publish',
+				'posts_per_page' => 1,
+			]);
+			if (empty($pattern_post)) continue;
+			$pid = $pattern_post[0]->ID;
+			if (!isset($pattern_usage[$pid])) {
+				$pattern_usage[$pid] = ['name' => $pattern_post[0]->post_title, 'used_in' => []];
+			}
+			$posts = get_posts([
+				'post_type'      => $post_type,
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+			]);
+			foreach ($posts as $post_id) {
+				$pattern_usage[$pid]['used_in'][] = [
+					'title'  => get_the_title($post_id),
+					'type'   => $post_type,
+					'source' => get_post_type_object($post_type)->labels->singular_name,
+					'link'   => get_edit_post_link($post_id, 'raw'),
+				];
+			}
+		}
+
         // Update used_in Arrays
         foreach ($catalog['my_patterns'] as &$cp) {
             if (!empty($cp['id']) && isset($pattern_usage[$cp['id']]['used_in'])) {
