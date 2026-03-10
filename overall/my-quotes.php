@@ -79,7 +79,7 @@ function q_should_load_assets() {
         || has_shortcode( $post->post_content, 'quote_text' );
 }
 
-// Prepends linked Content Title, appends About Me / Personal / Professional Sliders
+// Prepends linked Content Title, appends rendered Block Pattern by Slug
 function q_append_slider_on_single_quote( $content ) {
     if ( ! is_singular( 'my-quotes' ) || ! in_the_loop() || ! is_main_query() ) {
         return $content;
@@ -94,30 +94,25 @@ function q_append_slider_on_single_quote( $content ) {
             $prefix = '<h3><a href="' . esc_url( $related_url ) . '">' . esc_html( $related_title ) . '</a></h3>';
         }
     }
-	// Append: Load the Rest of the Content
-	$about        = do_shortcode( '[quotes_slider category="about-me" layout="horizontal"]' );
-	$personal     = do_shortcode( '[quotes_slider category="personal" layout="horizontal"]' );
-	$professional = do_shortcode( '[quotes_slider category="professional" layout="horizontal"]' );
-	$output = '';
-	$output .= '<div class="section-gap" style="padding-top: 25px;"><hr class="wp-block-separator has-alpha-channel-opacity is-style-wide" style="width: 75%; margin: 0 auto;"/></div>';
-	if ( $about ) {
-		$output .= '<h3><a href="' . esc_url( home_url( '/about-me/' ) ) . '">About Me Quotes</a></h3>';
-		$output .= $about;
-	}
-	$output .= '<div class="section-gap" style="padding-top: 75px;"><hr class="wp-block-separator has-alpha-channel-opacity is-style-wide" style="width: 75%; margin: 0 auto;"/></div>';
-	if ( $personal ) {
-		$output .= '<h3><a href="' . esc_url( home_url( '/personal/' ) ) . '">Personal Quotes</a></h3>';
-		$output .= $personal;
-	}
-	$output .= '<div class="section-gap" style="padding-top: 75px;"><hr class="wp-block-separator has-alpha-channel-opacity is-style-wide" style="width: 75%; margin: 0 auto;"/></div>';
-	if ( $professional ) {
-		$output .= '<h3><a href="' . esc_url( home_url( '/professional/' ) ) . '">Professional Quotes</a></h3>';
-		$output .= $professional;
-	}
-		$output .= '<div class="section-gap" style="padding-top: 75px;"><hr class="wp-block-separator has-alpha-channel-opacity is-style-wide" style="width: 75%; margin: 0 auto;"/></div>';
+    // Append: Render a Block Pattern by Slug
+    $output = q_render_pattern( 'single-quote-appendix' ); // Slug of Pattern
     return $prefix . '<div class="my-quote-text-content">' . $content . '</div>' . $output;
 }
 add_filter( 'the_content', 'q_append_slider_on_single_quote' );
+
+// Fetches Block Pattern by Slug and returns its processed HTML
+function q_render_pattern( $slug ) {
+    $pattern_post = get_posts( array(
+        'post_type'      => 'wp_block',
+        'name'           => $slug,
+        'post_status'    => 'publish',
+        'posts_per_page' => 1,
+    ) );
+    if ( empty( $pattern_post ) ) {
+        return '<!-- q_render_pattern: pattern "' . esc_html( $slug ) . '" not found -->';
+    }
+    return do_shortcode( do_blocks( $pattern_post[0]->post_content ) );
+}
 
 // Renders a Quote's Block Content as safe HTML. Handles Gutenberg Blocks via do_blocks()
 function q_render_content( $post_obj ) {
