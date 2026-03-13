@@ -1,6 +1,10 @@
 <?php
 defined('ABSPATH') || exit;
 
+// NOTE: This snippet MUST remain set to "Run Everywhere".
+// The REST endpoint (rest_api_init) needs to fire on wp-json/* requests which run outside both admin and frontend contexts.
+// Switching to "Only run in Admin Area" would silently break the shortcode preview in the block editor.
+
 // =================================================================
 // 1. REST API ENDPOINT — Renders the shortcode server-side
 //    Protected: Only logged-in users with edit_posts can call it
