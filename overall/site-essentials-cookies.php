@@ -23,6 +23,34 @@ define('REGEX_DECORATIVE_IMAGES', '/(divider|icon|bg|decor|spacer)/i');
 define('REGEX_LOGO_PATTERNS', '/logo|icon|avatar|emoji|placeholder|data:image\/svg/i');
 
 // ======================================
+// WORDPRESS CORE OPTIMIZATIONS
+// ======================================
+
+// Disable WordPress emoji Scripts and Styles
+add_action('init', function() {
+    remove_action('wp_head', 'print_emoji_detection_script', 7);
+    remove_action('admin_print_scripts', 'print_emoji_detection_script');
+    remove_action('wp_print_styles', 'print_emoji_styles');
+    remove_action('admin_print_styles', 'print_emoji_styles');
+    remove_filter('the_content_feed', 'wp_staticize_emoji');
+    remove_filter('comment_text_rss', 'wp_staticize_emoji');
+    remove_filter('wp_mail', 'wp_staticize_emoji_for_email');
+    add_filter('tiny_mce_plugins', fn($plugins) => is_array($plugins) ? array_diff($plugins, ['wpemoji']) : []);
+    add_filter('wp_resource_hints', function($urls, $relation_type) {
+        if ($relation_type === 'dns-prefetch') {
+            $emoji_url = apply_filters('emoji_svg_url', 'https://s.w.org/images/core/emoji/2/svg/');
+            $urls = array_diff($urls, [$emoji_url]);
+        }
+        return $urls;
+    }, 10, 2);
+});
+
+// Disable Pingbacks and Trackbacks
+add_filter('xmlrpc_enabled', '__return_false');
+add_filter('pings_open', '__return_false');
+add_filter('pre_ping', '__return_empty_array');
+
+// ======================================
 // HELPER FUNCTIONS
 // ======================================
 
