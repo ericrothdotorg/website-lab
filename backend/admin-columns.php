@@ -178,6 +178,25 @@ function initialize_custom_admin_columns() {
 		return $clauses;
 	}, 10, 2);
 
+    // === DEFAULT POST ORDER ===
+
+    add_action('pre_get_posts', function($query) {
+        if (!is_admin() || !$query->is_main_query()) return;
+        $post_types = array_merge(
+            get_post_types(['_builtin' => true], 'names'),
+            ['my-interests']
+        );
+        $post_type = $query->get('post_type');
+        if (in_array($post_type, $post_types)) {
+            if ($query->get('orderby') === '') {
+                $query->set('orderby', 'title');
+            }
+            if ($query->get('order') === '') {
+                $query->set('order', 'ASC');
+            }
+        }
+    });
+
     // === SET COLUMNS WIDTHS ===
 
     add_action('admin_head-edit.php', function () {
