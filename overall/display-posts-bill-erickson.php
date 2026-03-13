@@ -157,7 +157,7 @@ class DPS_Grouped_Collector {
                 $term    = $terms[0];
                 $term_id = $term->term_id;
                 $label   = $term->name;
-                $order   = $term->term_order ?? $term->term_id;
+                $order   = 0;
             } else {
                 $term_id = -1;
                 $label   = 'Uncategorized';
