@@ -72,25 +72,6 @@ add_action('save_post', function($post_id) {
 // ADMIN INTERFACE CUSTOMIZATION
 // ======================================
 
-// Change Post Order
-function er_custom_post_order($query) {
-    if (!is_admin() || !$query->is_main_query()) return;
-    $post_types = array_merge(
-        get_post_types(['_builtin' => true], 'names'),
-        ['my-interests']
-    );
-    $post_type = $query->get('post_type');
-    if (in_array($post_type, $post_types)) {
-        if ($query->get('orderby') === '') {
-            $query->set('orderby', 'title');
-        }
-        if ($query->get('order') === '') {
-            $query->set('order', 'ASC');
-        }
-    }
-}
-add_action('pre_get_posts', 'er_custom_post_order');
-
 // Style Gutenberg UI
 function er_gutenberg_admin_styles() {
     echo '<style type="text/css">
