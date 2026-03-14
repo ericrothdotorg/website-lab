@@ -1,14 +1,15 @@
 <?php
 defined('ABSPATH') || exit;
 
+// ======================================
 // CREATE DATABASE TABLE TO STORE STUFF
+// ======================================
 
 add_action('init', function () {
   if (!get_option('contact_messages_table_created')) {
     global $wpdb;
     $table = $wpdb->prefix . 'contact_messages';
     $charset = $wpdb->get_charset_collate();
-
     $sql = "CREATE TABLE $table (
       id MEDIUMINT(9) NOT NULL AUTO_INCREMENT,
       name VARCHAR(100) NOT NULL,
@@ -18,14 +19,15 @@ add_action('init', function () {
       submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (id)
     ) $charset;";
-
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql);
     update_option('contact_messages_table_created', true);
   }
 });
 
-// SMTP CONFIGURATION (wp-config.php)
+// ======================================
+// SMTP CONFIGURATION
+// ======================================
 
 add_action('phpmailer_init', 'configure_smtp');
 function configure_smtp($phpmailer) {
@@ -40,10 +42,13 @@ function configure_smtp($phpmailer) {
     $phpmailer->FromName   = defined('SMTP_FROMNAME') ? SMTP_FROMNAME : '';
 }
 
+// ======================================
 // CONTACT FORM DISPLAY & SCRIPTS
+// ======================================
 
 add_action('wp_footer', function () {
-  if (is_page(array('59078','150449')) || is_single(array(''))) {
+  if (is_page(array('59078','150449'))) {
+    $nonce = wp_create_nonce('contact_form_nonce');
     ?>
 
     <style>
@@ -63,12 +68,7 @@ add_action('wp_footer', function () {
         transition: background-color 0.3s ease;
       }
       .formsubmit-wrapper button[type="submit"]:hover {background-color: #c53030;}
-      .formsubmit-wrapper .confirmation {
-        margin-top: 1em;
-        margin-bottom: -1em;
-        color: #FFFFFF;
-        display: none;
-      }
+      .formsubmit-wrapper .confirmation {margin-top: 1em; margin-bottom: -1em; color: #FFFFFF; display: none;}
       .formsubmit-wrapper .hidden-field {position: absolute; left: -9999px; height: 1px; width: 1px; overflow: hidden;}
     </style>
 
@@ -76,10 +76,11 @@ add_action('wp_footer', function () {
     document.addEventListener("DOMContentLoaded", function () {
       const form = document.getElementById("contact-form");
       if (!form) return;
+      document.getElementById("contact-nonce").value = "<?php echo $nonce; ?>";
       const confirmation = document.getElementById("form-confirmation");
       const submitBtn = document.getElementById("submit-btn");
       const formLoadTime = Date.now();
-      let lastSubmissionTime = 0; // double-submit protection
+      let lastSubmissionTime = 0;
       form.addEventListener("submit", function (e) {
         e.preventDefault();
         const now = Date.now();
@@ -124,92 +125,17 @@ add_action('wp_footer', function () {
   }
 });
 
-// HANDLE FORM SUBMISSIONS (Legacy / Fallback)
-
-add_action('template_redirect', function () {
-  if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'], $_POST['message'])) {
-    // CSRF check for legacy form
-    if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'contact_form_submit')) {
-      wp_die('Security check failed');
-    }
-    // Rate limiting check
-    $ip = $_SERVER['REMOTE_ADDR'];
-    $last_submission = get_transient('contact_form_ip_' . md5($ip));
-    if ($last_submission) {
-      wp_die('Please wait before submitting again.');
-    }
-    $honeypot = trim($_POST['middle_name'] ?? '');
-    $math_check = trim($_POST['math_check'] ?? '');
-    if ($honeypot !== '' || $math_check !== '7') return;
-    $name = sanitize_text_field($_POST['name'] ?? '');
-    $email = sanitize_email($_POST['email'] ?? '');
-    $subject = sanitize_text_field($_POST['subject'] ?? '');
-    $message = sanitize_textarea_field($_POST['message'] ?? '');
-    // Validate email format
-    if (!is_email($email)) {
-      wp_die('Invalid email address');
-    }
-    if (!$email || !$message) return;
-    // Set rate limit (60 seconds)
-    set_transient('contact_form_ip_' . md5($ip), time(), 60);
-    global $wpdb;
-    $result = $wpdb->insert(
-      $wpdb->prefix . 'contact_messages',
-      [
-        'name' => $name,
-        'email' => $email,
-        'subject' => $subject,
-        'message' => $message
-      ],
-      ['%s', '%s', '%s', '%s']
-    );
-    // Error handling for database insert
-    if ($result === false) {
-      error_log('Contact form DB insert failed: ' . $wpdb->last_error);
-    }
-    $admin_email = get_option('admin_email');
-    $subject_line = 'New Contact Form Submission';
-    $email_body = "Name: $name\n";
-    $email_body .= "Email: $email\n";
-    if (!empty($subject)) {
-      $email_body .= "Subject: $subject\n";
-    }
-    $email_body .= "Message:\n$message";
-    $mail_sent = wp_mail($admin_email, $subject_line, $email_body);
-    // Error handling for email send
-    if (!$mail_sent) {
-      error_log('Contact form email failed to send');
-    }
-    // Inline Fallback Confirmation Message
-    add_action('wp_footer', function() {
-      ?>
-      <script>
-        document.addEventListener("DOMContentLoaded", function () {
-          const confirmation = document.querySelector('.formsubmit-wrapper .confirmation');
-          if (confirmation) {
-            confirmation.textContent = "Thanks! Your message has been sent.";
-            confirmation.style.display = "block";
-          }
-        });
-      </script>
-      <?php
-    });
-    wp_redirect(add_query_arg('contact', 'success', wp_get_referer()));
-    exit;
-  }
-});
-
-// AJAX HANDLER (for Confirmation Message)
+// ======================================
+// AJAX HANDLER
+// ======================================
 
 add_action('wp_ajax_submit_contact_form_ajax', 'handle_contact_form_ajax');
 add_action('wp_ajax_nopriv_submit_contact_form_ajax', 'handle_contact_form_ajax');
 
 function handle_contact_form_ajax() {
-  // CSRF verification
   if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'contact_form_nonce')) {
     wp_send_json_error(array('message' => 'Security check failed'));
   }
-  // Rate limiting check
   $ip = $_SERVER['REMOTE_ADDR'];
   $last_submission = get_transient('contact_form_ip_' . md5($ip));
   if ($last_submission) {
@@ -220,70 +146,48 @@ function handle_contact_form_ajax() {
   if ($honeypot !== '' || $math_check !== '7') {
     wp_send_json_error();
   }
-  $name = sanitize_text_field($_POST['name'] ?? '');
-  $email = sanitize_email($_POST['email'] ?? '');
+  $name    = sanitize_text_field($_POST['name']    ?? '');
+  $email   = sanitize_email($_POST['email']        ?? '');
   $subject = sanitize_text_field($_POST['subject'] ?? '');
   $message = sanitize_textarea_field($_POST['message'] ?? '');
-  // Validate email format
   if (!is_email($email)) {
     wp_send_json_error(array('message' => 'Invalid email address'));
   }
   if (!$email || !$message) {
     wp_send_json_error(array('message' => 'Email and message are required'));
   }
-  // Set rate limit (60 seconds)
   set_transient('contact_form_ip_' . md5($ip), time(), 60);
   global $wpdb;
   $result = $wpdb->insert(
     $wpdb->prefix . 'contact_messages',
-    [
-      'name' => $name,
-      'email' => $email,
-      'subject' => $subject,
-      'message' => $message
-    ],
+    ['name' => $name, 'email' => $email, 'subject' => $subject, 'message' => $message],
     ['%s', '%s', '%s', '%s']
   );
-  // Error handling for database insert
   if ($result === false) {
     error_log('Contact form DB insert failed: ' . $wpdb->last_error);
     wp_send_json_error(array('message' => 'Failed to save message'));
   }
-  $admin_email = get_option('admin_email');
-  $subject_line = 'New Contact Form Submission';
-  $email_body = "Name: $name\n";
-  $email_body .= "Email: $email\n";
-  if (!empty($subject)) {
-    $email_body .= "Subject: $subject\n";
-  }
-  $email_body .= "Message:\n$message";
-  $mail_sent = wp_mail($admin_email, $subject_line, $email_body);
-  // Error handling for email send
+  $admin_email  = get_option('admin_email');
+  $email_body   = "Name: $name\nEmail: $email\n";
+  $email_body  .= $subject ? "Subject: $subject\n" : '';
+  $email_body  .= "Message:\n$message";
+  $mail_sent = wp_mail($admin_email, 'New Contact Form Submission', $email_body);
   if (!$mail_sent) {
     error_log('Contact form email failed to send');
-    // Still return success since message was saved to DB
   }
   wp_send_json_success();
 }
 
-// CREATE ADMIN MENU TO MANAGE MESSAGES
+// ======================================
+// ADMIN MENU
+// ======================================
 
 add_action('admin_menu', function () {
-  add_menu_page(
-    'Contact Form',
-    'Contact Form',
-    'manage_options',
-    'contact-form',
-    'display_contact_messages',
-    'dashicons-email',
-    21
-  );
+  add_menu_page('Contact Form', 'Contact Form', 'manage_options', 'contact-form', 'display_contact_messages', 'dashicons-email', 21);
 });
 
 add_action('admin_enqueue_scripts', function ($hook) {
-  if ($hook === 'toplevel_page_contact-form') {
-    add_thickbox();
-  }
+  if ($hook === 'toplevel_page_contact-form') add_thickbox();
 });
 
 function display_contact_messages() {
@@ -295,63 +199,60 @@ function display_contact_messages() {
     $wpdb->query($wpdb->prepare("DELETE FROM $table WHERE id IN ($placeholders)", ...$ids));
     echo '<div class="updated"><p>Selected messages have been deleted.</p></div>';
   }
-  $search = isset($_POST['search_term']) ? sanitize_text_field($_POST['search_term']) : '';
+  $search   = isset($_POST['search_term']) ? sanitize_text_field($_POST['search_term']) : '';
   $per_page = 20;
-  $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-  $offset = ($page - 1) * $per_page;
+  $page     = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+  $offset   = ($page - 1) * $per_page;
   if ($search) {
-    $query = $wpdb->prepare("SELECT * FROM $table WHERE name LIKE %s OR email LIKE %s OR subject LIKE %s OR message LIKE %s ORDER BY submitted_at DESC LIMIT %d OFFSET %d",
-      "%$search%", "%$search%", "%$search%", "%$search%", $per_page, $offset);
-    $messages = $wpdb->get_results($query);
-    $count_query = $wpdb->prepare("SELECT COUNT(*) FROM $table WHERE name LIKE %s OR email LIKE %s OR subject LIKE %s OR message LIKE %s",
-      "%$search%", "%$search%", "%$search%", "%$search%");
-    $total = $wpdb->get_var($count_query);
+    $like     = "%$search%";
+    $messages = $wpdb->get_results($wpdb->prepare(
+      "SELECT * FROM $table WHERE name LIKE %s OR email LIKE %s OR subject LIKE %s OR message LIKE %s ORDER BY submitted_at DESC LIMIT %d OFFSET %d",
+      $like, $like, $like, $like, $per_page, $offset
+    ));
+    $total = $wpdb->get_var($wpdb->prepare(
+      "SELECT COUNT(*) FROM $table WHERE name LIKE %s OR email LIKE %s OR subject LIKE %s OR message LIKE %s",
+      $like, $like, $like, $like
+    ));
   } else {
     $messages = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table ORDER BY submitted_at DESC LIMIT %d OFFSET %d", $per_page, $offset));
-    $total = $wpdb->get_var("SELECT COUNT(*) FROM $table");
+    $total    = $wpdb->get_var("SELECT COUNT(*) FROM $table");
   }
   echo '<div class="wrap"><h2>Contact Messages</h2>';
+  echo '<form method="post"><input type="text" name="search_term" placeholder="Search messages..." value="' . esc_attr($search) . '"> ';
+  echo '<button type="submit" class="button-primary">Search</button></form><br>';
+  if (!$messages) { echo '<p>No messages found.</p></div>'; return; }
   echo '<form method="post">';
-  echo '<input type="text" name="search_term" placeholder="Search messages..." value="' . esc_attr($search) . '">';
-  echo '<button type="submit" class="button-primary">Search</button>';
-  echo '</form><br>';
-  if ($messages) {
-    echo '<form method="post">';
-    wp_nonce_field('contact_messages_action');
-    echo '<table class="wp-list-table widefat fixed striped">'; 
-    echo '<thead><tr><th></th><th>Name</th><th>Email</th><th>Subject</th><th>Message</th><th>Date</th></tr></thead><tbody>';
-    foreach ($messages as $msg) {
-      echo '<tr>';
-      echo '<td><input type="checkbox" name="message_ids[]" value="' . esc_attr($msg->id) . '"></td>';
-      echo '<td>' . esc_html($msg->name) . '</td>';
-      echo '<td>' . esc_html($msg->email) . '</td>';
-      echo '<td>' . esc_html($msg->subject) . '</td>';
-      echo '<td>';
-      echo esc_html(wp_trim_words($msg->message, 20)) . '<br>';
-      echo '<a href="#TB_inline?width=600&height=400&inlineId=msg-' . esc_attr($msg->id) . '" class="thickbox">Preview</a>';
-      echo '<div id="msg-' . esc_attr($msg->id) . '" style="display:none;">';
-      echo '<h3>' . esc_html($msg->subject) . '</h3>';
-      echo '<p><strong>From:</strong> ' . esc_html($msg->name) . ' &lt;' . esc_html($msg->email) . '&gt;</p>';
-      echo '<p>' . nl2br(esc_html($msg->message)) . '</p>';
-      echo '</div>';
-      echo '</td>';
-      echo '<td>' . esc_html(date('F j, Y H:i', strtotime($msg->submitted_at))) . '</td>';
-      echo '</tr>';
+  wp_nonce_field('contact_messages_action');
+  echo '<table class="wp-list-table widefat fixed striped">';
+  echo '<thead><tr><th></th><th>Name</th><th>Email</th><th>Subject</th><th>Message</th><th>Date</th></tr></thead><tbody>';
+  foreach ($messages as $msg) {
+    echo '<tr>';
+    echo '<td><input type="checkbox" name="message_ids[]" value="' . esc_attr($msg->id) . '"></td>';
+    echo '<td>' . esc_html($msg->name) . '</td>';
+    echo '<td>' . esc_html($msg->email) . '</td>';
+    echo '<td>' . esc_html($msg->subject) . '</td>';
+    echo '<td>';
+    echo esc_html(wp_trim_words($msg->message, 20)) . '<br>';
+    echo '<a href="#TB_inline?width=600&height=400&inlineId=msg-' . esc_attr($msg->id) . '" class="thickbox">Preview</a>';
+    echo '<div id="msg-' . esc_attr($msg->id) . '" style="display:none;">';
+    echo '<h3>' . esc_html($msg->subject) . '</h3>';
+    echo '<p><strong>From:</strong> ' . esc_html($msg->name) . ' &lt;' . esc_html($msg->email) . '&gt;</p>';
+    echo '<p>' . nl2br(esc_html($msg->message)) . '</p>';
+    echo '</div></td>';
+    echo '<td>' . esc_html(date('F j, Y H:i', strtotime($msg->submitted_at))) . '</td>';
+    echo '</tr>';
+  }
+  echo '</tbody></table>';
+  echo '<button type="submit" name="bulk_delete" class="button-primary">Delete Selected</button>';
+  echo '</form>';
+  $total_pages = ceil($total / $per_page);
+  if ($total_pages > 1) {
+    echo '<div class="tablenav"><div class="tablenav-pages">';
+    for ($i = 1; $i <= $total_pages; $i++) {
+      $class = ($page == $i) ? 'button button-primary' : 'button';
+      echo '<a href="' . esc_url(add_query_arg('paged', $i)) . '" class="' . esc_attr($class) . '">' . $i . '</a> ';
     }
-    echo '</tbody></table>';
-    echo '<button type="submit" name="bulk_delete" class="button-primary">Delete Selected</button>';
-    echo '</form>';
-    $total_pages = ceil($total / $per_page);
-    if ($total_pages > 1) {
-      echo '<div class="tablenav"><div class="tablenav-pages">';
-      for ($i = 1; $i <= $total_pages; $i++) {
-        $class = ($page == $i) ? 'button button-primary' : 'button';
-        echo '<a href="' . esc_url(add_query_arg('paged', $i)) . '" class="' . esc_attr($class) . '">' . $i . '</a> ';
-      }
-      echo '</div></div>';
-    }
-  } else {
-    echo '<p>No messages found.</p>';
+    echo '</div></div>';
   }
   echo '</div>';
 }
