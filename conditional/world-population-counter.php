@@ -2,49 +2,25 @@
 defined('ABSPATH') || exit;
 
 add_action('wp_footer', function() {
-    if (is_page(array('')) || is_single(array('131123'))) {
-    ?>
+    if (is_page(array('')) || is_single(array('131123'))) { ?>
         <style>
             .world-population-design {text-align: center; color: #990033; font-size: 250%; font-weight: bold;}
         </style>
-
         <script>
-            function worldpopulationcounter() {
-                var startdate = new Date();
-                updatePopulation(startdate);
-            }
-            function ChangeValue(number, pv) {
-                var numberstring = "";
-                var j = 0;
-                while (number >= 1) {
-                    numberstring = (Math.round(number - 0.5) % 10) + numberstring;
-                    number = Math.floor(number / 10);
-                    j++;
-                    if (number >= 1 && j == 3) {
-                        numberstring = "," + numberstring;
-                        j = 0;
-                    }
+            (() => {
+                // Base population estimate and growth rate
+				const BASE_POP  = 8_300_678_395; // UN 2024 mid-year 2026 estimate
+				const BASE_DATE = new Date('2026-07-01T00:00:00Z');
+				const GROWTH_PER_SEC = 2.19; // ~69M net / year ÷ 31,557,600 sec
+                function updatePopulation() {
+                    const elapsed = (Date.now() - BASE_DATE.getTime()) / 1000;
+                    const population = Math.round(BASE_POP + elapsed * GROWTH_PER_SEC);
+                    document.getElementById('worldpopulation').textContent =
+                        population.toLocaleString();
+                    requestAnimationFrame(updatePopulation);
                 }
-                if (pv == 1) {
-                    document.getElementById("worldpopulation").innerHTML = numberstring;
-                }
-            }
-            function updatePopulation(startdatum) {
-                var now = 5600000000.0;
-                var now2 = 5690000000.0;
-                var groeipercentage = (now2 - now) / now * 100;
-                var groeiperseconde = (now * (groeipercentage / 100)) / 365.0 / 24.0 / 60.0 / 60.0;
-                var nu = new Date();
-                var schuldstartdatum = new Date(96, 1, 1);
-                var secondenoppagina = (nu.getTime() - startdatum.getTime()) / 1000;
-                var totaleschuld = (nu.getTime() - schuldstartdatum.getTime()) / 1000 * groeiperseconde + now;
-                ChangeValue(totaleschuld, 1);
-                setTimeout(function() {
-                    updatePopulation(startdatum);
-                }, 200);
-            }
-            window.onload = worldpopulationcounter;
+                updatePopulation();
+            })();
         </script>
-    <?php
-    }
+    <?php }
 });
