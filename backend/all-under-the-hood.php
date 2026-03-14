@@ -41,9 +41,6 @@ add_action('save_post', function($post_id) {
 // ADMIN INTERFACE CUSTOMIZATION
 // ======================================
 
-// Remove "Edit" Link for non-logged-in Users
-add_filter('edit_post_link', '__return_false');
-
 // Style Gutenberg UI
 function er_gutenberg_admin_styles() {
     echo '<style type="text/css">
