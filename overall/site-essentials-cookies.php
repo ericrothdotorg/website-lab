@@ -50,9 +50,8 @@ add_filter('xmlrpc_enabled', '__return_false');
 add_filter('pings_open', '__return_false');
 add_filter('pre_ping', '__return_empty_array');
 
-// Remove "Edit" Link for everyone
+// Remove "Edit" Link in Frontend
 add_filter('edit_post_link', '__return_false', 10, 1);
-add_filter('get_edit_post_link', '__return_false', 10, 1);
 
 // ======================================
 // HELPER FUNCTIONS
