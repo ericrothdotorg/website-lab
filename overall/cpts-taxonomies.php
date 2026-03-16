@@ -241,7 +241,7 @@ function mq_register_post_type() {
     $args = array(
         'label'  => esc_html__( 'My Quotes', 'textdomain' ),
         'labels' => array(
-            'name'               => esc_html__( 'Quotes', 'textdomain' ),
+            'name'               => esc_html__( 'My Quotes', 'textdomain' ),
             'menu_name'          => esc_html__( 'My Quotes', 'textdomain' ),
             'singular_name'      => esc_html__( 'Quote', 'textdomain' ),
             'add_new'            => esc_html__( 'Add Quote', 'textdomain' ),
