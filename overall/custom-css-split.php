@@ -1,7 +1,9 @@
 <?php
 defined('ABSPATH') || exit;
 
-/* ===== CRITICAL CSS - ABOVE THE FOLD ===== */
+// ======================================
+// CRITICAL CSS - ABOVE THE FOLD
+// ======================================
 
 add_action("wp_head", function () {
     ?>
@@ -58,7 +60,9 @@ add_action("wp_head", function () {
     <?php
 }, 5); // Load critical Styles in Head early
 
-/* ===== NON-CRITICAL CSS - BELOW THE FOLD ===== */
+// ======================================
+// NON-CRITICAL CSS - BELOW THE FOLD
+// ======================================
 
 add_action("wp_footer", function () {
     ?>
