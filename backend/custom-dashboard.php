@@ -116,7 +116,7 @@ function custom_render_activity_widget() {
             'dislikes_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'dislike' AND row_type = 'event' AND DATE(created_at) = CURDATE()"),
             'dislikes_total' => $wpdb->get_var("SELECT SUM(count) FROM {$table} WHERE type = 'dislike' AND row_type = 'total'"),
         ];
-        set_transient('custom_activity_stats', $cached, 5 * MINUTE_IN_SECONDS);
+        set_transient('custom_activity_stats', $cached, 5 * MINUTE_IN_SECONDS); // ⏱️ Cached 5min — leads the Frontend (which is 1hr)
     }
 
     // Posts liked today
