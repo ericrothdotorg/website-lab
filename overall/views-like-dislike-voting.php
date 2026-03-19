@@ -407,7 +407,7 @@ function er_today_total_likes_shortcode() {
     ");
     $format_count = fn($num) => number_format($num);
     $output = '<p>👍 Likes: <strong style="color: #c53030;">' . $format_count($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</p>';
-    set_transient($cache_key, $output, HOUR_IN_SECONDS);
+    set_transient($cache_key, $output, HOUR_IN_SECONDS); // ⏱️ Cached 1hr — lags behind Dashboard (which is 5min)
     return $output;
 }
 add_shortcode('today_total_likes', 'er_today_total_likes_shortcode');
@@ -431,7 +431,7 @@ function er_today_total_dislikes_shortcode() {
     ");
     $format_count = fn($num) => number_format($num);
     $output = '<p>👎 Dislikes: <strong style="color: #c53030;">' . $format_count($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</p>';
-    set_transient($cache_key, $output, HOUR_IN_SECONDS);
+    set_transient($cache_key, $output, HOUR_IN_SECONDS); // ⏱️ Cached 1hr — lags behind Dashboard (which is 5min)
     return $output;
 }
 add_shortcode('today_total_dislikes', 'er_today_total_dislikes_shortcode');
