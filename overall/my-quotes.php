@@ -205,9 +205,11 @@ function q_output_styles() {
 	if ( ! q_should_load_assets() ) return;
     ?>
 	<style>
-		/* Slick slider: Hidden until initialized to prevent Flash */
+		/* Slick Slider: Hidden until initialized to prevent Flash */
 		.slideshow-quotes {visibility: hidden;}
 		.slideshow-quotes.slick-initialized {visibility: visible;}
+		/* Slick Slider: Dot positioning for multi-row Scenarios */
+		.slideshow-quotes .slick-dots {bottom: auto; top: 100%; margin-top: 10px;}
 		/* Shortcode [quotes_slider]: Shared Layout → For both horizontal and vertical */
 		.my-quote-slide-dps .display-posts-listing {margin: 0;}
 		.my-quote-slide-dps .display-posts-listing img {display: block; width: 100%; height: auto;}
