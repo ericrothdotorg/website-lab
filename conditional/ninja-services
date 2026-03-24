@@ -204,7 +204,8 @@ add_action('wp_footer', function() {
             '140909', '127567', '127484', '121987', '121984', '141168','121985', '135495', '121986', '121983','150592',
             // German Singles
             '150592')) ||
-        is_tax('topics', 124)
+        is_tax('topics', 124) ||
+        is_tax('things', array(137, 258))
     ) {
         ?>
         <script>
