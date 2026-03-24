@@ -115,6 +115,8 @@ function custom_render_activity_widget() {
             'likes_total'    => $wpdb->get_var("SELECT SUM(count) FROM {$table} WHERE type = 'like' AND row_type = 'total'"),
             'dislikes_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'dislike' AND row_type = 'event' AND DATE(created_at) = CURDATE()"),
             'dislikes_total' => $wpdb->get_var("SELECT SUM(count) FROM {$table} WHERE type = 'dislike' AND row_type = 'total'"),
+			'subscribers_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_subscribers WHERE status = 'active' AND DATE(created_at) = CURDATE()"),
+			'subscribers_total' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_subscribers WHERE status = 'active'"),
         ];
         set_transient('custom_activity_stats', $cached, 5 * MINUTE_IN_SECONDS); // ⏱️ Cached 5min — leads the Frontend (which is 1hr)
     }
@@ -159,6 +161,7 @@ function custom_render_activity_widget() {
 
     echo '<ul style="font-size: 14px; line-height: 1.5;">';
     echo '<li>📬 Contact Messages: <strong class="cd-alert">' . $format($cached['contact_today']) . '</strong> today / <strong>' . $format($cached['contact_total']) . '</strong> total</li>';
+	echo '<li>📩 Subscribers: <strong class="cd-alert">' . $format($cached['subscribers_today']) . '</strong> new today / <strong>' . $format($cached['subscribers_total']) . '</strong> total</li>';
     echo '<li>👁️ Views: <strong class="cd-alert">' . $format($cached['views_today']) . '</strong> today / <strong>' . $format($cached['views_total']) . '</strong> total</li>';
     // 👍 Likes
     echo '<li>👍 Likes: <span class="cd-toggle cd-summary" data-target="likes-today">' . $format($cached['likes_today']) . ' today</span>';
