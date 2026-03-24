@@ -481,11 +481,12 @@ function custom_cleanup_old_data($wpdb, $safe_delete) {
     $deleted += $safe_delete("DELETE FROM {$wpdb->posts} WHERE post_status = 'auto-draft' AND post_content = ''", 'Auto-draft cleanup');
     $deleted += $safe_delete("DELETE FROM {$wpdb->prefix}er_post_stats WHERE row_type = 'event' AND created_at < CURDATE()", 'Old vote/view event log cleanup');
     $deleted += $safe_delete("DELETE FROM {$wpdb->posts} WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 1 DAY", 'Trash posts cleanup');
+	$deleted += $safe_delete("DELETE FROM {$wpdb->prefix}er_subscribers WHERE status = 'pending' AND created_at < NOW() - INTERVAL 7 DAY", 'Stale pending subscriber cleanup');
     return $deleted;
 }
 
 function custom_optimize_tables($wpdb, &$errors) {
-    $tables = ['postmeta', 'usermeta', 'termmeta', 'er_post_stats'];
+    $tables = ['postmeta', 'usermeta', 'termmeta', 'er_post_stats', 'er_subscribers];
     $optimized_count = 0;
     foreach ($tables as $table) {
         $result = $wpdb->query("OPTIMIZE TABLE {$wpdb->prefix}{$table}");
