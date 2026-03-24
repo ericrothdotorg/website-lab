@@ -46,12 +46,17 @@ function lum_schedule_background_tracking() {
             // Fire async tracking request
             setTimeout(function() {
                 var xhr = new XMLHttpRequest();
+				// Set a persistent Visitor ID Cookie if not already set
+				if (!document.cookie.split(';').some(c => c.trim().startsWith('lum_visitor_id='))) {
+					const vid = 'v_' + Math.random().toString(36).substr(2, 12) + Date.now().toString(36);
+					document.cookie = 'lum_visitor_id=' + vid + '; path=/; max-age=' + (365*24*60*60) + '; SameSite=Lax';
+				}
                 xhr.open('POST', '<?php echo admin_url('admin-ajax.php'); ?>');
                 xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 xhr.onload = function() {
                     // Optional: handle response if needed
                 };
-                xhr.send('action=lum_background_track&nonce=<?php echo $nonce; ?>');
+                xhr.send('action=lum_background_track&nonce=<?php echo $nonce; ?>&page_url=' + encodeURIComponent(window.location.href));
             }, 1000); // Small delay to ensure page loads first
         })();
         </script>
@@ -62,17 +67,21 @@ function lum_schedule_background_tracking() {
 // Background tracking handler
 function lum_background_track() {
     // Verify nonce
-    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'lum_track_nonce')) {
+	if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'lum_track_nonce')) {
         wp_die('Invalid request');
     }
-    // Now do the actual tracking (moved from original lum_track_visitor)
+    // Get or create a persistent visitor ID via Cookie
+    $visitor_id = isset($_COOKIE['lum_visitor_id']) ? sanitize_text_field($_COOKIE['lum_visitor_id']) : '';
+    if (empty($visitor_id)) {
+        // Can't set cookies in AJAX response usefully, so fall back to IP-based ID
+        $visitor_id = 'v_' . md5(lum_get_client_ip() . $_SERVER['HTTP_USER_AGENT']);
+    }
+    // Now do the actual Tracking
     global $wpdb;
     $table_name = $wpdb->prefix . 'live_visitors';
     $ip_address = lum_get_client_ip();
     $ip_address = lum_anonymize_ip($ip_address);
-    $request_uri = isset($_SERVER['HTTP_REFERER']) ? parse_url($_SERVER['HTTP_REFERER'], PHP_URL_PATH) : '/';
-    // Clean the URL
-    $page_url = lum_clean_page_url($request_uri);
+    $page_url = isset($_POST['page_url']) ? esc_url_raw($_POST['page_url']) : get_site_url() . '/';
     $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field($_SERVER['HTTP_USER_AGENT']) : '';
     // Skip known bots (double-check server-side)
     if (lum_is_bot($user_agent)) {
@@ -82,27 +91,27 @@ function lum_background_track() {
     if ($geo_data) {
         $current_time = current_time('mysql');
         // Single atomic Query - Insert new Visitor or update existing on duplicate IP
-        $wpdb->query($wpdb->prepare(
-            "INSERT INTO $table_name
-                (visitor_id, ip_address, latitude, longitude, city, country, country_code, page_url, user_agent, last_seen, visit_time)
-            VALUES
-                (%s, %s, %f, %f, %s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-                last_seen = VALUES(last_seen),
-                page_url = VALUES(page_url),
-                user_agent = VALUES(user_agent)",
-            uniqid('visitor_', true),
-            $ip_address,
-            $geo_data['lat'],
-            $geo_data['lon'],
-            $geo_data['city'],
-            $geo_data['country'],
-            $geo_data['countryCode'],
-            $page_url,
-            $user_agent,
-            $current_time,
-            $current_time
-        ));
+		$wpdb->query($wpdb->prepare(
+			"INSERT INTO $table_name
+				(visitor_id, ip_address, latitude, longitude, city, country, country_code, page_url, user_agent, last_seen, visit_time)
+			VALUES
+				(%s, %s, %f, %f, %s, %s, %s, %s, %s, %s, %s)
+			ON DUPLICATE KEY UPDATE
+				last_seen = VALUES(last_seen),
+				page_url = VALUES(page_url),
+				user_agent = VALUES(user_agent)",
+			$visitor_id,
+			$ip_address,
+			$geo_data['lat'],
+			$geo_data['lon'],
+			$geo_data['city'],
+			$geo_data['country'],
+			$geo_data['countryCode'],
+			$page_url,
+			$user_agent,
+			$current_time,
+			$current_time
+		));
     }
     wp_die('OK'); // Important for AJAX
 }
