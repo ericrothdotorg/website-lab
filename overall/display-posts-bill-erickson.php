@@ -376,9 +376,6 @@ add_action( 'wp_head', function () {
 	@media (max-width: 600px) {.display-posts-listing.grid .excerpt {padding: 0 8px; font-size: 0.75rem;}}
 	@media (min-width: 600px) {.display-posts-listing.grid .excerpt {padding: 0 16px;}}
 	
-	/* Grid Layout (3 columns) */
-	@media (min-width: 768px) {.display-posts-listing.grid#three-columns {grid-template-columns: repeat(3, 1fr);}}
-	
 	/* Grid Layout (4 columns) */
 	@media (min-width: 600px) and (max-width: 992px) {.display-posts-listing.grid#four-columns {grid-template-columns: repeat(2, 1fr);}}
 	@media (min-width: 992px) {.display-posts-listing.grid#four-columns {grid-template-columns: repeat(4, 1fr);}}
