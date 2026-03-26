@@ -307,17 +307,20 @@ function display_taxonomies_shortcode( $atts ) {
     if ( empty( $terms ) || is_wp_error( $terms ) ) {
         return '';
     }
-    // Wrapper Attributes
+	// Wrapper Attributes
     $classes = trim( 'display-taxonomies ' . $atts['wrapper_class'] );
     $id_attr = $atts['wrapper_id'] ? sprintf( ' id="%s"', esc_attr( $atts['wrapper_id'] ) ) : '';
-    $items = '';
+    $items   = '';
+    global $wpdb;
     foreach ( $terms as $term ) {
         $link = get_term_link( $term );
         if ( is_wp_error( $link ) ) continue;
         $image = '';
         if ( ! empty( $atts['image_size'] ) ) {
-            $meta   = get_term_meta( $term->term_id, 'blocksy_taxonomy_meta_options', true );
-            $img_id = ! empty( $meta['image']['attachment_id'] ) ? (int) $meta['image']['attachment_id'] : 0;
+            $img_id = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT meta_value FROM {$wpdb->termmeta} WHERE term_id = %d AND meta_key = 'er_term_image_id'",
+                $term->term_id
+            ) );
             if ( $img_id ) {
                 $img_html = wp_get_attachment_image( $img_id, $atts['image_size'] );
                 if ( $img_html ) {
@@ -412,7 +415,7 @@ add_action( 'wp_head', function () {
 	
 	/* Sidebar Widgets */
 	.display-posts-widgets .listing-item .category-display a {font-weight: normal;}
-	.ct-sidebar .display-posts-widgets {list-style-type: disc !important; padding-left: 20px;}
+	.display-posts-widgets {list-style-type: disc !important; padding-left: 20px;}
 	.display-posts-listing#latest > *:not(:first-child):not(:last-child) {margin: 25px 0;}
 	
 	/* Traits Conclusion */
@@ -438,7 +441,7 @@ add_action( 'wp_footer', function () {
         'use strict';
         // Adjust Sidebar Font Size to prevent Overflow
         function adjustFontSize() {
-            const sidebar = document.querySelector('.ct-sidebar');
+            const sidebar = document.querySelector('.display-posts-widgets');
             if (!sidebar) return;
             sidebar.style.whiteSpace = 'nowrap';
             sidebar.style.overflow = 'hidden';
