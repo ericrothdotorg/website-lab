@@ -443,11 +443,12 @@ add_filter('the_content', function ($content) {
 // SEO-friendly 301 Redirects for old URLs
 add_action('template_redirect', function() {
     $redirects = [
-        '/contact-me/'    => '/about-me/contact/',
-        '/services/'      => '/professional/',
-        '/my-background/' => '/professional/my-background/',
-        '/my-blog/'       => '/personal/my-blog/',
-        '/my-interests/'  => '/personal/my-interests/',
+        '/contact-me/'		=> '/about-me/contact/',
+        '/services/'		=> '/professional/',
+        '/my-background/'	=> '/professional/my-background/',
+        '/my-blog/'			=> '/personal/my-blog/',
+        '/my-interests/'	=> '/personal/my-interests/',
+		'/my-quotes/'		=> '/about-me/my-quotes/',
     ];
     $uri = isset($_SERVER['REQUEST_URI']) ? trailingslashit(parse_url(sanitize_text_field($_SERVER['REQUEST_URI']), PHP_URL_PATH)) : '';
     if (isset($redirects[$uri])) {
