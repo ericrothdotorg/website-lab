@@ -385,10 +385,18 @@ function initialize_custom_admin_columns() {
 			echo $term_id;
 			}
 			if ($column === 'featured_image') {
-				$blocksy_meta = get_term_meta($term_id, 'blocksy_taxonomy_meta_options', true);
-				if (is_array($blocksy_meta) && !empty($blocksy_meta['image']['url'])) {
-					echo '<img src="' . esc_url($blocksy_meta['image']['url']) . '" style="width: 65px; height: auto; border-radius: 4px;">';
-				} else {
+			$img_id = get_term_meta($term_id, 'er_term_image_id', true);
+			if (!$img_id) {
+				global $wpdb;
+				$img_id = (int) $wpdb->get_var($wpdb->prepare(
+					"SELECT meta_value FROM {$wpdb->termmeta} 
+					 WHERE term_id = %d AND meta_key = 'er_term_image_id'",
+					$term_id
+				));
+			}
+			if ($img_id) {
+				echo wp_get_attachment_image($img_id, [65, 65], false, ['style' => 'border-radius: 4px;']);
+			} else {
 					echo '—';
 				}
 			}
