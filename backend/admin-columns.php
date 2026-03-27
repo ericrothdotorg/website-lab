@@ -378,6 +378,7 @@ function initialize_custom_admin_columns() {
 			return $new;
 		});
 	}
+	
 	// Render featured IMG Column Content
 	foreach ($taxonomies as $tax) {
 		add_filter("manage_{$tax}_custom_column", function($content, $column, $term_id) {
@@ -403,7 +404,7 @@ function initialize_custom_admin_columns() {
 			return $content;
 		}, 10, 3);
 	}
-
+	
 	// Set Columns Width in Tax Columns
 	add_action('admin_head-edit-tags.php', function () {
 		$screen = get_current_screen();
@@ -431,6 +432,7 @@ add_action('edit_term', function($term_id) {
     wp_cache_delete($term_id, 'terms');
     wp_cache_delete($term_id, 'term_taxonomy');
 });
+
 // Force Description to load from Database on Admin Screens
 add_filter('get_term', function($term) {
     if (is_admin() && $term && isset($term->term_id)) {
