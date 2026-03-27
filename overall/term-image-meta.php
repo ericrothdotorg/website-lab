@@ -132,6 +132,34 @@ add_action('admin_enqueue_scripts', function() {
 });
 
 // =====================================
+// FRONTEND JS
+// =====================================
+
+add_action('wp_footer', function() {
+    if (!is_archive() && !is_category() && !is_tag() && !is_tax()) return;
+    ?>
+    <script>
+    (function() {
+        var siteUrl = <?php echo json_encode(home_url()); ?>;
+        document.addEventListener('click', function(e) {
+            var a = e.target.closest('a[href]');
+            if (!a) return;
+            var href = a.href;
+            if (!href.startsWith(siteUrl)) return;
+            if (href.includes('wp-admin') || href.includes('wp-login')) return;
+            if (a.target === '_blank') return;
+            if (href === window.location.href) return;
+            // Force full Page Reload instead of AJAX Navigation
+            e.stopPropagation();
+            e.preventDefault();
+            window.location.href = href;
+        }, true);
+    })();
+    </script>
+    <?php
+});
+
+// =====================================
 // BLOCKSY HERO SUPPORT
 // =====================================
 
