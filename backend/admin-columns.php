@@ -422,4 +422,30 @@ function initialize_custom_admin_columns() {
 	});
 }
 
+// =======================================
+// FIX TERM DESCRIPTION CACHE ISSUE
+// =======================================
+
+// Clear Term Cache after save to prevent stale Data
+add_action('edit_term', function($term_id) {
+    wp_cache_delete($term_id, 'terms');
+    wp_cache_delete($term_id, 'term_taxonomy');
+});
+// Force Description to load from Database on Admin Screens
+add_filter('get_term', function($term) {
+    if (is_admin() && $term && isset($term->term_id)) {
+        global $wpdb;
+        $description = $wpdb->get_var($wpdb->prepare(
+            "SELECT description FROM {$wpdb->term_taxonomy} 
+             WHERE term_id = %d AND taxonomy = %s",
+            $term->term_id,
+            $term->taxonomy
+        ));
+        if ($description !== null) {
+            $term->description = $description;
+        }
+    }
+    return $term;
+}, 10, 1);
+
 add_action('admin_init', 'initialize_custom_admin_columns');
