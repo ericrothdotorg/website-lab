@@ -86,8 +86,9 @@ add_action('init', function() {
 // ADMIN JS
 // =====================================
 
-add_action('admin_enqueue_scripts', function() {
-    if (empty($_GET['taxonomy'])) return;
+add_action('admin_enqueue_scripts', function($hook) {
+    global $pagenow;
+    if (!in_array($pagenow, ['term.php', 'edit-tags.php'])) return;
     wp_enqueue_media();
     wp_register_script('er-term-image-admin', '');
     wp_enqueue_script('er-term-image-admin');
@@ -160,7 +161,7 @@ add_action('wp_footer', function() {
 });
 
 // =====================================
-// BLOCKSY HERO SUPPORT
+// BLOCKSY HERO SUPPORT - THEME RELATED
 // =====================================
 
 add_filter('blocksy:hero:type-2:image:attachment_id', function ($attachment_id) {
