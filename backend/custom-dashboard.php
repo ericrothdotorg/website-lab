@@ -24,7 +24,7 @@ function custom_filter_dashboard_glance_items($items) {
 }
 
 // ======================================
-// 🎨 THEME SNAPSHOT
+// 🎨 THEME SNAPSHOT - THEME RELATED
 // ======================================
 
 function custom_render_theme_snapshot_widget() {
@@ -721,7 +721,7 @@ add_action('wp_dashboard_setup', function () {
     }
 
     // Register all Widgets
-    wp_add_dashboard_widget('custom_theme_snapshot',       '🎨 Theme Snapshot',        'custom_render_theme_snapshot_widget');
+    wp_add_dashboard_widget('custom_theme_snapshot',       '🎨 Theme Snapshot',        'custom_render_theme_snapshot_widget'); // THEME RELATED
     wp_add_dashboard_widget('hosting_code_repo',           '🌀 Hosting & Code Repo',   'custom_render_hosting_repo_widget');
     wp_add_dashboard_widget('ai_chatbots',                 '🤖 AI Chatbots',           'custom_render_ai_chatbots_widget');
     wp_add_dashboard_widget('sponsor_channels',            '🎁 Sponsor Channels',      'custom_render_sponsor_channels_widget');
