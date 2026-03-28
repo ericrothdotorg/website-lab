@@ -1,7 +1,9 @@
 <?php
 defined('ABSPATH') || exit;
 
-// === CONDITIONAL FLAG INJECTION BASED ON PATH ===
+// ================================================
+// CONDITIONAL FLAG INJECTION BASED ON PATH
+// ================================================
 
 function should_inject_lang_script() {
     $language_pairs = array(
@@ -28,7 +30,9 @@ function should_inject_lang_script() {
     return in_array($current_path, $all_valid_paths, true);
 }
 
-// === EARLY AUTO-DETECTION (runs before page renders) ===
+// ================================================
+// EARLY AUTO-DETECTION (runs before Page renders)
+// ================================================
 
 add_action('wp_head', function() {
     if (!should_inject_lang_script()) {
@@ -94,7 +98,9 @@ add_action('wp_head', function() {
     <?php
 }, 1);
 
-// === FOOTER SCRIPTS & STYLES (CONDITIONAL) ===
+// ================================================
+// FOOTER SCRIPTS & STYLES (CONDITIONAL)
+// ================================================
 
 add_action('wp_footer', function() {
     
@@ -108,7 +114,7 @@ add_action('wp_footer', function() {
 				let isProcessing = false;
 				function relocateLangFlag() {
 					const flagWrapper = document.querySelector('.lang-flag-wrapper');
-					const contentContainer = document.querySelector('.ct-container-full');
+					const contentContainer = document.querySelector('.ct-container-full'); // THEME RELATED
 					if (flagWrapper && contentContainer) {
 						contentContainer.style.position = 'relative';
 						contentContainer.appendChild(flagWrapper);
@@ -117,7 +123,7 @@ add_action('wp_footer', function() {
 				// Retry Loop in case the Element loads late
 				function tryMoveFlag() {
 					const flagWrapper = document.querySelector('.lang-flag-wrapper');
-					const contentContainer = document.querySelector('.ct-container-full');
+					const contentContainer = document.querySelector('.ct-container-full'); // THEME RELATED
 					if (flagWrapper && contentContainer) {
 						contentContainer.style.position = 'relative';
 						contentContainer.appendChild(flagWrapper);
@@ -196,7 +202,7 @@ add_action('wp_footer', function() {
     if (
         is_page(array(
             // English Pages
-            '179','87873','59078','55867','138768','113713','123635','65752','8977','100674','83147','55706','65756','87873','151412',
+            '179','87873','59078','55867','138768','113713','123635','65752','8977','100674','83147','55706','65756','87873','151412','51969',
             // German Pages
             '150455','150449','149904','149998','150034','150120','150200','150223','150233','151417')) ||
         is_single(array(
@@ -205,7 +211,7 @@ add_action('wp_footer', function() {
             // German Singles
             '150592')) ||
         is_tax('topics', 124) ||
-        is_tax('things', array(137, 258))
+		is_tax('things', array(137, 258))
     ) {
         ?>
         <script>
@@ -263,7 +269,7 @@ add_action('wp_footer', function() {
 				height: auto;
 				border: 0;
 			}
-			.entry-header.ct-container .page-description p {
+			.entry-header.ct-container .page-description p { // THEME RELATED
 				margin-right: clamp(120px, calc(10vw + 20px), 150px);
 			}
         </style>
