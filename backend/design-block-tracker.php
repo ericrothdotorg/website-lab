@@ -154,7 +154,7 @@ function render_design_block_tracker() {
     echo '<div class="wrap"><h1>Design Block Tracker</h1>';
     echo '<p><a href="'.esc_url(add_query_arg('refresh', '1')).'" class="button button-primary">Refresh Data</a>';
     if ($cached_data) {
-        echo ' <span style="color:#666;margin-left:10px;">(Using cached data)</span>';
+        echo ' <span style="color: #666; margin-left: 10px;">(Using cached data)</span>';
     }
     echo '</p>';
 
@@ -264,7 +264,7 @@ function render_design_block_tracker() {
         // Scan CPTs
         $custom_post_types = get_post_types(['public' => true, '_builtin' => false], 'objects');
         foreach ($custom_post_types as $cpt) {
-            if ($cpt->name !== 'wp_block' && $cpt->name !== 'ct_content_block') {
+            if ($cpt->name !== 'wp_block' && $cpt->name !== 'ct_content_block') { // THEME RELATED
                 dbt_scan_posts_of_type($cpt->name, $cpt->label, $block_usage, $pattern_usage);
             }
         }
