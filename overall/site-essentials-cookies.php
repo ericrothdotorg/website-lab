@@ -126,11 +126,11 @@ add_filter('should_load_separate_core_block_assets', '__return_true');
 
 // Defer non-critical CSS to reduce render-blocking
 $critical_css_handles = [
-    'blocksy-dynamic-global',	// CRITICAL - Blocksy Layout / Positioning
-    'ct-main-styles',			// Blocksy core Styles
     'global-styles',			// WordPress global Styles
-    'ct-page-title-styles',		// Page Title (above Fold)
-    'ct-flexy-styles',			// Flexy Animations
+    'blocksy-dynamic-global',	// THEME RELATED: CRITICAL - Blocksy Layout / Positioning
+    'ct-main-styles',			// THEME RELATED: Blocksy core Styles
+    'ct-page-title-styles',		// THEME RELATED: Page Title (above Fold)
+    'ct-flexy-styles',			// THEME RELATED: Flexy Animations
 ];
 add_filter('style_loader_tag', function($html, $handle) use ($critical_css_handles) {
     if (in_array($handle, $critical_css_handles)) {
@@ -209,7 +209,7 @@ add_filter('render_block', function($html, $block) {
 }, 10, 2);
 
 // ======================================
-// BLOCKSY THEME OPTIMIZATIONS
+// BLOCKSY OPTIMIZATIONS - THEME RELATED
 // ======================================
 
 // Switch from lazy to eager for featured Images (ct-media-container)
@@ -272,7 +272,7 @@ add_filter('widget_block_content', 'do_shortcode');
 
 // [reusable id="123"] - Display reusable Content Blocks
 add_shortcode('reusable', 'get_reusable_block');
-add_shortcode('blocksy_content_block', 'get_reusable_block');
+add_shortcode('blocksy_content_block', 'get_reusable_block'); // THEME RELATED
 function get_reusable_block($atts) {
     $atts = shortcode_atts(['id' => ''], $atts);
     $id = absint($atts['id']);
@@ -605,7 +605,7 @@ add_action('wp_footer', function () {
 				});
 			}
 
-			// Flexy Animation (Blocksy Theme)
+			// Flexy Animation - THEME RELATED
 			const flexyElements = document.querySelectorAll('.flexy-container');
 			if (flexyElements.length) {
 				const observer = new IntersectionObserver(entries => {
