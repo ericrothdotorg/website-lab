@@ -300,7 +300,7 @@ function er_handle_subscribe_ajax() {
     ], home_url() );
     $subject = 'Please confirm your subscription - ericroth.org';
     $body    = "Hi,\n\n"
-             . "Please confirm your subscription by clicking the link below:\n\n"
+             . "Please confirm your subscription to - ericroth.org - by clicking the link below:\n\n"
              . $confirm_url . "\n\n"
              . "If you did not request this, simply ignore this email.\n\n"
              . get_bloginfo( 'name' );
@@ -320,14 +320,14 @@ add_action( 'init', function () {
     if ( er_activate_subscriber( $email, $token ) ) {
         $subject = 'You\'re now subscribed - ericroth.org';
         $body    = "Hi,\n\n"
-                 . "Your subscription to ericroth.org is confirmed.\n"
+                 . "Your subscription to - ericroth.org - is confirmed.\n"
                  . "You'll receive a notification whenever new content is published.\n\n"
                  . get_bloginfo( 'name' );
         wp_mail( $email, $subject, $body );
         $home = esc_url( home_url() );
         wp_die(
             '<p>Your subscription is confirmed. Welcome!</p>'
-            . '<p>You will be redirected to ericroth.org in 2 seconds.</p>'
+            . '<p>You will be redirected to - ericroth.org - in 2 seconds.</p>'
             . '<p><a href="' . $home . '">Click here if you are not redirected automatically.</a></p>'
             . '<script>setTimeout(function(){ window.location.href="' . $home . '"; }, 2000);</script>',
             'Confirmed',
@@ -386,20 +386,20 @@ add_action( 'transition_post_status', function ( $new, $old, $post ) {
     $excerpt  = has_excerpt( $post )
         ? get_the_excerpt( $post )
         : wp_trim_words( strip_tags( $post->post_content ), 30 );
-    $sitename = get_bloginfo( 'name' );
     foreach ( $subscribers as $sub ) {
         $unsub_url = add_query_arg( [
             'er_unsub' => 1,
             'email'    => urlencode( $sub->email ),
             'token'    => $sub->token,
         ], home_url() );
-        $subject = 'New post: ' . $title . ' — ' . $sitename;
+        $subject = 'New post: ' . $title . ' - ericroth.org';
         $body    = "Hi,\n\n"
-                 . "A new post has just been published on {$sitename}:\n\n"
+                 . "A new post has just been published on ericroth.org:\n\n"
                  . "{$title}\n\n"
                  . "{$excerpt}\n\n"
                  . "Read it here:\n"
                  . "{$url}\n\n"
+                 . get_bloginfo( 'name' ) . "\n\n"
                  . "---\n"
                  . "To unsubscribe: {$unsub_url}";
         wp_mail( $sub->email, $subject, $body );
