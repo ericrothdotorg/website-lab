@@ -231,6 +231,16 @@ add_filter('blocksy:frontend:dynamic-data:post-featured-image:html', function($h
 // Enable Blocksy Flexy Animation Styles
 add_action('wp_enqueue_scripts', fn() => wp_enqueue_style('ct-flexy-styles'));
 
+// Related: Fall back to any Post of same Type when Query returns empty
+add_filter('blocksy:related-posts:query-args', function($args) {
+    if (empty($args['tax_query'])) return $args;
+    $test = new WP_Query(array_merge($args, ['fields' => 'ids', 'posts_per_page' => 1]));
+    if ($test->found_posts === 0) {
+        unset($args['tax_query']);
+    }
+    return $args;
+});
+
 // ======================================
 // FRONTEND ASSETS
 // ======================================
