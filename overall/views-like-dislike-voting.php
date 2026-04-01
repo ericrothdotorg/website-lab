@@ -49,8 +49,11 @@ function er_init_views_meta($post_id) {
         ]);
     }
 }
-add_action('publish_post', 'er_init_views_meta');
-add_action('publish_page', 'er_init_views_meta');
+add_action('transition_post_status', function($new_status, $old_status, $post) {
+    if ($new_status === 'publish' && $old_status !== 'publish') {
+        er_init_views_meta($post->ID);
+    }
+}, 10, 3);
 add_action('wp_head', function() {
     if (is_singular()) er_track_post_views(get_the_ID());
 });
@@ -192,8 +195,11 @@ function er_init_likes_meta($post_id) {
         ]);
     }
 }
-add_action('publish_post', 'er_init_likes_meta');
-add_action('publish_page', 'er_init_likes_meta');
+add_action('transition_post_status', function($new_status, $old_status, $post) {
+    if ($new_status === 'publish' && $old_status !== 'publish') {
+        er_init_likes_meta($post->ID);
+    }
+}, 10, 3);
 add_action('wp_ajax_update_likes', 'update_likes');
 add_action('wp_ajax_nopriv_update_likes', 'update_likes');
 
@@ -254,8 +260,11 @@ function er_init_dislikes_meta($post_id) {
         ]);
     }
 }
-add_action('publish_post', 'er_init_dislikes_meta');
-add_action('publish_page', 'er_init_dislikes_meta');
+add_action('transition_post_status', function($new_status, $old_status, $post) {
+    if ($new_status === 'publish' && $old_status !== 'publish') {
+        er_init_dislikes_meta($post->ID);
+    }
+}, 10, 3);
 add_action('wp_ajax_update_dislikes', 'update_dislikes');
 add_action('wp_ajax_nopriv_update_dislikes', 'update_dislikes');
 
