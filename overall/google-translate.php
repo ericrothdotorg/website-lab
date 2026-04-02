@@ -2,6 +2,7 @@
 defined('ABSPATH') || exit;
 
 add_action('wp_footer', function () {
+	if (is_front_page()) return;
 ?>
 	
 <div id="google_translate_element" role="dialog" aria-label="Language Selector" aria-hidden="true"></div>
