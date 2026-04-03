@@ -486,11 +486,11 @@ function custom_cleanup_old_data($wpdb, $safe_delete) {
 }
 
 function custom_optimize_tables($wpdb, &$errors) {
-    $tables = ['postmeta', 'usermeta', 'termmeta', 'er_post_stats', 'er_subscribers'];
+    $tables = ['postmeta', 'usermeta', 'termmeta', 'er_post_stats'];
     $optimized_count = 0;
     foreach ($tables as $table) {
-        $result = $wpdb->query("OPTIMIZE TABLE {$wpdb->prefix}{$table}");
-        if ($result !== false) {
+        $wpdb->query("OPTIMIZE TABLE {$wpdb->prefix}{$table}");
+        if ($wpdb->last_error === '') {
             $optimized_count++;
         } else {
             $errors[] = "Failed to optimize {$table}: " . $wpdb->last_error;
