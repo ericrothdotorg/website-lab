@@ -29,31 +29,37 @@ add_action("wp_head", function () {
 	/* == NOT THEME RELATED == */
 
     /* NAVIGATION */
+	
     a:link {font-weight: bold; color: #1e73be;}
 	a:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
 	a:focus:not(:focus-visible) {outline: none;}
 
     /* HTML & BODY BASICS */
+	
     html {text-size-adjust: 100%; scroll-behavior: smooth;}
     p {text-align: justify;}
     code {background: none !important; border: none; padding: 0;}
     
     /* CORE LAYOUT UTILITIES */
+	
     .row::after {content: ""; display: table; clear: both;}
     .clearfix::after {content: ""; clear: both; display: table;}
     
 	/* COLUMNS - BASIC STRUCTURE */
+	
 	.two-columns, .four-columns { float: left; }
 	.two-columns { width: 49%; }
 	.two-columns:nth-child(odd) { margin-right: 1%; }
 	.two-columns:nth-child(even) { margin-left: 1%; }
     
     /* FLEXBOX */
+	
     .flex-container {display: flex; align-items: center; flex-flow: row wrap;}
     .flex-container.left-align {justify-content: flex-start;}
     .flex-container.center-align {justify-content: center;}
     
     /* SOME MISC STUFF */
+	
     .display-total-number-of-posts {font-weight: normal;}
     
     </style>
@@ -229,10 +235,12 @@ add_action("wp_footer", function () {
 	}
 
     /* TABLES */
+	
     .wp-block-table thead {background-color: #f2f5f7;}
     .wp-block-table tr:hover {background-color: #f2f5f7;}
     
     /* DETAILS & SUMMARY */
+	
     summary {color: #1e73be; font-weight: bold; cursor: pointer;}
     summary:hover {color: #c53030;}
     summary:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
@@ -311,6 +319,7 @@ add_action("wp_footer", function () {
     .font-design-red {color: #990033;}
     
     /* BLOCKQUOTES */
+	
     .wp-block-quote {
 		position: relative;
 		width: 85%;
@@ -343,6 +352,7 @@ add_action("wp_footer", function () {
     .quote-text ul, .quote-text li {margin-left: -20px;}
     
     /* TAG CLOUDS */
+	
     .tag-cloud a {
 		background: #f2f5f7;
 		font-weight: normal;
@@ -392,6 +402,7 @@ add_action("wp_footer", function () {
     .image-bedps figcaption {margin-top: 16px; margin-bottom: 16px; font-size: 1.125rem; font-weight: bold;}
     
     /* EMBEDS & VIDEO */
+	
     .embed-responsively {position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;}
     .embed-responsively iframe, .embed-responsively object, .embed-responsively embed {
 		position: absolute;
@@ -406,6 +417,7 @@ add_action("wp_footer", function () {
     .wp-block-video-osho video {vertical-align: middle; width: 75%;}
     
     /* BUTTONS */
+	
     .wp-block-button__link, .button a, .smaller-button a {
 		color: #fff !important;
 		background-color: #1e73be;
@@ -419,13 +431,14 @@ add_action("wp_footer", function () {
 		border: 2px solid transparent;
 		transition: background-color 0.2s ease, color 0.2s ease;
     }
-    .wp-block-button__link:hover, .button a:hover, .smaller-button a:hover {background-color: #c53030;}
+    .wp-block-button__link:hover, .button a:hover, .smaller-button a:hover {background-color: #c53030; border: 2px solid transparent;}
 	.wp-block-button__link:focus, .button a:focus, .smaller-button a:focus {outline: 1px solid #1e73be; outline-offset: 2px;}
 	.wp-block-button__link:focus:not(:focus-visible), .button a:focus:not(:focus-visible), .smaller-button a:focus:not(:focus-visible) {outline: none;}
     .button a {margin: auto; max-width: fit-content;}
     .smaller-button a {cursor: pointer; min-height: 25px; padding: 5px 10px 7.5px;}
     
     /* BOXES */
+	
     .text-box {overflow: hidden; padding: 25px; margin-bottom: 25px;}
     .resizable-box {height: 333px; resize: vertical; overflow: auto; padding: 25px; border: 0.5px solid #808080;}
     .box-background {background: #fafbfc; border: 1px solid #e1e8ed; transition: background 0.2s ease;}
