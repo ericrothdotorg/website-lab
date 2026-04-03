@@ -564,8 +564,10 @@ add_action('wp_footer', function () {
 			if (!hasConsent) {
 				const notice = document.getElementById("cookie-notice");
 				if (notice) {
-					notice.style.visibility = "visible";
-					notice.setAttribute("aria-hidden", "false");
+					setTimeout(function() {
+						notice.style.visibility = "visible";
+						notice.setAttribute("aria-hidden", "false");
+					}, <?php echo is_front_page() ? 2500 : 0; ?>); // Delayed only on Frontpage
 					document.getElementById("cookie-accept").addEventListener('click', function() {
 						window.setCookie(1);
 						window.hideCookieBanner();
