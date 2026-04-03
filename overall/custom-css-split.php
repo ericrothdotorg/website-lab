@@ -28,6 +28,11 @@ add_action("wp_head", function () {
 		
 	/* == NOT THEME RELATED == */
 
+	/* FRONTPAGE VIDEO */
+	
+	.wp-block-cover.alignfull video {animation: kenburns 15s ease-in-out infinite alternate;}
+	@keyframes kenburns {from {transform: scale(1);} to {transform: scale(1.25);}}
+
     /* NAVIGATION */
 	
     a:link {font-weight: bold; color: #1e73be;}
