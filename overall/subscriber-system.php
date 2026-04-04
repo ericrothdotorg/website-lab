@@ -3,26 +3,49 @@ defined( 'ABSPATH' ) || exit;
 
 /* =============================================================================
    1. DATABASE SETUP
-   Creates wp_er_subscribers on Activation. Safe to re-run.
+   Creates wp_er_subscribers on first run.
+   v2 Migration adds last-send Columns to existing Installs.
 ============================================================================= */
 
 add_action( 'init', function () {
     global $wpdb;
     $charset = $wpdb->get_charset_collate();
+    $table   = $wpdb->prefix . 'er_subscribers';
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
     if ( ! get_option( 'er_subscribers_table_created' ) ) {
-        $table = $wpdb->prefix . 'er_subscribers';
-        $sql   = "CREATE TABLE {$table} (
-            id         BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT,
-            email      VARCHAR(191)     NOT NULL,
-            token      VARCHAR(64)      NOT NULL,
-            status     ENUM('pending','active') NOT NULL DEFAULT 'pending',
-            created_at DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        $sql = "CREATE TABLE {$table} (
+            id               BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+            email            VARCHAR(191)     NOT NULL,
+            token            VARCHAR(64)      NOT NULL,
+            status           ENUM('pending','active') NOT NULL DEFAULT 'pending',
+            created_at       DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_post_title  VARCHAR(255)     NULL DEFAULT NULL,
+            last_send_status ENUM('sent','failed') NULL DEFAULT NULL,
+            last_send_error  TEXT             NULL DEFAULT NULL,
+            last_send_at     DATETIME         NULL DEFAULT NULL,
             PRIMARY KEY (id),
             UNIQUE KEY email (email)
         ) {$charset};";
         dbDelta( $sql );
         update_option( 'er_subscribers_table_created', true );
+        update_option( 'er_subscribers_v2_migrated', true );
+    }
+
+    if ( ! get_option( 'er_subscribers_v2_migrated' ) ) {
+        $existing_columns = $wpdb->get_col( "DESCRIBE {$table}", 0 );
+        $to_add = [
+            'last_post_title'  => "ALTER TABLE {$table} ADD COLUMN last_post_title  VARCHAR(255)          NULL DEFAULT NULL",
+            'last_send_status' => "ALTER TABLE {$table} ADD COLUMN last_send_status ENUM('sent','failed') NULL DEFAULT NULL",
+            'last_send_error'  => "ALTER TABLE {$table} ADD COLUMN last_send_error  TEXT                  NULL DEFAULT NULL",
+            'last_send_at'     => "ALTER TABLE {$table} ADD COLUMN last_send_at     DATETIME              NULL DEFAULT NULL",
+        ];
+        foreach ( $to_add as $column => $sql ) {
+            if ( ! in_array( $column, $existing_columns, true ) ) {
+                $wpdb->query( $sql );
+            }
+        }
+        update_option( 'er_subscribers_v2_migrated', true );
     }
 } );
 
@@ -203,22 +226,19 @@ add_action( 'wp_footer', function () {
     <script>
     document.addEventListener( 'DOMContentLoaded', function () {
         const form = document.getElementById( 'er-subscribe-form' );
-        if ( ! form ) return; // Form not on this Page — Do nothing
+        if ( ! form ) return;
         const confirmation = document.getElementById( 'er-confirmation' );
         const submitBtn    = document.getElementById( 'er-submit-btn' );
         const formLoadTime = Date.now();
         let lastSubmit     = 0;
         form.addEventListener( 'submit', function ( e ) {
             e.preventDefault();
-            // Time Check
             if ( ( Date.now() - formLoadTime ) / 1000 < 3 ) return;
-            // Resubmit Throttle
             if ( Date.now() - lastSubmit < 5000 ) {
                 showMessage( 'Please wait a few seconds before submitting again.' );
                 return;
             }
             lastSubmit = Date.now();
-            // Honeypot
             const honeypot = form.querySelector( 'input[name="middle_name"]' );
             if ( honeypot && honeypot.value.trim() !== '' ) return;
             submitBtn.disabled    = true;
@@ -264,20 +284,16 @@ add_action( 'wp_ajax_nopriv_er_subscribe_ajax', 'er_handle_subscribe_ajax' );
 
 function er_handle_subscribe_ajax() {
     $ip = er_get_ip();
-    // Nonce
     if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'er_subscribe_nonce' ) ) {
         er_log_nonce_failure( $ip );
         wp_send_json_error( [ 'message' => 'Security check failed.' ] );
     }
-    // Transient Rate Limit
     if ( get_transient( 'er_subscribe_ip_' . md5( $ip ) ) ) {
         wp_send_json_error( [ 'message' => 'Please wait before submitting again.' ] );
     }
-    // Honeypot
     if ( trim( $_POST['middle_name'] ?? '' ) !== '' ) {
         wp_send_json_error();
     }
-    // Silent Math Check
     if ( trim( $_POST['math_check'] ?? '' ) !== '7' ) {
         wp_send_json_error();
     }
@@ -300,7 +316,7 @@ function er_handle_subscribe_ajax() {
     ], home_url() );
     $subject = 'Please confirm your subscription - ericroth.org';
     $body    = "Hi,\n\n"
-             . "Please confirm your subscription to - ericroth.org - by clicking the link below:\n\n"
+             . "Please confirm your subscription by clicking the link below:\n\n"
              . $confirm_url . "\n\n"
              . "If you did not request this, simply ignore this email.\n\n"
              . get_bloginfo( 'name' );
@@ -320,14 +336,14 @@ add_action( 'init', function () {
     if ( er_activate_subscriber( $email, $token ) ) {
         $subject = 'You\'re now subscribed - ericroth.org';
         $body    = "Hi,\n\n"
-                 . "Your subscription to - ericroth.org - is confirmed.\n"
+                 . "Your subscription to ericroth.org is confirmed.\n"
                  . "You'll receive a notification whenever new content is published.\n\n"
                  . get_bloginfo( 'name' );
         wp_mail( $email, $subject, $body );
         $home = esc_url( home_url() );
         wp_die(
             '<p>Your subscription is confirmed. Welcome!</p>'
-            . '<p>You will be redirected to - ericroth.org - in 2 seconds.</p>'
+            . '<p>You will be redirected to ericroth.org in 2 seconds.</p>'
             . '<p><a href="' . $home . '">Click here if you are not redirected automatically.</a></p>'
             . '<script>setTimeout(function(){ window.location.href="' . $home . '"; }, 2000);</script>',
             'Confirmed',
@@ -351,7 +367,7 @@ add_action( 'init', function () {
     if ( empty( $_GET['er_unsub'] ) ) return;
     $email = sanitize_email( urldecode( $_GET['email'] ?? '' ) );
     $token = sanitize_text_field( $_GET['token'] ?? '' );
-    $home = esc_url( home_url() );
+    $home  = esc_url( home_url() );
     if ( er_remove_subscriber( $email, $token ) ) {
         wp_die(
             '<p>You have been unsubscribed successfully.</p>'
@@ -371,8 +387,7 @@ add_action( 'init', function () {
 } );
 
 /* =============================================================================
-   9. PUBLISH TRIGGER
-   Fires when any watched Post Type transitions to 'publish'.
+   9. PUBLISH TRIGGER — HTML or Plain Text E-mail (depending on E-mail Client)
 ============================================================================= */
 
 add_action( 'transition_post_status', function ( $new, $old, $post ) {
@@ -381,34 +396,61 @@ add_action( 'transition_post_status', function ( $new, $old, $post ) {
     if ( ! in_array( $post->post_type, $watched, true ) ) return;
     $subscribers = er_get_subscribers( 'active' );
     if ( empty( $subscribers ) ) return;
+    global $wpdb;
+    $table    = $wpdb->prefix . 'er_subscribers';
     $title    = get_the_title( $post );
     $url      = get_permalink( $post );
     $excerpt  = has_excerpt( $post )
         ? get_the_excerpt( $post )
         : wp_trim_words( strip_tags( $post->post_content ), 30 );
+    $site_title = get_bloginfo( 'name' );
     foreach ( $subscribers as $sub ) {
         $unsub_url = add_query_arg( [
             'er_unsub' => 1,
             'email'    => urlencode( $sub->email ),
             'token'    => $sub->token,
         ], home_url() );
-        $subject = 'New post: ' . $title . ' - ericroth.org';
-        $body    = "Hi,\n\n"
-                 . "A new post has just been published on ericroth.org:\n\n"
-                 . "{$title}\n\n"
-                 . "{$excerpt}\n\n"
-                 . "Read it here:\n"
-                 . "{$url}\n\n"
-                 . get_bloginfo( 'name' ) . "\n\n"
-                 . "---\n"
-                 . "To unsubscribe: {$unsub_url}";
-        wp_mail( $sub->email, $subject, $body );
+        $subject = "New post: {$title} — ericroth.org";
+        // HTML-only Body (Clients without HTML will fall back to plain Text)
+        $body = "
+        <p>Hi,</p>
+        <p>A new post has just been published on ericroth.org:</p>
+        <h3>{$title}</h3>
+        <p>{$excerpt}</p>
+        <p><strong>Read it here:</strong><br>
+        <a href=\"{$url}\">{$url}</a></p>
+        <p>{$site_title}</p>
+		<p>-----</p>
+        <p><strong>To unsubscribe:</strong><br>
+        <a href=\"{$unsub_url}\">{$unsub_url}</a></p>
+        ";
+        $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
+        $sent = wp_mail( $sub->email, $subject, $body, $headers );
+        $error = null;
+        if ( ! $sent ) {
+            global $phpmailer;
+            $error = ! empty( $phpmailer->ErrorInfo )
+                ? $phpmailer->ErrorInfo
+                : 'wp_mail() returned false';
+        }
+		// Update Subscriber Log Entry 
+        $wpdb->update(
+            $table,
+            [
+                'last_post_title'  => $title,
+                'last_send_status' => $sent ? 'sent' : 'failed',
+                'last_send_error'  => $error,
+                'last_send_at'     => current_time( 'mysql' ),
+            ],
+            [ 'id' => $sub->id ]
+        );
     }
 }, 10, 3 );
 
 /* =============================================================================
    10. ADMIN PAGE
    Top-level Menu → View, filter by Status, delete Subscribers.
+   Last Send column reads directly from the Subscriber Row.
 ============================================================================= */
 
 add_action( 'admin_menu', function () {
@@ -426,7 +468,6 @@ add_action( 'admin_menu', function () {
 function er_render_admin_page() {
     global $wpdb;
     $table = $wpdb->prefix . 'er_subscribers';
-    // Handle Single Delete
     if (
         isset( $_GET['er_delete'], $_GET['_wpnonce'] ) &&
         wp_verify_nonce( $_GET['_wpnonce'], 'er_delete_subscriber' )
@@ -434,7 +475,6 @@ function er_render_admin_page() {
         $wpdb->delete( $table, [ 'id' => intval( $_GET['er_delete'] ) ] );
         echo '<div class="notice notice-success is-dismissible"><p>Subscriber deleted.</p></div>';
     }
-    // Handle Bulk Delete
     if (
         isset( $_POST['bulk_delete'], $_POST['subscriber_ids'], $_POST['_wpnonce'] ) &&
         check_admin_referer( 'er_subscribers_action', '_wpnonce' )
@@ -444,7 +484,6 @@ function er_render_admin_page() {
         $wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE id IN ({$placeholders})", ...$ids ) );
         echo '<div class="notice notice-success is-dismissible"><p>Selected subscribers deleted.</p></div>';
     }
-    // Filter
     $status_filter = sanitize_text_field( $_GET['status'] ?? 'all' );
     $where         = $status_filter !== 'all'
         ? $wpdb->prepare( 'WHERE status = %s', $status_filter )
@@ -476,6 +515,7 @@ function er_render_admin_page() {
                             <th scope="col">Email</th>
                             <th scope="col">Status</th>
                             <th scope="col">Subscribed</th>
+                            <th scope="col">Last Send</th>
                             <th scope="col">Action</th>
                         </tr>
                     </thead>
@@ -490,6 +530,21 @@ function er_render_admin_page() {
                                 <td><?php echo esc_html( $sub->email ); ?></td>
                                 <td><?php echo esc_html( ucfirst( $sub->status ) ); ?></td>
                                 <td><?php echo esc_html( date( 'F j, Y H:i', strtotime( $sub->created_at ) ) ); ?></td>
+                                <td>
+                                    <?php if ( $sub->last_send_status ) :
+                                        $color = $sub->last_send_status === 'sent' ? 'green' : 'red';
+                                        $label = $sub->last_send_status === 'sent' ? '&#10003; Sent' : '&#10007; Failed';
+                                        ?>
+                                        <span style="color:<?php echo $color; ?>;font-weight:600;"><?php echo $label; ?></span><br>
+                                        <small><?php echo esc_html( $sub->last_post_title ); ?></small><br>
+                                        <small><?php echo esc_html( date( 'F j, Y H:i', strtotime( $sub->last_send_at ) ) ); ?></small>
+                                        <?php if ( $sub->last_send_status === 'failed' && $sub->last_send_error ) : ?>
+                                            <br><small style="color:red;"><?php echo esc_html( $sub->last_send_error ); ?></small>
+                                        <?php endif; ?>
+                                    <?php else : ?>
+                                        <span style="color:#999;">—</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><a href="<?php echo esc_url( $delete_url ); ?>" aria-label="Delete <?php echo esc_attr( $sub->email ); ?>">Delete</a></td>
                             </tr>
                         <?php endforeach; ?>
