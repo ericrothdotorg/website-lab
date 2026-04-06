@@ -61,7 +61,7 @@ function er_configure_smtp( $phpmailer ) {
     $phpmailer->Port       = defined( 'SMTP_PORT' ) ? SMTP_PORT : 587;
     $phpmailer->Username   = defined( 'SMTP_USER' ) ? SMTP_USER : '';
     $phpmailer->Password   = defined( 'SMTP_PASS' ) ? SMTP_PASS : '';
-    $phpmailer->SMTPSecure = 'tls';
+    $phpmailer->SMTPSecure = 'ssl';
     $phpmailer->From       = defined( 'SMTP_FROM' ) ? SMTP_FROM : '';
     $phpmailer->FromName   = defined( 'SMTP_FROMNAME' ) ? SMTP_FROMNAME : '';
 }
