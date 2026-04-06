@@ -63,6 +63,7 @@ add_action('wp_footer', function () {
 
     /* Style Slideshows with single Item*/
     .slideshow-single-item img {border-radius: 25px;}
+	.slideshow-single-item .listing-item img {border-radius: 25px 25px 0 0;}
 
     /* Style Slideshows with multiple Items*/
     .slideshow-multiple-items-3 .slick-list, .slideshow-multiple-items-4 .slick-list { margin: 0 -12.5px; }
