@@ -403,7 +403,7 @@ add_action( 'transition_post_status', function ( $new, $old, $post ) {
     $excerpt  = has_excerpt( $post )
         ? get_the_excerpt( $post )
         : wp_trim_words( strip_tags( $post->post_content ), 30 );
-    $site_title = get_bloginfo( 'name' );
+    $sitename = get_bloginfo( 'name' );
     foreach ( $subscribers as $sub ) {
         $unsub_url = add_query_arg( [
             'er_unsub' => 1,
@@ -419,7 +419,7 @@ add_action( 'transition_post_status', function ( $new, $old, $post ) {
         <p>{$excerpt}</p>
         <p><strong>Read it here:</strong><br>
         <a href=\"{$url}\">{$url}</a></p>
-        <p>{$site_title}</p>
+        <p>{$sitename}</p>
 		<p>-----</p>
         <p><strong>To unsubscribe:</strong><br>
         <a href=\"{$unsub_url}\">{$unsub_url}</a></p>
