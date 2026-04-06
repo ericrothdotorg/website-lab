@@ -181,7 +181,11 @@ add_action('wp_head', function() {
             ];
         }
     }
-    
+        if (is_front_page()) { // Add Cover Block Poster on Front Page
+        preg_match('/poster="([^"]+)"/', $post->post_content, $m);
+        if (!empty($m[1])) $preload_images[] = ['url' => $m[1], 'type' => 'single'];
+    } 
+	
     // 3. Output preload Links for all collected Images
     foreach ($preload_images as $img) {
         if ($img['type'] === 'responsive') {
