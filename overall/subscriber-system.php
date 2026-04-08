@@ -369,20 +369,25 @@ add_action( 'init', function () {
    Logs send Status and any Error back to the Subscriber Record.
 ============================================================================= */
 
-add_action( 'save_post', function ( $post_id, $post, $update ) {
+add_action( 'transition_post_status', function ( $new_status, $old_status, $post ) {
     global $wpdb, $phpmailer;
-
-    if ( wp_is_post_revision( $post_id ) ) return;
-    if ( wp_is_post_autosave( $post_id ) ) return;
-    if ( $post->post_status !== 'publish' ) return;
-    if ( get_post_meta( $post_id, '_new_post_email_sent', true ) ) return;
-
+    if ( $new_status !== 'publish' || $old_status === 'publish' ) {
+        return;
+    }
+    if ( wp_is_post_revision( $post->ID ) || wp_is_post_autosave( $post->ID ) ) {
+        return;
+    }
     $watched = [ 'post', 'my-interests', 'my-quotes' ];
-    if ( ! in_array( $post->post_type, $watched, true ) ) return;
-
+    if ( ! in_array( $post->post_type, $watched, true ) ) {
+        return;
+    }
+    if ( get_post_meta( $post->ID, '_new_post_email_sent', true ) ) {
+        return;
+    }
     $subscribers = er_get_subscribers( 'active' );
-    if ( empty( $subscribers ) ) return;
-
+    if ( empty( $subscribers ) ) {
+        return;
+    }
     $table    = $wpdb->prefix . 'er_subscribers';
     $title    = get_the_title( $post );
     $url      = get_permalink( $post );
@@ -390,14 +395,13 @@ add_action( 'save_post', function ( $post_id, $post, $update ) {
         ? get_the_excerpt( $post )
         : wp_trim_words( strip_tags( $post->post_content ), 30 );
     $sitename = get_bloginfo( 'name' );
-
+	
     foreach ( $subscribers as $sub ) {
         $unsub_url = add_query_arg( [
             'er_unsub' => 1,
             'email'    => urlencode( $sub->email ),
             'token'    => $sub->token,
         ], home_url() );
-
         $subject = "New post: {$title} — ericroth.org";
         $body    = "
         <p>Hi,</p>
@@ -420,7 +424,6 @@ add_action( 'save_post', function ( $post_id, $post, $update ) {
                 ? $phpmailer->ErrorInfo
                 : 'wp_mail() returned false';
         }
-
         $wpdb->update(
             $table,
             [
@@ -432,8 +435,8 @@ add_action( 'save_post', function ( $post_id, $post, $update ) {
             [ 'id' => $sub->id ]
         );
     }
-
-    update_post_meta( $post_id, '_new_post_email_sent', true );
+	
+    update_post_meta( $post->ID, '_new_post_email_sent', true );
 }, 10, 3 );
 
 /* =============================================================================
