@@ -369,6 +369,15 @@ add_action( 'init', function () {
    Logs send Status and any Error back to the Subscriber Record.
 ============================================================================= */
 
+add_filter( 'wp_mail', function( $args ) {
+    global $er_plain_text_body;
+    add_action( 'phpmailer_init', function( $phpmailer ) use ( $er_plain_text_body ) {
+        $phpmailer->AltBody = $er_plain_text_body;
+        $phpmailer->ContentType = 'multipart/alternative';
+    });
+    return $args;
+});
+
 add_action( 'transition_post_status', function ( $new_status, $old_status, $post ) {
     global $wpdb, $phpmailer;
     if ( $new_status !== 'publish' || $old_status === 'publish' ) {
@@ -395,29 +404,58 @@ add_action( 'transition_post_status', function ( $new_status, $old_status, $post
         ? get_the_excerpt( $post )
         : wp_trim_words( strip_tags( $post->post_content ), 30 );
     $sitename = get_bloginfo( 'name' );
-	
+
     foreach ( $subscribers as $sub ) {
-        $unsub_url = add_query_arg( [
-            'er_unsub' => 1,
-            'email'    => urlencode( $sub->email ),
-            'token'    => $sub->token,
-        ], home_url() );
+        $unsub_url = add_query_arg(
+            [
+                'er_unsub' => 1,
+                'email'    => urlencode( $sub->email ),
+                'token'    => $sub->token,
+            ],
+            home_url()
+        );
+
         $subject = "New post: {$title} — ericroth.org";
-        $body    = "
+
+        // HTML + PLAIN TEXT BODIES
+        
+        $body_html = "
         <p>Hi,</p>
         <p>A new post has just been published on ericroth.org:</p>
-        <h3>{$title}</h3>
+        <p><strong>• {$title}</strong></p>
         <p><em>{$excerpt}</em></p>
         <p><strong>Read it here:</strong><br>
         <a href=\"{$url}\">{$url}</a></p>
         <p>{$sitename}</p>
         <p>-----</p>
-        <p><strong>To unsubscribe:</strong><br>
+        <p><em>To unsubscribe:</em><br>
         <a href=\"{$unsub_url}\">{$unsub_url}</a></p>
         ";
-        $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
 
-        $sent  = wp_mail( $sub->email, $subject, $body, $headers );
+        $body_plain = "Hi,
+
+A new post has just been published on ericroth.org:
+
+• {$title}
+
+{$excerpt}
+
+Read it here:
+{$url}
+
+{$sitename}
+
+To unsubscribe:
+{$unsub_url}
+";
+
+        global $er_plain_text_body;
+        $er_plain_text_body = $body_plain;
+
+        // EMAIL SENDING + LOGGING
+        
+        $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
+        $sent  = wp_mail( $sub->email, $subject, $body_html, $headers );
         $error = null;
         if ( ! $sent ) {
             $error = ! empty( $phpmailer->ErrorInfo )
@@ -435,7 +473,6 @@ add_action( 'transition_post_status', function ( $new_status, $old_status, $post
             [ 'id' => $sub->id ]
         );
     }
-	
     update_post_meta( $post->ID, '_new_post_email_sent', true );
 }, 10, 3 );
 
