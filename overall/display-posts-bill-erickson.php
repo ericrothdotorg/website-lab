@@ -415,8 +415,10 @@ add_action( 'wp_head', function () {
 	
 	/* Sidebar Widgets */
 	.display-posts-widgets .listing-item .category-display a {font-weight: normal;}
-	.display-posts-widgets {list-style-type: disc !important; padding-left: 20px;}
+	.display-posts-widgets {list-style-type: disc !important; margin-left: 20px; container-type: inline-size;}
 	.display-posts-listing#latest > *:not(:first-child):not(:last-child) {margin: 25px 0;}
+	.display-posts-widgets .listing-item {white-space: nowrap;}
+	.display-posts-widgets .listing-item a {font-size: clamp(10px, 5cqw, 16px);}
 	
 	/* Traits Conclusion */
 	.display-posts-listing.grid.traits-conclusion {grid-gap: 0.25rem;}
