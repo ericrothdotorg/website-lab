@@ -439,21 +439,6 @@ add_action( 'wp_footer', function () {
     <script>
     (function() {
         'use strict';
-        // Adjust Sidebar Font Size to prevent Overflow
-        function adjustFontSize() {
-            const sidebar = document.querySelector('.display-posts-widgets');
-            if (!sidebar) return;
-            sidebar.style.whiteSpace = 'nowrap';
-            sidebar.style.overflow = 'hidden';
-            const maxWidth = sidebar.offsetWidth;
-            let fontSize = parseFloat(window.getComputedStyle(sidebar).fontSize);
-            const minSize = 5;
-            const step = 0.1;
-            while (sidebar.scrollWidth > maxWidth && fontSize > minSize) {
-                fontSize -= step;
-                sidebar.style.fontSize = `${fontSize}px`;
-            }
-        }
 		// Setup ARIA live Announcements for Select Navigation
 		function setupSelectAnnouncements() {
     		document.querySelectorAll('.display-posts-listing[data-live-id]').forEach(select => {
@@ -473,7 +458,6 @@ add_action( 'wp_footer', function () {
         // Initialize on DOM ready
 		function init() {
 			const runInit = () => {
-				adjustFontSize();
 				setupSelectAnnouncements();
 			};
 			if ('requestIdleCallback' in window) {
@@ -487,14 +471,6 @@ add_action( 'wp_footer', function () {
         } else {
             init();
         }
-        // Debounced Resize Handler
-		<?php if ( is_singular( 'post' ) || is_singular( 'my-interests' ) ) : ?>
-		let resizeTimer;
-		window.addEventListener('resize', () => {
-			clearTimeout(resizeTimer);
-			resizeTimer = setTimeout(adjustFontSize, 150);
-		});
-		<?php endif; ?>
     })();
     </script>
     <?php
