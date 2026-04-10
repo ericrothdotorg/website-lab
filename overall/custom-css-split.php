@@ -106,7 +106,7 @@ add_action("wp_footer", function () {
     @media (min-width: 992px) {.footer-breadcrumbs {margin-top: -25px;}}
 
 	/* Custom Sidebar Breakpoint */
-	@media (max-width: 1400px;) {
+	@media (max-width: 1400px) {
 		[data-sidebar] {display: block !important;}
 		[data-sidebar] > aside {display: none !important;}
 		[data-sidebar] > * {width: 100% !important;}
