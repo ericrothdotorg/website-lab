@@ -104,7 +104,14 @@ add_action("wp_footer", function () {
     .ct-search-results a {color: #1e73be;}
     .footer-breadcrumbs {background: none; margin-left: -20px;}
     @media (min-width: 992px) {.footer-breadcrumbs {margin-top: -25px;}}
-    
+
+	/* Custom Sidebar Breakpoint */
+	@media (max-width: 1400px;) {
+		[data-sidebar] {display: block !important;}
+		[data-sidebar] > aside {display: none !important;}
+		[data-sidebar] > * {width: 100% !important;}
+	}
+	
     /* Query Templates */
     .single-query .ct-query-template-grid,
     .single-query .ct-query-template.is-layout-slider {
