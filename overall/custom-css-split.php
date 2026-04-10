@@ -42,7 +42,7 @@ add_action("wp_head", function () {
     /* HTML & BODY BASICS */
 	
     html {text-size-adjust: 100%; scroll-behavior: smooth;}
-    p {text-align: justify;}
+    p {text-align: justify; hyphens: auto;}
     code {background: none !important; border: none; padding: 0;}
     
     /* CORE LAYOUT UTILITIES */
