@@ -32,7 +32,7 @@ add_action("wp_head", function () {
 	
 	.wp-block-cover.alignfull video {animation: kenburns 15s ease-in-out infinite alternate;}
 	@keyframes kenburns {from {transform: scale(1);} to {transform: scale(1.25);}}
-
+	
     /* NAVIGATION */
 	
     a:link {font-weight: bold; color: #1e73be;}
@@ -62,11 +62,7 @@ add_action("wp_head", function () {
     .flex-container {display: flex; align-items: center; flex-flow: row wrap;}
     .flex-container.left-align {justify-content: flex-start;}
     .flex-container.center-align {justify-content: center;}
-    
-    /* SOME MISC STUFF */
 	
-    .display-total-number-of-posts {font-weight: normal;}
-    
     </style>
     <?php
 }, 5); // Load critical Styles in Head early
@@ -81,7 +77,7 @@ add_action("wp_footer", function () {
 
     /* == BROWSER RELATED == */
 
-	/* Fallback: Disable animations if modern CSS not supported */
+	/* Fallback: Disable Animations if modern CSS not supported */
 	@supports not (animation: none) {
 		.site-logo, .octagon-text-outside, .blob-animation img, .animate__animated, .er-social-link-icon {
 			animation: none !important;
@@ -104,7 +100,7 @@ add_action("wp_footer", function () {
     .ct-search-results a {color: #1e73be;}
     .footer-breadcrumbs {background: none; margin-left: -20px;}
     @media (min-width: 992px) {.footer-breadcrumbs {margin-top: -25px;}}
-
+	
 	/* Custom Sidebar Breakpoint */
 	@media (max-width: 1400px) {
 		[data-sidebar] {display: block !important;}
@@ -122,7 +118,7 @@ add_action("wp_footer", function () {
     .single-query .ct-query-template-grid:hover,
     .single-query .ct-query-template.is-layout-slider:hover {background: #f2f5f7;}
     .single-query .ct-dynamic-data {padding-bottom: 16px;}
-
+	
     /* Taxonomy Blocks */
     .wp-block-term.is-layout-flow .ct-dynamic-data {padding-bottom: 16px;}
     
@@ -306,7 +302,6 @@ add_action("wp_footer", function () {
     @media (max-width: 600px) {.br {display: block;}}
     .font-color-white {color: #d9d9d9;}
     .font-color-black {color: #192a3d;}
-    @media (max-width: 992px) {.font-size-75 {font-size: 75%;}}
     
     /* Text as Columns */
     .two-columns-text, .three-columns-text, .four-columns-text {
@@ -558,6 +553,7 @@ add_action("wp_footer", function () {
 			transform: none !important;
 		}
 	}
+	
     </style>
     <?php
 }, 15); // Load deferred Footer Styles after Theme defaults
