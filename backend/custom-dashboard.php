@@ -542,6 +542,7 @@ function custom_render_rss_widget($id_prefix, $feed_url) {
             $title   = esc_html($item->get_title());
             $link    = esc_url($item->get_link());
             $desc    = wp_strip_all_tags($item->get_description());
+			$desc    = preg_replace('/\s+\b\w{1,10}\b$/u', '', $desc);
             $excerpt = $desc ? wp_trim_words($desc, 30) : 'No description available';
             $date    = $item->get_date('U') ? date_i18n('F j, Y', $item->get_date('U')) : 'Unknown date';
             $edit_link = '';
