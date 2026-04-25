@@ -217,7 +217,8 @@ add_action("wp_footer", function () {
     .wp-block-page-list.site-overview > li:nth-child(2),
     .wp-block-page-list.site-overview > li:nth-child(3),
     .wp-block-page-list.site-overview > li:nth-child(4),
-    .wp-block-page-list.site-overview > li:nth-child(8) {display: none;}
+	.wp-block-page-list.site-overview > li:nth-child(7),
+    .wp-block-page-list.site-overview > li:nth-child(9) {display: none;}
     
     /* Navigate with Pages */
     .page-links {padding-bottom: 50px;}
