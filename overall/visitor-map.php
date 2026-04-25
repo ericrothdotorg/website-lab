@@ -483,7 +483,7 @@ function lum_map_shortcode($atts) {
                 terminator.setTime();
             }, 60000);
             loadMapData();
-            setInterval(loadMapData, 15000); // Refresh every 15 seconds
+            setInterval(loadMapData, 60000); // Refresh every 60 seconds
         }
         function loadMapData() {
             const url = '<?php echo admin_url('admin-ajax.php'); ?>?action=lum_get_map_data&nonce=<?php echo wp_create_nonce('lum_map_nonce'); ?>&_=' + Date.now(); // Added cache-busting
