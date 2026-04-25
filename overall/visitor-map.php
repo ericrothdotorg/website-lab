@@ -406,9 +406,9 @@ function lum_map_shortcode($atts) {
         'height' => '600px',
         'zoom' => '2'
     ), $atts);
-    wp_enqueue_style('leaflet-css', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
-    wp_enqueue_script('leaflet-js', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', array(), null, true);
-    wp_enqueue_script('terminator-js', 'https://unpkg.com/@joergdietrich/leaflet.terminator@1.0.0/L.Terminator.js', array('leaflet-js'), null, true);
+	wp_enqueue_style('leaflet-css', home_url('/my-assets/visitor-map/leaflet.css'));
+	wp_enqueue_script('leaflet-js', home_url('/my-assets/visitor-map/leaflet.js'), [], null, true);
+	wp_enqueue_script('terminator-js', home_url('/my-assets/visitor-map/L.Terminator.js'), ['leaflet-js'], null, true);
     ob_start();
     ?>
     <div id="live-user-map" style="height: <?php echo esc_attr($atts['height']); ?>; width: 100%; border-radius: 15px; position: relative; z-index: 1;"></div>
