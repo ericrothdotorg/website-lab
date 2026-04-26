@@ -23,7 +23,7 @@ add_action('wp_footer', function() {
 			.counter-value {color: #990033; font-size: 2rem; font-weight: bold;}
 			.counter-value, .counter-label {vertical-align: middle;}
 			.counter-label {padding-left: 10px; font-size: 1.25rem; font-weight: normal;}
-			@media (max-width: 992px) {.counter-grid {grid-template-columns: repeat(auto-fit, minmax(var(--disc-size), 1fr));}}
+			@media (max-width: 1200px) {.counter-grid {grid-template-columns: repeat(auto-fit, minmax(var(--disc-size), 1fr));}}
         </style>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
