@@ -42,8 +42,8 @@ add_action( 'wp_head', function () {
 // Initialize Slick Sliders and add custom Styles in the Footer
 add_action('wp_footer', function () {
     ?>
+	/* --- NOTE: These styles are mirrored in the 'EDITOR ENHANCEMENTS' snippet for editor display. Update both when changing. --- */
     <style>
-		/* --- NOTE: These styles are mirrored in the 'EDITOR ENHANCEMENTS' snippet for editor display. Update both when changing. --- */
 		/* Navigation */
 		.slick-slider img {margin: 0 auto;}
 		.slick-next:before, .slick-prev:before {font-size: 35px; color: #afc2cf;}
