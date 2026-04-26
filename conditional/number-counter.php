@@ -2,21 +2,27 @@
 defined('ABSPATH') || exit;
 
 add_action('wp_footer', function() {
-    if (is_page(array('100674','150120')) || is_single(array(''))) {
+    if (is_page(array(
+        '100674', // My Competencies
+        '150120', // Meine Kompetenzen
+        '157323', // Terra Gate
+        '51969',  // Site Overview
+        '104510', // Site Composition
+        '26874',  // Site Updates
+        '87873',  // About Me
+        '150455'  // Über Mich
+    ))) {
         ?>
-
         <style>
-            /* Summaries ALL */
-            .card-counter {padding: 15px 0; text-align: center; color: #192a3d;}
-            .text-box.number-counter {padding: 0; margin-bottom: 0;}
-            .number-counter-all {display: flex; justify-content: space-around; flex-flow: row wrap;}
-            .counter-value-all {color: #990033; font-weight: bold;}
-            /* Summaries COMPOSITION */
-            .column-counter-composition {float: left; width: 18%; margin: 10px 5px;}
-            @media (max-width: 600px) {.column-counter-composition {width: 45%;}}
-            @media (min-width: 600px) and (max-width: 992px) {.column-counter-composition {width: 30%;}}
+			.counter-grid {display: flex; justify-content: space-around; flex-flow: row wrap;}
+			.counter-card {float: left; width: 18%; margin: 10px 5px; border-radius: 25px; overflow: hidden;}
+			.counter-card .counter-body {padding: 15px 0; text-align: center; color: #3A4F66;}
+			.counter-value {color: #990033; font-size: 1.75rem; font-weight: bold;}
+			.counter-value, .counter-label {vertical-align: middle;}
+			.counter-label {padding-left: 10px; font-weight: normal;}
+			@media (max-width: 600px) {.counter-card { width: 45%; }}
+			@media (min-width: 600px) and (max-width: 992px) {.counter-card { width: 30%; }}
         </style>
-
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 var a = 0;
@@ -25,12 +31,11 @@ add_action('wp_footer', function() {
                     if (counterElement) {
                         var oTop = counterElement.offsetTop - window.innerHeight;
                         if (a == 0 && window.scrollY > oTop) {
-                            document.querySelectorAll('.counter-value-all').forEach(function(counter) {
+                            document.querySelectorAll('.counter-value').forEach(function(counter) {
                                 var countTo = counter.getAttribute('data-count');
                                 var countNum = 0;
                                 var duration = 7500;
                                 var step = countTo / (duration / 16);
-
                                 function updateCounter() {
                                     countNum += step;
                                     if (countNum < countTo) {
@@ -40,7 +45,6 @@ add_action('wp_footer', function() {
                                         counter.textContent = countTo;
                                     }
                                 }
-
                                 requestAnimationFrame(updateCounter);
                             });
                             a = 1;
