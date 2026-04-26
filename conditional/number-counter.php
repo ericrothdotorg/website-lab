@@ -13,7 +13,7 @@ add_action('wp_footer', function() {
         '150455'  // Über Mich
     ))) {
         ?>
-		/* --- NOTE: These styles are mirrored in the 'EDITOR ENHANCEMENTS' snippet for editor display. Update both when changing. --- */
+		<!-- NOTE: These styles are mirrored in the EDITOR ENHANCEMENTS snippet for editor display. Update both when changing. -->
         <style>
 			.counter-grid {display: flex; justify-content: space-around; flex-flow: row wrap;}
 			.counter-card {float: left; width: 18%; margin: 10px 5px; border-radius: 25px; overflow: hidden;}
