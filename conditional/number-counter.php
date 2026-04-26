@@ -14,6 +14,8 @@ add_action('wp_footer', function() {
     ))) {
         ?>
         <style>
+			/* --- NOTE: These styles are mirrored in the 'EDITOR ENHANCEMENTS' snippet for editor display. Update both when changing. --- */
+			
 			.counter-grid {display: flex; justify-content: space-around; flex-flow: row wrap;}
 			.counter-card {float: left; width: 18%; margin: 10px 5px; border-radius: 25px; overflow: hidden;}
 			.counter-card .counter-body {padding: 15px 0; text-align: center; color: #3A4F66;}
