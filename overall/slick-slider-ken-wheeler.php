@@ -42,7 +42,7 @@ add_action( 'wp_head', function () {
 // Initialize Slick Sliders and add custom Styles in the Footer
 add_action('wp_footer', function () {
     ?>
-	/* --- NOTE: These styles are mirrored in the 'EDITOR ENHANCEMENTS' snippet for editor display. Update both when changing. --- */
+	<!-- NOTE: These styles are mirrored in the EDITOR ENHANCEMENTS snippet for editor display. Update both when changing. -->
     <style>
 		/* Navigation */
 		.slick-slider img {margin: 0 auto;}
@@ -89,7 +89,7 @@ add_action('wp_footer', function () {
 		.layer-content-ninja-services > div {height: 150px; display: flex; justify-content: center; align-items: center; padding: 0 25px;}
 		.layer-content-ninja-services p {margin: 0; text-align: center;}
 		/* Prevent hidden Slides from being focusable */
-		/* Extra Layer of Protection (CSS-based) - Main Fix is in 'SITE ESSENTIALS' snippet via MutationObserver */
+		/* Extra Layer of Protection (CSS-based) - Main Fix is in SITE ESSENTIALS snippet via MutationObserver */
 		.slick-slide[aria-hidden="true"] {pointer-events: none;}
 		.slick-slide[aria-hidden="true"] a {tabindex: -1;}
     </style>
