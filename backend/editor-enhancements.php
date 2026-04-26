@@ -1,14 +1,16 @@
 <?php
 defined('ABSPATH') || exit;
 
-// NOTE: This snippet MUST remain set to "Run Everywhere".
+// NOTE: The SHORTCODE LIVE PREVIEW snippet MUST remain set to "Run Everywhere".
 // The REST endpoint (rest_api_init) needs to fire on wp-json/* requests which run outside both admin and frontend contexts.
 // Switching to "Only run in Admin Area" would silently break the shortcode preview in the block editor.
 
-// =================================================================
+// =========================
+// SHORTCODE LIVE PREVIEW
+// =========================
+
 // 1. REST API ENDPOINT — Renders the shortcode server-side
 //    Protected: Only logged-in users with edit_posts can call it
-// =================================================================
 
 function shortcode_live_preview_rest_endpoint() {
     register_rest_route( 'custom/v1', '/shortcode-preview', [
@@ -37,17 +39,15 @@ function shortcode_live_preview_render( $request ) {
     return new WP_REST_Response( [ 'html' => $html ], 200 );
 }
 
-// =================================================================
 // 2. EDITOR-ONLY CSS — enqueue_block_editor_assets never
 //    fires on the frontend, so this is 100% admin-only
-// =================================================================
 
 function shortcode_live_preview_editor_css() {
 	
     $css = '
-        /* --- MIRRORED FROM: Slick Slider snippet (wp_head). Keep in sync when changing that snippet --- */
-		
-        .slideshow-single-item, .slideshow-single-item-no-dots, .slideshow-multiple-items, .slideshow-multiple-items-3, .slideshow-multiple-items-4, .slideshow-multiple-items-vertical, .slideshow-multiple-items-center-mode {visibility: visible !important;}
+        /* --- MIRRORED FROM: Slick Slider (wp_head). Keep in sync when changing that snippet --- */
+
+		.slideshow-single-item, .slideshow-single-item-no-dots, .slideshow-multiple-items, .slideshow-multiple-items-3, .slideshow-multiple-items-4, .slideshow-multiple-items-vertical, .slideshow-multiple-items-center-mode {visibility: visible !important;}
         .slideshow-multiple-items-3.display-posts-listing {display: flex !important; flex-wrap: wrap !important; gap: 25px !important;}
         .slideshow-multiple-items-3.display-posts-listing .listing-item {flex: 0 0 calc(33.333% - 17px) !important; max-width: calc(33.333% - 17px) !important; box-sizing: border-box !important;}
         .slideshow-multiple-items-4.display-posts-listing {display: flex !important; flex-wrap: wrap !important; gap: 25px !important;}
@@ -55,7 +55,7 @@ function shortcode_live_preview_editor_css() {
         .slideshow-multiple-items-vertical.display-posts-listing {display: flex !important; flex-direction: column !important; gap: 20px !important;}
         .slideshow-multiple-items-3 .listing-item img, .slideshow-multiple-items-4 .listing-item img {width: 100% !important; height: auto !important;}
 
-        /* --- MIRRORED FROM: Display Posts snippet (wp_head). Keep in sync when changing that snippet --- */
+        /* --- MIRRORED FROM: Display Posts (wp_head). Keep in sync when changing that snippet --- */
 		
         .display-posts-listing {cursor: pointer;}
         .display-posts-listing .listing-item {clear: both; overflow: hidden; background: #fafbfc; border: 1px solid #e1e8ed; border-radius: 25px;}
@@ -84,8 +84,8 @@ function shortcode_live_preview_editor_css() {
         .sc-sidebar-expanded .interface-interface-skeleton__content {flex: 1 1 auto !important; min-width: 0 !important; overflow: hidden !important;}
         .sc-inspector-preview-body {background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; overflow-y: auto; max-height: 70vh; box-sizing: border-box; width: 100%;}
         .sc-inspector-actions {display: flex; justify-content: space-between; align-items: center; margin-top: 8px;}
-        .sc-inspector-btn {font-size: 11px; color: #007cba; background: none; border: none; cursor: pointer; padding: 0;}
-        .sc-inspector-btn:hover {color: #005a87; text-decoration: underline;}
+        .sc-inspector-btn {font-size: 11px; color: #1e73be; background: none; border: none; cursor: pointer; padding: 0;}
+        .sc-inspector-btn:hover {color: #c53030; text-decoration: underline;}
     ';
 	
     wp_register_style( 'shortcode-live-preview-editor-css', false );
@@ -94,9 +94,7 @@ function shortcode_live_preview_editor_css() {
 }
 add_action( 'enqueue_block_editor_assets', 'shortcode_live_preview_editor_css' );
 
-// =================================================================
 // 3. EDITOR JAVASCRIPT — Only loads in block editor
-// =================================================================
 
 function shortcode_live_preview_editor_assets() {
     $rest_url = esc_url( rest_url( 'custom/v1/shortcode-preview' ) );
@@ -183,8 +181,8 @@ function shortcode_live_preview_editor_assets() {
             useEffect(function() {
                 if (shortcode && shortcode !== state.fetched) { debouncedFetch(shortcode); }
             }, [shortcode]);
-            var statusStyle = { color: '#999', fontSize: '13px', fontStyle: 'italic', margin: 0 };
-            var errorStyle  = { color: '#c00', fontSize: '13px', margin: 0 };
+            var statusStyle = { color: '#808080', fontSize: '13px', fontStyle: 'italic', margin: 0 };
+            var errorStyle  = { color: '#c53030', fontSize: '13px', margin: 0 };
             return createElement(Fragment, null,
                 createElement(BlockEdit, props),
                 createElement(InspectorControls, null,
@@ -228,3 +226,29 @@ JS;
     wp_enqueue_script( 'shortcode-live-preview-editor' );
 }
 add_action( 'enqueue_block_editor_assets', 'shortcode_live_preview_editor_assets' );
+
+// =========================
+// PATTERN LIVE PREVIEW
+// =========================
+
+// 1. PATTERN EDITOR CSS — Mirrors frontend styles for block editor
+//    preview of patterns that load CSS conditionally on wp_footer
+
+function pattern_editor_css() {
+
+    $css = '
+        /* --- MIRRORED FROM: Number Counter (wp_footer). Keep in sync when changing that snippet --- */
+
+        .counter-grid {display: flex; justify-content: space-around; flex-flow: row wrap;}
+        .counter-card {float: left; width: 18%; margin: 10px 5px; border-radius: 25px; overflow: hidden;}
+        .counter-card .counter-body {padding: 15px 0; text-align: center; color: #3A4F66;}
+        .counter-value {color: #990033; font-size: 1.75rem; font-weight: bold;}
+        .counter-value, .counter-label {vertical-align: middle;}
+        .counter-label {padding-left: 10px; font-weight: normal;}
+    ';
+
+    wp_register_style('pattern-editor-css', false);
+    wp_enqueue_style('pattern-editor-css');
+    wp_add_inline_style('pattern-editor-css', $css);
+}
+add_action('enqueue_block_editor_assets', 'pattern_editor_css');
