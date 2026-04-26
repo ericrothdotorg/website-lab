@@ -189,7 +189,7 @@ add_action('wp_footer', function () {
     /* Text & Categories */
     body.dark-mode .cat-prefix {color: #bfbfbf;}
     body.dark-mode .cat-links {color: #bfbfbf;}
-    body.dark-mode .card-counter {color: #f2f2f2;}
+    body.dark-mode .counter-body {color: #bfbfbf;}
     
     /* Separators & Borders */
     body.dark-mode .wp-block-separator:not(.is-style-dots) {height: 1px; background: #3a4f66;}
