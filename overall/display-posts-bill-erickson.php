@@ -355,7 +355,7 @@ add_shortcode( 'display-taxonomies', 'display_taxonomies_shortcode' );
 
 add_action( 'wp_head', function () {
     ?>
-	/* --- NOTE: These styles are mirrored in the 'EDITOR ENHANCEMENTS' snippet for editor display. Update both when changing. --- */
+	<!-- NOTE: These styles are mirrored in the EDITOR ENHANCEMENTS snippet for editor display. Update both when changing. -->
     <style>
 		/* Accessibility */
 		.screen-reader-text {position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden;}
