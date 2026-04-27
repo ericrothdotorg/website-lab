@@ -3,27 +3,32 @@ defined('ABSPATH') || exit;
 
 add_action('wp_footer', function() {
     if (is_page(array(
-        '100674', // My Competencies
-        '150120', // Meine Kompetenzen
-        '157323', // Terra Gate
-        '51969',  // Site Overview
-        '104510', // Site Composition
-        '26874',  // Site Updates
-        '87873',  // About Me
-        '150455'  // Über Mich
+        '100674',	// My Competencies
+        '150120',	// Meine Kompetenzen
+		'179',		// ericroth.org
+        '157323',	// Terra Gate
+        '51969',	// Site Overview
+        '104510',	// Site Composition
+        '26874',	// Site Updates
+        '87873',	// About Me
+        '150455'	// Über Mich
     ))) {
         ?>
 		<!-- NOTE: These styles are mirrored in the EDITOR ENHANCEMENTS snippet for editor display. Update both when changing. -->
         <style>
 			:root {--disc-size: 200px;}
 			.counter-grid {display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; justify-content: center;}
-			.counter-card {margin: 10px auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; width: var(--disc-size); height: var(--disc-size); max-width: 100%; transition: transform 1.5s ease-in-out;}
+			.counter-card {margin: 10px auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; width: var(--disc-size); max-width: 100%; aspect-ratio: 1 / 1; transition: transform 1.5s ease-in-out;}
 			.counter-card:hover {transform: scale(1.05);}
 			.counter-card .counter-body {text-align: center; color: #3A4F66;}
 			.counter-value {color: #990033; font-size: 2rem; font-weight: bold;}
 			.counter-value, .counter-label {vertical-align: middle;}
 			.counter-label {padding-left: 10px; font-size: 1.25rem; font-weight: normal;}
 			@media (max-width: 1200px) {.counter-grid {grid-template-columns: repeat(auto-fit, minmax(var(--disc-size), 1fr));}}
+			/*Page specific*/
+			.page-id-179 .counter-card {background: #00000085 !important; border: none;}
+			.page-id-179 .counter-card:hover {background: #000000 !important;}
+			.page-id-179 .counter-body {color: #bfbfbf;}
         </style>
         <script>
 			function init() {
