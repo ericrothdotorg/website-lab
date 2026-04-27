@@ -6,7 +6,7 @@ defined('ABSPATH') || exit;
 // Switching to "Only run in Admin Area" would silently break the shortcode preview in the block editor.
 
 // Both are safe without any further explicit guard:
-// enqueue_block_editor_assets = admin only, never fires on frontend AND rest_api_init = REST only, never fires on frontend page loads  
+// enqueue_block_editor_assets = Admin only, never fires on frontend AND rest_api_init = REST only, never fires on frontend page loads  
 
 // =========================
 // SHORTCODE LIVE PREVIEW
