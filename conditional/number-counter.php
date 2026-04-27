@@ -26,34 +26,36 @@ add_action('wp_footer', function() {
 			@media (max-width: 1200px) {.counter-grid {grid-template-columns: repeat(auto-fit, minmax(var(--disc-size), 1fr));}}
         </style>
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                var a = 0;
-                window.addEventListener('scroll', function() {
-                    var counterElement = document.getElementById('counter');
-                    if (counterElement) {
-                        var oTop = counterElement.offsetTop - window.innerHeight;
-                        if (a == 0 && window.scrollY > oTop) {
-                            document.querySelectorAll('.counter-value').forEach(function(counter) {
-                                var countTo = counter.getAttribute('data-count');
-                                var countNum = 0;
-                                var duration = 7500;
-                                var step = countTo / (duration / 16);
-                                function updateCounter() {
-                                    countNum += step;
-                                    if (countNum < countTo) {
-                                        counter.textContent = Math.floor(countNum);
-                                        requestAnimationFrame(updateCounter);
-                                    } else {
-                                        counter.textContent = countTo;
-                                    }
-                                }
-                                requestAnimationFrame(updateCounter);
-                            });
-                            a = 1;
-                        }
-                    }
-                });
-            });
+			document.addEventListener('DOMContentLoaded', function() {
+				var a = 0;
+				function checkCounter() {
+					var counterElement = document.getElementById('counter');
+					if (counterElement) {
+						var oTop = counterElement.offsetTop - window.innerHeight;
+						if (a == 0 && window.scrollY >= oTop) {
+							document.querySelectorAll('.counter-value').forEach(function(counter) {
+								var countTo = counter.getAttribute('data-count');
+								var countNum = 0;
+								var duration = 7500;
+								var step = countTo / (duration / 16);
+								function updateCounter() {
+									countNum += step;
+									if (countNum < countTo) {
+										counter.textContent = Math.floor(countNum);
+										requestAnimationFrame(updateCounter);
+									} else {
+										counter.textContent = countTo;
+									}
+								}
+								requestAnimationFrame(updateCounter);
+							});
+							a = 1;
+						}
+					}
+				}
+				window.addEventListener('scroll', checkCounter);
+				checkCounter();
+			});
         </script>
         <?php 
     }
