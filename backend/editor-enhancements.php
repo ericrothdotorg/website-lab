@@ -5,6 +5,9 @@ defined('ABSPATH') || exit;
 // The REST endpoint (rest_api_init) needs to fire on wp-json/* requests which run outside both admin and frontend contexts.
 // Switching to "Only run in Admin Area" would silently break the shortcode preview in the block editor.
 
+// However: Only run in admin or REST API context — never on frontend page loads
+if (!is_admin() && !(defined('REST_REQUEST') && REST_REQUEST)) return;
+
 // =========================
 // SHORTCODE LIVE PREVIEW
 // =========================
@@ -237,7 +240,7 @@ add_action( 'enqueue_block_editor_assets', 'shortcode_live_preview_editor_assets
 function pattern_editor_css() {
 
     $css = '
-        /* --- MIRRORED FROM: Number Counter (wp_footer). Keep in sync when changing that snippet --- */
+        /* --- MIRRORED FROM: Number Counter (wp_head). Keep in sync when changing that snippet --- */
 
 		:root {--disc-size: 185px;}
 		.counter-grid {display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; justify-content: center;}
@@ -247,7 +250,7 @@ function pattern_editor_css() {
 		.counter-value {color: #990033; font-size: 2rem; font-weight: bold;}
 		.counter-value, .counter-label {vertical-align: middle;}
 		.counter-label {padding-left: 10px; font-size: 1.25rem; font-weight: normal;}
-		@media (max-width: 992px) {.counter-grid {grid-template-columns: repeat(auto-fit, minmax(var(--disc-size), 1fr));}}
+		@media (max-width: 1200px) {.counter-grid {grid-template-columns: repeat(auto-fit, minmax(var(--disc-size), 1fr));}}
     ';
 
     wp_register_style('pattern-editor-css', false);
