@@ -5,8 +5,8 @@ defined('ABSPATH') || exit;
 // The REST endpoint (rest_api_init) needs to fire on wp-json/* requests which run outside both admin and frontend contexts.
 // Switching to "Only run in Admin Area" would silently break the shortcode preview in the block editor.
 
-// However: Only run in admin or REST API context — never on frontend page loads
-if (!is_admin() && !(defined('REST_REQUEST') && REST_REQUEST)) return;
+// Both are safe without any further explicit guard:
+// enqueue_block_editor_assets = admin only, never fires on frontend AND rest_api_init = REST only, never fires on frontend page loads  
 
 // =========================
 // SHORTCODE LIVE PREVIEW
