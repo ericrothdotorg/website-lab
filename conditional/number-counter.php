@@ -26,7 +26,7 @@ add_action('wp_footer', function() {
 			@media (max-width: 1200px) {.counter-grid {grid-template-columns: repeat(auto-fit, minmax(var(--disc-size), 1fr));}}
         </style>
         <script>
-			document.addEventListener('DOMContentLoaded', function() {
+			function init() {
 				var a = 0;
 				function checkCounter() {
 					var counterElement = document.getElementById('counter');
@@ -55,7 +55,12 @@ add_action('wp_footer', function() {
 				}
 				window.addEventListener('scroll', checkCounter);
 				checkCounter();
-			});
+			}
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', init);
+			} else {
+				init();
+			}
         </script>
         <?php 
     }
