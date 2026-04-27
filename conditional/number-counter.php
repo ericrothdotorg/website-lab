@@ -16,8 +16,8 @@ add_action('wp_footer', function() {
         ?>
 		<!-- NOTE: These styles are mirrored in the EDITOR ENHANCEMENTS snippet for editor display. Update both when changing. -->
         <style>
-			:root {--disc-size: 200px;}
-			.counter-grid {display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; justify-content: center;}
+			:root {--disc-size: 185px;}
+			.counter-grid {display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; justify-content: center;}
 			.counter-card {margin: 10px auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; width: var(--disc-size); max-width: 100%; aspect-ratio: 1 / 1; transition: transform 1.5s ease-in-out;}
 			.counter-card:hover {transform: scale(1.05);}
 			.counter-card .counter-body {text-align: center; color: #3A4F66;}
