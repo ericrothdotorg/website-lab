@@ -364,6 +364,7 @@ add_action("wp_footer", function () {
     .tag-cloud a {
 		background: #f2f5f7;
 		font-weight: normal;
+		line-height: 1.75;
 		min-height: 25px;
 		padding: 3px 15px;
 		margin: 0 0 5px;
