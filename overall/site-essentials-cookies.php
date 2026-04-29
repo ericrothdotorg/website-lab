@@ -372,6 +372,69 @@ add_action('save_post', function($post_id) {
     delete_transient('post_stats_' . $post_id);
 });
 
+// [merged_tag_cloud] - Display merged Tag Clouds
+function merged_tag_cloud_shortcode( $atts ) {
+    $atts = shortcode_atts([
+        'taxonomies' => 'things, topics, interest_tag, groups, types, category, post_tag',
+        'smallest'   => 14,
+        'largest'    => 14,
+        'unit'       => 'px',
+        'number'     => 45,
+        'orderby'    => 'name',
+        'order'      => 'ASC',
+        'class'      => 'tag-cloud is-style-default',
+		'style'      => 'text-align: center;',
+    ], $atts );
+    $taxonomies = array_map( 'trim', explode( ',', $atts['taxonomies'] ) );
+    $all_terms = [];
+    foreach ( $taxonomies as $tax ) {
+        $terms = get_terms([
+            'taxonomy'   => $tax,
+            'hide_empty' => true,
+        ]);
+        if ( ! is_wp_error( $terms ) ) {
+            $all_terms = array_merge( $all_terms, $terms );
+        }
+    }
+	$seen = [];
+	$all_terms = array_filter( $all_terms, function( $term ) use ( &$seen ) {
+		$key = $term->taxonomy . '_' . $term->term_id;
+		if ( isset( $seen[$key] ) ) return false;
+		$seen[$key] = true;
+		return true;
+	});
+    if ( empty( $all_terms ) ) return '<p>No tags found.</p>';
+    $counts    = array_column( $all_terms, 'count' );
+    $min_count = min( $counts );
+    $max_count = max( $counts );
+    $spread    = $max_count - $min_count ?: 1;
+    $range     = $atts['largest'] - $atts['smallest'];
+    usort( $all_terms, fn( $a, $b ) => strcmp( $a->name, $b->name ) );
+	if ( $atts['number'] > 0 ) {
+    $all_terms = array_slice( $all_terms, 0, (int) $atts['number'] );
+	}
+    $output = '<div class="' . esc_attr( $atts['class'] ) . '" style="' . esc_attr( $atts['style'] ) . '">';
+    foreach ( $all_terms as $term ) {
+        $size  = $atts['smallest'] + ( $range * ( $term->count - $min_count ) / $spread );
+        $size  = round( $size, 1 );
+        $link  = get_term_link( $term );
+        if ( is_wp_error( $link ) ) continue;
+        $output .= sprintf(
+            '<a href="%s" style="font-size: %s%s;" title="%s (%d)">%s <span class="tag-count">(%d)</span></a> ',
+            esc_url( $link ),
+            $size,
+            esc_attr( $atts['unit'] ),
+            esc_attr( $term->taxonomy ),
+            $term->count,
+            esc_html( $term->name ),
+            $term->count
+        );
+    }
+    $output .= '</div>';
+    return $output;
+}
+add_shortcode( 'merged_tag_cloud', 'merged_tag_cloud_shortcode' );
+
 // ======================================
 // SEO & ACCESSIBILITY
 // ======================================
