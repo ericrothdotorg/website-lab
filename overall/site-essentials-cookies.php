@@ -421,13 +421,13 @@ function merged_tag_cloud_shortcode( $atts ) {
         if ( is_wp_error( $link ) ) continue;
         $output .= sprintf(
             '<a href="%s" style="font-size: %s%s;" title="%s (%d)">%s <span class="tag-count">(%d)</span></a> ',
-            esc_url( $link ),
-            $size,
-            esc_attr( $atts['unit'] ),
-            esc_attr( $term->taxonomy ),
-            $term->count,
-            esc_html( $term->name ),
-            $term->count
+            esc_url( $link ),			// href
+            $size,						// font-size Value
+            esc_attr( $atts['unit'] ),	// font-size Unit
+            esc_html( $term->name ),	// Hover Tooltip - Name
+            $term->count,				// Hover Tooltip - Count
+            esc_html( $term->name ),	// Visible on Page - Name
+            $term->count				// Visible on Page - Count
         );
     }
     $output .= '</div>';
