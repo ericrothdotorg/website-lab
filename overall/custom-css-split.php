@@ -377,6 +377,8 @@ add_action("wp_footer", function () {
 	.tag-cloud a:focus {outline: 1px solid #1e73be; outline-offset: 2px; background: #e1e8ed;}
 	.tag-cloud a:focus:not(:focus-visible) {outline: none; background: #f2f5f7;}
     .left-align {text-align: left;}
+	.tag-cloud-footer a {font-size: 15px !important;}
+	.tag-cloud-footer .tag-count {font-weight: normal; font-style: italic;}
     
     /* IMAGE STYLES & EFFECTS */
     
