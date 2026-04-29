@@ -373,23 +373,27 @@ add_action('save_post', function($post_id) {
 });
 
 // [merged_tag_cloud] - Display merged Tag Clouds
+define( 'MERGED_TAG_CLOUD_TAXONOMIES', 'things, topics, interest_tag, groups, types, category, post_tag' );
+define( 'MERGED_TAG_CLOUD_NUMBER',     45 );
+define( 'MERGED_TAG_CLOUD_SEPARATOR',  '' ); // Define in Shortcode (if none it defaults to none)
 function merged_tag_cloud_shortcode( $atts ) {
     $atts = shortcode_atts([
-        'taxonomies' => 'things, topics, interest_tag, groups, types, category, post_tag',
+        'taxonomies' => MERGED_TAG_CLOUD_TAXONOMIES,
         'smallest'   => 14,
         'largest'    => 14,
         'unit'       => 'px',
-        'number'     => 45,
+        'number'     => MERGED_TAG_CLOUD_NUMBER,
         'orderby'    => 'name',
         'order'      => 'ASC',
         'class'      => 'is-style-default',
         'style'      => 'text-align: center;',
+        'separator'  => MERGED_TAG_CLOUD_SEPARATOR,
     ], $atts );
-    $cache_key = 'merged_tag_cloud_' . md5( $atts['taxonomies'] . $atts['number'] );
+    $cache_key = 'merged_tag_cloud_' . md5( $atts['taxonomies'] . $atts['number'] . $atts['separator'] );
     $output = get_transient( $cache_key );
     if ( $output !== false ) return $output;
     $taxonomies = array_map( 'trim', explode( ',', $atts['taxonomies'] ) );
-    $all_terms = [];
+    $all_terms  = [];
     foreach ( $taxonomies as $tax ) {
         $terms = get_terms([
             'taxonomy'   => $tax,
@@ -416,23 +420,28 @@ function merged_tag_cloud_shortcode( $atts ) {
     if ( $atts['number'] > 0 ) {
         $all_terms = array_slice( $all_terms, 0, (int) $atts['number'] );
     }
-    $output = '<div class="' . esc_attr( $atts['class'] ) . '" style="' . esc_attr( $atts['style'] ) . '">';
+    $links = [];
     foreach ( $all_terms as $term ) {
-        $size  = $atts['smallest'] + ( $range * ( $term->count - $min_count ) / $spread );
-        $size  = round( $size, 1 );
-        $link  = get_term_link( $term );
+        $size = $atts['smallest'] + ( $range * ( $term->count - $min_count ) / $spread );
+        $size = round( $size, 1 );
+        $link = get_term_link( $term );
         if ( is_wp_error( $link ) ) continue;
-        $output .= sprintf(
-            '<a href="%s" style="font-size: %s%s;" title="%s (%d)">%s <span class="tag-count">(%d)</span></a> ',
-            esc_url( $link ),			// href
-            $size,						// font-size Value
-            esc_attr( $atts['unit'] ),	// font-size Unit
-            esc_html( $term->name ),	// Hover Tooltip - Name
-            $term->count,				// Hover Tooltip - Count
-            esc_html( $term->name ),	// Visible on Page - Name
-            $term->count				// Visible on Page - Count
+        $links[] = sprintf(
+            '<a href="%s" style="font-size: %s%s;" title="%s (%d)">%s <span class="tag-count">(%d)</span></a>',
+            esc_url( $link ),           // href
+            $size,                      // font-size Value
+            esc_attr( $atts['unit'] ),  // font-size Unit
+            esc_html( $term->name ),    // Hover Tooltip - Name
+            $term->count,               // Hover Tooltip - Count
+            esc_html( $term->name ),    // Visible on Page - Name
+            $term->count                // Visible on Page - Count
         );
     }
+    $separator = $atts['separator'] !== ''
+        ? ' <span class="tag-separator">' . esc_html( $atts['separator'] ) . '</span> '
+        : ' ';
+    $output  = '<div class="' . esc_attr( $atts['class'] ) . '" style="' . esc_attr( $atts['style'] ) . '">';
+    $output .= implode( $separator, $links );
     $output .= '</div>';
     set_transient( $cache_key, $output, HOUR_IN_SECONDS * 12 );
     return $output;
@@ -444,11 +453,7 @@ add_action( 'created_term', 'merged_tag_cloud_clear_cache' );
 add_action( 'edited_term',  'merged_tag_cloud_clear_cache' );
 add_action( 'deleted_term', 'merged_tag_cloud_clear_cache' );
 function merged_tag_cloud_clear_cache() {
-    $taxonomies = 'things, topics, interest_tag, groups, types, category, post_tag';
-    $numbers    = [45]; // mirror your default(s); add others if you use different number= values
-    foreach ( $numbers as $number ) {
-        delete_transient( 'merged_tag_cloud_' . md5( $taxonomies . $number ) );
-    }
+    delete_transient( 'merged_tag_cloud_' . md5( MERGED_TAG_CLOUD_TAXONOMIES . MERGED_TAG_CLOUD_NUMBER . MERGED_TAG_CLOUD_SEPARATOR ) );
 }
 
 // ======================================
