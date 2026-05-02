@@ -120,7 +120,7 @@ add_action('wp_footer', function () {
     body.dark-mode .wp-block-term.is-layout-flow:hover {background: var(--color-6);}
 	
     /* DPS - Bill Erickson */
-    body.dark-mode .display-posts-listing .listing-item {background: var(--color-10); border: 1px solid var(--color-10);}
+    body.dark-mode .display-posts-listing .listing-item {background: var(--color-10); border: 1px solid var(--color-4);}
     body.dark-mode .display-posts-listing .listing-item:hover {background: var(--color-6);}
     body.dark-mode .display-posts-listing.grid#small-version .listing-item {background: var(--color-10); border: 1px solid var(--color-10);}
     body.dark-mode .display-posts-listing.grid#small-version .listing-item:hover {background: var(--color-6);}
