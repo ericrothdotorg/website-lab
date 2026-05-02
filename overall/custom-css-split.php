@@ -15,10 +15,10 @@ add_action("wp_head", function () {
 		--color-1:  #1e73be; /* Blue — Links, Buttons, focus Outlines, toggle Accent */
 		--color-2:  #c53030; /* Red — Hover State for Links & Buttons */
 		--color-3:  #3a4f66; /* Steel Blue — Body Text, interactive & structural Borders */
-		--color-4:  #192a3d; /* Deep Navy — Headings, strong Borders, Tables & Boxes in dark Mode */
-		--color-5:  #e1e8ed; /* Silver — Dark Mode Text, subtle Borders & Separators */
+		--color-4:  #192a3d; /* Deep Navy — Headings, strong Borders - Dark Mode Tables & Boxes */
+		--color-5:  #e1e8ed; /* Silver — Subtle Borders & Separators - Dark Mode Text */
 		--color-6:  #070c12; /* Near-Black — Dark Mode Background, Hover State for Elements */
-		--color-7:  #fafbfc; /* Off-White — Light Mode Card & Box Backgrounds, dark Mode Headings */
+		--color-7:  #fafbfc; /* Off-White — Card & Box Backgrounds - Dark Mode Headings */
 		--color-8:  #ffffff; /* White — Backgrounds, Button Text, Form Fields */
 		--color-9:  #8da6b9; /* Muted Blue — Arrows, resizable Box, Footer Separators */
 		--color-10: #0e1825; /* Dark Navy — Dark Mode Box & Card Backgrounds */
