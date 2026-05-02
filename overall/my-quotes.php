@@ -213,7 +213,7 @@ function q_output_styles() {
 		/* Shortcode [quotes_slider]: Shared Layout → For both horizontal and vertical */
 		.my-quote-slide-dps .display-posts-listing {margin: 0;}
 		.my-quote-slide-dps .display-posts-listing img {display: block; width: 100%; height: auto;}
-		.my-quote-slide-content {padding: 1.5em; box-sizing: border-box; background: #F2F5F7; border-radius: 25px; display: flex; flex-direction: column; justify-content: center;}
+		.my-quote-slide-content {padding: 1.5em; box-sizing: border-box; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 25px; display: flex; flex-direction: column; justify-content: center;}
 		/* Shortcode [quotes_slider]: Horizontal Layout → Image left (33%), Content right (66%) */
 		.my-quote-slide-inner.layout-horizontal {display: flex; flex-direction: row; align-items: stretch; gap: 1.5em;}
 		/* Shortcode [quotes_slider]: Horizontal Layout on Mobile → Stack Image above Content */
