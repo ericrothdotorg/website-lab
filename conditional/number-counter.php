@@ -22,15 +22,15 @@ add_action('wp_head', function() use ($counter_pages) {
         .counter-grid {display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; justify-content: center;}
         .counter-card {margin: 10px auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; width: var(--disc-size); max-width: 100%; aspect-ratio: 1 / 1; transition: transform 1.5s ease-in-out;}
         .counter-card:hover {transform: scale(1.05);}
-        .counter-card .counter-body {text-align: center; color: #3A4F66;}
+        .counter-card .counter-body {text-align: center; color: var(--color-3);}
         .counter-value {color: #990033; font-size: 2rem; font-weight: bold;}
         .counter-value, .counter-label {vertical-align: middle;}
         .counter-label {padding-left: 10px; font-size: 1.25rem; font-weight: normal;}
         @media (max-width: 1200px) {.counter-grid {grid-template-columns: repeat(auto-fit, minmax(var(--disc-size), 1fr));}}
         /*Page specific*/
         .page-id-179 .counter-card {background: #00000085 !important; border: none;}
-        .page-id-179 .counter-card:hover {background: #000000 !important;}
-        .page-id-179 .counter-body {color: #bfbfbf;}
+        .page-id-179 .counter-card:hover {background: var(--color-6) !important;}
+        .page-id-179 .counter-body {color: var(--color-5);}
     </style>
     <?php
 }, 5);
