@@ -240,8 +240,8 @@ add_action("wp_footer", function () {
 
     /* TABLES */
 	
-    .wp-block-table thead {background-color: var(--color-8);}
-    .wp-block-table tr:hover {background-color: var(--color-8);}
+    .wp-block-table thead {background: var(--color-8);}
+    .wp-block-table tr:hover {background: var(--color-8);}
     
     /* DETAILS & SUMMARY */
 	
@@ -428,7 +428,7 @@ add_action("wp_footer", function () {
 	
     .wp-block-button__link, .button a, .smaller-button a {
 		color: var(--color-8) !important;
-		background-color: var(--color-1);
+		background: var(--color-1);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -439,7 +439,7 @@ add_action("wp_footer", function () {
 		border: 2px solid transparent;
 		transition: background-color 0.2s ease, color 0.2s ease;
     }
-    .wp-block-button__link:hover, .button a:hover, .smaller-button a:hover {background-color: var(--color-2); border: 2px solid transparent;}
+    .wp-block-button__link:hover, .button a:hover, .smaller-button a:hover {background: var(--color-2); border: 2px solid transparent;}
 	.wp-block-button__link:focus, .button a:focus, .smaller-button a:focus {outline: 1px solid var(--color-1); outline-offset: 2px;}
 	.wp-block-button__link:focus:not(:focus-visible), .button a:focus:not(:focus-visible), .smaller-button a:focus:not(:focus-visible) {outline: none;}
     .button a {margin: auto; max-width: fit-content;}
