@@ -46,12 +46,12 @@ add_action('wp_footer', function () {
     <style>
 		/* Navigation */
 		.slick-slider img {margin: 0 auto;}
-		.slick-next:before, .slick-prev:before {font-size: 35px; color: #afc2cf;}
+		.slick-next:before, .slick-prev:before {font-size: 35px; color: var(--color-9);}
 		.slick-next, .slick-prev {position: absolute; top: -35px;}
 		.slick-next {right: 20px; left: auto;}
 		.slick-prev {right: 70px; left: auto;}
-		.slick-dots li button:before {font-size: 16px; opacity: 0.5; color: #afc2cf;}
-		.slick-dots li.slick-active button:before {opacity: 1; color: #afc2cf;}
+		.slick-dots li button:before {font-size: 16px; opacity: 0.5; color: var(--color-9);}
+		.slick-dots li.slick-active button:before {opacity: 1; color: var(--color-9);}
 		.slick-autoplay-toggle-button {display: none;}
 		/* Style Height Transition*/
 		.slideshow-single-item {transition: height 0.4s ease;}
@@ -82,10 +82,10 @@ add_action('wp_footer', function () {
 		.layer-content-procurement-consulting h5 {text-align: justify;}
 		.layer-content-procurement-consulting p {text-align: justify; padding-top: 5px;}
 		.layer-content-procurement-consulting .emphasized-design-red {padding-top: 15px;}
-		.layer-content-industries-served {color: #FFFFFF; padding: 0 0.75%; font-size: clamp(1.125rem, 3vw, 1.5rem);}
+		.layer-content-industries-served {color: var(--color-8); padding: 0 0.75%; font-size: clamp(1.125rem, 3vw, 1.5rem);}
 		.layer-content-industries-served > div {height: 150px; display: flex; justify-content: center; align-items: center; padding: 0 25px;}
 		.layer-content-industries-served p {margin: 0; text-align: center;}
-		.layer-content-ninja-services {color: #FFFFFF; padding: 0 0.75%; font-size: clamp(1rem, 5vw, 3rem);}
+		.layer-content-ninja-services {color: var(--color-8); padding: 0 0.75%; font-size: clamp(1rem, 5vw, 3rem);}
 		.layer-content-ninja-services > div {height: 150px; display: flex; justify-content: center; align-items: center; padding: 0 25px;}
 		.layer-content-ninja-services p {margin: 0; text-align: center;}
 		/* Prevent hidden Slides from being focusable */
