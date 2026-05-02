@@ -450,7 +450,7 @@ add_action("wp_footer", function () {
     .text-box {overflow: hidden; padding: 25px; margin-bottom: 25px;}
     .box-background {background: var(--color-8); border: 1px solid var(--color-5); transition: background 0.2s ease;}
     .box-shadow {box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.25);}
-	.resizable-box {height: 333px; resize: vertical; overflow: auto; padding: 25px; border: 0.5px solid var(--color-9);}
+	.resizable-box {height: 333px; resize: vertical; overflow: auto; padding-right: 25px;}
 
 	/* FORMS & INPUTS */
 
