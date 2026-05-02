@@ -361,8 +361,8 @@ add_action( 'wp_head', function () {
 		.screen-reader-text {position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden;}
 		/* Base Styles */
 		.display-posts-listing {cursor: pointer;}
-		.display-posts-listing .listing-item {clear: both; overflow: hidden; background: #fafbfc; border: 1px solid #e1e8ed; border-radius: 25px;}
-		.display-posts-listing .listing-item:hover {background: #f2f5f7;}
+		.display-posts-listing .listing-item {clear: both; overflow: hidden; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 25px;}
+		.display-posts-listing .listing-item:hover {background: var(--color-7);}
 		.display-posts-listing img {aspect-ratio: 16/9; transition: transform 0.3s ease; will-change: transform;}
 		.display-posts-listing img:hover {transform: scale(1.05);}
 		.display-posts-listing .title {display: block; margin: 16px 0; text-align: center; font-size: 1.125rem; width: 100%;}
