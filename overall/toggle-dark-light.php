@@ -188,6 +188,7 @@ add_action('wp_footer', function () {
 	body.dark-mode .two-columns-text, .three-columns-text, .four-columns-text {column-rule: 1px solid var(--color-5);}
     body.dark-mode .cat-prefix {color: var(--color-5);}
     body.dark-mode .cat-links {color: var(--color-5);}
+	body.dark-mode .counter-card {border: 1px solid var(--color-4);}
 	body.dark-mode .counter-body {color: var(--color-5);}
     
     /* Separators & Borders */
@@ -203,6 +204,7 @@ add_action('wp_footer', function () {
     body.dark-mode .text-column-front {background: var(--color-10) !important;}
 	body.dark-mode .my-quote-slide-content {background: var(--color-10);}
   </style>
+  
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const changeModeSwitch = document.getElementById('change-mode-switch');
