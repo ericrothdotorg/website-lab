@@ -28,7 +28,7 @@ add_action('wp_head', function() use ($counter_pages) {
         .counter-label {padding-left: 10px; font-size: 1.25rem; font-weight: normal;}
         @media (max-width: 1200px) {.counter-grid {grid-template-columns: repeat(auto-fit, minmax(var(--disc-size), 1fr));}}
         /*Page specific*/
-        .page-id-179 .counter-card {background: #00000085 !important; border: none;}
+        .page-id-179 .counter-card {background: #00000085 !important; border: none !important;}
         .page-id-179 .counter-card:hover {background: var(--color-6) !important;}
         .page-id-179 .counter-body {color: var(--color-5);}
     </style>
