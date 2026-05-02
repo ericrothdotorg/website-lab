@@ -77,7 +77,7 @@ add_action( 'wp_footer', function () {
     $nonce = wp_create_nonce( 'contact_form_nonce' );
     ?>
     <style>
-        .formsubmit-wrapper {max-width: 700px; margin: 0 auto; padding: 2em; background: #3A4F66; border-radius: 25px;}
+        .formsubmit-wrapper {max-width: 700px; margin: 0 auto; padding: 2em; background: var(--color-3); border-radius: 25px;}
         .formsubmit-wrapper input[type="text"],
         .formsubmit-wrapper input[type="email"],
         .formsubmit-wrapper textarea {
@@ -86,12 +86,12 @@ add_action( 'wp_footer', function () {
             margin-bottom: 2em;
             border-radius: 5px;
             font-size: 16px;
-            background: #FFFFFF;
+            background: var(--color-8);
             box-sizing: border-box;
         }
         .formsubmit-wrapper button[type="submit"] {
-            background-color: #1e73be;
-            color: #FFFFFF;
+            background-color: var(--color-1);
+            color: var(--color-8);
             padding: 10px 20px;
             border: none;
             border-radius: 5px;
@@ -100,8 +100,8 @@ add_action( 'wp_footer', function () {
             width: 125px;
             transition: background-color 0.3s ease;
         }
-        .formsubmit-wrapper button[type="submit"]:hover {background-color: #c53030;}
-        .formsubmit-wrapper .confirmation {margin-top: 1em; margin-bottom: -1em; color: #FFFFFF; display: none;}
+        .formsubmit-wrapper button[type="submit"]:hover {background-color: var(--color-2);}
+        .formsubmit-wrapper .confirmation {margin-top: 1em; margin-bottom: -1em; color: var(--color-8); display: none;}
         .formsubmit-wrapper .hidden-field {position: absolute; left: -9999px; height: 1px; width: 1px; overflow: hidden;}
     </style>
 
@@ -335,8 +335,8 @@ function display_contact_messages() {
                         <?php foreach ( $messages as $msg ) :
                             // Status Dot: Red = Admin Notification failed; Green = all good
                             $status_badge = $msg->status === 'mail_failed'
-                                ? '<span title="Message saved but notification email failed to send" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#c53030;"></span>'
-                                : '<span title="OK" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:green;"></span>';
+                                ? '<span title="Message saved but notification email failed to send" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: red;"></span>'
+                                : '<span title="OK" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: green;"></span>';
                         ?>
                             <tr>
                                 <td><input type="checkbox" name="message_ids[]" value="<?php echo esc_attr( $msg->id ); ?>"></td>
@@ -348,7 +348,7 @@ function display_contact_messages() {
                                     <?php echo esc_html( wp_trim_words( $msg->message, 20 ) ); ?><br>
                                     <!-- Thickbox: opens full message in an overlay without leaving the page -->
                                     <a href="#TB_inline?width=600&height=400&inlineId=msg-<?php echo esc_attr( $msg->id ); ?>" class="thickbox">Preview</a>
-                                    <div id="msg-<?php echo esc_attr( $msg->id ); ?>" style="display:none;">
+                                    <div id="msg-<?php echo esc_attr( $msg->id ); ?>" style="display: none;">
                                         <h3><?php echo esc_html( $msg->subject ); ?></h3>
                                         <p><strong>From:</strong> <?php echo esc_html( $msg->name ); ?> &lt;<?php echo esc_html( $msg->email ); ?>&gt;</p>
                                         <p><?php echo nl2br( esc_html( $msg->message ) ); ?></p>
