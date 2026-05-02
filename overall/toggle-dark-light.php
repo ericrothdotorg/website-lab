@@ -170,7 +170,7 @@ add_action('wp_footer', function () {
     
     /* BOXES */
     body.dark-mode .text-box {background: var(--color-10);}
-    body.dark-mode .text-box:hover {background: #000000;}
+    body.dark-mode .text-box:hover {background: var(--color-6);}
     body.dark-mode .box-background {background: var(--color-10); border: 1px solid var(--color-10);}
     body.dark-mode .box-background:hover {background: var(--color-6);}
     body.dark-mode .box-shadow {box-shadow: none;}
