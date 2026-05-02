@@ -21,7 +21,7 @@ add_action('wp_head', function() use ($counter_pages) {
         :root {--disc-size: 185px;}
         .counter-grid {display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; justify-content: center;}
         .counter-card {margin: 10px auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; width: var(--disc-size); max-width: 100%; aspect-ratio: 1 / 1; transition: transform 1.5s ease-in-out;}
-        .counter-card:hover {transform: scale(1.05);}
+        .counter-card:hover {transform: scale(1.05); background: var(--color-7);}
         .counter-card .counter-body {text-align: center; color: var(--color-3);}
         .counter-value {color: #990033; font-size: 2rem; font-weight: bold;}
         .counter-value, .counter-label {vertical-align: middle;}
