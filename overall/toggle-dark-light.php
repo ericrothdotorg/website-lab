@@ -203,7 +203,7 @@ add_action('wp_footer', function () {
     /* Code & Columns */
     body.dark-mode code {background: none;}
     body.dark-mode .text-column-front {background: var(--color-10) !important;}
-	body.dark-mode .my-quote-slide-content {background: var(--color-10);}
+	body.dark-mode .my-quote-slide-content {background: var(--color-10); border: 1px solid var(--color-4);}
   </style>
   
   <script>
