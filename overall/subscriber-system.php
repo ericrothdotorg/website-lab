@@ -157,14 +157,14 @@ add_shortcode( 'er_subscribe_form', function () {
                 >
             </div>
             <!-- Honeypot -->
-            <div aria-hidden="true" style="position:absolute;left:-9999px;height:1px;width:1px;overflow:hidden;">
+            <div aria-hidden="true" style="position: absolute; left: -9999px; height: 1px; width: 1px; overflow: hidden;">
                 <label for="er-website">Leave this empty</label>
                 <input type="text" id="er-website" name="middle_name" tabindex="-1" autocomplete="off">
             </div>
             <!-- Silent math check -->
             <input type="hidden" name="math_check" value="7">
             <button type="submit" id="er-submit-btn">Subscribe</button>
-            <div id="er-confirmation" role="status" aria-live="polite" aria-atomic="true" style="display:none;"></div>
+            <div id="er-confirmation" role="status" aria-live="polite" aria-atomic="true" style="display: none;"></div>
         </form>
     </div>
     <?php
@@ -176,23 +176,23 @@ add_action( 'wp_footer', function () {
     $ajax_url = esc_url( admin_url( 'admin-ajax.php' ) );
     ?>
     <style>
-        .er-subscribe-wrapper { max-width: 350px; overflow: visible; }
-        .er-subscribe-wrapper .er-field { margin-bottom: 1em; }
-        .er-subscribe-wrapper label { display: block; margin-bottom: 0.5em; }
+        .er-subscribe-wrapper {max-width: 350px; overflow: visible;}
+        .er-subscribe-wrapper .er-field {margin-bottom: 1em;}
+        .er-subscribe-wrapper label {display: block; margin-bottom: 0.5em;}
         .er-subscribe-wrapper input[type="email"] {
             display: block; width: 100%; padding: 10px;
             font-size: 16px; box-sizing: border-box; border-radius: 5px;
         }
-        .er-subscribe-wrapper input[type="email"]:focus { outline: 1px solid #1e73be; outline-offset: 2px; }
+        .er-subscribe-wrapper input[type="email"]:focus {outline: 1px solid var(--color-1); outline-offset: 2px;}
         .er-subscribe-wrapper button[type="submit"] {
             display: block; width: auto; padding: 10px 25px;
             font-size: 16px; cursor: pointer; border-radius: 5px;
-            border: none; background: #1e73be; color: #fff;
+            border: none; background: var(--color-1); color: var(--color-8);
         }
         .er-subscribe-wrapper button[type="submit"]:hover,
-        .er-subscribe-wrapper button[type="submit"]:focus { background: #c53030; }
-        .er-subscribe-wrapper button[type="submit"]:focus { outline: 1px solid #1e73be; outline-offset: 2px; }
-        .er-subscribe-wrapper #er-confirmation { margin-top: 1em; width: 100%; word-wrap: break-word; overflow-wrap: break-word; }
+        .er-subscribe-wrapper button[type="submit"]:focus {background: var(--color-2);}
+        .er-subscribe-wrapper button[type="submit"]:focus {outline: 1px solid var(--color-1); outline-offset: 2px;}
+        .er-subscribe-wrapper #er-confirmation {margin-top: 1em; width: 100%; word-wrap: break-word; overflow-wrap: break-word;}
     </style>
     <script>
     document.addEventListener( 'DOMContentLoaded', function () {
@@ -564,13 +564,13 @@ function er_render_admin_page() {
                                 <td>
                                     <?php if ( ! empty( $sub->last_send_at ) ) : ?>
                                         <?php if ( $sub->last_send_status === 'sent' ) : ?>
-                                            <span style="color:green;">&#10003; Sent</span><br>
+                                            <span style="color: green;">&#10003; Sent</span><br>
                                         <?php else : ?>
-                                            <span style="color:red;">&#10007; Failed</span><br>
+                                            <span style="color: red;">&#10007; Failed</span><br>
                                             <?php if ( ! empty( $sub->last_post_title ) ) echo esc_html( $sub->last_post_title ) . '<br>'; ?>
                                             <?php echo esc_html( date( 'F j, Y H:i', strtotime( $sub->last_send_at ) ) ); ?>
                                             <?php if ( ! empty( $sub->last_send_error ) ) : ?>
-                                                <br><small style="color:red;"><?php echo esc_html( $sub->last_send_error ); ?></small>
+                                                <br><small style="color: red;"><?php echo esc_html( $sub->last_send_error ); ?></small>
                                             <?php endif; ?>
                                         <?php endif; ?>
                                     <?php else : ?>
