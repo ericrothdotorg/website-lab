@@ -553,8 +553,12 @@ add_action('wp_footer', function () {
     
 	<!-- Cookie Consent Banner -->
 	
-	<div id="cookie-notice" role="region" aria-live="polite" aria-label="Cookie notice" aria-hidden="true" style="visibility: hidden; text-align: justify; color: var(--color-8); font-family: inherit; background: var(--color-10); padding: 15px 20px 20px 20px; position: fixed; bottom: 15px; left: 15px; width: 100%; max-width: 300px; border-radius: 10px; z-index: 10000; box-sizing: border-box;">
-		<button type="button" id="cookie-close" aria-label="Close cookie notice">ⓧ</button>
+	<div id="cookie-notice" role="dialog" aria-label="Cookie notice" aria-hidden="true" aria-modal="false" style="visibility: hidden; text-align: justify; color: var(--color-8); font-family: inherit; background: var(--color-10); padding: 15px 20px 20px 20px; position: fixed; bottom: 15px; left: 15px; width: 100%; max-width: 300px; border-radius: 10px; z-index: 10000; box-sizing: border-box;">
+		<button type="button" id="cookie-close" aria-label="Close cookie notice">
+		  <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+			<path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+		  </svg>
+		</button>
 		We serve <strong>cookies</strong> to enhance your browsing experience. Learn more in our
 		<a href="https://ericroth.org/this-site/site-policies/">Site Policies</a><br>
 		<span style="display: block; text-align: center;">
@@ -564,18 +568,12 @@ add_action('wp_footer', function () {
 	</div>
 
 	<style>
-		#cookie-close {position: absolute; top: -20px; right: -20px; background: transparent !important; border: none !important; color: var(--color-3); font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 0 !important; margin: 0 !important;}
+		#cookie-close {position: absolute; top: -20px; right: -20px; background: transparent !important; border: none !important; color: var(--color-3); font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 0 !important; margin: 0 !important;} /* SVG x Icon inherits this Color */
 		#cookie-notice button:not(#cookie-close) {position: relative; font-weight: normal; color: var(--color-8); background: var(--color-4); border-radius: 5px; padding: 8px; margin-top: 15px; width: 48%; cursor: pointer; border: none; margin-left: 2%; display: inline-block; overflow: hidden;}
 		#cookie-notice button:not(#cookie-close):first-child {margin-left: 0;}
-		#cookie-accept {background: var(--color-4);}
-		#cookie-accept:hover {background: var(--color-3) !important;}
-		#cookie-accept:hover span {opacity: 0;}
-		#cookie-accept:hover::before {content: "All"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: var(--color-8);}
-		#cookie-reject {background: var(--color-4);}
-		#cookie-reject:hover {background: var(--color-3) !important;}
-		#cookie-reject:hover span {opacity: 0;}
-		#cookie-reject:hover::before {content: "Only"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: var(--color-8);}
-		#cookie-notice button:focus-visible {outline: 2px solid var(--color-8); outline-offset: 2px;}
+		#cookie-accept, #cookie-reject {background: var(--color-4);}
+		#cookie-accept:hover, #cookie-reject:hover {background: var(--color-3) !important;}
+		#cookie-notice button:focus-visible {outline: 2px solid var(--color-3); outline-offset: 0px;}
 		@media (max-width: 480px) {#cookie-notice {max-width: 100%; bottom: 0; left: 0; border-radius: 0;} #cookie-notice button:not(#cookie-close) {width: 48%; font-size: 14px; padding: 8px 5px;}}
 	</style>
 
@@ -586,7 +584,7 @@ add_action('wp_footer', function () {
 		(function() {
 			window.setCookie = function(value) {
 				const isSecure = location.protocol === 'https:';
-				const cookie = 'cookieaccepted=' + value + '; max-age=<?php echo COOKIE_MAX_AGE; ?>; path=/; SameSite=Lax' + (isSecure ? '; Secure' : '');
+				const cookie = 'cookieaccepted=' + value + '; max-age=<?php echo defined("COOKIE_MAX_AGE") ? COOKIE_MAX_AGE : 31536000; ?>; path=/; SameSite=Lax' + (isSecure ? '; Secure' : '');
 				document.cookie = cookie;
 			};
 			window.hideCookieBanner = function() {
@@ -654,7 +652,27 @@ add_action('wp_footer', function () {
 					setTimeout(function() {
 						notice.style.visibility = "visible";
 						notice.setAttribute("aria-hidden", "false");
+						// Move Focus to the Accept Button when Banner appears
+						document.getElementById("cookie-accept").focus();
 					}, <?php echo is_front_page() ? 2500 : 0; ?>); // Delayed only on Frontpage
+					const acceptBtn = document.getElementById("cookie-accept");
+					const rejectBtn = document.getElementById("cookie-reject");
+					acceptBtn.addEventListener("mouseenter", function() {
+						this.querySelector("span").textContent = "All";
+						this.setAttribute("aria-label", "Accept all cookies");
+					});
+					acceptBtn.addEventListener("mouseleave", function() {
+						this.querySelector("span").textContent = "Accept";
+						this.setAttribute("aria-label", "Accept all cookies");
+					});
+					rejectBtn.addEventListener("mouseenter", function() {
+						this.querySelector("span").textContent = "Only";
+						this.setAttribute("aria-label", "Reject optional cookies");
+					});
+					rejectBtn.addEventListener("mouseleave", function() {
+						this.querySelector("span").textContent = "Essentials";
+						this.setAttribute("aria-label", "Reject optional cookies");
+					});
 					document.getElementById("cookie-accept").addEventListener('click', function() {
 						window.setCookie(1);
 						window.hideCookieBanner();
