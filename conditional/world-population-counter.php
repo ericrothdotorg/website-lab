@@ -4,7 +4,7 @@ defined('ABSPATH') || exit;
 add_action('wp_footer', function() {
     if (is_page(array('')) || is_single(array('131123'))) { ?>
         <style>
-            .world-population-design {text-align: center; color: #990033; font-size: 250%; font-weight: bold;}
+            .world-population-design {text-align: center; color: #990033; font-size: 2.5rem; font-weight: bold;}
         </style>
         <script>
             (() => {
