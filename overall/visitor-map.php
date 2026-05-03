@@ -432,7 +432,7 @@ function lum_map_shortcode($atts) {
     <div class="wp-block-table" id="visited-pages">
         <h3 style="margin-top: 0; margin-bottom: 25px; font-weight: 700; font-size: 20px; line-height: 1.5;">Currently Visited Pages</h3>
         <div id="pages-list" style="max-height: 350px; overflow-y: auto;">
-            <p style="color: #999;">Loading...</p>
+            <p style="color: #999999;">Loading...</p>
         </div>
     </div>
 
@@ -445,9 +445,9 @@ function lum_map_shortcode($atts) {
         100% {box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);}
     }
     .leaflet-popup-content {margin: 15px; min-width: 220px;}
-    .popup-title {font-size: 16px; font-weight: 600; margin-bottom: 10px; color: #333;}
-    .popup-info {font-size: 13px; line-height: 1.8; color: #666;}
-    .popup-info strong {color: #333; display: inline-block; min-width: 80px;}
+    .popup-title {font-size: 16px; font-weight: 600; margin-bottom: 10px; color: #333333;}
+    .popup-info {font-size: 13px; line-height: 1.8; color: #666666;}
+    .popup-info strong {color: #333333; display: inline-block; min-width: 80px;}
     .popup-badge {display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 5px;}
     .badge-live {background: #d4edda; color: #155724;}
     .badge-past {background: #d1ecf1; color: #0c5460;}
@@ -642,7 +642,7 @@ function lum_map_shortcode($atts) {
             const pagesListEl = document.getElementById('pages-list');
             if (!pagesListEl) return;
             if (liveUsers.length === 0) {
-                pagesListEl.innerHTML = '<p style="color: #999;">No live visitors</p>';
+                pagesListEl.innerHTML = '<p style="color: #999999;">No live visitors</p>';
                 return;
             }
             const pageMap = new Map();
@@ -654,13 +654,13 @@ function lum_map_shortcode($atts) {
                 pageMap.get(url).count++;
             });
             let html = '<table style="width: 100%; border-collapse: collapse;">';
-            html += '<thead><tr style="border-bottom: 2px solid #ddd;"><th style="text-align: left; padding: 8px;">Page</th><th style="text-align: left; padding: 8px;">Visitors</th><th style="text-align: left; padding: 8px;">Location</th></tr></thead><tbody>';
+            html += '<thead><tr style="border-bottom: 2px solid #dddddd;"><th style="text-align: left; padding: 8px;">Page</th><th style="text-align: left; padding: 8px;">Visitors</th><th style="text-align: left; padding: 8px;">Location</th></tr></thead><tbody>';
             Array.from(pageMap.entries()).forEach(([url, data]) => {
                 const escapeHtml = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
                 const safeUrl = escapeHtml(url);
                 const safeCity = escapeHtml(data.city || '');
                 const safeCountry = escapeHtml(data.country || '');
-                html += `<tr style="border-bottom: 1px solid #eee;">
+                html += `<tr style="border-bottom: 1px solid #eeeeee;">
                     <td style="padding: 8px;"><a href="${safeUrl}" target="_blank">${safeUrl}</a></td>
                     <td style="padding: 8px;">${data.count}</td>
                     <td style="padding: 8px;">${safeCity}, ${safeCountry}</td>
