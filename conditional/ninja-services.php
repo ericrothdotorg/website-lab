@@ -187,7 +187,7 @@ add_action('wp_footer', function() {
 				transition: transform 0.2s ease;
 			}
 			.lang-flag:focus {
-				outline: 1px solid #1e73be;
+				outline: 1px solid var(--color-1);
 				outline-offset: 1px;
 				box-shadow: 0 0 0 0.05rem rgba(0,123,255,0.25);
 			}
