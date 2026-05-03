@@ -299,7 +299,7 @@ if (!is_admin()) {
 
 // [total_post], [total_page], etc. - Clear Cache when published / deleted
 add_action('transition_post_status', function($new_status, $old_status, $post) {
-    if ($new_status !== $old_status) {
+    if (($new_status === 'publish' || $old_status === 'publish') && $new_status !== $old_status) {
         delete_transient('post_count_' . $post->post_type);
     }
 }, 10, 3);
@@ -537,7 +537,7 @@ add_action('template_redirect', function() {
         '/my-interests/'	=> '/personal/my-interests/',
 		'/my-quotes/'		=> '/about-me/my-quotes/',
     ];
-    $uri = isset($_SERVER['REQUEST_URI']) ? trailingslashit(parse_url(sanitize_text_field($_SERVER['REQUEST_URI']), PHP_URL_PATH)) : '';
+    $uri = isset($_SERVER['REQUEST_URI']) ? trailingslashit(sanitize_text_field(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH))) : '';
     if (isset($redirects[$uri])) {
         wp_redirect($redirects[$uri], 301);
         exit;
@@ -703,16 +703,6 @@ add_action('wp_footer', function () {
 							});
 						}
 					});
-					const summary = detail.querySelector("summary");
-					if (summary) {
-						summary.setAttribute("tabindex", "0");
-						summary.addEventListener("keydown", e => {
-							if (["Enter", " "].includes(e.key)) {
-								e.preventDefault();
-								detail.open = !detail.open;
-							}
-						});
-					}
 				});
 			}
 
