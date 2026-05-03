@@ -835,10 +835,10 @@ add_action('wp_footer', function () {
 
 	<style>
 		.tabs {overflow: hidden}
-		.tabs button {float: left; padding: 7.5px 10px; margin: 0px 2.5px; color: var(--color-1); font-weight: bold; background: var(--color-8); background: linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgba(230, 230, 230, 0.75) 100%); border: solid var(--color-9); border-width: 1px 1px 0 1px; border-radius: 5px 5px 0 0; cursor: pointer}
+		.tabs button {float: left; padding: 7.5px 10px; margin: 0px 2.5px; color: var(--color-1); font-weight: bold; background: var(--color-8); border: solid var(--color-9); border-width: 1px 1px 0 1px; border-radius: 5px 5px 0 0; cursor: pointer}
 		.tabs button:hover {color: var(--color-2)}
 		.tab-content {display: none; background: var(--color-8); border: 1px solid var(--color-9); border-radius: 5px 15px 15px 15px; padding: 2.5rem 1.5rem 2.5rem 2.5rem}
-		body.dark-mode .tabs button {background: linear-gradient(0deg, rgba(14, 24, 37, 1) 0%, rgba(51, 51, 51, 0.75) 100%); border: solid var(--color-4); border-width: 1px 1px 0 1px}
+		body.dark-mode .tabs button {background: var(--color-10); border: solid var(--color-4); border-width: 1px 1px 0 1px}
 		body.dark-mode .tab-content {background: var(--color-10); border: 1px solid var(--color-4)}
 	</style>
 
