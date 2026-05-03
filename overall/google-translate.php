@@ -86,7 +86,7 @@ add_action('wp_footer', function () {
     /* Clean up the select appearance */
     .goog-te-combo {
         padding: 8px;
-        border: 1px solid #ccc;
+        border: 1px solid var(--color-5);
         border-radius: 4px;
         font-size: 14px;
         width: 200px;
