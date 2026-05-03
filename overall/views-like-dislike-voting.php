@@ -108,7 +108,7 @@ function er_today_total_views_shortcode() {
         WHERE type = 'view' AND row_type = 'total'
     ");
     $format_count = fn($num) => number_format($num);
-    $output = '<p>👁️ Views: <strong style="color: #c53030;">' . $format_count($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</p>';
+    $output = '<p>👁️ Views: <strong style="color: var(--color-2);">' . $format_count($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</p>';
     set_transient($cache_key, $output, HOUR_IN_SECONDS);
     return $output;
 }
@@ -299,15 +299,15 @@ function custom_like_dislike_shortcode() {
             background: none;
             border: none;
             font-weight: bold;
-            color: #1e73be;
+            color: var(--color-1);
             cursor: pointer;
             display: inline-block;
         }
         .like-dislike-buttons-wrapper button:hover {
-            color: #c53030;
+            color: var(--color-2);
         }
         .like-dislike-buttons-wrapper button:focus-visible {
-            outline: 2px dashed #1e73be;
+            outline: 2px dashed var(--color-1);
             outline-offset: 3px;
         }
         .visually-hidden {
@@ -415,7 +415,7 @@ function er_today_total_likes_shortcode() {
         WHERE type = 'like' AND row_type = 'total'
     ");
     $format_count = fn($num) => number_format($num);
-    $output = '<p>👍 Likes: <strong style="color: #c53030;">' . $format_count($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</p>';
+    $output = '<p>👍 Likes: <strong style="color: var(--color-2);">' . $format_count($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</p>';
     set_transient($cache_key, $output, HOUR_IN_SECONDS); // ⏱️ Cached 1hr — lags behind Dashboard (which is 5min)
     return $output;
 }
@@ -439,7 +439,7 @@ function er_today_total_dislikes_shortcode() {
         WHERE type = 'dislike' AND row_type = 'total'
     ");
     $format_count = fn($num) => number_format($num);
-    $output = '<p>👎 Dislikes: <strong style="color: #c53030;">' . $format_count($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</p>';
+    $output = '<p>👎 Dislikes: <strong style="color: var(--color-2);">' . $format_count($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</p>';
     set_transient($cache_key, $output, HOUR_IN_SECONDS); // ⏱️ Cached 1hr — lags behind Dashboard (which is 5min)
     return $output;
 }
