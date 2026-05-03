@@ -14,12 +14,12 @@ add_action('wp_head', function() {
 	  height: 0;
 	}
 	#tts-toggle-btn input[type='checkbox']:focus + .toggle-visual {
-	  outline: 1px solid #FFFFFF;
+	  outline: 1px solid var(--color-8);
 	  outline-offset: 2px;
 	}
 	#tts-toggle-btn .toggle-visual {
-	  background: #3A4F66;
-	  border: 1px solid #192A3D;
+	  background: var(--color-3);
+	  border: 1px solid var(--color-4);
 	  border-radius: 50px;
 	  cursor: pointer;
 	  display: inline-block;
@@ -29,7 +29,7 @@ add_action('wp_head', function() {
 	  height: 25px;
 	}
 	#tts-toggle-btn .toggle-visual::after {
-	  background: #192A3D;
+	  background: var(--color-4);
 	  border-radius: 50%;
 	  content: '';
 	  cursor: pointer;
@@ -41,8 +41,8 @@ add_action('wp_head', function() {
 	  width: 21px;
 	  height: 21px;
 	}
-	#tts-toggle-btn input[type='checkbox']:checked + .toggle-visual {background: #0f1924; border-color: #3A4F66;}
-	#tts-toggle-btn input[type='checkbox']:checked + .toggle-visual::after {background: #3A4F66; transform: translateX(25px);}
+	#tts-toggle-btn input[type='checkbox']:checked + .toggle-visual {background: var(--color-10); border-color: var(--color-3);}
+	#tts-toggle-btn input[type='checkbox']:checked + .toggle-visual::after {background: var(--color-3); transform: translateX(25px);}
 
 	/* TTS Accessibility Labels */
 	#tts-status, .tts-toggle-btn-accessibility-label {
@@ -74,14 +74,14 @@ add_action('wp_head', function() {
 	  padding: 5px 10px;
 	  border: none;
 	  border-radius: 5px;
-	  background: #3A4F66;
+	  background: var(--color-3);
 	  color: white;
 	  cursor: pointer;
 	  transition: background 0.2s;
 	}
 	#tts-controls button:hover,
 	#tts-controls button:focus {
-	  background: #192a3d;
+	  background: var(--color-4);
 	  outline: none;
 	}
 	#tts-play > * + * {margin-left: 10px;}
@@ -93,7 +93,7 @@ add_action('wp_footer', function() {
   ?>
   <!-- TTS Play / Pause / Stop Controls Button -->
   <div id="tts-controls" style="display: inline-block; padding: 0;">
-      <button id="tts-play" aria-label="Text-to-speech controls" style="display: flex; padding: 5px 10px; background: #3A4F66; color: white; border: none; border-radius: 5px; cursor: pointer;">
+      <button id="tts-play" aria-label="Text-to-speech controls" style="display: flex; padding: 5px 10px; background: var(--color-3); color: var(--color-8); border: none; border-radius: 5px; cursor: pointer;">
       <span id="tts-play-icon" aria-label="Play text-to-speech" title="Play" style="cursor: pointer;">▶</span>
       <span id="tts-pause-icon" aria-label="Pause text-to-speech" title="Pause" style="cursor: pointer;">⏸</span>
       <span id="tts-stop-icon" aria-label="Stop text-to-speech" title="Stop" style="cursor: pointer;">⏹</span>
