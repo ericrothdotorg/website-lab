@@ -29,7 +29,7 @@ add_action('wp_footer', function () {
         bottom: 25px;
         right: 75px;
         z-index: 999;
-        background: #3A4F66;
+        background: var(--color-3);
         border-radius: 50%;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
         width: 40px;
@@ -42,7 +42,7 @@ add_action('wp_footer', function () {
         border: none;
     }
     #language-toggle:focus-visible {
-        outline: 2px solid #3A4F66;
+        outline: 2px solid var(--color-3);
         outline-offset: 2px;
     }
     #language-toggle svg {
@@ -64,7 +64,7 @@ add_action('wp_footer', function () {
         display: block;
     }
     #google_translate_element:focus {
-        outline: 2px solid #3A4F66;
+        outline: 2px solid var(--color-3);
         outline-offset: 2px;
     }
     /* Style the Google Translate dropdown */
