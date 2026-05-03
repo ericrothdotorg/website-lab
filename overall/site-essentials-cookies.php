@@ -46,7 +46,6 @@ add_action('init', function() {
 });
 
 // Disable Pingbacks and Trackbacks
-add_filter('xmlrpc_enabled', '__return_false');
 add_filter('pings_open', '__return_false');
 add_filter('pre_ping', '__return_empty_array');
 
@@ -181,11 +180,11 @@ add_action('wp_head', function() {
             ];
         }
     }
-        if (is_front_page()) { // Add Cover Block Poster on Front Page
+    if (is_front_page()) { // Add Cover Block Poster on Front Page
         preg_match('/poster="([^"]+)"/', $post->post_content, $m);
         if (!empty($m[1])) $preload_images[] = ['url' => $m[1], 'type' => 'single'];
     } 
-	
+    
     // 3. Output preload Links for all collected Images
     foreach ($preload_images as $img) {
         if ($img['type'] === 'responsive') {
@@ -553,31 +552,31 @@ add_action('wp_footer', function () {
     ?>
     
 	<!-- Cookie Consent Banner -->
-
-	<p id="cookie-notice" role="region" aria-live="polite" aria-label="Cookie notice" aria-hidden="true" style="visibility: hidden;">
-		We serve <strong>cookies</strong> to enhance your browsing experience. Learn more in our 
+	
+	<div id="cookie-notice" role="region" aria-live="polite" aria-label="Cookie notice" aria-hidden="true" style="visibility: hidden; text-align: justify; color: var(--color-8); font-family: inherit; background: var(--color-10); padding: 15px 20px 20px 20px; position: fixed; bottom: 15px; left: 15px; width: 100%; max-width: 300px; border-radius: 10px; z-index: 10000; box-sizing: border-box;">
+		<button type="button" id="cookie-close" aria-label="Close cookie notice">ⓧ</button>
+		We serve <strong>cookies</strong> to enhance your browsing experience. Learn more in our
 		<a href="https://ericroth.org/this-site/site-policies/">Site Policies</a><br>
 		<span style="display: block; text-align: center;">
-			<button type="button" id="cookie-accept" aria-label="Accept all cookies"><span>Accept</span></button>
-			<button type="button" id="cookie-reject" aria-label="Reject optional cookies" class="reject-btn"><span>Essentials</span></button>
+			<button type="button" id="cookie-accept" aria-label="Accept all cookies"><span style="font-weight: bold;">Accept</span></button>
+			<button type="button" id="cookie-reject" aria-label="Reject optional cookies" class="reject-btn"><span style="font-weight: bold;">Essentials</span></button>
 		</span>
-	</p>
+	</div>
 
 	<style>
-		#cookie-notice {text-align: justify; color: #fff; font-family: inherit; background: rgba(0,0,0,0.75); padding: 20px; position: fixed; bottom: 15px; left: 15px; width: 100%; max-width: 300px; border-radius: 5px; z-index: 10000; box-sizing: border-box}
-		#cookie-notice button {font-weight: normal; color: #fff; background: #1e73be; border-radius: 5px; padding: 8px; margin-top: 15px; width: 48%; cursor: pointer; border: none; margin-left: 2%; display: inline-block}
-		#cookie-notice button:first-child {margin-left: 0}
-		#cookie-notice button:hover {background: #c53030}
-		#cookie-notice button:hover span {display: none}
-		#cookie-notice button:hover::before {content: "All"}
-		#cookie-notice button.reject-btn {background: #262626}
-		#cookie-notice button.reject-btn:hover {background: #262626}
-		#cookie-notice button.reject-btn:hover::before {content: "Only"}
-		#cookie-notice button:focus-visible {outline: 2px solid #fff; outline-offset: 2px}
-		@media (max-width: 480px) {
-			#cookie-notice {max-width: 100%; bottom: 0; left: 0; border-radius: 0}
-			#cookie-notice button {width: 48%; font-size: 14px; padding: 8px 5px}
-		}
+		#cookie-close {position: absolute; top: -20px; right: -20px; background: transparent !important; border: none !important; color: var(--color-3); font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 0 !important; margin: 0 !important;}
+		#cookie-notice button:not(#cookie-close) {position: relative; font-weight: normal; color: var(--color-8); background: var(--color-4); border-radius: 5px; padding: 8px; margin-top: 15px; width: 48%; cursor: pointer; border: none; margin-left: 2%; display: inline-block; overflow: hidden;}
+		#cookie-notice button:not(#cookie-close):first-child {margin-left: 0;}
+		#cookie-accept {background: var(--color-4);}
+		#cookie-accept:hover {background: var(--color-3) !important;}
+		#cookie-accept:hover span {opacity: 0;}
+		#cookie-accept:hover::before {content: "All"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: var(--color-8);}
+		#cookie-reject {background: var(--color-4);}
+		#cookie-reject:hover {background: var(--color-3) !important;}
+		#cookie-reject:hover span {opacity: 0;}
+		#cookie-reject:hover::before {content: "Only"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: var(--color-8);}
+		#cookie-notice button:focus-visible {outline: 2px solid var(--color-8); outline-offset: 2px;}
+		@media (max-width: 480px) {#cookie-notice {max-width: 100%; bottom: 0; left: 0; border-radius: 0;} #cookie-notice button:not(#cookie-close) {width: 48%; font-size: 14px; padding: 8px 5px;}}
 	</style>
 
 	<!-- Cookie Consent Logic -->
@@ -603,7 +602,7 @@ add_action('wp_footer', function () {
 	<!-- Scroll Progress Indicator -->
 
 	<style>
-		.scroll-indicator-bar {will-change: width; width: 0%; position: fixed; bottom: 0; height: 5px; background: #c53030; z-index: 5000}
+		.scroll-indicator-bar {will-change: width; width: 0%; position: fixed; bottom: 0; height: 5px; background: var(--color-2); z-index: 5000}
 	</style>
 
 	<script>
@@ -646,7 +645,7 @@ add_action('wp_footer', function () {
 
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
-
+		
 			// Cookie Consent Banner
 			const hasConsent = document.cookie.indexOf("cookieaccepted=") >= 0;
 			if (!hasConsent) {
@@ -664,9 +663,13 @@ add_action('wp_footer', function () {
 						window.setCookie(0);
 						window.hideCookieBanner();
 					});
+					document.getElementById("cookie-close").addEventListener('click', function() {
+						window.setCookie(0);
+						window.hideCookieBanner();
+					});
 				}
 			}
-
+			
 			// Auto-insert current Year
 			const yearEl = document.getElementById("current-year");
 			if (yearEl) yearEl.textContent = new Date().getFullYear();
@@ -832,11 +835,11 @@ add_action('wp_footer', function () {
 
 	<style>
 		.tabs {overflow: hidden}
-		.tabs button {float: left; padding: 7.5px 10px; margin: 0px 2.5px; color: #1e73be; font-weight: bold; background: rgb(255, 255, 255); background: linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgba(230, 230, 230, 0.75) 100%); border: solid #c5c5c5; border-width: 1px 1px 0 1px; border-radius: 5px 5px 0 0; cursor: pointer}
-		.tabs button:hover {color: #c53030}
-		.tab-content {display: none; border: 1px solid #c5c5c5; border-radius: 5px 15px 15px 15px; padding: 2.5rem 1.5rem 2.5rem 2.5rem}
-		body.dark-mode .tabs button {background: linear-gradient(0deg, rgba(26, 26, 26, 1) 0%, rgba(51, 51, 51, 0.75) 100%); border: solid #404040; border-width: 1px 1px 0 1px}
-		body.dark-mode .tab-content {border: 1px solid #404040}
+		.tabs button {float: left; padding: 7.5px 10px; margin: 0px 2.5px; color: var(--color-1); font-weight: bold; background: var(--color-8); background: linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgba(230, 230, 230, 0.75) 100%); border: solid var(--color-9); border-width: 1px 1px 0 1px; border-radius: 5px 5px 0 0; cursor: pointer}
+		.tabs button:hover {color: var(--color-2)}
+		.tab-content {display: none; background: var(--color-8); border: 1px solid var(--color-9); border-radius: 5px 15px 15px 15px; padding: 2.5rem 1.5rem 2.5rem 2.5rem}
+		body.dark-mode .tabs button {background: linear-gradient(0deg, rgba(14, 24, 37, 1) 0%, rgba(51, 51, 51, 0.75) 100%); border: solid var(--color-4); border-width: 1px 1px 0 1px}
+		body.dark-mode .tab-content {background: var(--color-10); border: 1px solid var(--color-4)}
 	</style>
 
 	<script>
