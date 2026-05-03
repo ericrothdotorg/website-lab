@@ -48,7 +48,7 @@ function er_term_image_edit_field($term) {
             <div class="er-term-image-preview"><?php echo $img; ?></div>
             <input type="hidden" name="er_term_image_id" class="er-term-image-id" value="<?php echo esc_attr($img_id); ?>">
             <button type="button" class="button er-term-image-btn">Select Image</button>
-            <button type="button" class="button er-term-image-remove" <?php if (!$img_id) echo 'style="display:none;"'; ?>>Remove</button>
+            <button type="button" class="button er-term-image-remove" <?php if (!$img_id) echo 'style="display: none;"'; ?>>Remove</button>
         </td>
     </tr>
     <?php
