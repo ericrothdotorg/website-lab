@@ -81,7 +81,8 @@ function lum_background_track() {
     $table_name = $wpdb->prefix . 'live_visitors';
     $ip_address = lum_get_client_ip();
     $ip_address = lum_anonymize_ip($ip_address);
-    $page_url = isset($_POST['page_url']) ? esc_url_raw($_POST['page_url']) : get_site_url() . '/';
+    $raw_url = isset($_POST['page_url']) ? esc_url_raw($_POST['page_url']) : get_site_url() . '/';
+	$page_url = lum_clean_page_url(parse_url($raw_url, PHP_URL_PATH));
     $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field($_SERVER['HTTP_USER_AGENT']) : '';
     // Skip known bots (double-check server-side)
     if (lum_is_bot($user_agent)) {
@@ -402,13 +403,14 @@ add_action('wp_ajax_nopriv_lum_get_map_data', 'lum_get_map_data');
 
 // Shortcode
 function lum_map_shortcode($atts) {
+	nocache_headers();
     $atts = shortcode_atts(array(
         'height' => '600px',
         'zoom' => '2'
     ), $atts);
-	wp_enqueue_style('leaflet-css', home_url('/my-assets/visitor-map/leaflet.css'));
-	wp_enqueue_script('leaflet-js', home_url('/my-assets/visitor-map/leaflet.js'), [], null, true);
-	wp_enqueue_script('terminator-js', home_url('/my-assets/visitor-map/L.Terminator.js'), ['leaflet-js'], null, true);
+	wp_enqueue_style('leaflet-css', 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css');
+	wp_enqueue_script('leaflet-js', 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js', [], null, true);
+	wp_enqueue_script('terminator-js', home_url('/my-assets/visitor-map/L.Terminator.js'), ['leaflet-js'], null, true); // From original Source
     ob_start();
     ?>
     <div id="live-user-map" style="height: <?php echo esc_attr($atts['height']); ?>; width: 100%; border-radius: 15px; position: relative; z-index: 1;"></div>
@@ -501,7 +503,6 @@ function lum_map_shortcode($atts) {
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Map data loaded:', data); // Added console logging
                     if (data.success) {
                         updateMarkers(data.data, isFirstLoad);
                         updateStats(data.data.counts);
@@ -669,11 +670,7 @@ function lum_map_shortcode($atts) {
             html += '</tbody></table>';
             pagesListEl.innerHTML = html;
         }
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initMap);
-        } else {
-            initMap();
-        }
+		window.addEventListener('load', initMap);
     })();
     </script>
 
