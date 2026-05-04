@@ -162,11 +162,12 @@ add_action('wp_footer', function () {
 	body.dark-mode input[type=search].modal-field {background: none; border: none; border-bottom: 1px solid var(--color-3); outline: none; transition: none;}
     
     /* TABLES */
-    body.dark-mode .wp-block-table thead {background: var(--color-10); border: 1px solid var(--color-4); border-bottom: 3px solid var(--color-4);}
+    body.dark-mode .wp-block-table thead {background: var(--color-6); border: 1px solid var(--color-4); border-bottom: 3px solid var(--color-4);}
     body.dark-mode .wp-block-table th {border: 1px solid var(--color-4);}
     body.dark-mode .wp-block-table tr {border: 1px solid var(--color-4);}
     body.dark-mode .wp-block-table td {border: 1px solid var(--color-4);}
-    body.dark-mode .wp-block-table tr:hover {background: var(--color-10);}
+	body.dark-mode .wp-block-table tbody tr {background: var(--color-10);}
+    body.dark-mode .wp-block-table tr:hover {background: var(--color-6);}
     
     /* BOXES */
     body.dark-mode .box-background {background: var(--color-10); border: 1px solid var(--color-4);}
