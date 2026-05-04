@@ -21,7 +21,7 @@ add_action("wp_head", function () {
 		--color-7:  #fafbfc; /* LIGHT Mode Background - DARK Mode Headings */
 		--color-8:  #ffffff; /* Element Backgrounds, Button Text, Form Fields */
 		--color-9:  #8da6b9; /* Arrows, resizable Box, Footer Separators */
-		--color-10: #0e1825; /* DARK Mode Box & Card Backgrounds */
+		--color-10: #0e1825; /* DARK Mode Element-, Box & Card Backgrounds */
 	}
 	
     /* == THEME RELATED == */
