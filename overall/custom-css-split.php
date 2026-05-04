@@ -12,16 +12,16 @@ add_action("wp_head", function () {
     /* == COLOR PALETTE == */
 	
 	:root {
-		--color-1:  #1e73be; /* Blue — Links, Buttons, focus Outlines, toggle Accent */
-		--color-2:  #c53030; /* Red — Hover State for Links & Buttons */
-		--color-3:  #3a4f66; /* Steel Blue — Body Text, interactive & structural Borders */
-		--color-4:  #192a3d; /* Deep Navy — Headings, strong Borders - Dark Mode Tables & Boxes */
-		--color-5:  #e1e8ed; /* Silver — Subtle Borders & Separators - Dark Mode Text */
-		--color-6:  #070c12; /* Near-Black — Dark Mode Background, Hover State for Elements */
-		--color-7:  #fafbfc; /* Off-White — Card & Box Backgrounds - Dark Mode Headings */
-		--color-8:  #ffffff; /* White — Backgrounds, Button Text, Form Fields */
-		--color-9:  #8da6b9; /* Muted Blue — Arrows, resizable Box, Footer Separators */
-		--color-10: #0e1825; /* Dark Navy — Dark Mode Box & Card Backgrounds */
+		--color-1:  #1e73be; /* Links, Buttons, focus Outlines, toggle Accent */
+		--color-2:  #c53030; /* Hover State for Links & Buttons */
+		--color-3:  #3a4f66; /* Body Text, interactive & structural Borders */
+		--color-4:  #192a3d; /* Headings, strong Borders - DARK Mode Tables & Boxes */
+		--color-5:  #e1e8ed; /* Subtle Borders & Separators - DARK Mode Text */
+		--color-6:  #070c12; /* DARK Mode Background, Hover State for Elements */
+		--color-7:  #fafbfc; /* LIGHT Mode Background - DARK Mode Headings */
+		--color-8:  #ffffff; /* Element Backgrounds, Button Text, Form Fields */
+		--color-9:  #8da6b9; /* Arrows, resizable Box, Footer Separators */
+		--color-10: #0e1825; /* DARK Mode Box & Card Backgrounds */
 	}
 	
     /* == THEME RELATED == */
@@ -240,8 +240,9 @@ add_action("wp_footer", function () {
 
     /* TABLES */
 	
-    .wp-block-table thead {background: var(--color-8);}
-    .wp-block-table tr:hover {background: var(--color-8);}
+    .wp-block-table thead {background: var(--color-7);}
+	.wp-block-table tbody tr {background: var(--color-8);}
+    .wp-block-table tr:hover {background: var(--color-7);}
     
     /* DETAILS & SUMMARY */
 	
