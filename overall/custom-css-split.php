@@ -288,7 +288,7 @@ add_action("wp_footer", function () {
     .details-accordion summary > * {margin-left: 0.5rem;}
     .details-accordion summary > *:first-child {margin-left: 0;}
     .details-accordion summary::before {content: "+"; font-weight: bold; color: var(--color-1); margin-right: 0.5rem;}
-    .details-accordion[open] summary::before {content: "−"; color: var(--color-2);}
+    .details-accordion[open] summary::before {content: "−"; color: var(--color-1);}
     .details-accordion summary:hover {background: var(--color-8);}
     .details-accordion > :where(:not(summary)) {margin-left: 1.25rem; margin-right: 1.25rem;}
     
