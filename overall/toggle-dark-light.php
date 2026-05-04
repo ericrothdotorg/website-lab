@@ -129,8 +129,10 @@ add_action('wp_footer', function () {
     body.dark-mode .image-bedps:hover {background: var(--color-6);}
     
     /* ACCORDIONS */
+	body.dark-mode .details-accordion summary {background: var(--color-10);}
     body.dark-mode .details-accordion summary {border-top: 1px solid var(--color-3); border-bottom: 1px solid var(--color-3);}
-    body.dark-mode .details-accordion summary:hover, body.dark-mode .details-accordion summary:focus {background: var(--color-10);}
+    body.dark-mode .details-accordion summary:hover,
+	body.dark-mode .details-accordion summary:focus {background: var(--color-6);}
     
     /* TAG CLOUDS */
     body.dark-mode .tag-cloud a {background: var(--color-10);}
