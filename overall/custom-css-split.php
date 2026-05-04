@@ -283,13 +283,14 @@ add_action("wp_footer", function () {
 		border-top: 1px solid var(--color-9);
 		border-bottom: 1px solid var(--color-9);
     }
+	.details-accordion summary {background: var(--color-8);}
 	.details-accordion summary:focus {outline: 1px solid var(--color-1); outline-offset: 2px;}
 	.details-accordion summary:focus:not(:focus-visible) {outline: none;}
     .details-accordion summary > * {margin-left: 0.5rem;}
     .details-accordion summary > *:first-child {margin-left: 0;}
     .details-accordion summary::before {content: "+"; font-weight: bold; color: var(--color-1); margin-right: 0.5rem;}
     .details-accordion[open] summary::before {content: "−"; color: var(--color-1);}
-    .details-accordion summary:hover {background: var(--color-8);}
+    .details-accordion summary:hover {background: var(--color-7);}
     .details-accordion > :where(:not(summary)) {margin-left: 1.25rem; margin-right: 1.25rem;}
     
     /* TEXT & COLORS */
