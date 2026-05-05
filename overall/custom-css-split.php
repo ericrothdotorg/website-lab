@@ -37,9 +37,9 @@ add_action("wp_head", function () {
     .entry-header .ct-breadcrumbs {border-radius: 0 0 10px 10px;}
     
     /* Header Container: Content */
-    .page-title {padding: 10px 20px;}
-    .page-description {padding: 0 20px 20px;}
-    .ct-breadcrumbs {padding: 0 20px 20px;}
+    .page-title {padding: 10px 20px; color: var(--color-5);}
+    .page-description {padding: 0 20px 20px; color: var(--color-5);}
+    .ct-breadcrumbs {padding: 0 20px 20px; color: var(--color-5);}
 		
 	/* == NOT THEME RELATED == */
 
