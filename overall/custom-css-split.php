@@ -12,16 +12,16 @@ add_action("wp_head", function () {
     /* == COLOR PALETTE == */
 	
 	:root {
-		--color-1:  #1e73be; /* Links, Buttons, focus Outlines, toggle Accent */
-		--color-2:  #c53030; /* Hover State for Links & Buttons */
-		--color-3:  #3a4f66; /* Body Text, interactive & structural Borders */
-		--color-4:  #192a3d; /* Headings, strong Borders - DARK Mode Tables & Boxes */
-		--color-5:  #e1e8ed; /* Subtle Borders & Separators - DARK Mode Text */
-		--color-6:  #070c12; /* DARK Mode Background, Hover State for Elements */
-		--color-7:  #fafbfc; /* LIGHT Mode Background - DARK Mode Headings */
-		--color-8:  #ffffff; /* Element Backgrounds, Button Text, Form Fields */
-		--color-9:  #8da6b9; /* Arrows, resizable Box, Footer Separators */
-		--color-10: #0e1825; /* DARK Mode Element-, Box & Card Backgrounds */
+		--color-1:  #1e73be; /* Link, Button, Focus Outline, Toggle Accent */
+		--color-2:  #c53030; /* Hover State for Link & Button */
+		--color-3:  #3a4f66; /* LIGHT Mode Body Text, DARK Mode Element Border I */
+		--color-4:  #192a3d; /* LIGHT Mode Headings, DARK Mode Element Border II */
+		--color-5:  #e1e8ed; /* LIGHT Mode Separator & Border, DARK Mode Body Text */
+		--color-6:  #070c12; /* DARK Mode Background & Element Hover */
+		--color-7:  #fafbfc; /* LIGHT Mode Background & Element Hover, DARK Mode Heading */
+		--color-8:  #ffffff; /* LIGHT Mode Element Background, Button Text, Form Field */
+		--color-9:  #8da6b9; /* Design Block Border, Flexy Arrow, Tag & Dropdown Separator */
+		--color-10: #0e1825; /* DARK Mode Element-, Box- and Card Background */
 	}
 	
     /* == THEME RELATED == */
@@ -56,7 +56,9 @@ add_action("wp_head", function () {
 
     /* HTML & BODY BASICS */
 	
-    html {text-size-adjust: 100%; scroll-behavior: smooth;}
+	html {text-size-adjust: 100%; scroll-behavior: smooth;}
+	body {background: var(--color-7); color: var(--color-3);}
+    body :is(h1, h2, h3, h4, h5, h6) {color: var(--color-4);}
     p {text-align: justify; hyphens: auto;}
     code {background: none !important; border: none; padding: 0;}
     
@@ -244,6 +246,13 @@ add_action("wp_footer", function () {
 	.wp-block-table tbody tr {background: var(--color-8);}
     .wp-block-table tr:hover {background: var(--color-7);}
     
+	/* TABS */
+	
+	body.page-id-17552 .tabs {overflow: hidden}
+	body.page-id-17552 .tabs button {float: left; padding: 7.5px 10px; margin: 0px 2.5px; color: var(--color-1); font-weight: bold; background: var(--color-8); border: solid var(--color-5); border-width: 1px 1px 0 1px; border-radius: 5px 5px 0 0; cursor: pointer}
+	body.page-id-17552 .tabs button:hover {color: var(--color-2)}
+	body.page-id-17552 .tab-content {display: none; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 5px 15px 15px 15px; padding: 2.5rem 1.5rem 2.5rem 2.5rem}
+	
     /* DETAILS & SUMMARY */
 	
     summary {color: var(--color-1); font-weight: bold; cursor: pointer;}
@@ -280,8 +289,8 @@ add_action("wp_footer", function () {
 		font-size: 1rem;
 		line-height: 1.35;
 		padding: 0.65rem 1rem;
-		border-top: 1px solid var(--color-9);
-		border-bottom: 1px solid var(--color-9);
+		border-top: 1px solid var(--color-5);
+		border-bottom: 1px solid var(--color-5);
     }
 	.details-accordion summary {background: var(--color-8);}
 	.details-accordion summary:focus {outline: 1px solid var(--color-1); outline-offset: 2px;}
