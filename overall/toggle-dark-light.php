@@ -130,7 +130,7 @@ add_action('wp_footer', function () {
     
     /* ACCORDIONS */
 	body.dark-mode .details-accordion summary {background: var(--color-10);}
-    body.dark-mode .details-accordion summary {border-top: 1px solid var(--color-3); border-bottom: 1px solid var(--color-3);}
+    body.dark-mode .details-accordion summary {border-top: 1px solid var(--color-4); border-bottom: 1px solid var(--color-4);}
     body.dark-mode .details-accordion summary:hover,
 	body.dark-mode .details-accordion summary:focus {background: var(--color-6);}
     
@@ -171,6 +171,10 @@ add_action('wp_footer', function () {
 	body.dark-mode .wp-block-table tbody tr {background: var(--color-10);}
     body.dark-mode .wp-block-table tr:hover {background: var(--color-6);}
     
+	/* TABS */
+	body.dark-mode.page-id-17552 .tabs button {background: var(--color-10); border: solid var(--color-4); border-width: 1px 1px 0 1px}
+	body.dark-mode.page-id-17552 .tab-content {background: var(--color-10); border: 1px solid var(--color-4)}
+	
     /* BOXES */
     body.dark-mode .box-background {background: var(--color-10); border: 1px solid var(--color-4);}
     body.dark-mode .box-shadow {box-shadow: none;}
