@@ -229,15 +229,15 @@ add_action("wp_footer", function () {
     
     /* COLUMNS (Media Screen) */
     
-	@media (max-width: 600px) {
-		.block-editor-two-columns {margin-top: 25px;}
-	}
 	@media (max-width: 768px) {
 		.two-columns:nth-of-type(2),
 		.two-columns-var:nth-of-type(2),
 		.four-columns:nth-of-type(n+3) {margin-top: 25px;}
 		.two-columns {width: 100%;}
 		.four-columns {width: 49%;}
+	}
+	@media (max-width: 600px) {
+		.block-editor-two-columns {margin-top: 25px;}
 	}
 
     /* TABLES */
