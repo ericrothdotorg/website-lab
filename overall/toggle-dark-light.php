@@ -148,16 +148,16 @@ add_action('wp_footer', function () {
 	body.dark-mode textarea {background: var(--color-10); color: var(--color-5); border: 1px solid var(--color-3);}
 	body.dark-mode option {background: var(--color-10); color: var(--color-5);}
 
-	/* Focus States - Keyboard Accessibility */
-	body.dark-mode select:focus {outline: 1px solid var(--color-1); outline-offset: 2px;}
+	/* Focus States - Accessibility */
+	body.dark-mode select:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
 	body.dark-mode select:focus:not(:focus-visible) {outline: none;}
-	body.dark-mode input[type=email]:focus {outline: 1px solid var(--color-1); outline-offset: 2px;}
+	body.dark-mode input[type=email]:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
 	body.dark-mode input[type=email]:focus:not(:focus-visible) {outline: none;}
-	body.dark-mode input[type=text]:focus {outline: 1px solid var(--color-1); outline-offset: 2px;}
+	body.dark-mode input[type=text]:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
 	body.dark-mode input[type=text]:focus:not(:focus-visible) {outline: none;}
-	body.dark-mode textarea:focus {outline: 1px solid var(--color-1); outline-offset: 2px;}
+	body.dark-mode textarea:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
 	body.dark-mode textarea:focus:not(:focus-visible) {outline: none;}
-	body.dark-mode input[type=search]:focus {outline: 1px solid var(--color-1); outline-offset: 2px;}
+	body.dark-mode input[type=search]:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
 	body.dark-mode input[type=search]:focus:not(:focus-visible) {outline: none;}
 
 	/* Exception: Modal Search Field */
