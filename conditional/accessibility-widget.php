@@ -47,7 +47,7 @@ add_shortcode('er_accessibility_settings', function () {
 					Thick
 				</button>
 				<button class="a11y-option" data-group="focus-width" data-value="xl">
-					Extra wide
+					Extra Thick
 				</button>
 			</div>
 		</div>
@@ -106,7 +106,97 @@ add_action('wp_footer', function () {
 	#a11y-link:focus-visible {outline: 2px solid var(--color-3); outline-offset: 2px;}
 	#a11y-link img {width: 22px; height: 22px; display: block; filter: brightness(0) invert(1);}
 
+	/* == APPLIED STATES == */
+
+	body.a11y-underline-always a:link {text-decoration: underline;}
+	body.a11y-underline-never a:link {text-decoration: none;}
+
 </style>
+
+<script>
+
+	var a11yPrefs={underline:null,'focus-width':null,'focus-color':null},
+	a11yStore='er_a11y_prefs',
+	a11yColors={orange:'#ed7d31',green:'#339966',red:'var(--color-2)',white:'var(--color-8)',purple:'#7b5ea7',dark:'var(--color-6)'},
+	a11yWidths={thick:'3px',xl:'5px'},
+	a11yResolvedColors={};
+
+	function a11ySave(){try{localStorage.setItem(a11yStore,JSON.stringify(a11yPrefs))}catch(e){}}
+
+	function a11yResolve(val){
+		if(a11yResolvedColors[val]) return a11yResolvedColors[val];
+		var resolved=val.startsWith('var(') ? getComputedStyle(document.documentElement).getPropertyValue(val.slice(4,-1).trim()).trim() : val;
+		a11yResolvedColors[val]=resolved;
+		return resolved;
+	}
+
+	function a11yApplyFocus(el){
+		if(!a11yPrefs['focus-color'] && !a11yPrefs['focus-width']) return;
+		if(a11yPrefs['focus-color']) el.style.outlineColor = a11yResolve(a11yColors[a11yPrefs['focus-color']]);
+		else el.style.outlineColor = '';
+		if(a11yPrefs['focus-width'] && a11yPrefs['focus-width']!=='default') el.style.outlineWidth = a11yWidths[a11yPrefs['focus-width']];
+		else el.style.outlineWidth = '';
+	}
+
+	function a11yClearFocus(el){
+		if(!a11yPrefs['focus-color'] && !a11yPrefs['focus-width']) return;
+		el.style.outlineColor = '';
+		el.style.outlineWidth = '';
+	}
+
+	function a11yApplyUnderline(){
+		var b=document.body.classList;
+		b.toggle('a11y-underline-always', a11yPrefs.underline==='always');
+		b.toggle('a11y-underline-never',  a11yPrefs.underline==='never');
+	}
+
+	function a11yUpdateButtons(){
+		document.querySelectorAll('.a11y-option').forEach(function(btn){
+			btn.classList.toggle('is-active', a11yPrefs[btn.dataset.group]===btn.dataset.value);
+		});
+	}
+
+	function a11yOption(el){
+		var g=el.dataset.group, v=el.dataset.value;
+		a11yPrefs[g]=a11yPrefs[g]===v ? null : v;
+		a11yApplyUnderline();
+		a11yUpdateButtons();
+		a11ySave();
+	}
+
+	function a11yReset(){
+		a11yPrefs={underline:null,'focus-width':null,'focus-color':null};
+		a11yApplyUnderline();
+		a11yUpdateButtons();
+		a11ySave();
+	}
+
+	/* LOAD SAVED PREFS */
+
+	try{
+		var raw=localStorage.getItem(a11yStore);
+		if(raw) a11yPrefs=JSON.parse(raw);
+	}catch(e){}
+
+	/* BIND FOCUS EVENTS */
+
+	document.addEventListener('DOMContentLoaded',function(){
+		a11yApplyUnderline();
+		document.addEventListener('focus', function(e){
+			a11yApplyFocus(e.target);
+		}, true);
+		document.addEventListener('blur', function(e){
+			a11yClearFocus(e.target);
+		}, true);
+		document.querySelectorAll('.a11y-option').forEach(function(btn){
+			btn.addEventListener('click',function(){a11yOption(this);});
+		});
+		var reset=document.getElementById('a11y-reset');
+		if(reset) reset.addEventListener('click',a11yReset);
+		a11yUpdateButtons();
+	});
+
+</script>
 
 <?php if (!is_page(48682)) return; ?>
 
@@ -129,77 +219,12 @@ add_action('wp_footer', function () {
 	.a11y-option.is-active {background: var(--color-1); border-color: var(--color-1); color: var(--color-8); font-weight: bold;}
 	.a11y-option:focus-visible {outline: 2px solid var(--color-1); outline-offset: 2px;}
 	.a11y-option.swatch {width: 32px; height: 32px; padding: 0; border-radius: 50%; border: 2px solid var(--color-5);}
-	.a11y-option.swatch.is-active {border: 3px solid var(--color-4);}
+	.a11y-option.swatch.is-active {outline: 3px solid var(--color-1) !important; outline-offset: var(--a11y-focus-offset);}
 
 	#a11y-reset {display: inline-block; margin-top: 10px; background: none; border: none; color:var(--color-1); font-weight: bold; cursor: pointer; padding: 0;}
 	#a11y-reset:hover {color: var(--color-2);}
 
-	/* == APPLIED STATES == */
-
-	body.a11y-underline-always a:link {text-decoration: underline;}
-	body.a11y-underline-never a:link {text-decoration: none;}
-
 </style>
-
-<script>
-
-	var a11yPrefs={underline:null,'focus-width':null,'focus-color':null},
-	a11yStore='er_a11y_prefs',
-	a11yColors={orange:'#ed7d31',green:'#339966',red:'var(--color-2)',white:'var(--color-8)',purple:'#7b5ea7',dark:'var(--color-6)'},
-	a11yWidths={thick:'3px',xl:'5px'};
-
-	function a11ySave(){try{localStorage.setItem(a11yStore,JSON.stringify(a11yPrefs))}catch(e){}}
-
-	function a11yApplyVars(){
-		var r=document.documentElement;
-		r.style.setProperty('--a11y-focus-color', a11yPrefs['focus-color'] ? a11yColors[a11yPrefs['focus-color']] : 'var(--color-1)');
-		r.style.setProperty('--a11y-focus-width', a11yPrefs['focus-width'] ? a11yWidths[a11yPrefs['focus-width']] : '1px');
-		var b=document.body.classList;
-		b.toggle('a11y-underline-always', a11yPrefs.underline==='always');
-		b.toggle('a11y-underline-never',  a11yPrefs.underline==='never');
-	}
-
-	function a11yUpdateButtons(){
-		document.querySelectorAll('.a11y-option').forEach(function(btn){
-			btn.classList.toggle('is-active', a11yPrefs[btn.dataset.group]===btn.dataset.value);
-		});
-	}
-
-	function a11yOption(el){
-		var g=el.dataset.group, v=el.dataset.value;
-		a11yPrefs[g]=a11yPrefs[g]===v ? null : v;
-		a11yApplyVars();
-		a11yUpdateButtons();
-		a11ySave();
-	}
-
-	function a11yReset(){
-		a11yPrefs={underline:null,'focus-width':null,'focus-color':null};
-		a11yApplyVars();
-		a11yUpdateButtons();
-		a11ySave();
-	}
-
-	/* LOAD SAVED PREFS */
-
-	try{
-		var raw=localStorage.getItem(a11yStore);
-		if(raw) a11yPrefs=JSON.parse(raw);
-		a11yApplyVars();
-	}catch(e){}
-
-	/* BIND BUTTONS */
-
-	document.addEventListener('DOMContentLoaded',function(){
-		document.querySelectorAll('.a11y-option').forEach(function(btn){
-			btn.addEventListener('click',function(){a11yOption(this);});
-		});
-		var reset=document.getElementById('a11y-reset');
-		if(reset) reset.addEventListener('click',a11yReset);
-		a11yUpdateButtons();
-	});
-
-</script>
 
 <?php
 
