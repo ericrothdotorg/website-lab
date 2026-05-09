@@ -4,13 +4,13 @@ defined('ABSPATH') || exit;
 add_action('wp_footer', function () {
 	if (is_front_page()) return;
 ?>
-	
+
 <div id="google_translate_element" role="dialog" aria-label="Language Selector" aria-hidden="true"></div>
 <div id="language-toggle" role="button" aria-label="Open Language Switcher" 
     aria-expanded="false" aria-controls="google_translate_element" tabindex="0"
     title="Language Switcher" onclick="toggleTranslate()"
     onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleTranslate(); }">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#FFFFFF"
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
         stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
         stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="10"/>
@@ -18,9 +18,9 @@ add_action('wp_footer', function () {
         <path d="M12 2a15.3 15.3 0 0 1 0 20M12 2a15.3 15.3 0 0 0 0 20"/>
     </svg>
 </div>
-	
+
 <!-- Screen reader announcements -->
-	
+
 <div id="translate-announcer" role="status" aria-live="polite" aria-atomic="true" style="position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;"></div>
 
 <style>
@@ -29,6 +29,7 @@ add_action('wp_footer', function () {
         bottom: 25px;
         right: 75px;
         z-index: 999;
+        color: var(--color-8);
         background: var(--color-3);
         border-radius: 50%;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
@@ -47,6 +48,8 @@ add_action('wp_footer', function () {
     }
     #language-toggle svg {
         display: block;
+		fill: var(--color-8);
+		stroke: var(--color-3);
     }
     /* Hide Google Translate element by default */
     #google_translate_element {
@@ -117,18 +120,30 @@ add_action('wp_footer', function () {
         document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + location.hostname + ';';
     }
-    // Helper: Load Google Translate script if not already loaded
-    function loadTranslateScript() {
-        if (translateLoaded) return;
-        if (document.querySelector('script[src*="translate.google.com"]')) {
-            translateLoaded = true;
-            return;
-        }
-        const script = document.createElement('script');
-        script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-        document.body.appendChild(script);
-        translateLoaded = true;
-    }
+    // Check if Google Translate script already exists in the DOM (e.g., after page reload or previous open)
+	let translateRetries = 0;
+	function loadTranslateScript() {
+		if (translateLoaded && typeof google !== 'undefined' && google.translate) return;
+		if (document.querySelector('script[src*="translate.google.com"]')) {
+			translateLoaded = true;
+			if (typeof googleTranslateElementInit === 'function') {
+				googleTranslateElementInit();
+			}
+			return;
+		}
+		translateLoaded = true;
+		window.googleTranslateElementInit = googleTranslateElementInit;
+		const script = document.createElement('script');
+		script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+		script.onerror = function() {
+			if (translateRetries < 3) {
+				translateRetries++;
+				translateLoaded = false;
+				setTimeout(loadTranslateScript, 1000);
+			}
+		};
+		document.body.appendChild(script);
+	}
     function googleTranslateElementInit() {
         new google.translate.TranslateElement({
             pageLanguage: 'en',
@@ -208,7 +223,7 @@ add_action('wp_footer', function () {
             if (select) {
                 select.focus();
             }
-        }, 600);
+        }, 500);
     }
     // Close when clicking outside
     document.addEventListener('click', function(event) {
