@@ -59,9 +59,9 @@ add_shortcode('er_accessibility_settings', function () {
 				Focus outline color
 			</div>
 			<div class="a11y-options">
+				<button class="a11y-option swatch" data-group="focus-color" data-value="default" style="background: var(--color-1)" aria-label="Default"></button>
 				<button class="a11y-option swatch" data-group="focus-color" data-value="orange" style="background: #ed7d31" aria-label="Orange"></button>
 				<button class="a11y-option swatch" data-group="focus-color" data-value="green" style="background: #339966" aria-label="Green"></button>
-				<button class="a11y-option swatch" data-group="focus-color" data-value="red" style="background: var(--color-2)" aria-label="Red"></button>
 				<button class="a11y-option swatch" data-group="focus-color" data-value="purple" style="background: #7b5ea7" aria-label="Purple"></button>
 				<button class="a11y-option swatch" data-group="focus-color" data-value="white" style="background: var(--color-8)" aria-label="White"></button>
 				<button class="a11y-option swatch" data-group="focus-color" data-value="dark" style="background: var(--color-6)" aria-label="Dark"></button>
@@ -117,7 +117,7 @@ add_action('wp_footer', function () {
 
 	var a11yPrefs={underline:null,'focus-width':null,'focus-color':null},
 	a11yStore='er_a11y_prefs',
-	a11yColors={orange:'#ed7d31',green:'#339966',red:'var(--color-2)',purple:'#7b5ea7',white:'var(--color-8)',dark:'var(--color-6)'},
+	a11yColors={orange:'#ed7d31',green:'#339966',purple:'#7b5ea7',white:'var(--color-8)',dark:'var(--color-6)'},
 	a11yWidths={thick:'3px','extra-thick':'5px'},
 	a11yResolvedColors={};
 
@@ -132,7 +132,7 @@ add_action('wp_footer', function () {
 
 	function a11yApplyFocus(el){
 		if(!a11yPrefs['focus-color'] && !a11yPrefs['focus-width']) return;
-		if(a11yPrefs['focus-color']) el.style.outlineColor = a11yResolve(a11yColors[a11yPrefs['focus-color']]);
+		if(a11yPrefs['focus-color'] && a11yPrefs['focus-color'] !== 'default') el.style.outlineColor = a11yResolve(a11yColors[a11yPrefs['focus-color']]);
 		else el.style.outlineColor = '';
 		if(a11yPrefs['focus-width'] && a11yPrefs['focus-width']!=='default') el.style.outlineWidth = a11yWidths[a11yPrefs['focus-width']];
 		else el.style.outlineWidth = '';
