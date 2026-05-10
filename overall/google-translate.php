@@ -10,13 +10,7 @@ add_action('wp_footer', function () {
     aria-expanded="false" aria-controls="google_translate_element" tabindex="0"
     title="Language Switcher" onclick="toggleTranslate()"
     onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleTranslate(); }">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
-        stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-        stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="2" y1="12" x2="22" y2="12"/>
-        <path d="M12 2a15.3 15.3 0 0 1 0 20M12 2a15.3 15.3 0 0 0 0 20"/>
-    </svg>
+	<img src="https://ericroth.org/wp-content/uploads/2026/05/globe-solid-white.svg" width="24" height="24" alt="" aria-hidden="true">
 </div>
 
 <!-- Screen reader announcements -->
@@ -45,11 +39,6 @@ add_action('wp_footer', function () {
     #language-toggle:focus-visible {
         outline: 2px solid var(--color-3);
         outline-offset: 2px;
-    }
-    #language-toggle svg {
-        display: block;
-		fill: var(--color-8);
-		stroke: var(--color-3);
     }
     /* Hide Google Translate element by default */
     #google_translate_element {
