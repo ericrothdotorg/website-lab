@@ -190,7 +190,7 @@ add_action('wp_footer', function() {
             "name" => "Site Personalisation?",
             "acceptedAnswer" => array(
                 "@type" => "Answer",
-                "text" => "Of course, possible: Toggle dark | light mode, voice reading and language translation using the icons in the page footer - your preferences are remembered automatically."
+                "text" => "Of course, possible: Toggle dark | light mode, voice reading, language translation and fine-tuning for accessibility - it's all there right at your fingertips and your preferences are remembered accross the site."
             )
         ),
         array(
