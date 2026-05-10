@@ -152,7 +152,9 @@ add_action('wp_footer', function () {
 
 	function a11yUpdateButtons(){
 		document.querySelectorAll('.a11y-option').forEach(function(btn){
-			btn.classList.toggle('is-active', a11yPrefs[btn.dataset.group]===btn.dataset.value);
+			var active = a11yPrefs[btn.dataset.group];
+			if(active === null) active = 'default';
+			btn.classList.toggle('is-active', active === btn.dataset.value);
 		});
 	}
 
