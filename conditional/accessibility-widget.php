@@ -9,10 +9,7 @@ add_shortcode('er_accessibility_settings', function () {
 	ob_start(); ?>
 
 	<div id="a11y-panel">
-		<h1>
-			<img src="https://ericroth.org/wp-content/uploads/2025/04/universal-access-greyblue.svg" width="24" height="24" alt="" aria-hidden="true">
-			Accessibility Settings
-		</h1>
+		<h3>Accessibility Settings</h3>
 
 		<!-- LINK UNDERLINES -->
 
@@ -207,8 +204,7 @@ add_action('wp_footer', function () {
 	/* == SETTINGS PANEL == */
 
 	#a11y-panel {background: var(--color-8); border: 1px solid var(--color-5); transition: background 0.2s ease; border-radius: 25px; padding: 25px; max-width: 350px; box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.25);}
-	#a11y-panel h1 {font-size: 1.5rem; margin: 0 0 25px; display: flex; align-items: center; gap: 10px;}
-	#a11y-panel h1 img {width: 30px; height: 30px;}
+	#a11y-panel h3 {font-size: 1.75rem; margin: 0 0 25px; display: flex; align-items: center; gap: 10px;}
 	body.dark-mode #a11y-panel {background: var(--color-10); border: 1px solid var(--color-4); box-shadow: none;}
 
 	.a11y-section {margin-bottom: 25px;}
