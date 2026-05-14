@@ -273,7 +273,7 @@ function custom_check_broken_yt_links() {
     $query = new WP_Query($args);
     if ($query->have_posts()) {
         foreach ($query->posts as $post) {
-            preg_match_all('/https:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/', $post->post_content, $matches);
+            preg_match_all('/https:\/\/(?:www\.)?youtube\.com\/(?:watch\?v=|embed\/)([a-zA-Z0-9_-]+)/', $post->post_content, $matches);
             if (!empty($matches[1])) {
                 $excluded_video_ids = ['-cW'];
                 foreach ($matches[1] as $video_id) {
@@ -287,13 +287,13 @@ function custom_check_broken_yt_links() {
                         }
                         continue;
                     }
-                    $url = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={$video_id}&format=json";
-					$response = wp_remote_get($url, [
-						'timeout' => 10,
-						'user-agent' => 'Mozilla/5.0 (compatible; LinkChecker/1.0)',
-					]);
-					$code = wp_remote_retrieve_response_code($response);
-					$is_broken = is_wp_error($response) || !in_array($code, [200, 401, 403]);
+                    $url = "https://www.youtube.com/oembed?url=" . urlencode("https://www.youtube.com/watch?v={$video_id}") . "&format=json";
+                    $response = wp_remote_get($url, [
+                        'timeout' => 10,
+                        'user-agent' => 'Mozilla/5.0 (compatible; LinkChecker/1.0)',
+                    ]);
+                    $code = wp_remote_retrieve_response_code($response);
+                    $is_broken = is_wp_error($response) || !in_array($code, [200, 401, 403]);
                     $checked_videos[$video_id] = !$is_broken;
                     if ($is_broken) {
                         $broken_links++;
