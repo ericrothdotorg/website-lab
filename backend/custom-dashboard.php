@@ -288,8 +288,12 @@ function custom_check_broken_yt_links() {
                         continue;
                     }
                     $url = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={$video_id}&format=json";
-                    $response = wp_remote_get($url, ['timeout' => 10]);
-                    $is_broken = is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200;
+					$response = wp_remote_get($url, [
+						'timeout' => 10,
+						'user-agent' => 'Mozilla/5.0 (compatible; LinkChecker/1.0)',
+					]);
+					$code = wp_remote_retrieve_response_code($response);
+					$is_broken = is_wp_error($response) || !in_array($code, [200, 401, 403]);
                     $checked_videos[$video_id] = !$is_broken;
                     if ($is_broken) {
                         $broken_links++;
