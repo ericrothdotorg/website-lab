@@ -203,11 +203,12 @@ add_filter('render_block', function($html, $block) {
     if ($block['blockName'] !== 'core/image') return $html;
     $cls = $block['attrs']['className'] ?? '';
     if (strpos($cls, 'priority-high') === false) return $html;
+    // Remove lazy loading first, then add eager + fetchpriority
+    $html = preg_replace('/\s*loading=["\']lazy["\']/', '', $html);
     return preg_replace(
         '/<img(?![^>]*fetchpriority)([^>]+)>/',
         '<img$1 fetchpriority="high" loading="eager">',
-        $html,
-        1
+        $html, 1
     );
 }, 10, 2);
 
