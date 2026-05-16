@@ -597,10 +597,6 @@ add_action("wp_footer", function () {
 	body.dark-mode textarea {background: var(--color-10); color: var(--color-5); border: 1px solid var(--color-3);}
 	body.dark-mode option {background: var(--color-10); color: var(--color-5);}
 	
-	/* Exception: Modal Search Field */
-	input[type=search].modal-field {background: none; border: none; border-bottom: 1px solid var(--color-5); outline: none; transition: none;}
-	body.dark-mode input[type=search].modal-field {background: none; border: none; border-bottom: 1px solid var(--color-3); outline: none; transition: none;}
-	
 	/* Focus States - Accessibility */
 	select:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
 	select:focus:not(:focus-visible) {outline: none;}
@@ -612,6 +608,10 @@ add_action("wp_footer", function () {
 	textarea:focus:not(:focus-visible) {outline: none;}
 	input[type=search]:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
 	input[type=search]:focus:not(:focus-visible) {outline: none;}
+	
+	/* Exception: Modal Search Field */
+	input[type=search].modal-field {background: none; border: none; border-bottom: 1px solid var(--color-5); outline: none; transition: none;}
+	body.dark-mode input[type=search].modal-field {background: none; border: none; border-bottom: 1px solid var(--color-3); outline: none; transition: none;}
 	
 	/* MANUAL RESPONSIVES */
 	
