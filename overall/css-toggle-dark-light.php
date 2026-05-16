@@ -529,7 +529,6 @@ add_action("wp_footer", function () {
 	
 	/* Dark Mode */
 	body.dark-mode .image-invert {filter: invert(1);}
-	body.dark-mode .wp-image-122531 {content: url("https://ericroth.org/wp-content/uploads/2024/07/SBB_NEG_2F_RGB_100.svg");} /* SBB logo in My World */
 	body.dark-mode .wp-image-148107 {content: url("https://ericroth.org/wp-content/uploads/2025/07/github-mark-white.png");} /* Github logo in Happy Coding! */
 	
 	/* Imitate DPS - Bill Erickson */
