@@ -427,6 +427,13 @@ add_action( 'wp_head', function () {
 		.display-taxonomies .term-count {font-weight: normal; font-style: italic;}
 		.display-taxonomies .listing-item a.image {display: block;}
 		.display-taxonomies .listing-item a.image img {width: 100%; height: auto;}
+		
+		/* Dark Mode */
+		body.dark-mode .display-posts-listing .listing-item {background: var(--color-10); border: 1px solid var(--color-4);}
+    	body.dark-mode .display-posts-listing .listing-item:hover {background: var(--color-6);}
+		body.dark-mode .display-posts-listing.grid#small-version .listing-item {background: var(--color-10); border: 1px solid var(--color-10);}
+    	body.dark-mode .display-posts-listing.grid#small-version .listing-item:hover {background: var(--color-6);}
+		body.dark-mode .display-posts-trending .listing-item {background: none; border: none;}
     </style>
     <?php
 } );
