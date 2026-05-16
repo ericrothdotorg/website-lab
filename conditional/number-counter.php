@@ -26,8 +26,14 @@ add_action('wp_head', function() use ($counter_pages) {
         .counter-value {color: #990033; font-size: 2rem; font-weight: bold;}
         .counter-value, .counter-label {vertical-align: middle;}
         .counter-label {padding-left: 10px; font-size: 1.25rem; font-weight: normal;}
+		
         @media (max-width: 1200px) {.counter-grid {grid-template-columns: repeat(auto-fit, minmax(var(--disc-size), 1fr));}}
 		@media (max-width: 600px) {:root {--disc-size: 160px;} .counter-grid {grid-template-columns: repeat(2, 1fr);} .counter-value {font-size: 1.75rem;} .counter-label {font-size: 1rem;}}
+		
+		body.dark-mode .counter-card {border: 1px solid var(--color-4); background: var(--color-10);}
+		body.dark-mode .counter-card:hover {background: var(--color-6);}
+		body.dark-mode .counter-body {color: var(--color-5);}
+		
         /*Page specific*/
         .page-id-179 .counter-card {background: #00000085 !important; border: none !important;}
         .page-id-179 .counter-card:hover {background: var(--color-6) !important;}
