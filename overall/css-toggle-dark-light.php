@@ -275,12 +275,6 @@ add_action("wp_footer", function () {
 	body.dark-mode :is(.cat-prefix, .cat-links) {color: var(--color-5);}
 	body.dark-mode .wp-block-group.has-border-color {border-color: var(--color-4) !important;}
 	
-	/* SEPARATOR */
-	
-	.wp-block-separator, .separator-75 {max-width: 75%;} /* Only works if in one Column */
-	.wp-block-separator:not(.is-style-dots) {height: 1px; background: var(--color-5);}
-	body.dark-mode .wp-block-separator:not(.is-style-dots) {height: 1px; background: var(--color-3);}
-	
 	/* BRANDING */
 	
 	/* Site Logo (Without Text and rotate 3D) */
@@ -303,8 +297,11 @@ add_action("wp_footer", function () {
 		100% {transform: rotate(360deg);}
 	}
 	
-	/* Used for Photo Album */
-	.flex-item-country-icons {flex: 0 0 60px;}
+	/* SEPARATOR */
+	
+	.wp-block-separator, .separator-75 {max-width: 75%;} /* Only works if in one Column */
+	.wp-block-separator:not(.is-style-dots) {height: 1px; background: var(--color-5);}
+	body.dark-mode .wp-block-separator:not(.is-style-dots) {height: 1px; background: var(--color-3);}
 	
 	/* NAVIGATION */
 	
@@ -613,10 +610,11 @@ add_action("wp_footer", function () {
 	input[type=search].modal-field {background: none; border: none; border-bottom: 1px solid var(--color-5); outline: none; transition: none;}
 	body.dark-mode input[type=search].modal-field {background: none; border: none; border-bottom: 1px solid var(--color-3); outline: none; transition: none;}
 	
-	/* MANUAL RESPONSIVES */
+	/* MANUAL LAYOUTS */
 	
 	@media (max-width: 768px) {.hide-on-small {display: none;}}
 	@media (min-width: 768px) {.hide-on-big {display: none;}}
+	.flex-item-country-icons {flex: 0 0 60px;} /* Used for Photo Album */
 	
 	/* FOOTER */
 	
