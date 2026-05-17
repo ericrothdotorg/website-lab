@@ -58,7 +58,6 @@ add_action('wp_head', function () {
 
 add_action('wp_footer', function () {
     ?>
-	<!-- NOTE: These styles are mirrored in the EDITOR ENHANCEMENTS snippet for editor display. Update both when changing. -->
     <style>
 		/* Navigation */
 		.slick-slider img {margin: 0 auto;}
