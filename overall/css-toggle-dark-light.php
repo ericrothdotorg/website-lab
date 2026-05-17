@@ -473,7 +473,7 @@ add_action("wp_footer", function () {
 	figure.wp-block-pullquote blockquote:before {margin-left: 25px;}
 	figure.wp-block-pullquote {position: relative; max-width: fit-content; border: none;}
 	.wp-block-pullquote blockquote {border-inline-start: none !important;}
-	.wp-block-pullquote blockquote p {margin-left: 25px; text-align: left; font-family: Georgia, serif; font-weight: normal; color: #339966; line-height: 1.6;}
+	.wp-block-pullquote blockquote p {margin-left: 25px; text-align: left; font-family: Georgia, serif; font-weight: normal; color: #339966; line-height: 1.6;} /* No var Color */
 	.wp-block-pullquote blockquote cite {position: absolute; right: 25px; font-family: sans-serif; font-size: 1rem; font-style: normal;}
 	
 	/* Styling for Quotes (except: My Quotes) */
