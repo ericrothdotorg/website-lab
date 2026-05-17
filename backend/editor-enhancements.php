@@ -42,21 +42,21 @@ function shortcode_live_preview_render( $request ) {
     return new WP_REST_Response( [ 'html' => $html ], 200 );
 }
 
-// 2. EDITOR-ONLY CSS — enqueue_block_editor_assets never
+// 2. EDITOR-ONLY CSS — 'enqueue_block_editor_assets' never
 //    fires on the frontend, so this is 100% admin-only
 
 function shortcode_live_preview_editor_css() {
 	
     $css = '
-        /* --- MIRRORED FROM: Slick Slider (wp_head). Keep in sync when changing that snippet --- */
+		/* --- MIRRORED FROM: Slick Slider & Animate (wp_head). Keep in sync when changing that snippet --- */
 
-		.slideshow-single-item, .slideshow-single-item-no-dots, .slideshow-multiple-items, .slideshow-multiple-items-3, .slideshow-multiple-items-4, .slideshow-multiple-items-vertical, .slideshow-multiple-items-center-mode {visibility: visible !important;}
-        .slideshow-multiple-items-3.display-posts-listing {display: flex !important; flex-wrap: wrap !important; gap: 25px !important;}
-        .slideshow-multiple-items-3.display-posts-listing .listing-item {flex: 0 0 calc(33.333% - 17px) !important; max-width: calc(33.333% - 17px) !important; box-sizing: border-box !important;}
-        .slideshow-multiple-items-4.display-posts-listing {display: flex !important; flex-wrap: wrap !important; gap: 25px !important;}
-        .slideshow-multiple-items-4.display-posts-listing .listing-item {flex: 0 0 calc(25% - 19px) !important; max-width: calc(25% - 19px) !important; box-sizing: border-box !important;}
-        .slideshow-multiple-items-vertical.display-posts-listing {display: flex !important; flex-direction: column !important; gap: 20px !important;}
-        .slideshow-multiple-items-3 .listing-item img, .slideshow-multiple-items-4 .listing-item img {width: 100% !important; height: auto !important;}
+		.slideshow-single-item,
+		.slideshow-single-item-no-dots,
+		.slideshow-multiple-items,
+		.slideshow-multiple-items-3,
+		.slideshow-multiple-items-4,
+		.slideshow-multiple-items-vertical,
+		.slideshow-multiple-items-center-mode {visibility: visible !important;}
 
         /* --- MIRRORED FROM: Display Posts (wp_head). Keep in sync when changing that snippet --- */
 		
@@ -78,7 +78,16 @@ function shortcode_live_preview_editor_css() {
         .display-taxonomies .listing-item a.image {display: block;}
         .display-taxonomies .listing-item a.image img {width: 100%; height: auto;}
 
-        /* --- UNIQUE TO THIS SNIPPET — Not defined anywhere else --- */
+        /* --- UNIQUE TO THIS SNIPPET (Layout Simulation for Sliders containing DPS) --- */
+		
+        .slideshow-multiple-items-3.display-posts-listing {display: flex !important; flex-wrap: wrap !important; gap: 25px !important;}
+        .slideshow-multiple-items-3.display-posts-listing .listing-item {flex: 0 0 calc(33.333% - 17px) !important; max-width: calc(33.333% - 17px) !important; box-sizing: border-box !important;}
+        .slideshow-multiple-items-4.display-posts-listing {display: flex !important; flex-wrap: wrap !important; gap: 25px !important;}
+        .slideshow-multiple-items-4.display-posts-listing .listing-item {flex: 0 0 calc(25% - 19px) !important; max-width: calc(25% - 19px) !important; box-sizing: border-box !important;}
+        .slideshow-multiple-items-vertical.display-posts-listing {display: flex !important; flex-direction: column !important; gap: 20px !important;}
+        .slideshow-multiple-items-3 .listing-item img, .slideshow-multiple-items-4 .listing-item img {width: 100% !important; height: auto !important;}
+		
+		/* --- UNIQUE TO THIS SNIPPET (Sidebar and Expand / Collapse Functionality) --- */
 		
         .interface-interface-skeleton__sidebar,
         .interface-complementary-area__fill,
