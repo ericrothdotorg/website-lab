@@ -52,6 +52,13 @@ add_filter('pre_ping', '__return_empty_array');
 // Remove "Edit" Link in Frontend
 add_filter('edit_post_link', '__return_false', 10, 1);
 
+// Remove WP jQuery in Frontend
+add_action('wp_enqueue_scripts', function() {
+    if (!is_admin()) {
+        wp_deregister_script('jquery');
+    }
+});
+
 // ======================================
 // HELPER FUNCTIONS
 // ======================================
