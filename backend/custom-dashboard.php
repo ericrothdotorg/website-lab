@@ -596,6 +596,7 @@ function custom_dashboard_inline_assets() {
             --cd-green:   green;
             --cd-orange:  orange;
         }
+		* {outline: none !important; box-shadow: none !important;}
         a {color: var(--cd-blue); text-decoration: none;}
         a:hover {color: var(--cd-red);}
 		/* === CD Button Variable === */
