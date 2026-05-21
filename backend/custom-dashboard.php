@@ -596,7 +596,9 @@ function custom_dashboard_inline_assets() {
             --cd-green:   green;
             --cd-orange:  orange;
         }
-		/* === CD Button Override === */
+        a {color: var(--cd-blue); text-decoration: none;}
+        a:hover {color: var(--cd-red);}
+		/* === CD Button Variable === */
 			.cd-widget {
             --cd-btn-bg-top:      #fafbfc;
             --cd-btn-bg-bottom:   #e1e8ed;
