@@ -595,7 +595,38 @@ function custom_dashboard_inline_assets() {
             --cd-muted:   #808080;
             --cd-green:   green;
             --cd-orange:  orange;
+            --cd-btn-bg-top:      #fafbfc;
+            --cd-btn-bg-bottom:   #e1e8ed;
+            --cd-btn-border:      #8da6b9;
+            --cd-btn-text:        #3a4f66;
+            --cd-btn-hover:       #fafbfc;
+            --cd-btn-shadow:      rgba(0,0,0,.08);
         }
+		/* === Root Button Override === */
+		#wpwrap .button,
+		#wpwrap button.button {
+			background: linear-gradient(to bottom,var(--cd-btn-bg-top),var(--cd-btn-bg-bottom));
+			border: 1px solid var(--cd-btn-border);
+			border-radius: 4px;
+			color: var(--cd-btn-text);
+			min-height: 30px;
+			padding: 0 12px;
+			font-weight: normal;
+			line-height: 24px;
+			box-shadow: inset 0 1px 0 rgba(255,255,255,.7),0 1px 2px var(--cd-btn-shadow);
+			transition: background .15s ease,border-color .15s ease,box-shadow .15s ease;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 5px;
+			cursor: pointer;
+		}
+		/* Hover */
+		#wpwrap .button:hover,
+		#wpwrap button.button:hover {
+			background: var(--cd-btn-hover);
+			box-shadow: inset 0 1px 0 rgba(255,255,255,.8),0 1px 3px rgba(0,0,0,.12);
+		}
         /* === Utility Classes === */
         .cd-link             { color: var(--cd-blue); text-decoration: none; }
         .cd-link:hover       { color: var(--cd-red); }
@@ -607,7 +638,7 @@ function custom_dashboard_inline_assets() {
         .cd-muted            { color: var(--cd-muted); }
         .cd-bold             { font-weight: bold; }
         .cd-date             { font-size: 12px; }
-        .cd-flex             { display: flex; gap: 10px; flex-wrap: wrap; }
+        .cd-flex             { display: flex; gap: 6px; flex-wrap: wrap; }
         .cd-form             { margin: 0; }
         /* === Widget Header === */
         [id^="custom_"] .postbox-header .hndle,
