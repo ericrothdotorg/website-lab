@@ -127,22 +127,6 @@ function get_post_count_cached($type) {
 }
 
 // ======================================
-// JQUERY & CORE SCRIPTS
-// ======================================
-
-// Replace WP jQuery with self-hosted Version
-if (!is_admin()) {
-    add_action('wp_enqueue_scripts', function () {
-        wp_deregister_script('jquery');
-        wp_register_script('jquery', home_url('/my-assets/jquery-3.7.1.min.js'), [], '3.7.1', [
-            'strategy'  => 'defer',
-            'in_footer' => true,
-        ]);
-        wp_enqueue_script('jquery');
-    }, 11); // Priority 11 required: WP core enqueues jQuery at priority 10
-}
-
-// ======================================
 // PERFORMANCE OPTIMIZATIONS
 // ======================================
 
@@ -824,54 +808,54 @@ add_action('wp_footer', function () {
 	<!-- Global ARIA-Hidden Tabindex Fix (Sliders, Modals, Dynamic Content) -->
 
 	<script>
-	(function() {
-		'use strict';
-		function fixAriaHiddenFocus() {
-			document.querySelectorAll('[aria-hidden="true"]').forEach(container => {
-				// CRITICAL: Fix the Container itself if it has a tabindex (e.g. Slick Slide Containers)
-				if (container.hasAttribute('tabindex') && container.getAttribute('tabindex') !== '-1') {
-					container.setAttribute('tabindex', '-1');
-				}
-				// Fix focusable Elements inside the Container
-				const focusable = container.querySelectorAll(
-					'a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
+		(function() {
+			'use strict';
+			function fixAriaHiddenFocus() {
+				document.querySelectorAll('[aria-hidden="true"]').forEach(container => {
+					// CRITICAL: Fix the Container itself if it has a tabindex
+					if (container.hasAttribute('tabindex') && container.getAttribute('tabindex') !== '-1') {
+						container.setAttribute('tabindex', '-1');
+					}
+					// Fix focusable Elements inside the Container
+					const focusable = container.querySelectorAll(
+						'a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
+					);
+					focusable.forEach(el => el.setAttribute('tabindex', '-1'));
+				});
+			}
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', fixAriaHiddenFocus);
+			} else {
+				fixAriaHiddenFocus();
+			}
+			const observer = new MutationObserver(mutations => {
+				const hasAriaChange = mutations.some(m => 
+					m.type === 'attributes' && m.attributeName === 'aria-hidden'
 				);
-				focusable.forEach(el => el.setAttribute('tabindex', '-1'));
+				if (hasAriaChange) fixAriaHiddenFocus();
 			});
-		}
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', fixAriaHiddenFocus);
-		} else {
-			fixAriaHiddenFocus();
-		}
-		const observer = new MutationObserver(mutations => {
-			const hasAriaChange = mutations.some(m => 
-				m.type === 'attributes' && m.attributeName === 'aria-hidden'
-			);
-			if (hasAriaChange) fixAriaHiddenFocus();
-		});
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', () => {
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', () => {
+					observer.observe(document.body, {
+						attributes: true,
+						attributeFilter: ['aria-hidden'],
+						subtree: true
+					});
+				});
+			} else {
 				observer.observe(document.body, {
 					attributes: true,
 					attributeFilter: ['aria-hidden'],
 					subtree: true
 				});
-			});
-		} else {
-			observer.observe(document.body, {
-				attributes: true,
-				attributeFilter: ['aria-hidden'],
-				subtree: true
-			});
-		}
-	})();
+			}
+		})();
 	</script>
 
 	<!-- Tabs Styles & Script (Conditional Load) -->
 
 	<?php if (is_page(array('17552'))) { ?>
-
+	
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
 			// Tabs Setup
@@ -936,21 +920,21 @@ add_action('wp_footer', function () {
 	<?php if (!current_user_can('administrator')) : ?>
 
 	<script>
-	(function(){
-		function loadClarity(){
-			(function(c,l,a,r,i,t,y){
-				c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-				t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-				t.rel='noopener';
-				y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-			})(window, document, "clarity", "script", "<?php echo CLARITY_ID; ?>");
-		}
-		if('requestIdleCallback'in window){
-			requestIdleCallback(loadClarity,{timeout:<?php echo CLARITY_TIMEOUT;?>});
-		}else{
-			setTimeout(loadClarity,1500);
-		}
-	})();
+		(function(){
+			function loadClarity(){
+				(function(c,l,a,r,i,t,y){
+					c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+					t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+					t.rel='noopener';
+					y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+				})(window, document, "clarity", "script", "<?php echo CLARITY_ID; ?>");
+			}
+			if('requestIdleCallback'in window){
+				requestIdleCallback(loadClarity,{timeout:<?php echo CLARITY_TIMEOUT;?>});
+			}else{
+				setTimeout(loadClarity,1500);
+			}
+		})();
 	</script>
 
 	<?php endif; ?>
