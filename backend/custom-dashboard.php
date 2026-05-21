@@ -37,7 +37,7 @@ function custom_render_theme_snapshot_widget() {
         esc_html($theme->get('Version')),
         esc_html($updated)
     );
-    echo '<div style="display: flex; gap: 10px;">';
+    echo '<div class="cd-widget" style="display: flex; gap: 10px;">';
     echo '<a class="button" href="' . esc_url(admin_url('customize.php')) . '" target="_blank" rel="noopener noreferrer">Open Customizer</a>';
     echo '<a class="button" href="https://ericroth.org/wp-admin/admin.php?page=ct-dashboard#/changelog" target="_blank" rel="noopener noreferrer">View Changelog</a>';
     echo '</div>';
@@ -54,7 +54,7 @@ function custom_render_hosting_repo_widget() {
         '🧠 AI' => 'https://ericroth.org/wp-admin/admin.php?page=hostinger-ai-assistant',
         '💾 GitHub' => 'https://github.com/ericrothdotorg'
     ];
-    echo '<div class="cd-flex">';
+    echo '<div class="cd-widget cd-flex">';
     foreach ($links as $label => $url) {
         echo '<a href="' . esc_url($url) . '" target="_blank" class="button">' . esc_html($label) . '</a>';
     }
@@ -72,7 +72,7 @@ function custom_render_ai_chatbots_widget() {
         '✨ Claude' => 'https://claude.ai/',
         '✨ DS' => 'https://chat.deepseek.com/'
     ];
-    echo '<div class="cd-flex">';
+    echo '<div class="cd-widget cd-flex">';
     foreach ($bots as $label => $url) {
         echo '<a href="' . esc_url($url) . '" target="_blank" class="button">' . esc_html($label) . '</a>';
     }
@@ -90,7 +90,7 @@ function custom_render_sponsor_channels_widget() {
         '💰 PayPal' => 'https://www.paypal.com/paypalme/ericrothdotorg',
         '💰 BMC' => 'https://buymeacoffee.com/ericrothdotorg'
     ];
-    echo '<div class="cd-flex">';
+    echo '<div class="cd-widget cd-flex">';
     foreach ($channels as $label => $url) {
         echo '<a href="' . esc_url($url) . '" target="_blank" class="button">' . esc_html($label) . '</a>';
     }
@@ -208,11 +208,11 @@ function custom_render_external_tools_buttons() {
         'webpagetest' => 'https://www.webpagetest.org/?url=' . urlencode($site_url),
         'wave' => 'https://wave.webaim.org/report#/' . urlencode($site_url)
     ];
-    echo '<div class="cd-flex">';
+    echo '<div class="cd-widget cd-flex">';
     echo '<a href="' . esc_url($urls['googlerich']) . '" target="_blank" class="button">🧩 Google Rich</a>';
     echo '<a href="' . esc_url($urls['schemaorg']) . '" target="_blank" class="button">🧩 schema.org</a>';
     echo '</div>';
-    echo '<div class="cd-flex" style="margin-top: 10px;">';
+    echo '<div class="cd-widget cd-flex" style="margin-top: 10px;">';
     echo '<a href="' . esc_url($urls['pagespeed']) . '" target="_blank" class="button">🚀 PageSpeed</a>';
     echo '<a href="' . esc_url($urls['webpagetest']) . '" target="_blank" class="button">🚀 WebPageTest</a>';
     echo '<a href="' . esc_url($urls['wave']) . '" target="_blank" class="button">♿ Accessibility</a>';
@@ -234,7 +234,7 @@ function custom_render_site_metrics() {
     }
     $plugin_count = count(get_plugins());
 
-    echo '<div class="cd-flex" style="margin-top: 15px;">';
+    echo '<div class="cd-widget cd-flex" style="margin-top: 15px;">';
     echo '<div style="width: calc(50% - 5px);">';
     echo '<p>🖼️ Media Files: <strong>' . $total_media . '</strong></p>';
     echo '<p style="margin-top: -5px;">🧵 InnoDB Tables: <strong>' . $db_table_count . '</strong></p>';
@@ -248,11 +248,11 @@ function custom_render_site_metrics() {
 
 function custom_render_tools_and_actions() {
     echo '<div style="margin-top: 15px;">';
-    echo '<div class="cd-flex" style="margin-bottom: 10px;">';
+    echo '<div class="cd-widget cd-flex" style="margin-bottom: 10px;">';
     echo '<a href="https://ericroth.org/wp-admin/themes.php?page=design-block-tracker" target="_blank" class="button">🎨 Design Blocks</a>';
     echo '<a href="https://clarity.microsoft.com/projects/view/eic7b2e9o1/dashboard" target="_blank" class="button">📈 MS Clarity</a>';
     echo '</div>';
-    echo '<div class="cd-flex">';
+    echo '<div class="cd-widget cd-flex">';
     echo '<form method="post" class="cd-form">';
     wp_nonce_field('check_broken_yt_action', 'check_broken_yt_nonce');
     echo '<button type="submit" name="check_broken_yt" class="button">🔍 Broken YT Links</button>';
@@ -367,7 +367,7 @@ function custom_handle_cleanup_submission() {
 }
 
 function custom_render_action_buttons() {
-    echo '<div class="cd-flex" style="align-items: center;">';
+    echo '<div class="cd-widget cd-flex" style="align-items: center;">';
     echo '<form method="post" class="cd-form">';
     wp_nonce_field('custom_cleanup_action', 'custom_cleanup_nonce');
     echo '<button type="submit" name="er_run_full_cleanup" class="button">🧵 InnoDB Cleanup</button>';
@@ -595,6 +595,8 @@ function custom_dashboard_inline_assets() {
             --cd-muted:   #808080;
             --cd-green:   green;
             --cd-orange:  orange;
+        }
+			.cd-widget {
             --cd-btn-bg-top:      #fafbfc;
             --cd-btn-bg-bottom:   #e1e8ed;
             --cd-btn-border:      #8da6b9;
@@ -603,8 +605,8 @@ function custom_dashboard_inline_assets() {
             --cd-btn-shadow:      rgba(0,0,0,.08);
         }
 		/* === Root Button Override === */
-		#wpwrap .button,
-		#wpwrap button.button {
+		.cd-widget .button,
+		.cd-widget  button.button {
 			background: linear-gradient(to bottom,var(--cd-btn-bg-top),var(--cd-btn-bg-bottom));
 			border: 1px solid var(--cd-btn-border);
 			border-radius: 4px;
@@ -622,8 +624,8 @@ function custom_dashboard_inline_assets() {
 			cursor: pointer;
 		}
 		/* Hover */
-		#wpwrap .button:hover,
-		#wpwrap button.button:hover {
+		.cd-widget .button:hover,
+		.cd-widget button.button:hover {
 			background: var(--cd-btn-hover);
 			box-shadow: inset 0 1px 0 rgba(255,255,255,.8),0 1px 3px rgba(0,0,0,.12);
 		}
