@@ -59,6 +59,29 @@ add_action('wp_enqueue_scripts', function() {
     }
 });
 
+// Lightbox Fix for Image Enlargement
+function fix_wp_lightbox_js() {
+    echo '<script>
+    document.addEventListener("click", function() {
+        setTimeout(function() {
+            var overlay = document.querySelector(".wp-lightbox-overlay");
+            if (!overlay) return;
+            overlay.classList.remove("zoom");
+            overlay.style.cssText += "position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;";
+            var containers = document.querySelectorAll(".lightbox-image-container");
+            containers.forEach(function(container) {
+                container.style.cssText += "width:95vw!important;max-width:95vw!important;height:90vh!important;max-height:90vh!important;";
+                var img = container.querySelector("img");
+                if (img) {
+                    img.style.cssText += "object-fit:contain!important;width:100%!important;height:100%!important;";
+                }
+            });
+        }, 300);
+    });
+    </script>';
+}
+add_action( 'wp_footer', 'fix_wp_lightbox_js' );
+
 // ======================================
 // HELPER FUNCTIONS
 // ======================================
