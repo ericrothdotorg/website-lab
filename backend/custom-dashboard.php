@@ -588,7 +588,7 @@ function custom_get_rss_items($feed_url, $max_items) {
 add_action('admin_footer', 'custom_dashboard_inline_assets');
 function custom_dashboard_inline_assets() {
     echo '<style>
-        /* === Dashboard Color Variables === */
+        /* === Root Color Variables === */
         #wpwrap {
             --cd-blue:    #1e73be;
             --cd-red:     #c53030;
@@ -596,6 +596,7 @@ function custom_dashboard_inline_assets() {
             --cd-green:   green;
             --cd-orange:  orange;
         }
+		/* === CD Button Override === */
 			.cd-widget {
             --cd-btn-bg-top:      #fafbfc;
             --cd-btn-bg-bottom:   #e1e8ed;
@@ -604,7 +605,6 @@ function custom_dashboard_inline_assets() {
             --cd-btn-hover:       #fafbfc;
             --cd-btn-shadow:      rgba(0,0,0,.08);
         }
-		/* === Root Button Override === */
 		.cd-widget .button,
 		.cd-widget  button.button {
 			background: linear-gradient(to bottom,var(--cd-btn-bg-top),var(--cd-btn-bg-bottom));
