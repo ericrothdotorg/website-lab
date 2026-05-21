@@ -626,7 +626,9 @@ function custom_dashboard_inline_assets() {
 		/* Hover */
 		.cd-widget .button:hover,
 		.cd-widget button.button:hover {
+			color: var(--cd-btn-text);
 			background: var(--cd-btn-hover);
+			border-color: var(--cd-btn-border);
 			box-shadow: inset 0 1px 0 rgba(255,255,255,.8),0 1px 3px rgba(0,0,0,.12);
 		}
         /* === Utility Classes === */
