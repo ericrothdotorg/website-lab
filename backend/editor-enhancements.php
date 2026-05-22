@@ -241,7 +241,7 @@ add_action( 'enqueue_block_editor_assets', 'shortcode_live_preview_editor_assets
 function pattern_editor_css() {
 
     $css = '
-        /* --- MIRRORED FROM: Number Counter (wp_head). Keep in sync when changing that snippet --- */
+        /* --- MIRRORED FROM: Number Counter. Keep in sync when changing that snippet --- */
 
 		:root {--disc-size: 185px;}
 		.counter-grid {display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; justify-content: center;}
