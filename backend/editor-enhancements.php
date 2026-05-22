@@ -48,7 +48,7 @@ function shortcode_live_preview_render( $request ) {
 function shortcode_live_preview_editor_css() {
 	
     $css = '
-		/* --- MIRRORED FROM: Slick Slider & Animate (wp_head). Keep in sync when changing that snippet --- */
+		/* --- MIRRORED FROM: Eric Slider & Animate (wp_head). Keep in sync when changing that snippet --- */
 
 		.slideshow-single-item,
 		.slideshow-single-item-no-dots,
