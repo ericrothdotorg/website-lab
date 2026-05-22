@@ -238,24 +238,26 @@ add_action( 'enqueue_block_editor_assets', 'shortcode_live_preview_editor_assets
 // 1. EDITOR CSS — Preview of patterns (e.g. Number Counter)
 //    Never fires on the frontend, only loads in block editor
 
-function pattern_editor_css() {
+add_action('after_setup_theme', function() {
+    if (is_admin()) {
+        add_editor_style( add_query_arg( 'action', 'number_counter_css', admin_url( 'admin-ajax.php' ) ) );
+    }
+});
 
-    $css = '
-        /* --- MIRRORED FROM: Number Counter. Keep in sync when changing that snippet --- */
-
-		:root {--disc-size: 185px;}
-		.counter-grid {display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; justify-content: center;}
-		.counter-card {margin: 10px auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; width: var(--disc-size); max-width: 100%; aspect-ratio: 1 / 1; transition: transform 1.5s ease-in-out;}
-		.counter-card:hover {transform: scale(1.05);}
-		.counter-card .counter-body {text-align: center; color: #3A4F66;}
-		.counter-value {color: #990033; font-size: 2rem; font-weight: bold;}
-		.counter-value, .counter-label {vertical-align: middle;}
-		.counter-label {padding-left: 10px; font-size: 1.25rem; font-weight: normal;}
-		@media (max-width: 1200px) {.counter-grid {grid-template-columns: repeat(auto-fit, minmax(var(--disc-size), 1fr));}}
+function number_counter_css_output() {
+    header('Content-Type: text/css');
+	
+    /* --- MIRRORED FROM: Number Counter. Keep in sync when changing that snippet --- */
+	
+    echo '
+        :root {--disc-size: 185px;}
+        .counter-grid {display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; justify-content: center;}
+        .counter-card {margin: 10px auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; width: var(--disc-size); max-width: 100%; aspect-ratio: 1 / 1;}
+        .counter-value {color: #990033; font-size: 2rem; font-weight: bold;}
+        .counter-label {padding-left: 10px; font-size: 1.25rem; font-weight: normal;}
+        @media (max-width: 1200px) {.counter-grid {grid-template-columns: repeat(auto-fit, minmax(var(--disc-size), 1fr));}}
     ';
-
-    wp_register_style('pattern-editor-css', false);
-    wp_enqueue_style('pattern-editor-css');
-    wp_add_inline_style('pattern-editor-css', $css);
+    exit;
 }
-add_action('enqueue_block_editor_assets', 'pattern_editor_css');
+add_action('wp_ajax_number_counter_css', 'number_counter_css_output');
+add_action('wp_ajax_nopriv_number_counter_css', 'number_counter_css_output');
