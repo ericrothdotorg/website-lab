@@ -1,12 +1,13 @@
 <?php
 defined('ABSPATH') || exit;
 
-// NOTE: The SHORTCODE LIVE PREVIEW snippet MUST remain set to "Run Everywhere".
-// The REST endpoint (rest_api_init) needs to fire on wp-json/* requests which run outside both admin and frontend contexts.
-// Switching to "Only run in Admin Area" would silently break the shortcode preview in the block editor.
+// NOTE: This snippet MUST remain set to "Run Everywhere".
+// WHY: The REST endpoint (rest_api_init) needs to fire on wp-json/* requests which run outside both admin and frontend contexts.
+// CONSEQUENCE: Switching to "Only run in Admin Area" would silently break the shortcode preview in the block editor.
 
-// Both are safe without any further explicit guard:
-// enqueue_block_editor_assets = Admin only, never fires on frontend AND rest_api_init = REST only, never fires on frontend page loads  
+// Safe without any further explicit guards. Where it runs:
+// "enqueue_block_editor_assets" = Admin only, never fires on frontend
+// "rest_api_init" = REST only, never fires on frontend ("run everywhere" required solely for the REST endpoint registration)
 
 // =========================
 // SHORTCODE LIVE PREVIEW
@@ -42,23 +43,13 @@ function shortcode_live_preview_render( $request ) {
     return new WP_REST_Response( [ 'html' => $html ], 200 );
 }
 
-// 2. EDITOR-ONLY CSS — 'enqueue_block_editor_assets' never
-//    fires on the frontend, so this is 100% admin-only
+// 2. EDITOR CSS — "enqueue_block_editor_assets"
+//    Never fires on the frontend, only loads in block editor
 
 function shortcode_live_preview_editor_css() {
 	
     $css = '
-		/* --- MIRRORED FROM: Eric Slider & Animate (wp_head). Keep in sync when changing that snippet --- */
-
-		.slideshow-single-item,
-		.slideshow-single-item-no-dots,
-		.slideshow-multiple-items,
-		.slideshow-multiple-items-3,
-		.slideshow-multiple-items-4,
-		.slideshow-multiple-items-vertical,
-		.slideshow-multiple-items-center-mode {visibility: visible !important;}
-
-        /* --- MIRRORED FROM: Display Posts (wp_head). Keep in sync when changing that snippet --- */
+        /* --- MIRRORED FROM: Display Posts. Keep in sync when changing that snippet --- */
 		
         .display-posts-listing {cursor: pointer;}
         .display-posts-listing .listing-item {clear: both; overflow: hidden; background: #fafbfc; border: 1px solid #e1e8ed; border-radius: 25px;}
@@ -77,7 +68,7 @@ function shortcode_live_preview_editor_css() {
         .display-posts-trending .title {text-align: left; font-size: 1rem; margin: 0; flex: 1; overflow-wrap: anywhere;}
         .display-taxonomies .listing-item a.image {display: block;}
         .display-taxonomies .listing-item a.image img {width: 100%; height: auto;}
-
+		
         /* --- UNIQUE TO THIS SNIPPET (Layout Simulation for Sliders containing DPS) --- */
 		
         .slideshow-multiple-items-3.display-posts-listing {display: flex !important; flex-wrap: wrap !important; gap: 25px !important;}
@@ -106,7 +97,8 @@ function shortcode_live_preview_editor_css() {
 }
 add_action( 'enqueue_block_editor_assets', 'shortcode_live_preview_editor_css' );
 
-// 3. EDITOR JAVASCRIPT — Only loads in block editor
+// 3. EDITOR JAVASCRIPT — "enqueue_block_editor_assets"
+//    Never fires on the frontend, only loads in block editor
 
 function shortcode_live_preview_editor_assets() {
     $rest_url = esc_url( rest_url( 'custom/v1/shortcode-preview' ) );
@@ -243,8 +235,8 @@ add_action( 'enqueue_block_editor_assets', 'shortcode_live_preview_editor_assets
 // PATTERN LIVE PREVIEW
 // =========================
 
-// 1. PATTERN EDITOR CSS — Mirrors frontend styles for block editor
-//    preview of patterns that load CSS conditionally on wp_footer
+// 1. EDITOR CSS — Preview of patterns (e.g. Number Counter)
+//    Never fires on the frontend, only loads in block editor
 
 function pattern_editor_css() {
 
