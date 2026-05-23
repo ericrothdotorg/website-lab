@@ -11,8 +11,8 @@ add_action('wp_enqueue_scripts', function () {
     wp_enqueue_style('animate-css', home_url('/my-assets/animate.min.css'), [], '4.1.1');
 
     // Eric Slider
-    wp_enqueue_style('eric-slider-css', home_url('/my-assets/eric-slider/eric-slider-v1.14.0.css'), [], '1.14.0');
-    wp_enqueue_script('eric-slider-js', home_url('/my-assets/eric-slider/eric-slider-v2.25.0.js'), [], '2.25.0', true);
+    wp_enqueue_style('eric-slider-css', home_url('/my-assets/eric-slider/eric-slider-v1.19.0.css'), [], '1.19.0');
+    wp_enqueue_script('eric-slider-js', home_url('/my-assets/eric-slider/eric-slider-v2.29.0.js'), [], '2.29.0', true);
 
 }, 20);
 
@@ -55,8 +55,8 @@ add_action('wp_footer', function () {
             .wp-block-column .eric-slider-controls {position: static; top: auto; right: auto;}
             .eric-slider-controls {position: absolute; top: -50px; right: 20px;}
         }
-        .eric-slider-dots li button:before {font-size: 48px; opacity: 0.5; color: var(--color-9);}
-        .eric-slider-dots li.eric-slider-active button:before {opacity: 1; color: var(--color-9);}
+        .eric-slider-dots li button {opacity: 0.5; color: var(--color-9);}
+        .eric-slider-dots li.eric-slider-active button {opacity: 1; color: var(--color-9);}
 
         /* Style Height Transition */
         .slideshow-single-item {transition: height 0.4s ease;}
