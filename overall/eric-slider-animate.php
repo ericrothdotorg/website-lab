@@ -11,8 +11,8 @@ add_action('wp_enqueue_scripts', function () {
     wp_enqueue_style('animate-css', home_url('/my-assets/animate.min.css'), [], '4.1.1');
 
     // Eric Slider
-    wp_enqueue_style('eric-slider-css', home_url('/my-assets/eric-slider/eric-slider-v1.13.0.css'), [], '1.13.0');
-    wp_enqueue_script('eric-slider-js', home_url('/my-assets/eric-slider/eric-slider-v2.23.0.js'), [], '2.23.0', true);
+    wp_enqueue_style('eric-slider-css', home_url('/my-assets/eric-slider/eric-slider-v1.14.0.css'), [], '1.14.0');
+    wp_enqueue_script('eric-slider-js', home_url('/my-assets/eric-slider/eric-slider-v2.25.0.js'), [], '2.25.0', true);
 
 }, 20);
 
@@ -55,12 +55,6 @@ add_action('wp_footer', function () {
             .wp-block-column .eric-slider-controls {position: static; top: auto; right: auto;}
             .eric-slider-controls {position: absolute; top: -50px; right: 20px;}
         }
-        .eric-slider-next:before,
-        .eric-slider-prev:before {font-size: 35px; color: var(--color-9);}
-        .eric-slider-next,
-        .eric-slider-prev {position: absolute; top: -35px; left: auto;}
-        .eric-slider-next {right: 20px;}
-        .eric-slider-prev {right: 70px;}
         .eric-slider-dots li button:before {font-size: 48px; opacity: 0.5; color: var(--color-9);}
         .eric-slider-dots li.eric-slider-active button:before {opacity: 1; color: var(--color-9);}
 
@@ -200,7 +194,6 @@ add_action('wp_footer', function () {
                         fade: true,
                         adaptiveHeight: true,
                         dots: true,
-                        arrows: false,
                         infinite: true,
                         slidesToShow: 1,
                         slidesToScroll: 1
@@ -216,7 +209,6 @@ add_action('wp_footer', function () {
                         fade: false,
                         adaptiveHeight: true,
                         dots: false,
-                        arrows: false,
                         infinite: true,
                         slidesToShow: 1,
                         slidesToScroll: 1
@@ -233,7 +225,6 @@ add_action('wp_footer', function () {
                         fade: false,
                         adaptiveHeight: false,
                         dots: true,
-                        arrows: false,
                         infinite: true,
                         slidesToShow: 3,
                         slidesToScroll: 1,
@@ -254,7 +245,6 @@ add_action('wp_footer', function () {
                         fade: false,
                         adaptiveHeight: false,
                         dots: true,
-                        arrows: true,
                         infinite: true,
                         slidesToShow: 4,
                         slidesToScroll: 1,
@@ -275,7 +265,6 @@ add_action('wp_footer', function () {
                         fade: false,
                         adaptiveHeight: false,
                         dots: false,
-                        arrows: false,
                         infinite: true,
                         vertical: true,
                         slidesToShow: 3,
@@ -292,7 +281,6 @@ add_action('wp_footer', function () {
                         fade: false,
                         adaptiveHeight: false,
                         dots: true,
-                        arrows: false,
                         infinite: true,
                         centerMode: true,
                         centerPadding: '175px',
@@ -314,7 +302,6 @@ add_action('wp_footer', function () {
                         fade: true,
                         adaptiveHeight: true,
                         dots: true,
-                        arrows: false,
                         infinite: true,
                         pauseOnHover: true,
                         pauseOnFocus: true,
