@@ -56,6 +56,21 @@ add_action('save_post', function($post_id) {
 }, 999);
 
 // ======================================
+// EDITOR (THIS ONE HERE) INTERFACE
+// ======================================
+
+add_action('admin_head', function () {
+    echo '<style>
+        .CodeMirror .cm-matchhighlight,
+        .CodeMirror .CodeMirror-selectedtext {
+            background-color: #ffffaa !important; /* Fallback */
+            background-color: rgba(255, 255, 0, .4) !important; /* Same as .cm-searching */
+            color: inherit !important; /* Keep original Font Color */
+        }
+    </style>';
+});
+
+// ======================================
 // ADMIN INTERFACE CUSTOMIZATION
 // ======================================
 
