@@ -2,6 +2,24 @@
 defined('ABSPATH') || exit;
 
 // ======================================
+// WORDPRESS CORE OPTIMIZATIONS
+// ======================================
+
+add_action( 'enqueue_block_assets', function() {
+    if ( is_admin() ) {
+        wp_add_inline_style(
+            'wp-block-library',
+            '.editor-styles-wrapper .block-editor-block-list__layout.is-root-container > :where(:not(.alignleft):not(.alignright):not(.alignfull)),
+             .editor-styles-wrapper .edit-post-visual-editor__post-title-wrapper > :where(:not(.alignleft):not(.alignright):not(.alignfull)) {
+                max-width: 90% !important;
+                margin-left: auto !important;
+                margin-right: auto !important;
+            }'
+        );
+    }
+} );
+
+// ======================================
 // AUTHENTICATION & SECURITY
 // ======================================
 
