@@ -253,7 +253,7 @@ add_action('wp_footer', function () {
                         autoplaySpeed: 2000,
                         fade: false,
                         adaptiveHeight: false,
-                        dots: false,
+                        dots: true,
                         arrows: true,
                         infinite: true,
                         slidesToShow: 4,
