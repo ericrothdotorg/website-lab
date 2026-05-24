@@ -401,6 +401,16 @@ add_action('wp_ajax_nopriv_lum_get_map_data', 'lum_get_map_data');
 // FRONTEND DISPLAY
 // ======================================
 
+// Load Assets
+function lum_enqueue_map_assets() {
+    if (is_page(152324)) {
+        wp_enqueue_style('leaflet-css', 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css');
+        wp_enqueue_script('leaflet-js', 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js', [], null, true);
+        wp_enqueue_script('terminator-js', home_url('/my-assets/L.Terminator.js'), ['leaflet-js'], null, true); // From original Source
+    }
+}
+add_action('wp_enqueue_scripts', 'lum_enqueue_map_assets');
+
 // Shortcode
 function lum_map_shortcode($atts) {
 	nocache_headers();
@@ -408,9 +418,6 @@ function lum_map_shortcode($atts) {
         'height' => '600px',
         'zoom' => '2'
     ), $atts);
-	wp_enqueue_style('leaflet-css', 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css');
-	wp_enqueue_script('leaflet-js', 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js', [], null, true);
-	wp_enqueue_script('terminator-js', home_url('/my-assets/visitor-map/L.Terminator.js'), ['leaflet-js'], null, true); // From original Source
     ob_start();
     ?>
     <div id="live-user-map" style="height: <?php echo esc_attr($atts['height']); ?>; width: 100%; border-radius: 15px; position: relative; z-index: 1;"></div>
