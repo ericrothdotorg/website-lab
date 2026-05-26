@@ -1,4 +1,5 @@
 <?php
+
 defined( 'ABSPATH' ) || exit;
 
 /* =============================================================================
@@ -45,26 +46,7 @@ add_action( 'init', function () {
 } );
 
 /* =============================================================================
-   2. SMTP CONFIGURATION
-   Guard prevents double-registration if Contact Form Snippet is also active.
-============================================================================= */
-
-function er_configure_smtp( $phpmailer ) {
-    $phpmailer->isSMTP();
-    $phpmailer->Host       = defined( 'SMTP_HOST' ) ? SMTP_HOST : '';
-    $phpmailer->SMTPAuth   = true;
-    $phpmailer->Port       = defined( 'SMTP_PORT' ) ? SMTP_PORT : 465;
-    $phpmailer->Username   = defined( 'SMTP_USER' ) ? SMTP_USER : '';
-    $phpmailer->Password   = defined( 'SMTP_PASS' ) ? SMTP_PASS : '';
-    $phpmailer->SMTPSecure = 'ssl';
-    $phpmailer->From       = defined( 'SMTP_FROM' ) ? SMTP_FROM : '';
-    $phpmailer->FromName   = defined( 'SMTP_FROMNAME' ) ? SMTP_FROMNAME : '';
-}
-
-add_action( 'phpmailer_init', 'er_configure_smtp' );
-
-/* =============================================================================
-   3. SUBSCRIBER HELPERS
+   2. SUBSCRIBER HELPERS
 ============================================================================= */
 
 function er_get_subscribers( $status = 'active' ) {
@@ -122,7 +104,7 @@ function er_remove_subscriber( $email, $token ) {
 }
 
 /* =============================================================================
-   4. SECURITY HELPERS
+   3. SECURITY HELPERS
 ============================================================================= */
 
 function er_get_ip() {
@@ -138,7 +120,7 @@ function er_log_nonce_failure( $ip ) {
 }
 
 /* =============================================================================
-   5. SUBSCRIPTION FORM  [er_subscribe_form]
+   4. SUBSCRIPTION FORM  [er_subscribe_form]
 ============================================================================= */
 
 add_shortcode( 'er_subscribe_form', function () {
@@ -246,7 +228,7 @@ add_action( 'wp_footer', function () {
 } );
 
 /* =============================================================================
-   6. AJAX FORM HANDLER
+   5. AJAX FORM HANDLER
 ============================================================================= */
 
 add_action( 'wp_ajax_er_subscribe_ajax',        'er_handle_subscribe_ajax' );
@@ -302,7 +284,7 @@ function er_handle_subscribe_ajax() {
 }
 
 /* =============================================================================
-   7. OPT-IN CONFIRMATION HANDLER
+   6. OPT-IN CONFIRMATION HANDLER
 ============================================================================= */
 
 add_action( 'init', function () {
@@ -336,7 +318,7 @@ add_action( 'init', function () {
 } );
 
 /* =============================================================================
-   8. UNSUBSCRIBE HANDLER
+   7. UNSUBSCRIBE HANDLER
 ============================================================================= */
 
 add_action( 'init', function () {
@@ -364,7 +346,7 @@ add_action( 'init', function () {
 } );
 
 /* =============================================================================
-   9. PUBLISH TRIGGER
+   8. PUBLISH TRIGGER
    Fires when a watched Post Type transitions to 'publish'.
    Logs send Status and any Error back to the Subscriber Record.
 ============================================================================= */
@@ -477,7 +459,7 @@ To unsubscribe:
 }, 10, 3 );
 
 /* =============================================================================
-   10. ADMIN PAGE
+   9. ADMIN PAGE
 ============================================================================= */
 
 add_action( 'admin_menu', function () {
