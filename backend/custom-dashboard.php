@@ -46,14 +46,22 @@ function custom_render_theme_snapshot_widget() {
 // ======================================
 
 function custom_render_hosting_repo_widget() {
-    $links = [
+    $row1 = [
         '🔐 Login' => 'https://auth.hostinger.com/login',
         '📬 Webmail' => 'https://mail.hostinger.com/',
-        '🧠 AI' => 'https://ericroth.org/wp-admin/admin.php?page=hostinger-ai-assistant',
-        '💾 GitHub' => 'https://github.com/ericrothdotorg'
+        '🧠 AI' => 'https://ericroth.org/wp-admin/admin.php?page=hostinger-ai-assistant'
+    ];
+    $row2 = [
+        '💾 GitHub.com' => 'https://github.com/ericrothdotorg',
+        '🧾 GitHub.dev' => 'https://github.dev/ericrothdotorg/website-lab',
+        '✂️ Snippets' => 'https://ericroth.org/wp-admin/admin.php?page=snippets'
     ];
     echo '<div class="cd-widget cd-flex">';
-    foreach ($links as $label => $url) {
+    foreach ($row1 as $label => $url) {
+        echo '<a href="' . esc_url($url) . '" target="_blank" class="button">' . esc_html($label) . '</a>';
+    }
+    echo '<div style="width: 100%"></div>';
+    foreach ($row2 as $label => $url) {
         echo '<a href="' . esc_url($url) . '" target="_blank" class="button">' . esc_html($label) . '</a>';
     }
     echo '</div>';
