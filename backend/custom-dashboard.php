@@ -1,6 +1,4 @@
 <?php
-defined('ABSPATH') || exit;
-
 // ======================================
 // 📇 AT A GLANCE
 // ======================================
@@ -596,10 +594,10 @@ function custom_dashboard_inline_assets() {
             --cd-green:   green;
             --cd-orange:  orange;
         }
-		* {outline: none !important; box-shadow: none !important;}
+        * {outline: none !important; box-shadow: none !important;}
         a {color: var(--cd-blue); text-decoration: none;}
         a:hover {color: var(--cd-red);}
-		/* === CD Button Variable === */
+		/* === CD Button Variables === */
 			.cd-widget {
             --cd-btn-bg-top:      #fafbfc;
             --cd-btn-bg-bottom:   #e1e8ed;
