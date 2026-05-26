@@ -23,6 +23,23 @@ define('REGEX_DECORATIVE_IMAGES', '/(divider|icon|bg|decor|spacer)/i');
 define('REGEX_LOGO_PATTERNS', '/logo|icon|avatar|emoji|placeholder|data:image\/svg/i');
 
 // ======================================
+// SMTP Configuration
+// ======================================
+
+// Single SMTP Configuration for all outgoing Mail → Reads Credentials from wp-config.php Constants
+add_action( 'phpmailer_init', function ( $phpmailer ) {
+    $phpmailer->isSMTP();
+    $phpmailer->Host       = defined( 'SMTP_HOST' )     ? SMTP_HOST     : '';
+    $phpmailer->SMTPAuth   = true;
+    $phpmailer->Port       = defined( 'SMTP_PORT' )     ? SMTP_PORT     : 465;
+    $phpmailer->Username   = defined( 'SMTP_USER' )     ? SMTP_USER     : '';
+    $phpmailer->Password   = defined( 'SMTP_PASS' )     ? SMTP_PASS     : '';
+    $phpmailer->SMTPSecure = 'ssl';
+    $phpmailer->From       = defined( 'SMTP_FROM' )     ? SMTP_FROM     : '';
+    $phpmailer->FromName   = defined( 'SMTP_FROMNAME' ) ? SMTP_FROMNAME : '';
+} );
+
+// ======================================
 // WORDPRESS CORE OPTIMIZATIONS
 // ======================================
 
