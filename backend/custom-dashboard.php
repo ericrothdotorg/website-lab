@@ -52,8 +52,8 @@ function custom_render_hosting_repo_widget() {
         '🧠 AI' => 'https://ericroth.org/wp-admin/admin.php?page=hostinger-ai-assistant'
     ];
     $row2 = [
-        '💾 GitHub.com' => 'https://github.com/ericrothdotorg',
-        '🧾 GitHub.dev' => 'https://github.dev/ericrothdotorg/website-lab',
+        '💾 GitHub' => 'https://github.com/ericrothdotorg',
+        '🎨 Design Blocks' => 'https://ericroth.org/wp-admin/themes.php?page=design-block-tracker',
         '✂️ Snippets' => 'https://ericroth.org/wp-admin/admin.php?page=snippets'
     ];
     echo '<div class="cd-widget cd-flex">';
@@ -193,7 +193,6 @@ function custom_render_analytics_toolkit() {
     custom_render_external_tools_buttons();
     custom_render_site_metrics();
     custom_render_tools_and_actions();
-    custom_render_youtube_check_results();
 }
 
 function custom_handle_youtube_check_submission() {
@@ -255,16 +254,43 @@ function custom_render_site_metrics() {
 function custom_render_tools_and_actions() {
     echo '<div style="margin-top: 15px;">';
     echo '<div class="cd-widget cd-flex" style="margin-bottom: 10px;">';
-    echo '<a href="https://ericroth.org/wp-admin/themes.php?page=design-block-tracker" target="_blank" class="button">🎨 Design Blocks</a>';
+    echo '<a href="https://www.w3.org/developers/tools/" target="_blank" class="button">🛠️ W3.org Dev Tools</a>';
     echo '<a href="https://clarity.microsoft.com/projects/view/eic7b2e9o1/dashboard" target="_blank" class="button">📈 MS Clarity</a>';
     echo '</div>';
-    echo '<div class="cd-widget cd-flex">';
+    echo '<div class="cd-widget cd-flex" style="align-items: center; gap: 15px;">';
     echo '<form method="post" class="cd-form">';
     wp_nonce_field('check_broken_yt_action', 'check_broken_yt_nonce');
     echo '<button type="submit" name="check_broken_yt" class="button">🔍 Broken YT Links</button>';
     echo '</form>';
-    echo '<a href="https://www.w3.org/developers/tools/" target="_blank" class="button">🛠️ W3.org Dev Tools</a>';
+    $cached_results = get_option('custom_broken_yt_results', []);
+    $last_check     = get_option('custom_last_yt_check', 0);
+    $check_type     = get_option('custom_yt_check_type', '');
+    $broken_count   = !empty($cached_results['broken_count']) ? $cached_results['broken_count'] : 0;
+    echo '<div style="display: flex; flex-direction: column; line-height: 1.4;">';
+    echo '<span>🔴 Broken YT Links: <strong class="cd-alert">' . $broken_count . '</strong></span>';
+    if ($last_check) {
+        $tag = $check_type ? ' <strong>(' . esc_html($check_type) . ' check)</strong>' : '';
+        echo '<em style="font-size: 0.85em;">Last checked: ' .
+            esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $last_check)) .
+            $tag . '</em>';
+    } else {
+        echo '<em style="font-size: 0.85em;">Last checked: Never</em>';
+    }
     echo '</div>';
+    echo '</div>';
+    if (!empty($cached_results['broken_posts'])) {
+        echo '<details style="margin-top: 10px;">';
+        echo '<summary style="cursor: pointer; margin-bottom: 15px;"><strong>Broken Links Locations</strong></summary>';
+        echo '<ul>';
+        foreach ($cached_results['broken_posts'] as $post_id => $video_ids) {
+            $title = get_the_title($post_id);
+            $edit_link = get_edit_post_link($post_id);
+            echo '<li><a href="' . esc_url($edit_link) . '" target="_blank">' . esc_html($title) . '</a>: ';
+            echo implode(', ', array_map('esc_html', $video_ids)) . '</li>';
+        }
+        echo '</ul>';
+        echo '</details>';
+    }
     echo '</div>';
 }
 
@@ -316,37 +342,6 @@ function custom_check_broken_yt_links() {
         'broken_count' => $broken_links,
         'broken_posts' => $broken_posts
     ];
-}
-
-function custom_render_youtube_check_results() {
-    $cached_results = get_option('custom_broken_yt_results', []);
-    $last_check = get_option('custom_last_yt_check', 0);
-    $check_type = get_option('custom_yt_check_type', '');
-    echo '<div style="margin-top: 30px;">';
-    $broken_count = !empty($cached_results['broken_count']) ? $cached_results['broken_count'] : 0;
-    echo '<p>🔴 Broken YT Links: <strong class="cd-alert">' . $broken_count . '</strong></p>';
-    if ($last_check) {
-        $tag = $check_type ? ' <strong>(' . esc_html($check_type) . ' check)</strong>' : '';
-        echo '<p><em>Last checked: ' .
-            esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $last_check)) .
-            $tag . '</em></p>';
-    } else {
-        echo '<p><em>Last checked: Never</em></p>';
-    }
-    if (!empty($cached_results['broken_posts'])) {
-        echo '<details style="margin-top: 15px;">';
-        echo '<summary style="cursor: pointer; margin-bottom: 15px;"><strong>Broken Links Locations</strong></summary>';
-        echo '<ul>';
-        foreach ($cached_results['broken_posts'] as $post_id => $video_ids) {
-            $title = get_the_title($post_id);
-            $edit_link = get_edit_post_link($post_id);
-            echo '<li><a href="' . esc_url($edit_link) . '" target="_blank">' . esc_html($title) . '</a>: ';
-            echo implode(', ', array_map('esc_html', $video_ids)) . '</li>';
-        }
-        echo '</ul>';
-        echo '</details>';
-    }
-    echo '</div>';
 }
 
 // ======================================
@@ -771,7 +766,7 @@ add_action('wp_dashboard_setup', function () {
 
     // Register all Widgets
     wp_add_dashboard_widget('custom_theme_snapshot',       '🎨 Theme Snapshot',        'custom_render_theme_snapshot_widget'); // THEME RELATED
-    wp_add_dashboard_widget('hosting_code_repo',           '🌀 Hosting & Code Repo',   'custom_render_hosting_repo_widget');
+    wp_add_dashboard_widget('hosting_code_repo',           '🌀 Hosting & Code Repos',   'custom_render_hosting_repo_widget');
     wp_add_dashboard_widget('ai_chatbots',                 '🤖 AI Chatbots',           'custom_render_ai_chatbots_widget');
     wp_add_dashboard_widget('sponsor_channels',            '🎁 Sponsor Channels',      'custom_render_sponsor_channels_widget');
     wp_add_dashboard_widget('custom_activity_alerts',      '🗓️ Recent Site Activity',  'custom_render_activity_widget');
