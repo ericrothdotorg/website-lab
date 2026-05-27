@@ -1,5 +1,5 @@
 <?php
-defined('ABSPATH') || exit;
+// NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
 // =======================================
 // REGISTER TAXONOMY: PAGES
@@ -264,20 +264,20 @@ function mq_register_post_type() {
         'exclude_from_search' => false,
         'has_archive'         => true,
         'capability_type'     => 'post',
-        'hierarchical'        => true,
+        'hierarchical'        => false,
         'can_export'          => true,
         'show_in_menu'        => true,
         'map_meta_cap'        => true,
         'menu_icon'           => 'dashicons-format-quote',
         'supports' => array(
-            'title', 'editor', 'thumbnail',
+            'title', 'editor', 'author', 'excerpt', 'thumbnail',
             'custom-fields', 'revisions', 'post-formats',
         ),
         'taxonomies' => array( 'groups' ),
         'rewrite'    => array(
             'slug'       => 'my-quotes',
             'with_front' => true,
-            'feeds'      => false,
+            'feeds'      => true,
             'pages'      => true,
         ),
     );
