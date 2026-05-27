@@ -1,5 +1,5 @@
 <?php
-defined('ABSPATH') || exit;
+// NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
 // ============================
 // ACCESSIBILITY SETTINGS
@@ -127,6 +127,20 @@ add_action('wp_footer', function () {
 		return resolved;
 	}
 
+	function a11yApplyRootVars(){
+		var root=document.documentElement;
+		if(a11yPrefs['focus-color'] && a11yPrefs['focus-color']!=='default'){
+			root.style.setProperty('--a11y-focus-color', a11yResolve(a11yColors[a11yPrefs['focus-color']]));
+		} else {
+			root.style.removeProperty('--a11y-focus-color');
+		}
+		if(a11yPrefs['focus-width'] && a11yPrefs['focus-width']!=='default'){
+			root.style.setProperty('--a11y-focus-width', a11yWidths[a11yPrefs['focus-width']]);
+		} else {
+			root.style.removeProperty('--a11y-focus-width');
+		}
+	}
+
 	function a11yApplyFocus(el){
 		if(!a11yPrefs['focus-color'] && !a11yPrefs['focus-width']) return;
 		if(a11yPrefs['focus-color'] && a11yPrefs['focus-color'] !== 'default') el.style.outlineColor = a11yResolve(a11yColors[a11yPrefs['focus-color']]);
@@ -159,6 +173,7 @@ add_action('wp_footer', function () {
 		var g=el.dataset.group, v=el.dataset.value;
 		a11yPrefs[g]=a11yPrefs[g]===v ? null : v;
 		a11yApplyUnderline();
+		a11yApplyRootVars();
 		a11yUpdateButtons();
 		a11ySave();
 	}
@@ -166,6 +181,7 @@ add_action('wp_footer', function () {
 	function a11yReset(){
 		a11yPrefs={underline:null,'focus-width':null,'focus-color':null};
 		a11yApplyUnderline();
+		a11yApplyRootVars();
 		a11yUpdateButtons();
 		a11ySave();
 	}
@@ -176,6 +192,7 @@ add_action('wp_footer', function () {
 		var raw=localStorage.getItem(a11yStore);
 		if(raw) a11yPrefs=JSON.parse(raw);
 	}catch(e){}
+	a11yApplyRootVars();
 
 	/* BIND FOCUS EVENTS */
 
