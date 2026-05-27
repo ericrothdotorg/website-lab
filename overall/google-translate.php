@@ -1,5 +1,9 @@
 <?php
-defined('ABSPATH') || exit;
+// NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
+
+// =================================
+// STYLE & SCRIPT IN FOOTER
+// =================================
 
 add_action('wp_footer', function () {
 	if (is_front_page()) return;
