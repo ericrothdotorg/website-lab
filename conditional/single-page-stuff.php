@@ -1,5 +1,9 @@
 <?php
-defined('ABSPATH') || exit;
+// NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
+
+// =================================
+// BIRTHDAY, WORLD POP, SBB CLOCK
+// =================================
 
 add_action('wp_footer', function() {
 
@@ -36,7 +40,7 @@ add_action('wp_footer', function() {
             (() => {
                 const BASE_POP      = 8_300_678_395;
                 const BASE_DATE     = new Date('2026-07-01T00:00:00Z');
-                const GROWTH_PER_SEC = 2.20;
+                const GROWTH_PER_SEC = 2.00;
                 function updatePopulation() {
                     const elapsed    = (Date.now() - BASE_DATE.getTime()) / 1000;
                     const population = Math.round(BASE_POP + elapsed * GROWTH_PER_SEC);
