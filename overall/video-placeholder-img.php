@@ -1,5 +1,9 @@
-<?php 
-defined('ABSPATH') || exit;
+<?php
+// NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
+
+// =================================
+// STYLE & SCRIPT IN FOOTER
+// =================================
 
 add_action('wp_footer', function () {
     ?>
@@ -31,6 +35,7 @@ add_action('wp_footer', function () {
             z-index: 1;
         }
     </style>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             function createPlaceholder(iframe, videoId, platform) {
@@ -58,6 +63,7 @@ add_action('wp_footer', function () {
                         ? 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
                         : 'autoplay; fullscreen; picture-in-picture');
                     newIframe.setAttribute('allowfullscreen', 'true');
+                    newIframe.setAttribute('title', platform === 'youtube' ? 'YouTube video' : 'Vimeo video');
                     this.parentNode.replaceChild(newIframe, this);
                 });
             }
