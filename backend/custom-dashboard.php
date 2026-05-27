@@ -1,4 +1,6 @@
 <?php
+// NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
+
 // ======================================
 // 📇 AT A GLANCE
 // ======================================
