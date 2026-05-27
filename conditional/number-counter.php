@@ -1,5 +1,9 @@
 <?php
-defined('ABSPATH') || exit;
+// NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
+
+// ======================================
+// DEFINE OUTPUT PAGES
+// ======================================
 
 $counter_pages = [
     '100674' => 'My Competencies',
@@ -13,7 +17,10 @@ $counter_pages = [
     '150455' => 'Über Mich'
 ];
 
+// ===========================================
 // STYLES → Head (critical, prevents CLS)
+// ===========================================
+
 add_action('wp_head', function() use ($counter_pages) {
     if (!is_page($counter_pages)) return;
     ?>
@@ -42,7 +49,10 @@ add_action('wp_head', function() use ($counter_pages) {
     <?php
 }, 5);
 
+// ===========================================
 // SCRIPT → Footer (fine here, no CLS impact)
+// ===========================================
+						
 add_action('wp_footer', function() use ($counter_pages) {
     if (!is_page($counter_pages)) return;
     ?>
