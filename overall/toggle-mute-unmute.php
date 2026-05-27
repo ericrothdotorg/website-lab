@@ -1,5 +1,9 @@
 <?php
-defined('ABSPATH') || exit;
+// NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
+
+// =================================
+// STYLE IN HEAD
+// =================================
 
 add_action('wp_head', function() {
   ?>
@@ -88,6 +92,10 @@ add_action('wp_head', function() {
   </style>
   <?php
 });
+
+// =================================
+// SCRIPT IN FOOTER
+// =================================
 
 add_action('wp_footer', function() {
   ?>
