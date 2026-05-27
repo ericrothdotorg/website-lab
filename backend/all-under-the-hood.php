@@ -1,5 +1,5 @@
 <?php
-defined('ABSPATH') || exit;
+// NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
 // ======================================
 // WORDPRESS CORE OPTIMIZATIONS
@@ -112,6 +112,7 @@ add_filter('menu_order', function ($menu_order) {
         'tools.php',
         'options-general.php',
         'contact-form',
+		'er-subscribers',
         'theseoframework-settings',
 		'snippets',
         'litespeed',
