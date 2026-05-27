@@ -1,5 +1,5 @@
 <?php
-defined('ABSPATH') || exit;
+// NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
 // ======================================
 // CRITICAL CSS - ABOVE THE FOLD
@@ -86,7 +86,7 @@ add_action("wp_head", function () {
 		.four-columns {width: 49%;}
 	}
 		@media (max-width: 600px) {
-		.block-editor-two-columns {margin-top: 25px;}
+		.block-editor-two-columns {margin-top: 50px;}
 	}
 	
 	/* FLEXBOX */
@@ -610,6 +610,7 @@ add_action("wp_footer", function () {
 	input[type=search].modal-field {background: none; border: none; border-bottom: 1px solid var(--color-5); outline: none; transition: none;}
 	body.dark-mode input[type=search].modal-field {background: none; border: none; border-bottom: 1px solid var(--color-3); outline: none; transition: none;}
 	
+									  
 	/* MANUAL LAYOUTS */
 	
 	@media (max-width: 768px) {.hide-on-small {display: none;}}
