@@ -1,5 +1,5 @@
 <?php
-defined('ABSPATH') || exit;
+// NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
 // NOTE: This snippet MUST remain set to "Run Everywhere".
 // WHY: The REST endpoint (rest_api_init) needs to fire on wp-json/* requests which run outside both admin and frontend contexts.
