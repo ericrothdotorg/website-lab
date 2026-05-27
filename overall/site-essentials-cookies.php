@@ -1,5 +1,5 @@
 <?php
-defined('ABSPATH') || exit;
+// NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
 // ======================================
 // CONFIGURATION CONSTANTS
