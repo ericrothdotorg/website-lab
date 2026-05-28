@@ -266,7 +266,7 @@ MIT — free to use, modify, and distribute.
 
 ## Animate.css Integration (optional)
 
-The included PHP/JS example also integrates [Animate.css by Daniel Eden](https://animate.style)
+The included PHP / JS example also integrates [Animate.css by Daniel Eden](https://animate.style)
 for scroll-triggered entrance animations. It is entirely optional and independent of the slider itself.
 
 To use it, enqueue `animate.min.css` alongside EricSlider and add one of the trigger classes
