@@ -40,6 +40,11 @@ remove_filter('user_has_cap', 'wp_maybe_grant_site_health_caps', 1, 4);
 // CACHE MANAGEMENT
 // ======================================
 
+// Prevent cached Previews (with timestamp)
+add_filter('preview_post_link', function($url){
+    return add_query_arg('ts', time(), $url);
+});
+
 // Limit Post Revisions
 if (!defined('WP_POST_REVISIONS')) {
     define('WP_POST_REVISIONS', 1);
