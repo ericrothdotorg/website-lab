@@ -4,6 +4,18 @@ A lightweight, zero-dependency vanilla JavaScript slider/carousel. No jQuery, no
 
 ---
 
+What makes it genuinely stand out
+
+The WordPress-native approach is quite uncommon. Most sliders are npm / bundler-first and treat WordPress as an afterthought. This one is built the other way around — the PHP enqueue pattern, LiteSpeed Cache filter, FOUC guard in wp_head, and the way visual styles are intentionally kept out of the CSS so theme developers can override freely. That's a coherent, thought-through philosophy that most "just another slider" libraries don't have. Furthermore, it's genuinely zero-dependency in the truest sense — no build step, no npm, no bundler. You drop two files in and write a new EricSlider(). That's increasingly rare as most modern libraries assume a toolchain.
+
+Who would actually reach for it
+
+WordPress developers, especially those working without page builders or with performance-sensitive sites, who are tired of pulling in other sliders (with all their weight and jQuery baggage) for something simple. That's a real and underserved audience.
+
+So it's not going to compete with other sliders for mindshare, but as a clean, WordPress-native, no-nonsense option it genuinely fills a gap.
+
+---
+
 ## Features
 
 - **Zero dependencies** — pure vanilla JS, no jQuery or frameworks required
