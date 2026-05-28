@@ -261,3 +261,16 @@ All modern browsers. Requires ES5 + `Array.forEach` + `classList` — supported 
 ## License
 
 MIT — free to use, modify, and distribute.
+
+---
+
+## Animate.css Integration (optional)
+
+The included PHP/JS example also integrates [Animate.css by Daniel Eden](https://animate.style)
+for scroll-triggered entrance animations. It is entirely optional and independent of the slider itself.
+
+To use it, enqueue `animate.min.css` alongside EricSlider and add one of the trigger classes
+(e.g. `daneden-fadeInUp`) to any element. The script uses `IntersectionObserver` to fire
+the animation when the element scrolls into view.
+
+Animate.css is MIT licensed. See [animate.style](https://animate.style) for the full library and docs.
