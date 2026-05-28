@@ -191,6 +191,7 @@ add_action('wp_footer', function () {
                 document.querySelectorAll('.slideshow-single-item').forEach(function(el) {
                     new EricSlider(el, {
                         label: 'Images Slideshow',
+                        controls: false,
                         autoplay: true,
                         autoplaySpeed: 2000,
                         fade: true,
@@ -202,10 +203,11 @@ add_action('wp_footer', function () {
                     });
                 });
 
-                // Single Item No Dots
-                document.querySelectorAll('.slideshow-single-item-no-dots').forEach(function(el) {
+                // Single Item Chromeless (no Controls, no Dots)
+                document.querySelectorAll('.slideshow-single-item-chromeless').forEach(function(el) {
                     new EricSlider(el, {
                         label: 'Images Slideshow',
+                        controls: false,
                         autoplay: true,
                         autoplaySpeed: 2000,
                         fade: false,
@@ -278,7 +280,7 @@ add_action('wp_footer', function () {
                 document.querySelectorAll('.slideshow-multiple-items-center-mode').forEach(function(el) {
                     new EricSlider(el, {
                         label: 'Services Slideshow',
-						controls: true,
+                        controls: true,
                         autoplay: true,
                         autoplaySpeed: 2000,
                         fade: false,
@@ -300,6 +302,7 @@ add_action('wp_footer', function () {
                 document.querySelectorAll('.slideshow-quotes').forEach(function(el) {
                     new EricSlider(el, {
                         label: 'Quotes Slideshow',
+                        controls: false,
                         autoplay: true,
                         autoplaySpeed: 2000,
                         fade: true,
