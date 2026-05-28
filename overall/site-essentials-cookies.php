@@ -40,8 +40,22 @@ add_action( 'phpmailer_init', function ( $phpmailer ) {
 } );
 
 // ======================================
-// WORDPRESS CORE OPTIMIZATIONS
+// WP & PERFORMANCE OPTIMIZATIONS
 // ======================================
+
+// Remove WP jQuery in Frontend
+add_action('wp_enqueue_scripts', function() {
+    if (!is_admin()) {
+        wp_deregister_script('jquery');
+    }
+});
+
+// Remove QUERY Strings from static Resources for better Caching
+add_filter('style_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
+add_filter('script_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
+
+// Load Block CSS individually (only Blocks actually used on Page)
+add_filter('should_load_separate_core_block_assets', '__return_true');
 
 // Disable WordPress emoji Scripts and Styles
 add_action('init', function() {
@@ -69,13 +83,6 @@ add_filter('pre_ping', '__return_empty_array');
 // Remove "Edit" Link in Frontend
 add_filter('edit_post_link', '__return_false', 10, 1);
 
-// Remove WP jQuery in Frontend
-add_action('wp_enqueue_scripts', function() {
-    if (!is_admin()) {
-        wp_deregister_script('jquery');
-    }
-});
-
 // Lightbox Fix for Image Enlargement
 function fix_wp_lightbox_js() {
     echo '<script>
@@ -98,6 +105,27 @@ function fix_wp_lightbox_js() {
     </script>';
 }
 add_action( 'wp_footer', 'fix_wp_lightbox_js' );
+
+// Defer non-critical CSS to reduce render-blocking
+$critical_css_handles = [
+    'global-styles',			// WordPress global Styles
+    'blocksy-dynamic-global',	// THEME RELATED: CRITICAL - Blocksy Layout / Positioning
+    'ct-main-styles',			// THEME RELATED: Blocksy core Styles
+    'ct-page-title-styles',		// THEME RELATED: Page Title (above Fold)
+    'ct-flexy-styles',			// THEME RELATED: Flexy Animations
+];
+add_filter('style_loader_tag', function($html, $handle) use ($critical_css_handles) {
+    if (in_array($handle, $critical_css_handles)) {
+        return $html;
+    }
+    // Defer non-critical Stylesheets with noscript Fallback
+    $preload_html = str_replace(
+        "rel='stylesheet'", 
+        "rel='preload' as='style' onload=\"this.onload=null;this.rel='stylesheet'\"",
+        $html
+    );
+    return $preload_html . '<noscript>' . $html . '</noscript>';
+}, 10, 2);
 
 // ======================================
 // HELPER FUNCTIONS
@@ -142,38 +170,6 @@ function get_post_count_cached($type) {
     }
     return $count;
 }
-
-// ======================================
-// PERFORMANCE OPTIMIZATIONS
-// ======================================
-
-// Remove QUERY Strings from static Resources for better Caching
-add_filter('style_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
-add_filter('script_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
-
-// Load Block CSS individually (only Blocks actually used on Page)
-add_filter('should_load_separate_core_block_assets', '__return_true');
-
-// Defer non-critical CSS to reduce render-blocking
-$critical_css_handles = [
-    'global-styles',			// WordPress global Styles
-    'blocksy-dynamic-global',	// THEME RELATED: CRITICAL - Blocksy Layout / Positioning
-    'ct-main-styles',			// THEME RELATED: Blocksy core Styles
-    'ct-page-title-styles',		// THEME RELATED: Page Title (above Fold)
-    'ct-flexy-styles',			// THEME RELATED: Flexy Animations
-];
-add_filter('style_loader_tag', function($html, $handle) use ($critical_css_handles) {
-    if (in_array($handle, $critical_css_handles)) {
-        return $html;
-    }
-    // Defer non-critical Stylesheets with noscript Fallback
-    $preload_html = str_replace(
-        "rel='stylesheet'", 
-        "rel='preload' as='style' onload=\"this.onload=null;this.rel='stylesheet'\"",
-        $html
-    );
-    return $preload_html . '<noscript>' . $html . '</noscript>';
-}, 10, 2);
 
 // ======================================
 // LCP OPTIMIZATIONS
