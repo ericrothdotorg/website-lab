@@ -1,0 +1,219 @@
+/* ===========================================================================================
+   eric-slider.css — Structural Styles
+   Colours and visual overrides stay in eric-slider.php
+   =========================================================================================== */
+
+/* ── Slider Root ─────────────────────────────────────────── */
+
+.eric-slider {
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: pan-y;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.eric-slider-vertical {
+    touch-action: pan-x;
+}
+
+/* ── List (the visible Viewport) ─────────────────────────── */
+
+.eric-slider-list {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+.eric-slider-list:focus {
+    outline: none;
+}
+
+/* ── Track (holds all Slides, moves horizontally / vertically) */
+
+.eric-slider-track {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    top: 0;
+    left: 0;
+    will-change: transform;
+}
+
+.eric-slider-vertical .eric-slider-track {
+    flex-direction: column;
+}
+
+/* ── Individual Slides ───────────────────────────────────── */
+
+.eric-slider-slide {
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    min-height: 1px;
+    flex-shrink: 0;
+}
+
+.eric-slider-slide img {
+    display: block;
+}
+
+.eric-slider img {
+    margin: 0 auto;
+}
+
+/* Prevent hidden slides from being focusable */
+.eric-slider-slide[aria-hidden="true"] {
+    pointer-events: none;
+}
+
+/* ── Center Mode — Bleed Guard + Wrapper for positioned controls outside el ── */
+
+.eric-slider-center {
+    overflow: hidden;
+}
+
+.eric-slider-center-wrap {
+    position: relative;
+}
+
+/* ── Fade Mode ───────────────────────────────────────────── */
+
+.eric-slider-fade .eric-slider-list {
+    position: relative;
+}
+
+.eric-slider-fade .eric-slider-track {
+    display: block; /* override flex for fade */
+}
+
+.eric-slider-fade .eric-slider-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    opacity: 0;
+    z-index: 0;
+}
+
+.eric-slider-fade .eric-slider-slide:first-child {
+    position: relative; /* pre-init only — JS overrides this immediately on init */
+}
+
+/* ── Dots ────────────────────────────────────────────────── */
+
+.eric-slider-dots {
+    position: static;
+    display: block;
+    width: 100%;
+    padding: 0;
+    margin: 15px 0 0;
+    list-style: none;
+    text-align: center;
+}
+
+.eric-slider-dots li {
+    display: inline-block;
+    margin: 0 5px;
+    padding: 0;
+    cursor: pointer;
+}
+
+.eric-slider-dots li button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    cursor: pointer;
+    border: 0;
+    background: transparent;
+    opacity: 0.25;
+}
+
+.eric-slider-dots li button:hover,
+.eric-slider-dots li button:focus-visible {
+    opacity: 0.25; /* visual state handled by eric-slider-active; hover/focus only shows outline */
+    outline: var(--a11y-focus-width, 1px) solid var(--a11y-focus-color);
+    outline-offset: var(--a11y-focus-offset, 2px);
+    border-radius: 3px;
+}
+
+.eric-slider-dots li.eric-slider-active button {
+    opacity: 0.75;
+}
+
+/* ── Bottom Margin when Dots are shown ───────────────────── */
+
+.eric-slider-dots ~ *,
+.eric-slider-has-dots {
+    margin-bottom: 30px;
+}
+
+/* ── Controls Bar (prev / pause / next) ── */
+
+.eric-slider-controls {
+    position: absolute;
+    top: -50px;
+    right: 0px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    width: 100%;
+    padding: 0 10px 6px 0;
+    box-sizing: border-box;
+    z-index: 20;
+}
+
+@media (min-width: 782px) {
+    .eric-slider-controls {
+        width: auto;
+        padding: 0;
+    }
+}
+
+@media (max-width: 781px) {
+    .wp-block-column .eric-slider-controls {
+        position: static;
+        top: auto;
+        right: auto;
+    }
+}
+
+.eric-slider-ctrl-prev,
+.eric-slider-ctrl-pause,
+.eric-slider-ctrl-next {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0.85;
+}
+
+.eric-slider-ctrl-prev:hover,
+.eric-slider-ctrl-prev:focus-visible,
+.eric-slider-ctrl-pause:hover,
+.eric-slider-ctrl-pause:focus-visible,
+.eric-slider-ctrl-next:hover,
+.eric-slider-ctrl-next:focus-visible {
+    opacity: 1;
+    outline: var(--a11y-focus-width, 1px) solid var(--a11y-focus-color);
+    outline-offset: var(--a11y-focus-offset, 2px);
+    border-radius: 3px;
+}
+
+/* ── FOUC Guard — visibility: hidden set in wp_head; .eric-slider-initialized added by JS on init */
