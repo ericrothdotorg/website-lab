@@ -24,6 +24,7 @@ See the slider in action at
 - [ericroth.org/about-me/my-quotes](https://ericroth.org/about-me/my-quotes/)
 - [ericroth.org/personal](https://ericroth.org/personal/)
 - [ericroth.org/professional](https://ericroth.org/professional/)
+- [ericroth.org/this-site/](https://ericroth.org/this-site/)
 
 ---
 
