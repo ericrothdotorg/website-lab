@@ -1,4 +1,4 @@
-# EricSlider
+# Eric Slider
 
 A lightweight, zero-dependency vanilla JavaScript slider / carousel. No jQuery, no bloat — just clean, accessible HTML output with a small footprint.
 
@@ -18,7 +18,7 @@ So it's not going to compete with other sliders for mindshare, but as a clean, W
 
 ## Live Examples
 
-See the slider in action at
+See the Eric Slider in action at
 
 - [ericroth.org/about-me](https://ericroth.org/about-me/)
 - [ericroth.org/about-me/my-quotes](https://ericroth.org/about-me/my-quotes/)
