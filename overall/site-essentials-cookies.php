@@ -40,19 +40,8 @@ add_action( 'phpmailer_init', function ( $phpmailer ) {
 } );
 
 // ======================================
-// WP & PERFORMANCE OPTIMIZATIONS
+// WP CORE OPTIMIZATIONS
 // ======================================
-
-// Remove WP jQuery in Frontend
-add_action('wp_enqueue_scripts', function() {
-    if (!is_admin()) {
-        wp_deregister_script('jquery');
-    }
-});
-
-// Remove QUERY Strings from static Resources for better Caching
-add_filter('style_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
-add_filter('script_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
 
 // Load Block CSS individually (only Blocks actually used on Page)
 add_filter('should_load_separate_core_block_assets', '__return_true');
@@ -83,28 +72,13 @@ add_filter('pre_ping', '__return_empty_array');
 // Remove "Edit" Link in Frontend
 add_filter('edit_post_link', '__return_false', 10, 1);
 
-// Lightbox Fix for Image Enlargement
-function fix_wp_lightbox_js() {
-    echo '<script>
-    document.addEventListener("click", function() {
-        setTimeout(function() {
-            var overlay = document.querySelector(".wp-lightbox-overlay");
-            if (!overlay) return;
-            overlay.classList.remove("zoom");
-            overlay.style.cssText += "position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;";
-            var containers = document.querySelectorAll(".lightbox-image-container");
-            containers.forEach(function(container) {
-                container.style.cssText += "width:95vw!important;max-width:95vw!important;height:90vh!important;max-height:90vh!important;";
-                var img = container.querySelector("img");
-                if (img) {
-                    img.style.cssText += "object-fit:contain!important;width:100%!important;height:100%!important;";
-                }
-            });
-        }, 300);
-    });
-    </script>';
-}
-add_action( 'wp_footer', 'fix_wp_lightbox_js' );
+// ======================================
+// PERFORMANCE & ASSET LOADING
+// ======================================
+
+// Remove QUERY Strings from static Resources for better Caching
+add_filter('style_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
+add_filter('script_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
 
 // Defer non-critical CSS to reduce render-blocking
 $critical_css_handles = [
@@ -126,50 +100,6 @@ add_filter('style_loader_tag', function($html, $handle) use ($critical_css_handl
     );
     return $preload_html . '<noscript>' . $html . '</noscript>';
 }, 10, 2);
-
-// ======================================
-// HELPER FUNCTIONS
-// ======================================
-
-// Helper: Recursively find all Image Blocks with priority-high Class
-function find_priority_high_images($blocks, &$images = []) {
-    foreach ($blocks as $block) {
-        // Check if this Block is an Image with priority-high
-        if ($block['blockName'] === 'core/image') {
-            $class = $block['attrs']['className'] ?? '';
-            if (strpos($class, 'priority-high') !== false) {
-                // Try to get Image URL from Block Attributes
-                $image_id = $block['attrs']['id'] ?? null;
-                if ($image_id) {
-                    $image_url = wp_get_attachment_image_url($image_id, 'full');
-                    if ($image_url) {
-                        $images[] = $image_url;
-                    }
-                }
-                // Fallback: Parse HTML for src
-                elseif (isset($block['innerHTML']) && preg_match('/src=["\']([^"\']+)["\']/', $block['innerHTML'], $match)) {
-                    $images[] = $match[1];
-                }
-            }
-        }
-        // Recursively search innerBlocks (for nested Blocks like Columns, Groups, etc.)
-        if (!empty($block['innerBlocks'])) {
-            find_priority_high_images($block['innerBlocks'], $images);
-        }
-    }
-    return $images;
-}
-
-// Helper: Get cached Post Count for a Post Type
-function get_post_count_cached($type) {
-    $cache_key = 'post_count_' . $type;
-    $count = get_transient($cache_key);
-    if ($count === false) {
-        $count = wp_count_posts($type)->publish;
-        set_transient($cache_key, $count, CACHE_POST_COUNT);
-    }
-    return $count;
-}
 
 // ======================================
 // LCP OPTIMIZATIONS
@@ -281,10 +211,28 @@ add_action('wp_head', function () {
     echo '<link rel="preconnect" href="https://www.clarity.ms" crossorigin>' . "\n";
 }, 10);
 
-// Prevent cached Previews (with timestamp)
-add_filter('preview_post_link', function($url){
-    return add_query_arg('ts', time(), $url);
-});
+// Lightbox Fix for Image Enlargement
+function fix_wp_lightbox_js() {
+    echo '<script>
+    document.addEventListener("click", function() {
+        setTimeout(function() {
+            var overlay = document.querySelector(".wp-lightbox-overlay");
+            if (!overlay) return;
+            overlay.classList.remove("zoom");
+            overlay.style.cssText += "position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;";
+            var containers = document.querySelectorAll(".lightbox-image-container");
+            containers.forEach(function(container) {
+                container.style.cssText += "width:95vw!important;max-width:95vw!important;height:90vh!important;max-height:90vh!important;";
+                var img = container.querySelector("img");
+                if (img) {
+                    img.style.cssText += "object-fit:contain!important;width:100%!important;height:100%!important;";
+                }
+            });
+        }, 300);
+    });
+    </script>';
+}
+add_action( 'wp_footer', 'fix_wp_lightbox_js' );
 
 // Prevent cached Frontend for logged-in Editors
 add_action('template_redirect', function () {
@@ -573,12 +521,56 @@ add_action('template_redirect', function() {
 });
 
 // ======================================
+// HELPER FUNCTIONS
+// ======================================
+
+// Helper: Recursively find all Image Blocks with priority-high Class
+function find_priority_high_images($blocks, &$images = []) {
+    foreach ($blocks as $block) {
+        // Check if this Block is an Image with priority-high
+        if ($block['blockName'] === 'core/image') {
+            $class = $block['attrs']['className'] ?? '';
+            if (strpos($class, 'priority-high') !== false) {
+                // Try to get Image URL from Block Attributes
+                $image_id = $block['attrs']['id'] ?? null;
+                if ($image_id) {
+                    $image_url = wp_get_attachment_image_url($image_id, 'full');
+                    if ($image_url) {
+                        $images[] = $image_url;
+                    }
+                }
+                // Fallback: Parse HTML for src
+                elseif (isset($block['innerHTML']) && preg_match('/src=["\']([^"\']+)["\']/', $block['innerHTML'], $match)) {
+                    $images[] = $match[1];
+                }
+            }
+        }
+        // Recursively search innerBlocks (for nested Blocks like Columns, Groups, etc.)
+        if (!empty($block['innerBlocks'])) {
+            find_priority_high_images($block['innerBlocks'], $images);
+        }
+    }
+    return $images;
+}
+
+// Helper: Get cached Post Count for a Post Type
+function get_post_count_cached($type) {
+    $cache_key = 'post_count_' . $type;
+    $count = get_transient($cache_key);
+    if ($count === false) {
+        $count = wp_count_posts($type)->publish;
+        set_transient($cache_key, $count, CACHE_POST_COUNT);
+    }
+    return $count;
+}
+
+// ======================================
 // FOOTER SCRIPTS & UI ENHANCEMENTS
 // ======================================
 
 add_action('wp_footer', function () {
     ?>
-    
+	
 	<!-- Cookie Consent Banner -->
 	
 	<div id="cookie-notice" role="dialog" aria-label="Cookie notice" aria-hidden="true" aria-modal="false" style="visibility: hidden; text-align: justify; color: var(--color-8); font-family: inherit; background: var(--color-10); padding: 15px 20px 20px 20px; position: fixed; bottom: 15px; left: 15px; width: 100%; max-width: 300px; border-radius: 10px; z-index: 10000; box-sizing: border-box;">
