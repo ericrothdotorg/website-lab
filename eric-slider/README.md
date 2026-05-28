@@ -16,6 +16,17 @@ So it's not going to compete with other sliders for mindshare, but as a clean, W
 
 ---
 
+## Live Examples
+
+See the slider in action at
+
+[ericroth.org/about-me](https://ericroth.org/about-me/)
+[ericroth.org/about-me/my-quotes](https://ericroth.org/about-me/my-quotes/)
+[ericroth.org/personal](https://ericroth.org/personal/)
+[ericroth.org/professional](https://ericroth.org/professional/)
+
+---
+
 ## Features
 
 - **Zero dependencies** — pure vanilla JS, no jQuery or frameworks required
