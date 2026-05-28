@@ -11,8 +11,8 @@ add_action('wp_enqueue_scripts', function () {
     wp_enqueue_style('animate-css', home_url('/my-assets/animate.min.css'), [], '4.1.1');
 
     // Eric Slider
-    wp_enqueue_style('eric-slider-css', home_url('/my-assets/eric-slider/eric-slider-v1.19.0.css'), [], '1.19.0');
-    wp_enqueue_script('eric-slider-js', home_url('/my-assets/eric-slider/eric-slider-v2.31.0.js'), [], '2.31.0', true);
+    wp_enqueue_style('eric-slider-css', home_url('/my-assets/eric-slider/eric-slider-v1.23.0.css'), [], '1.23.0');
+    wp_enqueue_script('eric-slider-js', home_url('/my-assets/eric-slider/eric-slider-v2.35.0.js'), [], '2.35.0', true);
 
 }, 20);
 
@@ -49,58 +49,60 @@ add_action('wp_head', function () {
 add_action('wp_footer', function () {
     ?>
     <style>
-        /* Navigation */
-        @media (min-width: 782px) {.eric-slider-controls {position: absolute; top: -50px; right: 20px;}}
-        @media (max-width: 781px) {
-            .wp-block-column .eric-slider-controls {position: static; top: auto; right: auto;}
-            .eric-slider-controls {position: absolute; top: -50px; right: 20px;}
-        }
-        .eric-slider-dots li button {opacity: 0.5; color: var(--color-9);}
-        .eric-slider-dots li.eric-slider-active button {opacity: 1; color: var(--color-9);}
-
-        /* Style Height Transition */
-        .slideshow-single-item {transition: height 0.4s ease;}
-
-        /* Style Slideshows with single Item */
-        .slideshow-single-item img {border-radius: 25px;}
-        .slideshow-single-item .listing-item img {border-radius: 25px 25px 0 0;}
-
-        /* Style Slideshows with multiple Items */
-        .slideshow-multiple-items-3 .eric-slider-list,
-        .slideshow-multiple-items-4 .eric-slider-list {margin: 0 -12.5px;}
-        .slideshow-multiple-items-3 .eric-slider-slide,
-        .slideshow-multiple-items-4 .eric-slider-slide {margin: 0 12.5px;}
-        @media (max-width: 600px) {
-            .slideshow-multiple-items-3 .eric-slider-list,
-            .slideshow-multiple-items-4 .eric-slider-list {margin: 0 -7.5px;}
-            .slideshow-multiple-items-3 .eric-slider-slide,
-            .slideshow-multiple-items-4 .eric-slider-slide {margin: 0 7.5px;}
-        }
-        @media (min-width: 600px) and (max-width: 992px) {
-            .slideshow-multiple-items-3 .eric-slider-list,
-            .slideshow-multiple-items-4 .eric-slider-list {margin: 0 -10px;}
-            .slideshow-multiple-items-3 .eric-slider-slide,
-            .slideshow-multiple-items-4 .eric-slider-slide {margin: 0 10px;}
-        }
-        .slideshow-multiple-items-vertical .eric-slider-list {margin: -10px 0;}
-        .slideshow-multiple-items-vertical .eric-slider-slide {margin: 10px 0;}
-        .slideshow-multiple-items-center-mode img {padding: 0 0.75%;}
-
-        /* Style Slideshows with WP Columns */
-        .slideshow-single-item .wp-block-columns {align-items: center;}
-
-        /* Style Slideshows with Layers */
-        .layer-container {position: relative; margin: 0 auto;}
-        .layer-content-procurement-consulting {margin-right: 10px;}
-        .layer-content-procurement-consulting h5 {text-align: justify;}
-        .layer-content-procurement-consulting p {text-align: justify; padding-top: 5px;}
-        .layer-content-procurement-consulting .emphasized-design-red {padding-top: 15px;}
-        .layer-content-industries-served {color: var(--color-8); padding: 0 0.75%; font-size: clamp(1.125rem, 3vw, 1.5rem);}
-        .layer-content-industries-served > div {height: 150px; display: flex; justify-content: center; align-items: center; padding: 0 25px;}
-        .layer-content-industries-served p {margin: 0; text-align: center;}
-        .layer-content-ninja-services {color: var(--color-8); padding: 0 0.75%; font-size: clamp(1rem, 5vw, 3rem);}
-        .layer-content-ninja-services > div {height: 150px; display: flex; justify-content: center; align-items: center; padding: 0 25px;}
-        .layer-content-ninja-services p {margin: 0; text-align: center;}
+		/* ── Controls ── */
+		.eric-slider-ctrl-prev,
+		.eric-slider-ctrl-pause,
+		.eric-slider-ctrl-next {color: var(--color-9);}
+		.eric-slider-ctrl-prev:hover,
+		.eric-slider-ctrl-prev:focus-visible,
+		.eric-slider-ctrl-pause:hover,
+		.eric-slider-ctrl-pause:focus-visible,
+		.eric-slider-ctrl-next:hover,
+		.eric-slider-ctrl-next:focus-visible {color: var(--color-9); outline: var(--a11y-focus-width, 1px) solid var(--a11y-focus-color, var(--color-1));}
+		/* ── Dots ── */
+		.eric-slider-dots li button {color: var(--color-9); opacity: 0.5;}
+		.eric-slider-dots li button:hover,
+		.eric-slider-dots li button:focus-visible {outline: var(--a11y-focus-width, 1px) solid var(--a11y-focus-color, var(--color-1));}
+		.eric-slider-dots li.eric-slider-active button {color: var(--color-9); opacity: 1;}
+		/* ── Single Item ── */
+		.slideshow-single-item {transition: height 0.4s ease;}
+		.slideshow-single-item img {border-radius: 25px;}
+		.slideshow-single-item .listing-item img {border-radius: 25px 25px 0 0;}
+		.slideshow-single-item .wp-block-columns {align-items: center;}
+		/* ── Multiple Items — Gutters ── */
+		.slideshow-multiple-items-3 .eric-slider-list,
+		.slideshow-multiple-items-4 .eric-slider-list {margin: 0 -12.5px;}
+		.slideshow-multiple-items-3 .eric-slider-slide,
+		.slideshow-multiple-items-4 .eric-slider-slide {margin: 0 12.5px;}
+		@media (max-width: 600px) {
+			.slideshow-multiple-items-3 .eric-slider-list,
+			.slideshow-multiple-items-4 .eric-slider-list {margin: 0 -7.5px;}
+			.slideshow-multiple-items-3 .eric-slider-slide,
+			.slideshow-multiple-items-4 .eric-slider-slide {margin: 0 7.5px;}
+		}
+		@media (min-width: 600px) and (max-width: 992px) {
+			.slideshow-multiple-items-3 .eric-slider-list,
+			.slideshow-multiple-items-4 .eric-slider-list {margin: 0 -10px;}
+			.slideshow-multiple-items-3 .eric-slider-slide,
+			.slideshow-multiple-items-4 .eric-slider-slide {margin: 0 10px;}
+		}
+		/* ── Multiple Items — Vertical ── */
+		.slideshow-multiple-items-vertical .eric-slider-list {margin: -10px 0;}
+		.slideshow-multiple-items-vertical .eric-slider-slide {margin: 10px 0;}
+		/* ── Center Mode ── */
+		.slideshow-multiple-items-center-mode img {padding: 0 0.75%;}
+		/* ── Layers ── */
+		.layer-container {position: relative; margin: 0 auto;}
+		.layer-content-procurement-consulting {margin-right: 10px;}
+		.layer-content-procurement-consulting h5 {text-align: justify;}
+		.layer-content-procurement-consulting p {text-align: justify; padding-top: 5px;}
+		.layer-content-procurement-consulting .emphasized-design-red {padding-top: 15px;}
+		.layer-content-industries-served {color: var(--color-8); padding: 0 0.75%; font-size: clamp(1.125rem, 3vw, 1.5rem);}
+		.layer-content-industries-served > div {height: 150px; display: flex; justify-content: center; align-items: center; padding: 0 25px;}
+		.layer-content-industries-served p {margin: 0; text-align: center;}
+		.layer-content-ninja-services {color: var(--color-8); padding: 0 0.75%; font-size: clamp(1rem, 5vw, 3rem);}
+		.layer-content-ninja-services > div {height: 150px; display: flex; justify-content: center; align-items: center; padding: 0 25px;}
+		.layer-content-ninja-services p {margin: 0; text-align: center;}
     </style>
 
     <!-- ERIC SLIDER & ANIMATE: SCRIPT -->
@@ -276,6 +278,7 @@ add_action('wp_footer', function () {
                 document.querySelectorAll('.slideshow-multiple-items-center-mode').forEach(function(el) {
                     new EricSlider(el, {
                         label: 'Services Slideshow',
+						controls: true,
                         autoplay: true,
                         autoplaySpeed: 2000,
                         fade: false,
