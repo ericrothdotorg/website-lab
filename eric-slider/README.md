@@ -10,9 +10,7 @@ The WordPress-native approach is quite uncommon. Most sliders are npm / bundler-
 
 Who would actually reach for it
 
-WordPress developers, especially those working without page builders or with performance-sensitive sites, who are tired of pulling in other sliders (with all their weight and jQuery baggage) for something simple. That's a real and underserved audience.
-
-So it's not going to compete with other sliders for mindshare, but as a clean, WordPress-native, no-nonsense option it genuinely fills a gap.
+WordPress developers, especially those working without page builders or with performance-sensitive sites, who are tired of pulling in other sliders (with all their weight and jQuery baggage) for something simple. That's a real and underserved audience. So it's not going to compete with other sliders for mindshare, but as a clean, WordPress-native, no-nonsense option it genuinely fills a gap.
 
 ---
 
@@ -281,7 +279,7 @@ MIT — free to use, modify, and distribute.
 The included PHP / JS example also integrates [Animate.css by Daniel Eden](https://animate.style)
 for scroll-triggered entrance animations. It is entirely optional and independent of the slider itself.
 
-To use it, enqueue `animate.min.css` alongside EricSlider and add one of the trigger classes
+To use it, enqueue `animate.min.css` alongside Eric Slider and add one of the trigger classes
 (e.g. `daneden-fadeInUp`) to any element. The script uses `IntersectionObserver` to fire
 the animation when the element scrolls into view.
 
