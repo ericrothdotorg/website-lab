@@ -130,6 +130,7 @@ add_action("wp_footer", function () {
 	/* Global Elements */
 	.footer-breadcrumbs {background: none; margin-left: -20px;}
 	@media (min-width: 992px) {.footer-breadcrumbs {margin-top: -25px;}}
+	.search-pattern-inject {margin-top: -125px;} /* Inject Random Content (EN) in Search Results Page */
 	
 	/* Custom Sidebar Breakpoint */
 	@media (max-width: 1400px) {
