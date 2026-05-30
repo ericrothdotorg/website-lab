@@ -241,6 +241,28 @@ add_action('template_redirect', function () {
     nocache_headers();
 });
 
+// Inject Random Content (EN) in Search Results Page
+add_action( 'get_header', function() {
+    if ( ! is_search() ) return;
+    ob_start( function( $html ) {
+        // Fetch by Title in case ID ever changes
+        $blocks = get_posts([
+            'post_type'      => 'wp_block',
+            'title'          => 'Random Content (EN)',
+            'posts_per_page' => 1,
+            'fields'         => 'ids',
+        ]);
+        if ( empty( $blocks ) ) return $html;
+        $block    = get_post( $blocks[0] );
+        $rendered = do_shortcode( do_blocks( $block->post_content ) );
+        $wrapped  = '<div class="ct-container search-pattern-inject">' . $rendered . '</div>'; // THEME RELATED
+        return preg_replace( '/(<footer[^>]*>)/i', $wrapped . '$1', $html, 1 );
+    });
+});
+add_action( 'wp_footer', function() {
+    if ( is_search() ) ob_end_flush();
+});
+
 // ======================================
 // SHORTCODES
 // ======================================
