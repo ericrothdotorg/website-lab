@@ -130,6 +130,9 @@ add_action("wp_footer", function () {
 	/* Global Elements */
 	.footer-breadcrumbs {background: none; margin-left: -20px;}
 	@media (min-width: 992px) {.footer-breadcrumbs {margin-top: -25px;}}
+
+	/* === INJECTED STUFF === */
+	
 	.search-pattern-inject  { margin-top: -125px; margin-bottom: 25px; } /* Inject 'Random Content (EN)' in Search Page */
 	.home-pattern-inject    { margin-top: -125px; margin-bottom: 25px; } /* Inject 'Random Content (EN)' in Posts Page */
 	.archive-pattern-inject { margin-top: -25px;  margin-bottom: 25px; } /* Inject 'Random Content (EN)' in (Pseudo-)Archive Page */	
