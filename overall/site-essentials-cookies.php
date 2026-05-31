@@ -192,6 +192,38 @@ add_filter('blocksy:frontend:dynamic-data:post-featured-image:html', function($h
 // Enable Blocksy Flexy Animation Styles
 add_action('wp_enqueue_scripts', fn() => wp_enqueue_style('ct-flexy-styles'));
 
+// Replace Blocksy Companion's Post Types Extra Read Time Feature.
+function er_reading_time( $post_id = null, $echo = false ) {
+    $post_id    = $post_id ?: get_the_ID();
+    $content    = get_post_field( 'post_content', $post_id );
+    $word_count = str_word_count( wp_strip_all_tags( strip_shortcodes( $content ) ) );
+    $minutes    = max( 1, (int) ceil( $word_count / 200 ) );
+	$output = '<li class="er-reading-time">'
+			.   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+			.       'width="1em" height="1em" '
+			.       'fill="none" stroke="currentColor" '
+			.       'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
+			.       'aria-hidden="true">'
+			.       '<circle cx="12" cy="12" r="10" fill="none"/>'
+			.       '<polyline points="12 6 12 12 16 14" fill="none"/>'
+			.   '</svg>'
+			.   ' ' . $minutes . ' min read'
+			. '</li>';
+    if ( $echo ) {
+        echo $output;
+    } else {
+        return $output;
+    }
+}
+if ( apply_filters( 'er_reading_time_on_cards', true ) ) {
+    add_action( 'blocksy:post-meta:render-meta', function( $single_meta_id ) {
+        if ( 'categories' !== $single_meta_id ) {
+            return;
+        }
+        er_reading_time( null, true );
+    } );
+}
+
 // ======================================
 // FRONTEND ASSETS
 // ======================================
