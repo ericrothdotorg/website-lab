@@ -241,36 +241,6 @@ add_action('template_redirect', function () {
     nocache_headers();
 });
 
-// Inject 'Random Content (EN)' in Search, (Pseudo-)Archive & Posts Page
-add_action( 'get_header', function() {
-    $pseudo_archives = [ 13749 ]; // My Interests
-    $excluded        = 'my-quotes';
-    $is_archive      = ( is_archive() || is_home() || is_page( $pseudo_archives ) ) && ! is_post_type_archive( $excluded );
-    $inject          = is_search() || $is_archive;
-    if ( ! $inject ) return;
-    ob_start( function( $html ) use ( $excluded, $pseudo_archives ) {
-        $is_archive = ( is_archive() || is_home() || is_page( $pseudo_archives ) ) && ! is_post_type_archive( $excluded );
-        if ( ! is_search() && ! $is_archive ) return $html;
-        $blocks = get_posts([
-            'post_type'      => 'wp_block',
-            'title'          => 'Random Content (EN)',
-            'posts_per_page' => 1,
-            'fields'         => 'ids',
-        ]);
-        if ( empty( $blocks ) ) return $html;
-        $block    = get_post( $blocks[0] );
-        $rendered = do_shortcode( do_blocks( $block->post_content ) );
-        $wrapped  = '<div class="ct-container' . ( is_search() ? ' search-pattern-inject' : '' ) . ( is_home() ? ' home-pattern-inject' : '' ) . ( is_archive() || is_page( $pseudo_archives ) ? ' archive-pattern-inject' : '' ) . '">' . $rendered . '</div>'; // THEME RELATED
-        return preg_replace( '/(<footer[^>]*>)/i', $wrapped . '$1', $html, 1 );
-    });
-});
-add_action( 'wp_footer', function() {
-    $pseudo_archives = [ 13749 ]; // My Interests
-    $excluded        = 'my-quotes';
-    $is_archive      = ( is_archive() || is_home() || is_page( $pseudo_archives ) ) && ! is_post_type_archive( $excluded );
-    if ( is_search() || $is_archive ) ob_end_flush();
-});
-
 // ======================================
 // SHORTCODES
 // ======================================
