@@ -199,7 +199,7 @@ add_action('wp_footer', function() {
         <script>
             (function() {
                 const initNinja = function() {
-                    const targetContainer = document.querySelector(".hero-section[data-type='type-2'] > .entry-header.ct-container");
+                    const targetContainer = document.querySelector(".hero-section[data-type='type-2'] > .entry-header.ct-container"); // THEME RELATED
                     if (targetContainer) {
                         const wrapper = document.createElement("div");
                         wrapper.className = "custom-ninja-wrapper";
