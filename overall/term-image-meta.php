@@ -6,7 +6,7 @@
 // =====================================
 
 add_action('init', function() {
-    register_term_meta('term', 'er_term_image_id', [
+    register_term_meta('', 'er_term_image_id', [
         'type'              => 'integer',
         'single'            => true,
         'sanitize_callback' => 'absint',
