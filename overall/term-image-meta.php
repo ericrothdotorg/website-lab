@@ -160,14 +160,4 @@ add_action('wp_footer', function() {
     <?php
 });
 
-// =====================================
-// BLOCKSY HERO SUPPORT - THEME RELATED
-// =====================================
-
-add_filter('blocksy:hero:type-2:image:attachment_id', function ($attachment_id) {
-    if (!is_tax() && !is_category() && !is_tag()) return $attachment_id;
-    $term = get_queried_object();
-    if (!$term instanceof WP_Term) return $attachment_id;
-    $custom = (int) get_term_meta($term->term_id, 'er_term_image_id', true);
-    return $custom ?: $attachment_id;
-});
+// Injection for theme related Header in Frontend moved to Blocksy Companion PHP
