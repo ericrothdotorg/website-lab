@@ -60,6 +60,13 @@ add_action('save_post', function($post_id) {
     }
 }, 999);
 
+// Force Empty Entire Cache on Core, Theme & Plugin Updates
+add_action( 'upgrader_process_complete', function( $upgrader, $options ) {
+    if ( in_array( $options['type'], array( 'theme', 'plugin', 'core' ) ) ) {
+        do_action( 'litespeed_purge_all_object' );
+    }
+}, 10, 2 );
+
 // ======================================
 // EDITOR (THIS ONE HERE) INTERFACE
 // ======================================
