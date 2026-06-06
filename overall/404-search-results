@@ -1,0 +1,117 @@
+<?php
+// NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
+
+// ======================================
+// HELPER: Render a private Page
+// ======================================
+
+function er_render_private_page( $slug, $loop_html = '' ) {
+    $pages = get_posts([
+        'name'        => $slug,
+        'post_type'   => 'page',
+        'post_status' => 'private',
+        'numberposts' => 1,
+    ]);
+    $page = $pages ? $pages[0] : null;
+
+    if ( ! $page ) {
+        return false;
+    }
+
+    // Strip the "Private: " prefix WP adds to private Page Titles
+    $page->post_title = preg_replace( '/^Private:\s*/i', '', $page->post_title );
+	add_filter( 'private_title_format', fn( $format ) => '%s' );
+
+    // If Search Results: Inject Loop into Content before anything renders
+    if ( $loop_html ) {
+        $page->post_content = str_replace( '<!--SEARCH RESULTS-->', $loop_html, $page->post_content );
+    }
+
+    // Override the main Query so Blocksy renders this Page as if it were a normal published Page
+    global $wp_query, $post;
+    $page->post_status   = 'publish';
+    $page->post_password = '';
+    $post                = $page;
+    setup_postdata( $post );
+    $wp_query->posts              = [ $page ];
+    $wp_query->post               = $page;
+    $wp_query->found_posts        = 1;
+    $wp_query->post_count         = 1;
+    $wp_query->is_404             = false;
+    $wp_query->is_page            = true;
+    $wp_query->is_singular        = true;
+    $wp_query->is_search          = false;
+    $wp_query->queried_object     = $page;
+    $wp_query->queried_object_id  = $page->ID;
+
+    // Let Blocksy load its own Page Template - It handles Hero, Breadcrumbs, everything
+    $template = get_page_template();
+    if ( ! $template ) {
+        $template = get_template_directory() . '/index.php';
+    }
+
+    load_template( $template );
+	remove_filter( 'private_title_format', $remove_private_prefix );
+    exit;
+}
+
+// ======================================
+// 404 ERROR PAGE (set to PRIVATE)
+// ======================================
+
+add_filter( 'template_include', function( $template ) {
+
+    if ( ! is_404() ) {
+        return $template;
+    }
+
+    er_render_private_page( '404-error' );
+
+    return $template;
+}, 99 );
+
+// ======================================
+// SEARCH RESULTS PAGE (set to PRIVATE)
+// ======================================
+
+add_filter( 'template_include', function( $template ) {
+
+    if ( ! is_search() ) {
+        return $template;
+    }
+
+    if ( have_posts() ) {
+        // My Search Results custom Page
+        ob_start();
+        echo '<div class="display-posts-listing grid" id="four-columns">';
+        while ( have_posts() ) {
+            the_post();
+            $img      = get_the_post_thumbnail_url( get_the_ID(), 'large' );
+            $cat      = get_the_terms( get_the_ID(), 'types' );
+            $cat_name = $cat && ! is_wp_error( $cat ) ? $cat[0]->name : '';
+            echo '<div class="listing-item">';
+            if ( $img ) {
+                echo '<a class="image" href="' . esc_url( get_permalink() ) . '">
+                        <img src="' . esc_url( $img ) . '" alt="">
+                      </a>';
+            }
+            echo '<a class="title" href="' . esc_url( get_permalink() ) . '">' . esc_html( get_the_title() ) . '</a>';
+            if ( $cat_name ) {
+                echo '<span class="category">🖿 ' . esc_html( $cat_name ) . '</span>';
+            }
+            echo '</div>';
+        }
+        echo '</div>';
+        the_posts_pagination();
+        // Build Loop HTML into a Variable
+        $loop_html = ob_get_clean();
+
+        er_render_private_page( 'search-results', $loop_html );
+
+    } else {
+        // My Search NO Results custom Page
+        er_render_private_page( 'search-no-results' );
+    }
+
+    return $template;
+}, 99 );
