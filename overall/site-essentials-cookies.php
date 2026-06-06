@@ -81,25 +81,30 @@ add_filter('style_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2)
 add_filter('script_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
 
 // Defer non-critical CSS to reduce render-blocking
-$critical_css_handles = [
-    'global-styles',			// WordPress global Styles
-    'blocksy-dynamic-global',	// THEME RELATED: CRITICAL - Blocksy Layout / Positioning
-    'ct-main-styles',			// THEME RELATED: Blocksy core Styles
-    'ct-page-title-styles',		// THEME RELATED: Page Title (above Fold)
-    'ct-flexy-styles',			// THEME RELATED: Flexy Animations
-];
-add_filter('style_loader_tag', function($html, $handle) use ($critical_css_handles) {
-    if (in_array($handle, $critical_css_handles)) {
+
+// GENERIC (which CSS Handles are critical?)
+add_filter('style_loader_tag', function($html, $handle) {
+    $critical_handles = apply_filters('blocksy_critical_css_handles', []); // THEME RELATED
+    if (in_array($handle, $critical_handles)) {
         return $html;
     }
-    // Defer non-critical Stylesheets with noscript Fallback
     $preload_html = str_replace(
-        "rel='stylesheet'", 
+        "rel='stylesheet'",
         "rel='preload' as='style' onload=\"this.onload=null;this.rel='stylesheet'\"",
         $html
     );
     return $preload_html . '<noscript>' . $html . '</noscript>';
 }, 10, 2);
+
+// BLOCKSY (keep in this PHP cuz of Loading Order) - THEME RELATED
+add_filter('blocksy_critical_css_handles', function($handles) {
+    return array_merge($handles, [
+        'blocksy-dynamic-global',
+        'ct-main-styles',
+        'ct-page-title-styles',
+        'ct-flexy-styles',
+    ]);
+});
 
 // ======================================
 // LCP OPTIMIZATIONS
@@ -170,61 +175,6 @@ add_filter('render_block', function($html, $block) {
 }, 10, 2);
 
 // ======================================
-// BLOCKSY OPTIMIZATIONS - THEME RELATED
-// ======================================
-
-// Switch from lazy to eager for featured Images (ct-media-container)
-add_filter('blocksy:frontend:dynamic-data:post-featured-image:html', function($html) {
-    if (!is_singular()) return $html;
-    // Remove loading="lazy"
-    $html = preg_replace('/\s*loading=["\']lazy["\']/', '', $html);
-    // Add fetchpriority="high" if not present
-    if (strpos($html, 'fetchpriority') === false) {
-        $html = str_replace('<img', '<img fetchpriority="high"', $html);
-    }
-    // Add loading="eager"
-    if (strpos($html, 'loading=') === false) {
-        $html = str_replace('<img', '<img loading="eager"', $html);
-    }
-    return $html;
-}, 10);
-
-// Enable Blocksy Flexy Animation Styles
-add_action('wp_enqueue_scripts', fn() => wp_enqueue_style('ct-flexy-styles'));
-
-// Replace Blocksy Companion's Post Types Extra Read Time Feature.
-function er_reading_time( $post_id = null, $echo = false ) {
-    $post_id    = $post_id ?: get_the_ID();
-    $content    = get_post_field( 'post_content', $post_id );
-    $word_count = str_word_count( wp_strip_all_tags( strip_shortcodes( $content ) ) );
-    $minutes    = max( 1, (int) ceil( $word_count / 200 ) );
-	$output = '<li class="er-reading-time">'
-			.   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
-			.       'width="1em" height="1em" '
-			.       'fill="none" stroke="currentColor" '
-			.       'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
-			.       'aria-hidden="true">'
-			.       '<circle cx="12" cy="12" r="10" fill="none"/>'
-			.       '<polyline points="12 6 12 12 16 14" fill="none"/>'
-			.   '</svg>'
-			.   ' ' . $minutes . ' min read'
-			. '</li>';
-    if ( $echo ) {
-        echo $output;
-    } else {
-        return $output;
-    }
-}
-if ( apply_filters( 'er_reading_time_on_cards', true ) ) {
-    add_action( 'blocksy:post-meta:render-meta', function( $single_meta_id ) {
-        if ( 'categories' !== $single_meta_id ) {
-            return;
-        }
-        er_reading_time( null, true );
-    } );
-}
-
-// ======================================
 // FRONTEND ASSETS
 // ======================================
 
@@ -283,7 +233,6 @@ add_filter('widget_block_content', 'do_shortcode');
 
 // [reusable id="123"] - Display reusable Content Blocks
 add_shortcode('reusable', 'get_reusable_block');
-add_shortcode('blocksy_content_block', 'get_reusable_block'); // THEME RELATED
 function get_reusable_block($atts) {
     $atts = shortcode_atts(['id' => ''], $atts);
     $id = absint($atts['id']);
@@ -757,21 +706,7 @@ add_action('wp_footer', function () {
 					});
 				});
 			}
-
-			// Flexy Animation - THEME RELATED
-			const flexyElements = document.querySelectorAll('.flexy-container');
-			if (flexyElements.length) {
-				const observer = new IntersectionObserver(entries => {
-					entries.forEach(entry => {
-						if (entry.isIntersecting) {
-							entry.target.classList.add('daneden-slideInUp');
-							observer.unobserve(entry.target);
-						}
-					});
-				}, { threshold: 0.1 });
-				flexyElements.forEach(el => observer.observe(el));
-			}
-
+			
 			// External Link Processing - Client-side Version
 				const siteUrl = '<?php echo esc_js(home_url('/')); ?>';
 				const excludeDomains = [
