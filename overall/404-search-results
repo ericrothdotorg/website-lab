@@ -27,7 +27,7 @@ function er_render_private_page( $slug, $loop_html = '' ) {
         $page->post_content = str_replace( '<!--SEARCH RESULTS-->', $loop_html, $page->post_content );
     }
 
-    // Override the main Query so Blocksy renders this Page as if it were a normal published Page
+    // Override the main Query so Page renders as if it were a normal published Page
     global $wp_query, $post;
     $page->post_status   = 'publish';
     $page->post_password = '';
@@ -44,7 +44,7 @@ function er_render_private_page( $slug, $loop_html = '' ) {
     $wp_query->queried_object     = $page;
     $wp_query->queried_object_id  = $page->ID;
 
-    // Let Blocksy load its own Page Template - It handles Hero, Breadcrumbs, everything
+    // Let Blocksy load its own Page Template - THEME RELATED
     $template = get_page_template();
     if ( ! $template ) {
         $template = get_template_directory() . '/index.php';
