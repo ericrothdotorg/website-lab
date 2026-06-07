@@ -78,7 +78,7 @@ function lum_background_track() {
     }
     // Now do the actual Tracking
     global $wpdb;
-    $table_name = $wpdb->prefix . 'live_visitors';
+    $table_name = $wpdb->prefix . 'er_live_visitors';
     $ip_address = lum_get_client_ip();
     $ip_address = lum_anonymize_ip($ip_address);
     $raw_url = isset($_POST['page_url']) ? esc_url_raw($_POST['page_url']) : get_site_url() . '/';
@@ -224,7 +224,7 @@ function lum_is_bot($user_agent) {
 // Cleanup old visitor records daily
 function lum_cleanup_old_visitors() {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'live_visitors';
+    $table_name = $wpdb->prefix . 'er_live_visitors';
     $threshold = date('Y-m-d H:i:s', strtotime('-90 days'));
     $deleted = $wpdb->query($wpdb->prepare(
         "DELETE FROM $table_name WHERE last_seen < %s",
@@ -342,7 +342,7 @@ function lum_get_map_data() {
         return;
     }
     global $wpdb;
-    $table_name = $wpdb->prefix . 'live_visitors';
+    $table_name = $wpdb->prefix . 'er_live_visitors';
     $current_time = current_time('timestamp');
     $live_threshold = date('Y-m-d H:i:s', $current_time - (15 * 60)); // Increased to 15 minutes
     $history_threshold = date('Y-m-d H:i:s', $current_time - (90 * 24 * 60 * 60));
