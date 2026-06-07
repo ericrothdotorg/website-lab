@@ -115,8 +115,8 @@ function custom_render_activity_widget() {
     $cached = get_transient('custom_activity_stats');
     if ($cached === false) {
         $cached = [
-            'contact_today'  => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}contact_messages WHERE DATE(submitted_at) = CURDATE()"),
-            'contact_total'  => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}contact_messages"),
+            'contact_today'  => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_contact_messages WHERE DATE(submitted_at) = CURDATE()"),
+            'contact_total'  => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_contact_messages"),
             'views_today'    => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'view' AND row_type = 'event' AND DATE(created_at) = CURDATE()"),
             'views_total'    => $wpdb->get_var("SELECT SUM(count) FROM {$table} WHERE type = 'view' AND row_type = 'total'"),
             'likes_today'    => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'like' AND row_type = 'event' AND DATE(created_at) = CURDATE()"),
