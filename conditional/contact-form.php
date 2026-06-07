@@ -3,7 +3,7 @@
 
 /* =============================================================================
    1. DATABASE SETUP
-   Creates wp_contact_messages and wp_contact_nonce_log on first Run.
+   Creates wp_er_contact_messages and wp_er_contact_nonce_log on first Run.
    Safe to re-run. Existing installs: Adds Status Column if missing.
 ============================================================================= */
 
@@ -13,8 +13,8 @@ if ( is_admin() ) {
         $charset = $wpdb->get_charset_collate();
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         // Main Messages Table
-        if ( ! get_option( 'contact_messages_table_created' ) ) {
-            $table = $wpdb->prefix . 'contact_messages';
+        if ( ! get_option( 'er_contact_messages_table_created' ) ) {
+            $table = $wpdb->prefix . 'er_contact_messages';
             $sql   = "CREATE TABLE {$table} (
                 id           MEDIUMINT(9)  NOT NULL AUTO_INCREMENT,
                 name         VARCHAR(100)  NOT NULL,
@@ -26,18 +26,18 @@ if ( is_admin() ) {
                 PRIMARY KEY (id)
             ) {$charset};";
             dbDelta( $sql );
-            update_option( 'contact_messages_table_created', true );
+            update_option( 'er_contact_messages_table_created', true );
         } else {
             // Existing Installs: Add Status Column if it was created before that Column existed
-            $table = $wpdb->prefix . 'contact_messages';
+            $table = $wpdb->prefix . 'er_contact_messages';
             $col   = $wpdb->get_results( "SHOW COLUMNS FROM {$table} LIKE 'status'" );
             if ( empty( $col ) ) {
                 $wpdb->query( "ALTER TABLE {$table} ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'ok' AFTER message" );
             }
         }
         // Nonce Failure Log Table
-        if ( ! get_option( 'contact_nonce_log_table_created' ) ) {
-            $log_table = $wpdb->prefix . 'contact_nonce_log';
+        if ( ! get_option( 'er_contact_nonce_log_table_created' ) ) {
+            $log_table = $wpdb->prefix . 'er_contact_nonce_log';
             $sql       = "CREATE TABLE {$log_table} (
                 id        MEDIUMINT(9) NOT NULL AUTO_INCREMENT,
                 ip        VARCHAR(45)  NOT NULL,
@@ -45,7 +45,7 @@ if ( is_admin() ) {
                 PRIMARY KEY (id)
             ) {$charset};";
             dbDelta( $sql );
-            update_option( 'contact_nonce_log_table_created', true );
+            update_option( 'er_contact_nonce_log_table_created', true );
         }
     } );
 }
@@ -154,7 +154,7 @@ function handle_contact_form_ajax() {
     // Nonce
     if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'contact_form_nonce' ) ) {
         $ip = sanitize_text_field( $_SERVER['REMOTE_ADDR'] ?? 'unknown' );
-        $wpdb->insert( $wpdb->prefix . 'contact_nonce_log', [ 'ip' => $ip ], [ '%s' ] );
+        $wpdb->insert( $wpdb->prefix . 'er_contact_nonce_log', [ 'ip' => $ip ], [ '%s' ] );
         wp_send_json_error( [ 'message' => 'Security check failed.' ] );
     }
     // Transient Rate Limit
@@ -183,7 +183,7 @@ function handle_contact_form_ajax() {
     set_transient( 'contact_form_ip_' . md5( $ip ), time(), 60 );
     // Save to Database
     $result = $wpdb->insert(
-        $wpdb->prefix . 'contact_messages',
+        $wpdb->prefix . 'er_contact_messages',
         [ 'name' => $name, 'email' => $email, 'subject' => $subject, 'message' => $message, 'status' => 'ok' ],
         [ '%s', '%s', '%s', '%s', '%s' ]
     );
@@ -207,7 +207,7 @@ function handle_contact_form_ajax() {
     if ( ! $mail_sent ) {
         error_log( 'Contact form email failed to send.' );
         $wpdb->update(
-            $wpdb->prefix . 'contact_messages',
+            $wpdb->prefix . 'er_contact_messages',
             [ 'status' => 'mail_failed' ],
             [ 'id'     => $inserted_id ],
             [ '%s' ],
@@ -244,14 +244,14 @@ if ( is_admin() ) {
 
     function display_contact_messages() {
         global $wpdb;
-        $table     = $wpdb->prefix . 'contact_messages';
-        $log_table = $wpdb->prefix . 'contact_nonce_log';
+        $table     = $wpdb->prefix . 'er_contact_messages';
+        $log_table = $wpdb->prefix . 'er_contact_nonce_log';
         // Purge Nonce Log Entries older than 24 Hours to keep the Table lean
         $wpdb->query( "DELETE FROM {$log_table} WHERE failed_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)" );
         // Handle Bulk Delete
         if (
             isset( $_POST['bulk_delete'], $_POST['message_ids'], $_POST['_wpnonce'] ) &&
-            check_admin_referer( 'contact_messages_action', '_wpnonce' )
+            check_admin_referer( 'er_contact_messages_action', '_wpnonce' )
         ) {
             $ids          = array_map( 'intval', $_POST['message_ids'] );
             $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
@@ -301,7 +301,7 @@ if ( is_admin() ) {
                 <p>No messages found.</p>
             <?php else : ?>
                 <form method="post">
-                    <?php wp_nonce_field( 'contact_messages_action' ); ?>
+                    <?php wp_nonce_field( 'er_contact_messages_action' ); ?>
                     <table class="wp-list-table widefat fixed striped">
                         <thead>
                             <tr>
