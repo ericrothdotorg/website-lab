@@ -506,6 +506,14 @@ function er_hero_shortcode() {
 	// --------------------------------------------------------
 	// Shared helper: build background span from attachment ID
 	// --------------------------------------------------------
+
+	// NOTE on the "has-background-dim" class below:
+	// This is WordPress's core cover-block class name, reused here ONLY as a
+	// flag meaning "this hero has a background image". It does NOT add any
+	// overlay/tint over the image — there is no layer over the image at all.
+	// The only dimming in the hero is the rgba(0,0,0,0.65) box behind the
+	// title/breadcrumbs, defined on .er-hero-inner in the child theme style.css
+	
 	$build_bg_span = function( $img_id ) {
 		if ( ! $img_id ) return '';
 		$img_url = wp_get_attachment_image_url( $img_id, 'full' );
