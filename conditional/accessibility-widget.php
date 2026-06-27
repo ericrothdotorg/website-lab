@@ -89,7 +89,7 @@ add_action('wp_footer', function () {
    href="<?php echo esc_url(get_permalink(48682)); ?>"
    aria-label="Site Accessibility"
    title="Site Accessibility">
-	<img src="https://ericroth.org/wp-content/uploads/2025/04/universal-access-greyblue.svg"
+	<img src="/wp-content/uploads/2025/04/universal-access-greyblue.svg"
 	     alt=""
 	     aria-hidden="true">
 </a>
@@ -221,22 +221,22 @@ add_action('wp_footer', function () {
 	/* == SETTINGS PANEL == */
 
 	#a11y-panel {background: var(--color-8); border: 1px solid var(--color-5); transition: background 0.2s ease; border-radius: 25px; padding: 25px; max-width: 350px; box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.25);}
-	#a11y-panel h3 {font-size: 1.75rem; margin: 0 0 25px; display: flex; align-items: center; gap: 10px;}
+	#a11y-panel h3 {font-size: var(--er-fs-lg); margin: 0 0 25px; display: flex; align-items: center; gap: 10px;}
 	body.dark-mode #a11y-panel {background: var(--color-10); border: 1px solid var(--color-4); box-shadow: none;}
 
 	.a11y-section {margin-bottom: 25px;}
 
-	.a11y-label {font-weight: bold; text-transform: uppercase; margin-bottom: 10px;}
+	.a11y-label {font-weight: var(--er-fw-bold); text-transform: uppercase; margin-bottom: 10px;}
 
 	.a11y-options {display: flex; flex-wrap: wrap; gap: 8px;}
-	.a11y-option {background: var(--color-7); border: 1px solid var(--color-5); border-radius: 6px; padding: 7px 12px; font-size: .9rem; cursor: pointer; color:var(--color-3); transition: background .15s ease; border-color .15s ease;}
+	.a11y-option {background: var(--color-7); border: 1px solid var(--color-5); border-radius: 6px; padding: 7px 12px; font-size: var(--er-fs-sm); cursor: pointer; color:var(--color-3); transition: background .15s ease; border-color .15s ease;}
 	.a11y-option:hover {background: var(--color-5);}
-	.a11y-option.is-active {background: var(--color-1); border-color: var(--color-1); color: var(--color-8); font-weight: bold;}
+	.a11y-option.is-active {background: var(--color-1); border-color: var(--color-1); color: var(--color-8); font-weight: var(--er-fw-bold);}
 	.a11y-option:focus-visible {outline: 2px solid var(--color-1); outline-offset: 2px;}
 	.a11y-option.swatch {width: 32px; height: 32px; padding: 0; border-radius: 50%; border: 2px solid var(--color-5);}
 	.a11y-option.swatch.is-active {outline: 3px solid var(--color-1) !important; outline-offset: var(--a11y-focus-offset);}
 
-	#a11y-reset {display: inline-block; margin-top: 10px; background: none; border: none; color:var(--color-1); font-weight: bold; cursor: pointer; padding: 0;}
+	#a11y-reset {display: inline-block; margin-top: 10px; background: none; border: none; color:var(--color-1); font-weight: var(--er-fw-bold); cursor: pointer; padding: 0;}
 	#a11y-reset:hover {color: var(--color-2);}
 
 </style>
