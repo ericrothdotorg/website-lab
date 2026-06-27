@@ -1,6 +1,13 @@
 <?php
 // NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
+// ============================================================
+// THEME-COUPLING MARKERS (search these before/after a theme switch):
+//   THEME RELATED = hard coupling; breaks/orphans on switch — must fix.
+//   THEME REVIEW  = soft coupling; reads a theme-defined value, won't
+//                   break but the value shifts — verify.
+// ============================================================
+
 // ======================================
 // CONFIGURATION CONSTANTS
 // ======================================
@@ -69,42 +76,45 @@ add_action('init', function() {
 add_filter('pings_open', '__return_false');
 add_filter('pre_ping', '__return_empty_array');
 
-// Remove "Edit" Link in Frontend
-add_filter('edit_post_link', '__return_false', 10, 1);
-
 // ======================================
 // PERFORMANCE & ASSET LOADING
 // ======================================
 
-// Remove QUERY Strings from static Resources for better Caching
-add_filter('style_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
-add_filter('script_loader_src', fn($src) => remove_query_arg('ver', $src), 10, 2);
+// Strip ?ver=, but stamp filemtime on theme my-assets/ and code-snippets files so edits bust cache
+// THEME RELATED — the 'ollie-child' handle and '/themes/ollie-child/my-assets/' path below are the
+// child theme's enqueue handle + asset dir (FUNCTIONAL strings, not comments). On a theme switch both
+// change to the new theme's handle/slug; update them here or asset versioning misses the new theme's files.
+add_filter('style_loader_src', 'er_version_assets', 10, 2);
+add_filter('script_loader_src', 'er_version_assets', 10, 2);
+function er_version_assets($src, $handle = '') {
+    if ($handle === 'ollie-child') return $src;
+    if (strpos($src, '/wp-content/code-snippets/') !== false
+        || strpos($src, '/themes/ollie-child/my-assets/') !== false) {
+        $path = WP_CONTENT_DIR . substr($src, strpos($src, '/wp-content') + strlen('/wp-content'));
+        $path = strtok($path, '?');
+        return file_exists($path) ? add_query_arg('ver', filemtime($path), $src) : $src;
+    }
+    return remove_query_arg('ver', $src);
+}
 
-// Defer non-critical CSS to reduce render-blocking
-
-// GENERIC (which CSS Handles are critical?)
+// Critical CSS: these load normally; everything else defers via preload
+// THEME RELATED — 'ollie-child' is the child theme's style handle (functional); update on theme switch.
+add_filter('er_critical_css_handles', function($handles) {
+    return array_merge($handles, ['ollie-child']);
+});
 add_filter('style_loader_tag', function($html, $handle) {
-    $critical_handles = apply_filters('blocksy_critical_css_handles', []); // THEME RELATED
-    if (in_array($handle, $critical_handles)) {
+    $critical = apply_filters('er_critical_css_handles', []);
+    if (in_array($handle, $critical, true)
+        || strpos($handle, 'global-styles') === 0
+        || strpos($handle, 'wp-block') === 0) {
         return $html;
     }
-    $preload_html = str_replace(
+    return str_replace(
         "rel='stylesheet'",
         "rel='preload' as='style' onload=\"this.onload=null;this.rel='stylesheet'\"",
         $html
-    );
-    return $preload_html . '<noscript>' . $html . '</noscript>';
+    ) . '<noscript>' . $html . '</noscript>';
 }, 10, 2);
-
-// BLOCKSY (keep in this PHP cuz of Loading Order) - THEME RELATED
-add_filter('blocksy_critical_css_handles', function($handles) {
-    return array_merge($handles, [
-        'blocksy-dynamic-global',
-        'ct-main-styles',
-        'ct-page-title-styles',
-        'ct-flexy-styles',
-    ]);
-});
 
 // ======================================
 // LCP OPTIMIZATIONS
@@ -174,6 +184,25 @@ add_filter('render_block', function($html, $block) {
     );
 }, 10, 2);
 
+// Preload header logo at 150px (its rendered size; displays at 50px) + mark eager/high
+add_action('wp_head', function() {
+    $logo_id = get_theme_mod('custom_logo');
+    if (!$logo_id) return;
+    $src = wp_get_attachment_image_url($logo_id, array(150, 150));
+    if ($src) {
+        echo '<link rel="preload" as="image" href="' . esc_url($src) . '" fetchpriority="high">' . "\n";
+    }
+}, 1);
+
+// Mark the site-logo <img> eager + high priority
+add_filter('get_custom_logo', function($html) {
+    return preg_replace(
+        '/<img(?![^>]*fetchpriority)([^>]+)>/',
+        '<img$1 fetchpriority="high" loading="eager">',
+        $html, 1
+    );
+});
+
 // ======================================
 // FRONTEND ASSETS
 // ======================================
@@ -216,12 +245,23 @@ function fix_wp_lightbox_js() {
 }
 add_action( 'wp_footer', 'fix_wp_lightbox_js' );
 
-// Prevent cached Frontend for logged-in Editors
-add_action('template_redirect', function () {
-    if (!is_user_logged_in()) return;
-    if (!current_user_can('edit_posts')) return;
-    nocache_headers();
-});
+// ======================================
+// BREADCRUMBS
+// ======================================
+
+// er_breadcrumbs() lives in Eric Companion PHP.
+// Defined there so it is available in all execution contexts
+// (frontend, admin-ajax.php, Gutenberg editor) — it is called by er_hero_shortcode()
+
+// ======================================
+// READING TIME
+// ======================================
+
+// er_reading_time() and its render_block hook live in Eric Companion PHP.
+// Defined there so the function is available in all execution contexts
+// (frontend, admin-ajax.php, Gutenberg editor) — it is called by er_render_card()
+// and er_load_more_handler() which run on admin-ajax.php, and by er_hero_shortcode().
+// READING_SPEED_WPM constant (defined above) is used via defined() fallback guard
 
 // ======================================
 // SHORTCODES
@@ -230,6 +270,16 @@ add_action('template_redirect', function () {
 // Enable Shortcodes in Widgets and Blocks
 add_filter('widget_text', 'do_shortcode');
 add_filter('widget_block_content', 'do_shortcode');
+add_filter('render_block_core/block', 'do_shortcode');          // Synced patterns (wp:block ref)
+add_filter('render_block_core/html', 'do_shortcode');           // Custom HTML blocks (wp:html) in template parts and templates
+
+// Drop wpautop's stray <p> wrapping around block-level shortcode <div>s (both sides)
+add_filter('the_content', function ($content) {
+    $content = preg_replace('#<p>(\s*<div)#', '$1', $content);   // opening: <p> before <div>
+    $content = preg_replace('#(</div>\s*)</p>#', '$1', $content); // closing: </p> after </div>
+    $content = preg_replace('#(</div>\s*)<p>\s*</p>#', '$1', $content); // trailing empty <p></p>
+    return $content;
+}, 20);
 
 // [reusable id="123"] - Display reusable Content Blocks
 add_shortcode('reusable', 'get_reusable_block');
@@ -304,18 +354,24 @@ add_shortcode('post_stats', function() {
     $avg_words = $sentence_count > 0 ? round($stats['words'] / $sentence_count, 1) : 0;
     // Format Output with Thousands Separators
     $fmt = fn($n) => number_format($n, 0, '.', ",");
+    // Sidebar hero (Read Time + Words) + 9-cell metric grid. Numbers unchanged; only markup restructured.
+    $cell = fn( $num, $label ) => '<div class="ps-cell"><span class="ps-num">' . $num . '</span><span class="ps-lbl">' . $label . '</span></div>';
     $output = '<div class="post-stats">'
-         . '<span><strong>' . $fmt($stats['words']) . '</strong> Words</span> • '
-         . '<span>Read Time: <strong>' . $stats['minutes'] . '</strong> Min.</span><br>'
-         . '<span><strong>' . $fmt($stats['chars']) . '</strong> Characters</span> • '
-         . '<span><strong>' . $fmt($stats['paragraphs']) . '</strong> Paragraphs</span><br>'
-         . '<span><strong>' . $fmt($sentence_count) . '</strong> Sentences</span> • '
-         . '<span><strong>' . $avg_words . '</strong> Words / Sentence</span><br>'
-         . '<span><strong>' . $fmt($internal) . '</strong> Internal Links</span> • '
-         . '<span><strong>' . $fmt($external) . '</strong> External Links</span><br>'
-         . '<span><strong>' . $fmt($stats['titles']) . '</strong> Titles</span> • '
-         . '<span><strong>' . $fmt($stats['images']) . '</strong> Images</span> • '
-         . '<span><strong>' . $fmt($stats['videos']) . '</strong> Videos</span>'
+         . '<div class="ps-hero">'
+         .     '<span class="ps-hero-big">' . $stats['minutes'] . ' min</span>'
+         .     '<span class="ps-hero-sub">Read · ' . $fmt($stats['words']) . ' Words</span>'
+         . '</div>'
+         . '<div class="ps-grid">'
+         .     $cell( $fmt($stats['chars']),      'Characters' )
+         .     $cell( $fmt($stats['paragraphs']), 'Paragraphs' )
+         .     $cell( $fmt($sentence_count),      'Sentences' )
+         .     $cell( $avg_words,                 'Words / Sentence' )
+         .     $cell( $fmt($internal),            'Internal Links' )
+         .     $cell( $fmt($external),            'External Links' )
+         .     $cell( $fmt($stats['titles']),     'Titles' )
+         .     $cell( $fmt($stats['images']),     'Images' )
+         .     $cell( $fmt($stats['videos']),     'Videos' )
+         . '</div>'
          . '</div>';
     set_transient($cache_key, $output, CACHE_POST_STATS);
     return $output;
@@ -561,7 +617,7 @@ add_action('wp_footer', function () {
 		  </svg>
 		</button>
 		We serve <strong>cookies</strong> to enhance your browsing experience. Learn more in our
-		<a href="https://ericroth.org/this-site/site-policies/">Site Policies</a><br>
+		<a href="/this-site/site-policies/">Site Policies</a><br>
 		<span style="display: block; text-align: center;">
 			<button type="button" id="cookie-accept" aria-label="Accept all cookies"><span style="font-weight: bold;">Accept</span></button>
 			<button type="button" id="cookie-reject" aria-label="Reject optional cookies" class="reject-btn"><span style="font-weight: bold;">Essentials</span></button>
@@ -570,7 +626,7 @@ add_action('wp_footer', function () {
 
 	<style>
 		#cookie-close {position: absolute; top: -20px; right: -20px; background: transparent !important; border: none !important; color: var(--color-3); font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 0 !important; margin: 0 !important;} /* SVG x Icon inherits this Color */
-		#cookie-notice button:not(#cookie-close) {position: relative; font-weight: normal; color: var(--color-8); background: var(--color-4); border-radius: 5px; padding: 8px; margin-top: 15px; width: 48%; cursor: pointer; border: none; margin-left: 2%; display: inline-block; overflow: hidden;}
+		#cookie-notice button:not(#cookie-close) {position: relative; font-weight: var(--er-fw-normal); color: var(--color-8); background: var(--color-4); border-radius: 5px; padding: 8px; margin-top: 15px; width: 48%; cursor: pointer; border: none; margin-left: 2%; display: inline-block; overflow: hidden;}
 		#cookie-notice button:not(#cookie-close):first-child {margin-left: 0;}
 		#cookie-accept, #cookie-reject {background: var(--color-4);}
 		#cookie-accept:hover, #cookie-reject:hover {background: var(--color-3) !important;}
@@ -625,6 +681,11 @@ add_action('wp_footer', function () {
 				if (container) {
 					container.setAttribute("aria-valuenow", percentage);
 				}
+				// Back to Top Button: reuse the scrollTop already read this frame (no second scroll listener)
+				const backToTop = document.querySelector(".er-back-to-top");
+				if (backToTop) {
+					backToTop.classList.toggle("er-show", scrollTop > 500);
+				}
 				ticking = false;
 			}
 			window.addEventListener("scroll", () => {
@@ -640,10 +701,40 @@ add_action('wp_footer', function () {
 		<div class="scroll-indicator-bar" id="my_scroll_indicator"></div>
 	</div>
 
+	<!-- Back to Top Button -->
+	<!-- Sits in the fixed bottom-right pill row: a11y widget (right: 125px), language switcher (right: 75px), back-to-top (right: 25px). -->
+	<!-- Rocket SVG icon (reproduced once during migration); colors/shape/hover match the sibling pills. Self-contained, no theme dependency. -->
+	<!-- href="#top" is the native no-JS fallback: with no element of that id, browsers scroll to the document top. -->
+
+	<a href="#top" class="er-back-to-top" title="Go to top" aria-label="Go to top">
+		<svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M18.1,9.4c-0.2,0.4-0.5,0.6-0.9,0.6h-3.7c0,0-0.6,8.7-0.9,9.1C12.2,19.6,11.1,20,10,20c-1,0-2.3-0.3-2.7-0.9C7,18.7,6.5,10,6.5,10H2.8c-0.4,0-0.7-0.2-1-0.6C1.7,9,1.7,8.6,1.9,8.3c2.8-4.1,7.2-8,7.4-8.1C9.5,0.1,9.8,0,10,0s0.5,0.1,0.6,0.2c0.2,0.1,4.6,3.9,7.4,8.1C18.2,8.7,18.3,9.1,18.1,9.4z"></path></svg>
+	</a>
+
+	<style>
+		.er-back-to-top {position: fixed; bottom: 25px; right: 25px; z-index: 999; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: var(--color-3); border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,.2); color: var(--color-8); opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.2s ease;}
+		.er-back-to-top.er-show {opacity: 1; visibility: visible;}
+		.er-back-to-top:hover {transform: scale(1.1);}
+		.er-back-to-top:focus-visible {outline: 2px solid var(--color-3); outline-offset: 2px;}
+		.er-back-to-top svg {display: block; fill: var(--color-8);} /* fill pinned directly: the button is an <a>, so currentColor would inherit the theme's link/hover colors */
+	</style>
+
 	<!-- Consolidated JavaScript - Single DOMContentLoaded -->
 
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
+
+			// Back to Top Button: smooth scroll (respecting reduced-motion) + initial visibility
+			// (initial state matters when a page loads already scrolled, e.g. anchor links or back-navigation —
+			// the scroll listener only fires on the first actual scroll)
+			const backToTopButton = document.querySelector(".er-back-to-top");
+			if (backToTopButton) {
+				backToTopButton.classList.toggle("er-show", window.scrollY > 500);
+				backToTopButton.addEventListener("click", function(event) {
+					event.preventDefault();
+					const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+					window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+				});
+			}
 		
 			// Cookie Consent Banner
 			const hasConsent = document.cookie.indexOf("cookieaccepted=") >= 0;
