@@ -613,28 +613,6 @@ function er_hero_shortcode() {
 		$output .= '</header>';
 		$output .= '</div>';
 		$output .= '</div>';
-	
-	// --------------------------------------------------------
-	// CONTEXT: CPT Archive or standard Archive Root
-	// --------------------------------------------------------
-	} elseif ( is_post_type_archive() || is_archive() ) {
-		$post_type_obj = get_queried_object();
-		$title         = isset( $post_type_obj->labels->name )
-						 ? $post_type_obj->labels->name
-						 : post_type_archive_title( '', false );
-		$description   = isset( $post_type_obj->description ) ? $post_type_obj->description : '';
-		// No image on archive roots — matches previous theme behaviour
-		$output .= '<div class="er-hero-section er-hero--no-image" data-type="archive">';
-		$output .= '<div class="er-hero-inner">';
-		$output .= '<header class="er-entry-header">';
-		$output .= '<h1 class="page-title">' . esc_html( $title ) . '</h1>';
-		if ( $description ) {
-			$output .= '<div class="page-description er-hidden-sm">' . wp_kses_post( $description ) . '</div>';
-		}
-		$output .= er_breadcrumbs();
-		$output .= '</header>';
-		$output .= '</div>';
-		$output .= '</div>';
 	}
 	return $output;
 }
