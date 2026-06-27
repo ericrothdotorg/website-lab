@@ -78,10 +78,10 @@ function er_post_views_shortcode($atts) {
         .post-views-wrapper {
             display: inline-block;
             margin-right: 25px;
-			padding-top: 10px;
-			padding-bottom: 25px;
+			padding-top: 0px;
+			padding-bottom: 10px;
             vertical-align: middle;
-			font-weight: bold;
+			font-weight: var(--er-fw-bold);
         }
     </style>';
 	// Output Number of Views
@@ -291,14 +291,14 @@ function custom_like_dislike_shortcode() {
     $style = '<style>
         .like-dislike-buttons-wrapper {
             display: inline-block;
-			padding-top: 10px;
-			padding-bottom: 25px;
+			padding-top: 0px;
+			padding-bottom: 10px;
             vertical-align: middle;
         }
         .like-dislike-buttons-wrapper button {
             background: none;
             border: none;
-            font-weight: bold;
+            font-weight: var(--er-fw-bold);
             color: var(--color-1);
             cursor: pointer;
             display: inline-block;
@@ -335,6 +335,7 @@ function custom_like_dislike_shortcode() {
 
     <script>
         var reactionNonce = "' . wp_create_nonce("update_post_reaction") . '";
+        var reactionAjaxUrl = "' . admin_url("admin-ajax.php") . '";
         function checkVoteExpiration(postId) {
             const expiryKey = "voteExpiry_" + postId;
             const expiryTime = localStorage.getItem(expiryKey);
@@ -358,7 +359,7 @@ function custom_like_dislike_shortcode() {
                 btn.setAttribute("title", "You have already voted. Try again later.");
                 return;
             }
-            fetch("/wp-admin/admin-ajax.php?action=update_likes&post_id=" + postId + "&nonce=" + reactionNonce)
+            fetch(reactionAjaxUrl + "?" + new URLSearchParams({ action: "update_likes", post_id: postId, nonce: reactionNonce }), { credentials: "same-origin" })
             .then(response => response.text())
             .then(newLikes => {
                 document.getElementById("like-count-" + postId).innerText = newLikes;
@@ -382,7 +383,7 @@ function custom_like_dislike_shortcode() {
                 btn.setAttribute("title", "You have already voted. Try again later.");
                 return;
             }
-            fetch("/wp-admin/admin-ajax.php?action=update_dislikes&post_id=" + postId + "&nonce=" + reactionNonce)
+            fetch(reactionAjaxUrl + "?" + new URLSearchParams({ action: "update_dislikes", post_id: postId, nonce: reactionNonce }), { credentials: "same-origin" })
             .then(response => response.text())
             .then(newDislikes => {
                 document.getElementById("dislike-count-" + postId).innerText = newDislikes;
