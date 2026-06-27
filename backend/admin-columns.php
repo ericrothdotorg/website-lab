@@ -56,7 +56,7 @@ function initialize_custom_admin_columns() {
         
         switch ($column) {
             case 'id':
-                echo $post_id;
+                echo esc_html($post_id);
                 break;
             case 'featured_image':
                 echo get_the_post_thumbnail($post_id, [65, 65], ['style' => 'border-radius:4px;']);
@@ -68,7 +68,7 @@ function initialize_custom_admin_columns() {
                 if (!isset($word_counts[$post_id])) {
                     $word_counts[$post_id] = str_word_count(strip_tags(get_post_field('post_content', $post_id)));
                 }
-                echo $word_counts[$post_id];
+                echo esc_html($word_counts[$post_id]);
                 break;
             case 'read_time':
                 if (!isset($word_counts[$post_id])) {
@@ -285,7 +285,7 @@ function initialize_custom_admin_columns() {
     add_action('manage_media_custom_column', function ($column, $post_id) {
         switch ($column) {
             case 'id':
-                echo $post_id;
+                echo esc_html($post_id);
                 break;
 			case 'uploaded_to':
 				$parent_id = wp_get_post_parent_id($post_id);
@@ -306,7 +306,7 @@ function initialize_custom_admin_columns() {
 				break;
             case 'dimensions':
                 $meta = wp_get_attachment_metadata($post_id);
-                echo isset($meta['width']) ? "{$meta['width']}×{$meta['height']}" : '—';
+                echo isset($meta['width']) ? esc_html("{$meta['width']}×{$meta['height']}") : '—';
                 break;
             case 'file_size':
                 $file = get_attached_file($post_id);
@@ -314,7 +314,7 @@ function initialize_custom_admin_columns() {
                 break;
             case 'available_sizes':
                 $meta = wp_get_attachment_metadata($post_id);
-                echo !empty($meta['sizes']) ? implode(', ', array_keys($meta['sizes'])) : '—';
+                echo !empty($meta['sizes']) ? esc_html(implode(', ', array_keys($meta['sizes']))) : '—';
                 break;
             case 'file_format':
                 $file = get_attached_file($post_id);
@@ -331,7 +331,7 @@ function initialize_custom_admin_columns() {
                 if (file_exists($webp_file)) {
                     $formats[] = 'WEBP';
                 }
-                echo $formats ? implode(', ', $formats) : '—';
+                echo $formats ? esc_html(implode(', ', $formats)) : '—';
                 break;
         }
     }, 10, 2);
@@ -383,7 +383,7 @@ function initialize_custom_admin_columns() {
 	foreach ($taxonomies as $tax) {
 		add_filter("manage_{$tax}_custom_column", function($content, $column, $term_id) {
 			if ($column === 'id') {
-			echo $term_id;
+			echo esc_html($term_id);
 			}
 			if ($column === 'featured_image') {
 			$img_id = get_term_meta($term_id, 'er_term_image_id', true);
