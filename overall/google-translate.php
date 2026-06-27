@@ -14,7 +14,7 @@ add_action('wp_footer', function () {
     aria-expanded="false" aria-controls="google_translate_element" tabindex="0"
     title="Language Switcher" onclick="toggleTranslate()"
     onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleTranslate(); }">
-	<img src="https://ericroth.org/wp-content/uploads/2026/05/globe-solid-white.svg" width="24" height="24" alt="" aria-hidden="true">
+	<img src="/wp-content/uploads/2026/05/globe-solid-white.svg" width="24" height="24" alt="" aria-hidden="true">
 </div>
 
 <!-- Screen reader announcements -->
