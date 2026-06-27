@@ -30,12 +30,12 @@ add_action('wp_head', function() use ($counter_pages) {
         .counter-card {margin: 10px auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; width: var(--disc-size); max-width: 100%; aspect-ratio: 1 / 1; transition: transform 1.5s ease-in-out;}
         .counter-card:hover {transform: scale(1.05); background: var(--color-7);}
         .counter-card .counter-body {text-align: center; color: var(--color-3);}
-        .counter-value {color: #990033; font-size: 2rem; font-weight: bold;}
+        .counter-value {color: #990033; font-size: var(--er-fs-xl); font-weight: var(--er-fw-bold);}
         .counter-value, .counter-label {vertical-align: middle;}
-        .counter-label {padding-left: 10px; font-size: 1.25rem; font-weight: normal;}
+        .counter-label {padding-left: 10px; font-size: var(--er-fs-md); font-weight: var(--er-fw-normal);}
 		
         @media (max-width: 1200px) {.counter-grid {grid-template-columns: repeat(auto-fit, minmax(var(--disc-size), 1fr));}}
-		@media (max-width: 600px) {:root {--disc-size: 160px;} .counter-grid {grid-template-columns: repeat(2, 1fr);} .counter-value {font-size: 1.75rem;} .counter-label {font-size: 1rem;}}
+		@media (max-width: 600px) {:root {--disc-size: 160px;} .counter-grid {grid-template-columns: repeat(2, 1fr);} .counter-value {font-size: var(--er-fs-lg);} .counter-label {font-size: 1rem;}}
 		
 		body.dark-mode .counter-card {border: 1px solid var(--color-4); background: var(--color-10);}
 		body.dark-mode .counter-card:hover {background: var(--color-6);}
