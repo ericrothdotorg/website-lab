@@ -1,0 +1,877 @@
+/* ============================================================
+   Child Theme — Component & Utility Styles
+   Maintained in Code Snippets Pro (CSS snippet, file-based).
+
+   WHY THIS LIVES HERE (and not in the theme's style.css):
+   These are SELF-CONTAINED styles for the site's own classes
+   (.er-*, custom utilities, footer, toggle). They don't fight the
+   parent theme's cascade, so they don't need the theme enqueue's
+   guaranteed "load-after-parent" ordering.
+
+   WHAT STAYS IN the child theme's style.css (do NOT move here):
+   tokens (:root) + dark canvas, base links, editorial lists,
+   pullquote, header/nav, hero — everything that overrides the parent
+   theme or theme.json and therefore depends on the child load order.
+
+   DEPENDENCY NOTE: rules here use var(--color-*), --er-wide-row and
+   the list dials, which are defined in the theme's style.css :root.
+   CSS variables resolve at use-time across files, so this is fine AS
+   LONG AS the theme stylesheet loads first (it does: theme enqueue
+   runs before this file-based snippet). If colours ever render as
+   unset/black, that load-order assumption broke — check first.
+
+   THEME-COUPLING MARKERS (search these before/after a theme switch):
+     THEME RELATED = hard coupling; breaks/orphans on switch — must fix.
+     THEME REVIEW  = soft coupling; reads a theme-defined value, won't
+                     break but the value shifts — verify.
+
+   CONVENTIONS: dark-mode rules sit beside their light rule; asset
+   URLs are root-relative; "No var Color" = intentional one-off hex.
+
+   CONTENTS
+     A. TYPOGRAPHY & TEXT HELPERS   line-break/colour, text-columns, design blocks, page-17552 tabs
+     B. COMPONENTS                  tables, details/accordion, tag-cloud pills, image effects,
+                                    bedps cards, embeds/video, buttons, boxes, forms, social-icon rows
+     C. CONTENT COMPONENTS          grid / cards / related / slider / post-footer
+     D. FOOTER                      navy wrapper, columns, logo animation, dropdown, animated word
+     E. TEMPLATE-PART COMPONENTS    archive filter tabs, breadcrumbs
+     F. SIDEBAR DESIGN             widget titles, cards, stats hero, select+count, author tiles & links, two-column/sidebar-hide
+     G. DARK-MODE TOGGLE BUTTON     the switch UI
+     H. MOTION & A11Y               reduced-motion umbrella
+   ============================================================ */
+
+/* ============================================================
+   A. TYPOGRAPHY & TEXT HELPERS
+   ============================================================ */
+
+/* ---- Line-break + colour helpers ---- */
+.br {display: none;}
+@media (max-width: 600px) {.br {display: block;}}
+.font-color-white {color: var(--color-5);}
+.font-color-black {color: var(--color-3);}
+
+/* ---- Text as columns ---- */
+.two-columns-text, .three-columns-text, .four-columns-text {
+	column-gap: 40px;
+	column-rule: 1px solid var(--color-9);
+}
+.two-columns-text {column-count: 2;}
+.three-columns-text {column-count: 3;}
+.four-columns-text {column-count: 4;}
+@media (max-width:768px) {.two-columns-text, .three-columns-text, .four-columns-text {column-count: 1; column-gap: 0; column-rule: none;}}
+
+/* ---- (Emphasized) design blocks ---- */
+.emphasized-design-green, .emphasized-design-red, .emphasized-design-orange {
+	font-style: italic;
+	border-left: 1px solid var(--color-9);
+	margin-left: 2em;
+	padding-left: 2em;
+}
+.emphasized-design-green {color: #339966;} /* No var Color */
+.emphasized-design-red {color: #990033;} /* No var Color */
+.emphasized-design-orange {color: #ed7d31;} /* No var Color */
+.font-design-red {color: #990033;} /* No var Color */
+body.dark-mode .emphasized-design-red {color: #cc0044;} /* No var Color */
+body.dark-mode .font-design-red {color: #cc0044;} /* No var Color */
+
+/* ---- Tabs (page 17552 — custom-HTML .tabs/.tab-content; JS = setupTabs() in Site Essentials & Cookies PHP ---- */
+body.page-id-17552 .tabs {overflow: hidden;}
+body.page-id-17552 .tabs button {float: left; padding: 7.5px 10px; margin: 0px 2.5px; color: var(--color-1); font-weight: var(--er-fw-bold); background: var(--color-8); border: solid var(--color-5); border-width: 1px 1px 0 1px; border-radius: 5px 5px 0 0; cursor: pointer;}
+body.page-id-17552 .tabs button:hover {color: var(--color-2);}
+body.page-id-17552 .tab-content {display: none; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 5px 15px 15px 15px; padding: 0rem 2rem 2rem 2rem;}
+body.dark-mode.page-id-17552 .tabs button {background: var(--color-10); border: solid var(--color-4); border-width: 1px 1px 0 1px;}
+body.dark-mode.page-id-17552 .tab-content {background: var(--color-10); border: 1px solid var(--color-4);}
+
+/* ============================================================
+   B. COMPONENTS
+   ============================================================ */
+
+/* ---- B1. Tables — full system (govern once; opt out per-table with a class) ----
+   Base look, uniform across every core/table:
+     - Full grid borders (outer frame + every cell line), light + dark.
+     - Full-width table, columns sized to content (table-layout: auto).
+     - Header: bold, left-aligned, with an emphasis underline (both modes).
+     - Cells: left-aligned, padding 0.25em 1em, vertical-align middle.
+     - No zebra (the grid delineates rows).
+     - Mobile-safe: the figure scrolls horizontally if a wide table overflows.
+   !important is confined to BORDER + WIDTH/LAYOUT props (needed to beat the
+   editor's inline styles). Each governed axis has an opt-out utility class so a
+   table can deliberately differ from the base:
+     .is-custom-borders  -> keep the table's own border settings
+     .is-custom-width     -> keep the table's own width / column sizing
+     .align-right / .align-center  -> per-table cell text alignment
+   ============================================================ */
+
+/* Width + column behaviour: fill the content column, size columns to content. */
+.wp-block-table:not(.is-custom-width) table {width: 100% !important; table-layout: auto !important;}
+
+/* Mobile safety: wide tables scroll inside the figure instead of breaking layout. */
+.wp-block-table {overflow-x: auto;}
+
+/* Grid borders (light). */
+.wp-block-table:not(.is-custom-borders) table {border-collapse: collapse !important; border: 1px solid var(--color-5) !important;}
+.wp-block-table:not(.is-custom-borders) :is(th, td) {border: 1px solid var(--color-5) !important;}
+
+/* Backgrounds + header emphasis (light). */
+.wp-block-table thead {background: var(--color-5);}
+.wp-block-table tbody tr {background: var(--color-8);}
+.wp-block-table tr:hover {background: var(--color-7);}
+.wp-block-table thead th {border-bottom: 3px solid var(--color-5);}
+
+/* Header + cell typography / alignment. */
+.wp-block-table th {font-weight: var(--er-fw-bold); text-align: left;}
+.wp-block-table td {text-align: left;}
+.wp-block-table td,
+.wp-block-table th {padding-block: var(--er-table-pad-base); padding-inline: 1em; font-size: var(--er-fs-body); line-height: var(--er-lh-base); vertical-align: middle;}
+
+/* Per-table opt-out (alignment for cells only; header stays left for scannability). */
+.wp-block-table.align-right td {text-align: right;}
+.wp-block-table.align-center td {text-align: center;}
+/* Per-table opt-in: compact rows (add class "table-compact" in editor). */
+.wp-block-table.table-compact td,
+.wp-block-table.table-compact th {padding-block: var(--er-table-pad-compact);}
+/* Per-table opt-in: roomier rows (add class "table-roomy" in editor). */
+.wp-block-table.table-roomy td,
+.wp-block-table.table-roomy th {padding-block: var(--er-table-pad-roomy);}
+
+/* Inner-block margin reset (unchanged). */
+.wp-block-table td > *:first-child,
+.wp-block-table th > *:first-child {margin-top: 0;}
+.wp-block-table td > *:last-child,
+.wp-block-table th > *:last-child {margin-bottom: 0;}
+.wp-block-table td label {display: inline;}
+.wp-block-table td input[type="checkbox"] {margin-right: 0.5em;}
+
+/* Dark mode: same grid + header emphasis; backgrounds/colours as before. */
+body.dark-mode .wp-block-table:not(.is-custom-borders) table {border: 1px solid var(--color-4) !important;}
+body.dark-mode .wp-block-table:not(.is-custom-borders) :is(th, td) {border: 1px solid var(--color-4) !important;}
+body.dark-mode .wp-block-table thead {background: #16202e;} /* No var Color */
+body.dark-mode .wp-block-table thead th {border-bottom: 3px solid var(--color-4);}
+body.dark-mode .wp-block-table th {color: var(--color-7); background: #16202e;} /* No var Color */
+body.dark-mode .wp-block-table tbody tr {background: var(--color-10);}
+body.dark-mode .wp-block-table tr:hover {background: var(--color-6);}
+
+/* ---- B2. Details & summary ---- */
+summary {color: var(--color-1); font-weight: var(--er-fw-bold); cursor: pointer;}   /* raw-HTML <details> rely on this */
+summary:hover {color: var(--color-2);}
+summary:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
+summary:focus:not(:focus-visible) {outline: none;}
+/* THEME RELATED — out-specifies parent theme.json: core/details summary {font-weight:600}. On switch: recheck parent value/selector. */
+.wp-block-details summary {font-weight: var(--er-fw-bold);}
+.wp-block-details.details-center summary {font-size: var(--er-fs-md); line-height: 1.5; text-align: center;}
+.wp-block-details.details-left summary {font-size: var(--er-fs-md); line-height: 1.5;}
+.wp-block-details.details-button summary {
+	color: var(--color-8) !important;
+	background: var(--color-1);
+	display: flex; align-items: center; justify-content: center;
+	margin: auto; padding: 10px 20px; border-radius: 4px;
+	text-align: center; max-width: fit-content;
+}
+.wp-block-details.details-button summary:hover {background: var(--color-2);}
+.wp-block-details.details-button summary:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
+.wp-block-details.details-button summary:focus:not(:focus-visible) {outline: none;}
+
+/* ---- B2a. Accordion variant ---- */
+.details-accordion {transition: margin-bottom 0.5s ease-in-out; margin-bottom: 0.5rem;}
+.details-accordion + .details-accordion {margin-top: -0.6rem;}
+.details-accordion[open] {padding-bottom: 0.75rem;}
+.details-accordion summary {
+	display: flex;
+	align-items: center;
+	font-size: var(--er-fs-body);
+	font-weight: var(--er-fw-bold);
+	line-height: 1.35;
+	padding: 0.65rem 1rem;
+	border-top: 1px solid var(--color-5);
+	border-bottom: 1px solid var(--color-5);
+	background: var(--color-8);
+}
+.details-accordion summary:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
+.details-accordion summary:focus:not(:focus-visible) {outline: none;}
+.details-accordion summary > * {margin-left: 0.5rem;}
+.details-accordion summary > *:first-child {margin-left: 0;}
+.details-accordion summary::before {content: "+"; font-weight: var(--er-fw-bold); color: var(--color-1); margin-right: 0.5rem;}
+.details-accordion[open] summary::before {content: "−"; color: var(--color-1);}
+.details-accordion summary:hover {background: var(--color-7);}
+.details-accordion > :where(:not(summary)) {margin-left: 1.25rem; margin-right: 1.25rem;}
+body.dark-mode .details-accordion summary {background: var(--color-10); border-top: 1px solid var(--color-4); border-bottom: 1px solid var(--color-4);}
+body.dark-mode .details-accordion summary:hover,
+body.dark-mode .details-accordion summary:focus {background: var(--color-6);}
+
+/* ---- B3. Tag-cloud pills (shared with the archive filter tabs in section E) ---- */
+.tag-cloud a,
+.er-archive-filter .er-filter-tab {
+	background: var(--color-8);
+	font-weight: var(--er-fw-normal);
+	line-height: 1.75;
+	min-height: 25px;
+	padding: 3px 15px;
+	margin: 0 0 5px;
+	border: 1px solid var(--color-1);
+	border-radius: 100px;
+	display: inline-block;
+	transition: background 0.2s ease;
+}
+.tag-cloud a:hover,
+.tag-cloud a:focus-visible,
+.er-archive-filter .er-filter-tab:hover,
+.er-archive-filter .er-filter-tab:focus-visible {background: none; color: var(--color-2);}
+.tag-cloud a:focus,
+.er-archive-filter .er-filter-tab:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
+.tag-cloud a:focus:not(:focus-visible),
+.er-archive-filter .er-filter-tab:focus:not(:focus-visible) {outline: none;}
+.left-align {text-align: left;}
+.tag-cloud-footer a {font-size: var(--er-fs-sm) !important;}
+.tag-cloud-footer .tag-separator {color: var(--color-9); padding-left: 5px; padding-right: 5px;}
+.tag-cloud-footer .tag-count {font-weight: var(--er-fw-normal); font-style: italic;}
+body.dark-mode .tag-cloud a,
+body.dark-mode .er-archive-filter .er-filter-tab {background: var(--color-10);}
+body.dark-mode .tag-cloud a:hover,
+body.dark-mode .er-archive-filter .er-filter-tab:hover {background: none;}
+
+/* ---- B4. Image styles & effects ---- */
+.zoom {width: 35%; transform-origin: center center; transition: transform 1.5s ease-in-out;}
+.zoom:hover {transform: scale(2.857);} /* 100% / 35% = 2.857 */
+.zoom-x2 {transition: transform 1.5s ease-in-out;}
+.zoom-x2:hover {transform: scale(2);}
+.blob-animation img {animation: animate-blob 7.5s ease-in-out infinite alternate;}
+.blob-animation img:hover {animation-play-state: paused;}
+@keyframes animate-blob {
+	0%, 100% {border-radius: 20% 80% 70% 30% / 60% 40% 60% 40%;}
+	25% {border-radius: 60% 40% 30% 70% / 40% 60% 40% 60%;}
+	50% {border-radius: 60% 40% 30% 70% / 60% 40% 60% 40%;}
+	75% {border-radius: 20% 80% 70% 30% / 40% 60% 40% 60%;}
+}
+.blob-animation figcaption {font-size: 1.5em;}
+/* THEME RELATED — out-specifies parent figcaption x-small (parent style.css:51). */
+.wp-block-image figcaption.wp-element-caption {font-size: var(--er-fs-body);}
+/* Opt-in single-line caption: add class "caption-nowrap" to the image block. */
+.wp-block-image.caption-nowrap figcaption {display: block; width: max-content; margin-inline: auto; white-space: nowrap;}
+body.dark-mode .image-invert {filter: invert(1);}
+body.dark-mode .wp-image-148107 {content: url("/wp-content/uploads/2025/07/github-mark-white.png");} /* Github logo in Happy Coding! */
+
+/* ---- B5. "Imitate DPS - Bill Erickson" cards (.image-bedps) ---- */
+/* Flex-row cards: allow shrink + equal columns (min-width:auto trap). */
+.wp-block-group.is-layout-flex > .image-bedps {min-width: 0; flex: 1;}
+.image-bedps {clear: both; overflow: hidden; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 25px;}
+.image-bedps:hover {background: var(--color-7);}
+.image-bedps img {width: 100%; aspect-ratio: 16 / 9; transition: transform 0.3s ease;}
+@supports not (aspect-ratio: 16 / 9) {
+	.image-bedps img {width: 100%; height: auto;}
+}
+.image-bedps img:hover {transform: scale(1.05);}
+/* THEME RELATED — bedps captions = card titles (--er-fs-md, bold); 0-2-2 beats parent + body rule. */
+figure.image-bedps figcaption.wp-element-caption {margin-top: 16px; margin-bottom: 16px; font-size: var(--er-fs-md); font-weight: var(--er-fw-bold);}
+.image-bedps-figcaption {margin-top: 16px !important; margin-bottom: 16px !important; font-size: var(--er-fs-md) !important; color: var(--color-1) !important;} /* Custom HTML: Photo Album "The Countries" */
+.image-bedps-figcaption:hover {color: var(--color-2) !important;}
+body.dark-mode .image-bedps {background: var(--color-10); border: 1px solid var(--color-10);}
+body.dark-mode .image-bedps:hover {background: var(--color-6);}
+
+/* ---- B6. Embeds & video ---- */
+.embed-responsively {position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;}
+.embed-responsively iframe, .embed-responsively object, .embed-responsively embed {position: absolute; top: 0; left: 0; width: 100%; height: 100%;}
+.is-provider-youtube.wp-embed-aspect-4-3 .wp-block-embed__wrapper::before,
+.is-provider-videopress.wp-embed-aspect-4-3 .wp-block-embed__wrapper::before,
+.is-provider-vimeo.wp-embed-aspect-4-3 .wp-block-embed__wrapper::before {padding-top: 56.25%;}
+.wp-block-video-osho video {vertical-align: middle; width: 75%;}
+
+/* ---- B7. Buttons ---- */
+.wp-element-button, .wp-block-button__link, .button a, .smaller-button a {
+	color: var(--color-8) !important;
+	background: var(--color-1);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 10px 20px;
+	border-radius: 4px;
+	font-weight: var(--er-fw-bold);
+	text-align: center;
+	text-decoration: none;
+	border: 2px solid transparent;
+	transition: background-color 0.2s ease, color 0.2s ease;
+}
+.wp-element-button:hover, .wp-block-button__link:hover, .button a:hover, .smaller-button a:hover {background: var(--color-2); border: 2px solid transparent;}
+.wp-element-button:focus, .wp-block-button__link:focus, .button a:focus, .smaller-button a:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
+.wp-element-button:focus:not(:focus-visible), .wp-block-button__link:focus:not(:focus-visible), .button a:focus:not(:focus-visible), .smaller-button a:focus:not(:focus-visible) {outline: none;}
+.button a {margin: auto; max-width: fit-content;}
+.smaller-button a {cursor: pointer; min-height: 25px; padding: 5px 10px 7.5px;}
+
+/* ---- B8. Boxes ---- */
+.text-box {overflow: hidden; padding: 25px; margin-bottom: 25px;}
+.box-background {background: var(--color-8); border: 1px solid var(--color-5); transition: background 0.2s ease;}
+.box-shadow {box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.25);}
+.resizable-box {height: 333px; resize: vertical; overflow: auto; padding: 0px 25px 25px 25px;}
+body.dark-mode .box-background {background: var(--color-10); border: 1px solid var(--color-4);}
+body.dark-mode .box-shadow {background: var(--color-10); border: 1px solid var(--color-4);}
+
+/* ---- B9. Forms & Inputs ---- */
+.wp-block-post-content :is(input[type=email], input[type=search], input[type=text], textarea) {
+	width: 100%; box-sizing: border-box;
+}
+:is(select, input[type=email], input[type=search], input[type=text], textarea) {
+	background: var(--color-8); border: 1px solid var(--color-5); transition: border 0.2s ease;
+}
+:is(select, input[type=email], input[type=search], input[type=text], textarea):focus {
+	outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);
+}
+:is(select, input[type=email], input[type=search], input[type=text], textarea):focus:not(:focus-visible) {
+	outline: none;
+}
+body.dark-mode :is(select, input[type=email], input[type=search], input[type=text], textarea) {
+	background: var(--color-10); color: var(--color-5); border: 1px solid var(--color-3);
+}
+body.dark-mode option {
+	background: var(--color-10); color: var(--color-5);
+}
+.wp-block-post-content :is(input[type=button], input[type=reset], input[type=submit]) {
+	all: revert;
+}
+
+/* ---- B10. Social icon rows (Contact): white-circle chips on plain linked images (no core social-links block, so cosmetic ad-block filters can't hide them). Legible on light + dark; icon URLs root-relative. Hover/reduced-motion live in section G. ---- */
+.er-social-icon-row {display: flex; flex-wrap: wrap; justify-content: center; gap: 4.7rem; margin: 0 auto;}
+.er-social-icon-row + .er-social-icon-row {margin-top: 25px;}
+.er-social-icon-link {
+	display: inline-flex; align-items: center; justify-content: center;
+	width: 70px; height: 70px; border-radius: 50%;
+	background: #fff; border: 1px solid rgb(0 0 0 / .12); /* No var Color: white chip + faint ring keep the circle visible on a white page */
+	box-sizing: border-box; overflow: hidden; line-height: 0;
+}
+.er-social-icon-link img {width: 100%; height: 100%; object-fit: contain; padding: 12px; box-sizing: border-box; display: block;}
+.er-social-icon-fill img {object-fit: cover; padding: 0;} /* icons carrying their own background (LibraryThing, About Me): fill the disc so it clips round */
+
+/* ============================================================
+   C. CONTENT COMPONENTS: grid / cards / related / slider / post-footer
+   Emitted by [er_cpt_archive] / [er_related_posts] / [er_post_footer].
+   PHP for these is in Snippet #7; this is their (theme-wide) CSS.
+   ============================================================ */
+
+/* Container is the rounded, clipping frame (excludes hero, which has no media-container).
+   overflow:hidden clips the hover-zoom to fixed corners; the image fills edge-to-edge.
+   Shared by archive grid cards AND related-posts cards — same effect as the DPS .image-bedps cards. */
+.er-cpt-grid .er-media-container:not(.er-hero-section .er-media-container),
+.er-related-posts .er-media-container {
+	border-radius: 25px;
+	overflow: hidden;
+}
+.er-media-container img:not(.er-hero-section img),
+.er-media-container picture:not(.er-hero-section picture) {
+	border-radius: 25px; /* kept: harmless under the clip, and preserves corners if a card ever renders outside a clipping container */
+	display: block;
+	width: 100%;
+	object-fit: cover;
+	transition: transform 0.3s ease;
+}
+.er-cpt-grid .er-media-container img:hover,
+.er-related-posts .er-media-container img:hover {
+	transform: scale(1.05);
+}
+
+/* ---- CPT grid ---- */
+.er-cpt-grid {display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 30px; row-gap: 35px;}
+@media (min-width: 600px) and (max-width: 1024px) {.er-cpt-grid {grid-template-columns: repeat(3, 1fr);}}
+@media (max-width: 600px) {.er-cpt-grid {grid-template-columns: repeat(2, 1fr);}}
+.er-cpt-grid .entry-title {margin-block-end: 1rem;}
+.er-cpt-grid .er-media-container {display: flex; margin-block-end: 1rem;}
+.er-cpt-grid .entry-card {padding-bottom: 30px; text-align: start;}
+
+/* ---- Card title + meta: shared by every er_render_card card (archive/listing/related/load-more). Reaches only .entry-card. Context-specific LAYOUT stays in the related block. ---- */
+.entry-card .entry-title {font-size: var(--er-fs-md); line-height: 1.3;}
+.entry-card .entry-meta {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-flow: row wrap;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: var(--er-fs-xs);
+	text-transform: uppercase;
+	letter-spacing: var(--er-ls-label);
+}
+.entry-card .entry-meta li {display: inline-flex; align-items: center; gap: 0.35em;}
+.entry-card .entry-meta svg {width: 1em; height: 1em; flex: none;}
+.entry-card .entry-meta li + li::before {content: "/"; color: var(--color-9);}
+.entry-card .entry-meta .er-reading-time {color: var(--color-3);}
+.entry-card .entry-meta .meta-categories {color: var(--color-1);}
+
+/* ---- Quote-card marker: neutral grey outline ring with quote marks inside, on my-quotes cards only
+   (get_post_class emits .type-my-quotes). Grey (--color-9, not the accent --color-1) so it reads as a
+   category marker, not a clickable element. Anchored to the title and vertically centred on it
+   (top:50% + translateY) so it stays centred whether the title is one line or wraps. Ring = ::before
+   (border, no fill). Marks = ::after, filled grey via mask — grey works in both light/dark, so no
+   card-bg swap needed. NOTE: the glyph data-URI is URL-encoded (%3C %22 etc.) — do NOT replace with
+   raw <, >, " characters; unencoded they make the mask fail to load and the marker renders nothing. ---- */
+.entry-card.type-my-quotes .entry-title {
+	position: relative;
+	padding-right: 38px; /* reserve space so a long title doesn't run under the ring */
+	--er-quote-glyph: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Cpath d=%22M7 7h4v4c0 3-1.5 4.5-4 5v-2c1.3-.4 2-1.2 2-2H7V7zm8 0h4v4c0 3-1.5 4.5-4 5v-2c1.3-.4 2-1.2 2-2h-2V7z%22 fill=%22black%22/%3E%3C/svg%3E");
+}
+.entry-card.type-my-quotes .entry-title::before,
+.entry-card.type-my-quotes .entry-title::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	right: 0;
+	transform: translateY(-50%);
+	width: 26px;
+	height: 26px;
+	z-index: 2;
+}
+.entry-card.type-my-quotes .entry-title::before {   /* the ring */
+	border-radius: 50%;
+	border: 1.5px solid var(--color-9);
+	box-sizing: border-box;
+}
+.entry-card.type-my-quotes .entry-title::after {    /* the quote marks, filled grey */
+	background-color: var(--color-9);
+	-webkit-mask: var(--er-quote-glyph) center / 18px 18px no-repeat;
+	        mask: var(--er-quote-glyph) center / 18px 18px no-repeat;
+}
+
+/* ---- Related content container ---- */
+/* THEME REVIEW — --wp--preset--spacing--large resolves to active theme's scale; value shifts on switch, won't break. */
+.er-related-posts-container {border-top: 1px solid var(--color-5) !important; max-width: 1290px; margin: 0 auto; margin-block-start: var(--wp--preset--spacing--large);}
+body.dark-mode .er-related-posts-container {border-top: 1px solid var(--color-3) !important;}
+body.dark-mode article > .er-related-posts {border-top: 1px solid var(--color-3);}
+.er-related-posts.is-layout-slider {--grid-columns-gap: 30px; --grid-columns-width: 25%;}
+@media (max-width: 992px) {.er-related-posts.is-layout-slider {--grid-columns-width: 33.333%;}}
+@media (max-width: 768px) {.er-related-posts.is-layout-slider {--grid-columns-width: 50%;}}
+
+/* Eric Slider arrows (related-posts layout) */
+.slideshow-multiple-items-4 .eric-slider-arrow-prev,
+.slideshow-multiple-items-4 .eric-slider-arrow-next {
+	width: 30px; height: 30px; transform: none; opacity: 0.75;
+	background: var(--color-9); color: var(--color-8);
+	position: absolute; top: -55px;
+}
+.slideshow-multiple-items-4 .eric-slider-arrow-prev:hover,
+.slideshow-multiple-items-4 .eric-slider-arrow-next:hover {opacity: 1; background: var(--color-9);}
+.slideshow-multiple-items-4 .eric-slider-arrow-next {right: 10px; left: auto;}
+.slideshow-multiple-items-4 .eric-slider-arrow-prev {right: 60px; left: auto;}
+
+/* Related-posts cards (related-only LAYOUT): scoped under .er-related-posts; reorder title BELOW image + stacked margins. Title size/meta shared above. */
+.er-related-posts .entry-card {display: flex; flex-direction: column;}
+.er-related-posts .entry-card .er-media-container {order: 1;}
+.er-related-posts .entry-card .entry-title {order: 2; margin: 1rem 0 0.5rem;}
+.er-related-posts .entry-card .entry-meta {order: 3;}
+
+/* Gap between cards and slider dots — related slider only. */
+.er-related-posts .eric-slider-dots {margin-top: 25px;}
+
+/* Related section heading (h3 from er_related_posts). Inherits h3 scale + heading colour from theme.json; only spacing here. */
+.er-related-title {margin: 1.75rem 0 1.25rem;}
+
+/* ---- Post footer: share row + prev/next (emitted by [er_post_footer], single only).
+   Isolated to this component; lives here for parity with related (PHP in #7, CSS here).
+   JS opener (data-share) stays in #7. ---- */
+/* THEME REVIEW — this block + my-quotes override below use --wp--preset--spacing--medium/--small; values shift on switch, won't break. */
+.er-post-footer {
+	/* No explicit width — fills its container (the post-content column), so it stays
+	   within the article and never spans the sidebar. Bottom gap is PADDING (not
+	   margin) so it can't collapse inside the column. */
+	margin-block-start: var(--wp--preset--spacing--medium);
+	padding-block-end: 0;
+}
+
+/* Quotes single: tighter gap above post-footer */
+body.single-my-quotes .er-post-footer {margin-block-start: var(--wp--preset--spacing--small);}
+
+/* Share row */
+.er-pf-net-label {display: block; margin-bottom: 0.85rem; color: var(--color-4); font-weight: var(--er-fw-bold); font-size: var(--er-fs-md);}
+.er-pf-net-links {display: flex; flex-wrap: wrap; gap: 2.5rem;}
+
+/* Parent-prefixed (0,2,0) so the icon colour beats the theme link colour.
+   Fixed colour — intentionally unchanged on hover and in dark mode. */
+.er-pf-net-links .er-pf-net-link {display: inline-flex; color: var(--color-3); line-height: 0; cursor: pointer;}
+.er-pf-net-links .er-pf-net-link:hover {color: var(--color-3);} /* hold colour — beat theme.json link:hover */
+
+/* Prev / Next */
+.er-postnav {position: relative; display: flex; justify-content: space-between; gap: 2.5rem; margin-top: 3.5rem;}
+.er-postnav::before {content: ""; position: absolute; top: 50%; left: 50%; width: 1px; height: 2.5rem; transform: translate(-50%, -50%); background: var(--color-5);} /* centre divider */
+.er-postnav-side {flex: 1 1 0; min-width: 0;}
+.er-postnav-next {text-align: right;}
+.er-postnav-card {display: inline-flex; align-items: center; gap: 1rem; max-width: 100%;}
+.er-postnav-next .er-postnav-card {flex-direction: row;} /* text then thumb */
+.er-postnav-thumb {display: block; flex: none; line-height: 0;}
+.er-postnav-thumb img {width: 64px; height: 64px; border-radius: 50%; object-fit: cover; display: block;}
+.er-postnav-text {display: flex; flex-direction: column; min-width: 0;}
+.er-postnav-tag {color: inherit; font-weight: var(--er-fw-normal);}
+.er-postnav-title {font-weight: var(--er-fw-bold); color: var(--color-1); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+.er-postnav-title:hover {color: var(--color-2);}
+
+/* Post-footer dark mode */
+body.dark-mode .er-pf-net-label {color: var(--color-7);}
+body.dark-mode .er-postnav::before {background: var(--color-3);}
+body.dark-mode .er-postnav-title {color: var(--color-1);}
+body.dark-mode .er-postnav-title:hover {color: var(--color-2);}
+
+/* Post-footer mobile: keep prev/next on ONE line, tighten thumb + gap */
+@media (max-width: 600px) {
+	.er-postnav {gap: 1rem;}
+	.er-postnav-card {gap: 0.65rem;}
+	.er-postnav-thumb img {width: 48px; height: 48px;}
+}
+
+/* ============================================================
+   D. FOOTER
+   THEME RELATED — targets footer.wp-block-template-part + footer column/item
+   classes emitted by the active theme's footer template part. Matched the
+   previous theme's class names so migrated as-is; on switch the markup/classes
+   change and these orphan. Retargets baked in: "#footer" id -> footer.wp-block-template-part;
+   gaps scoped to footer.flex-container so they don't leak to the toggles (also .flex-container).
+   ============================================================ */
+
+/* ---- Outer footer box: navy bg, light text, hero-matching hover curve. (#001a33 = recorded "same as Footer BG".) ---- */
+footer.wp-block-template-part {background: #001a33; color: var(--color-5); transition: border-radius 1s ease; padding-block: 60px;}
+footer.wp-block-template-part:hover {border-top-right-radius: 15vw;}
+
+/* ---- Footer column row (scoped so the gap doesn't hit other flex-containers). ---- */
+footer.flex-container {max-width: var(--er-wide-row); margin-inline: auto; padding-inline: 0; column-gap: 50px; row-gap: 25px;} /* --er-wide-row: aligned to hero/content like the header (Session 11) */
+.flex-item-footer-left,
+.flex-item-footer-middle,
+.flex-item-footer-right {max-width: 430px; flex: 1 1 auto;}
+
+/* ---- Footer column LEFT ---- */
+.qr-and-links-wrapper {display: flex; align-items: center;}
+.qr-links-column {display: flex; flex-direction: column; padding-left: 45px;}
+.ninja-services-link {display: flex; align-items: center; margin-bottom: 15px;}
+.ninja-services-link span {padding-left: 10px;}
+
+/* ---- Footer column MIDDLE ---- */
+.flex-item-footer-middle {margin-top: 20px;}
+.dropdown-separator {color: var(--color-9); padding-left: 10px; padding-right: 5px;}
+.logo-copyright-wrapper {display: flex; align-items: center; padding-top: 30px;}
+.logo-copyright-wrapper > a {position: relative; top: 2px;}
+.copyright-text {margin: 0; padding-left: 35px;}
+
+/* Site logo: octagon mark, spins once on the front page, slow 3D spin elsewhere (paused on hover). */
+.site-logo {width: 50px; height: auto; animation: rotate3d 5s linear infinite;}
+.site-logo:hover {animation-play-state: paused;}
+@keyframes rotate3d {
+	from {transform: rotate3d(0, 0, 0, 0deg);}
+	to {transform: rotate3d(1, 1, 1, 360deg);}
+}
+.octagon-text-outside {
+	animation-name: rotate-image-frontpage;
+	animation-duration: 15s;
+	animation-iteration-count: 1;
+}
+.octagon-text-outside:hover {animation-play-state: paused;}
+@keyframes rotate-image-frontpage {
+	0% {transform: rotate(0deg);}
+	100% {transform: rotate(360deg);}
+}
+
+/* Hoverable dropdown menu */
+.dropdown {display: inline-block; position: relative;}
+.dropdown-content {
+	display: none;
+	position: absolute;
+	padding: 7.5px 10px 10px;
+	white-space: nowrap;
+	background: #001a33; /* No var Color (same as Footer BG) */
+	border: 1px solid var(--color-3);
+	border-bottom-left-radius: 5px;
+	border-bottom-right-radius: 5px;
+	z-index: 1;
+}
+.dropdown:hover .dropdown-content, .dropdown:focus-within .dropdown-content {display: block;}
+
+/* ---- Footer column RIGHT ---- */
+.site-updates-wrapper {display: flex; align-items: center; padding-top: 25px;}
+.site-updates-text {padding-left: 35px; margin: 0;}
+.content-text {color: #ed7d31;} /* No var Color */
+.content-text::before {content: "content"; animation: content-words 10s linear infinite;}
+@keyframes content-words {
+	9.09%  {content: " posts";}
+	18.18% {content: " traits";}
+	27.27% {content: " projects";}
+	36.36% {content: " topics";}
+	45.45% {content: " galleries";}
+	54.54% {content: " feeds";}
+	63.63% {content: " pages";}
+	72.72% {content: " things";}
+	81.81% {content: " visitors";}
+	90.90% {content: " quotes";}
+}
+
+/* ============================================================
+   E. TEMPLATE-PART COMPONENTS
+   Components rendered in template parts: the archive filter tab row,
+   breadcrumbs, sidebar widget titles, and the responsive sidebar-hide.
+   (Authored to the live reference; their original theme CSS is gone.)
+   ============================================================ */
+
+/* ---- Filter tabs (pill row; .er-active = current). Pill styling SHARED with .tag-cloud a (section B above). Here: centred wrap, inter-tab spacing, persistent red active tab. ---- */
+.er-archive-filter {text-align: center; margin-bottom: 35px;}
+.er-archive-filter .er-filter-tab {margin: 0 5px 10px; text-decoration: none; font-size: var(--er-fs-xs);} /* 14px matches the tag-cloud block's inline font-size (smallest/largest both 14px) so the shared padding renders identical pills */
+.er-archive-filter .er-filter-tab.er-active {background: none; color: var(--color-2);}
+
+/* ---- Breadcrumbs (inline trail: home icon, chevrons, links). One wrapped row, uppercase, small, muted chevrons; dark + light contexts. ---- */
+.er-breadcrumbs ol {
+	list-style: none;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	margin: 0;
+	padding: 0;
+}
+.er-breadcrumbs li {display: inline-flex; align-items: center;}
+.er-breadcrumbs a,
+.er-breadcrumbs [aria-current="page"] {
+	font-size: var(--er-fs-xs);
+	text-transform: uppercase;
+	letter-spacing: var(--er-ls-label);
+	text-decoration: none;
+}
+/* Links use the site link colour (blue, red hover); current page muted. Same across light/dark. */
+.er-breadcrumbs a {color: var(--color-1);}
+.er-breadcrumbs a:hover {color: var(--color-2);}
+.er-breadcrumbs [aria-current="page"] {color: var(--color-3);}
+.er-breadcrumb-home-icon {width: 15px; height: 15px; display: block;}
+.er-breadcrumb-separator {width: 8px; height: 8px; margin-inline: 8px; color: var(--color-9);}
+
+/* Space between the hero description (above) and the breadcrumb trail. */
+.er-hero-section .er-breadcrumbs {margin-top: 1.25rem;}
+
+/* Dark contexts (hero/footer): keep blue links; current page flips light for contrast. */
+.er-hero-section.has-background-dim .er-breadcrumbs [aria-current="page"],
+footer.wp-block-template-part .er-breadcrumbs [aria-current="page"] {color: var(--color-8);}
+
+/* Footer breadcrumbs: lifted OUT of footer.flex-container to a block row above the columns. Cap+centre+gutter match the column row; margin-bottom mirrors its row-gap. */
+footer.wp-block-template-part .er-breadcrumbs {
+	max-width: var(--er-wide-row); /* aligned to hero/content like the header (Session 11) */
+	margin-inline: auto;
+	padding-inline: 0;
+	margin-bottom: 25px;
+}
+
+/* ============================================================
+   F. SIDEBAR DESIGN  (carded text sections, stats hero, author tiles)
+   Palette-only (no new colors); light + dark via existing tokens.
+   Sidebar markup is flat HTML (single wp:html block, footer-style),
+   so vertical rhythm is set explicitly here — block layout no longer
+   supplies inter-element gaps.
+   ============================================================ */
+
+/* ---- Widget titles (sidebar headings). Constrained from inherited heading size.
+   Top margin sets section-to-section rhythm; bottom sets title-to-card gap. ---- */
+.widget-title {
+	font-size: var(--er-fs-md);
+	font-weight: var(--er-fw-bold);
+	line-height: 1.3;
+	color: var(--color-4);
+	margin: 2.5rem 0 1.25rem;
+}
+body.dark-mode .widget-title {color: var(--color-7);}
+
+/* ---- Logo → first title: the first title sits flush under the logo
+   (no section above it). Zero the title's top margin and the figure's
+   bottom margin so they meet cleanly. ---- */
+.sidebar-content > .octagon-text-outside {margin-bottom: 0;}
+.sidebar-content > .widget-title:first-of-type {margin-top: 0;}
+
+/* ---- Carded text sections: Statistics, About Me, My Blog, My Interests.
+   The <h2 class="widget-title"> stays OUTSIDE; the card wraps the content
+   that follows. Card class is added directly in sidebar.html. ---- */
+.er-card {
+	background: var(--color-8);
+	border: 1px solid var(--color-5);
+	border-radius: 16px;
+	padding: 16px;
+	box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.12);
+}
+body.dark-mode .er-card {
+	background: var(--color-10);
+	border-color: var(--color-4);
+}
+
+/* ---- Select + count row (My Blog, My Interests): the post-count dropdown
+   and its ( N ) tally on one line, with a gap between them. Replaces the
+   former block-group flex layout. The inner <select> margin is zeroed so the
+   row doesn't add stray space before the "Discover All" line below. ---- */
+.er-select-count {
+	display: flex;
+	flex-wrap: nowrap;
+	justify-content: flex-start;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+}
+.er-select-count select {margin: 0;}
+.er-count {margin: 0; white-space: nowrap;}
+
+/* ---- "Discover All" tail (My Blog, My Interests): sits below the select+count
+   row with a 12px gap above it. The <h6> default margins are zeroed so the gap is
+   exactly the wrapper's padding, no heading margin stacked on top. ---- */
+.er-card-tail {padding-top: 12px;}
+.er-card-tail h6 {margin: 0;}
+
+/* ---- Explore embed (the [reusable] search box): equal padding above and below
+   so it sits evenly between the two display-posts lists around it. ---- */
+.er-explore-embed {padding-top: 20px; padding-bottom: 25px;}
+
+/* ---- Statistics: hero (Read Time + Words) with single left quote-bracket
+   over a 3-col grid of the remaining 9 metrics. Bracket mirrors .wp-block-quote
+   (3px --color-5 left, --color-3 in dark, radius 10px). ---- */
+.post-stats {font-size: var(--er-fs-sm); line-height: var(--er-lh-base);}
+
+.post-stats .ps-hero {
+	background: var(--color-7);
+	border-left: 3px solid var(--color-5);
+	border-radius: 10px;
+	padding: 10px 14px;
+	margin-bottom: 10px;
+}
+body.dark-mode .post-stats .ps-hero {
+	background: var(--color-6);
+	border-left-color: var(--color-3);
+}
+.post-stats .ps-hero-big {
+	display: block;
+	font-size: var(--er-fs-lg);
+	font-weight: var(--er-fw-bold);
+	line-height: 1.15;
+	color: var(--color-4);
+}
+body.dark-mode .post-stats .ps-hero-big {color: var(--color-7);}
+.post-stats .ps-hero-sub {display: block; font-size: var(--er-fs-xs); color: var(--color-3);}
+body.dark-mode .post-stats .ps-hero-sub {color: var(--color-5);}
+
+.post-stats .ps-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 5px;
+}
+.post-stats .ps-cell {
+	background: var(--color-7);
+	border: 1px solid var(--color-5);
+	border-radius: 6px;
+	padding: 6px 4px;
+	text-align: center;
+}
+body.dark-mode .post-stats .ps-cell {background: transparent; border-color: var(--color-4);}
+.post-stats .ps-num {display: block; font-weight: var(--er-fw-bold); color: var(--color-4); line-height: 1.2;}
+body.dark-mode .post-stats .ps-num {color: var(--color-7);}
+.post-stats .ps-lbl {display: block; font-size: var(--er-fs-xs); color: var(--color-3);}
+body.dark-mode .post-stats .ps-lbl {color: var(--color-5);}
+
+/* ---- About Me author links: two side-by-side icon-tiles (Personal green /
+   Professional orange). Real header SVGs wired in sidebar.html serve as the icons. ---- */
+.er-author-links {list-style: none; margin: 0; padding: 0; display: flex; gap: 8px;}
+.er-author-links li {margin: 0; flex: 1;}
+.er-author-links a {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 5px;
+	padding: 12px 6px;
+	text-align: center;
+	text-decoration: none;
+	background: var(--color-7);
+	border-radius: 12px;
+}
+body.dark-mode .er-author-links a {background: var(--color-6);}
+.er-author-links img {display: block; width: 24px; height: 24px; flex: none;}
+
+/* ---- Two-column row: equal-height columns so the content column always
+   matches the fixed sidebar height. Without this, a short post leaves the
+   content column shorter than the sidebar, and the Related divider (sibling
+   below the row) ends up measuring from the sidebar instead of sitting a
+   consistent gap below the article. align-items:stretch is the flex default,
+   set explicitly here as the load-bearing rule it is. ---- */
+main > .wp-block-columns { align-items: stretch; }
+
+/* ---- Sidebar: hide below 1400px, content takes full width.
+   :has() targets the column holding the sidebar template part structurally,
+   so it works on any template with a sidebar — no per-template class.
+   !important overrides the inline flex-basis on the columns. ---- */
+@media (max-width: 1400px) {
+	.wp-block-columns > .wp-block-column:has(> .wp-block-template-part) {display: none;}
+	.wp-block-columns:has(> .wp-block-column > .wp-block-template-part) > .wp-block-column {flex-basis: 100% !important;}
+}
+
+/* ---- Sidebar: contain content within its column width.
+   Belt-and-suspenders against children (selects, wide list items, images)
+   overflowing the narrow sidebar column. min-width:0 lets flex children
+   (the select+count rows) actually shrink instead of forcing overflow.
+   Scoped to .sidebar-content (the sidebar.html wrapper group) so header/
+   footer template parts are untouched. ---- */
+.sidebar-content,
+.sidebar-content * {
+	max-width: 100%;
+	min-width: 0;
+}
+
+/* ============================================================
+   G. DARK-MODE TOGGLE BUTTON
+   The switch UI. Toggle JS + the anti-FOUC preload live in Snippet #7.
+   ============================================================ */
+
+#dark-mode-toggle-btn {display: flex; align-items: center; gap: 10px;}
+#dark-mode-toggle-btn img {opacity: 0.5;}
+#dark-mode-toggle-btn input[type='checkbox'] {
+	position: absolute;
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+#dark-mode-toggle-btn input[type='checkbox']:focus-visible + .toggle-visual {
+	outline: 1px solid var(--color-1);
+	outline-offset: 2px;
+}
+#dark-mode-toggle-btn .toggle-visual {
+	background: var(--color-3);
+	border: 1px solid var(--color-4);
+	border-radius: 50px;
+	cursor: pointer;
+	display: inline-block;
+	position: relative;
+	transition: all ease-in-out 0.3s;
+	width: 50px;
+	height: 25px;
+}
+#dark-mode-toggle-btn .toggle-visual::after {
+	background: var(--color-4);
+	border-radius: 50%;
+	content: '';
+	cursor: pointer;
+	display: inline-block;
+	position: absolute;
+	left: 1px;
+	top: 1px;
+	transition: all ease-in-out 0.3s;
+	width: 21px;
+	height: 21px;
+}
+#change-mode-switch:checked + .toggle-visual {background: var(--color-10); border-color: var(--color-3);}
+#change-mode-switch:checked + .toggle-visual::after {background: var(--color-3); transform: translateX(25px);}
+#dark-mode-status, .dark-mode-toggle-btn-accessibility-label {
+	position: absolute;
+	left: -9999px;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+}
+
+/* ============================================================
+   H. MOTION & A11Y  (reduced-motion umbrella)
+   Kills decorative animation/transition/transform under reduced-motion;
+   restores the one hover micro-interaction otherwise. Covers animations
+   defined throughout this file (logo, blob, footer word, social icons).
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+	.site-logo,
+	.octagon-text-outside,
+	.blob-animation img,
+	.animate__animated,
+	.er-social-link-icon,
+	.er-social-icon-link,
+	.content-text::before {
+		animation: none !important;
+		transition: none !important;
+		transform: none !important;
+	}
+}
+@media (prefers-reduced-motion: no-preference) {.er-social-link-icon, .er-social-icon-link {transition: transform 0.1s ease;} .er-social-link-icon:hover, .er-social-icon-link:hover {transform: scale(1.1);}}
