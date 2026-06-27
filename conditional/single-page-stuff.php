@@ -34,7 +34,7 @@ add_action('wp_footer', function() {
     
     if (is_page(array('')) || is_single(array('131123'))) { ?>
         <style>
-            .world-population-design { text-align: center; color: #990033; font-size: 2.5rem; font-weight: bold; }
+            .world-population-design { text-align: center; color: #990033; font-size: var(--er-fs-xl); font-weight: var(--er-fw-bold); }
         </style>
         <script>
             (() => {
@@ -59,7 +59,32 @@ add_action('wp_footer', function() {
     <style>
         @media screen and (max-width: 768px) {#sbb_uhr_container {width: 5rem !important; height: 5rem !important;}}
         @media screen and (min-width: 768px) and (max-width: 1200px) {#sbb_uhr_container {width: 7.5rem !important; height: 7.5rem !important;}}
-		body.dark-mode .wp-image-122531 {content: url("https://ericroth.org/wp-content/uploads/2024/07/SBB_NEG_2F_RGB_100.svg");}
+		body.dark-mode .wp-image-122531 {content: url("/wp-content/uploads/2024/07/SBB_NEG_2F_RGB_100.svg");}
+
+        /* "Search For Connection" submit (#search--sbb): the site-wide button base
+           re-applied here because companion B9's `all: revert` strips input buttons
+           in post content, and B7's .button selector only matches anchors (.button a),
+           not this <input class="button">. Mirrors .wp-element-button, swapped to SBB
+           CI red (#EB0000 Rot, hover #C60018 Rot 125). background uses !important to
+           beat the inline style="background:red" if it is left on the markup. */
+        #search--sbb {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 20px;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            background: #EB0000 !important;
+            color: var(--color-8);
+            font-weight: var(--er-fw-bold);
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        #search--sbb:hover {background: #C60018 !important; border: 2px solid transparent;}
+        #search--sbb:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
+        #search--sbb:focus:not(:focus-visible) {outline: none;}
     </style>
     <script>
         // Modern Date / Time Initialization
