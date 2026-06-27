@@ -45,6 +45,13 @@ add_filter('preview_post_link', function($url){
     return add_query_arg('ts', time(), $url);
 });
 
+// Prevent cached Frontend for logged-in Editors (so edits aren't masked by stale cache)
+add_action('template_redirect', function () {
+    if (!is_user_logged_in()) return;
+    if (!current_user_can('edit_posts')) return;
+    nocache_headers();
+});
+
 // Limit Post Revisions
 if (!defined('WP_POST_REVISIONS')) {
     define('WP_POST_REVISIONS', 1);
@@ -111,7 +118,6 @@ add_filter('menu_order', function ($menu_order) {
     return [
         'hostinger',
         'index.php',
-        'ct-dashboard',
         'edit.php?post_type=page',
         'edit.php',
         'edit.php?post_type=my-interests',
@@ -136,3 +142,22 @@ function er_remove_comments_menu() {
     remove_menu_page('edit-comments.php');
 }
 add_action('admin_menu', 'er_remove_comments_menu');
+
+// ======================================
+// OWNER-ONLY UI CLEANUP
+// ======================================
+
+// Remove "Edit" Link in Frontend (only ever shown to the logged-in owner)
+add_filter('edit_post_link', '__return_false', 10, 1);
+
+// Hide Hostinger Kodee "Ask AI" floating Badge (frontend; login-guarded so Visitors get no Markup)
+add_action('wp_head', function () {
+    if (is_user_logged_in()) {
+        echo '<style>#vue-app .kodee-fab{display:none !important;}</style>';
+    }
+});
+
+// Hide Hostinger Kodee "Ask AI" floating Badge (wp-admin)
+add_action('admin_head', function () {
+    echo '<style>#vue-app .kodee-fab{display:none !important;}</style>';
+});
