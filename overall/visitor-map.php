@@ -113,8 +113,7 @@ function lum_background_track() {
 			$current_time,
 			$current_time
 		));
-		// Map's own per-view log (for the past table's reconcilable "X views from
-		// Y locations"). Independent of er_post_stats and the Views snippet.
+		// Map's own per-view log (for the past table's reconcilable "X views from Y locations"). Independent of er_post_stats and the Views snippet.
 		$wpdb->insert(
 			$wpdb->prefix . 'er_map_views',
 			array(
@@ -274,7 +273,6 @@ add_action('init', 'lum_schedule_cleanup');
 // ======================================
 
 // Get client IP address
-//
 // Uses REMOTE_ADDR only. The site is not behind a trusted reverse proxy that
 // sets a real-IP header, so forwarded headers (X-Forwarded-For, Client-IP,
 // etc.) are visitor-controlled and spoofable — trusting them would let anyone
@@ -331,9 +329,7 @@ function lum_get_geolocation($ip) {
     set_transient($lock_key, true, 30); // 30 second lock
 	$response = wp_remote_get("http://ip-api.com/json/{$ip}?fields=status,country,countryCode,city,lat,lon", array(
         'timeout' => 5, // Reduced timeout for background processing
-        // NB: ip-api.com's free tier is HTTP-only (HTTPS requires their paid
-        // Pro plan), so there is no TLS handshake on this request. No sslverify
-        // flag is needed or meaningful here.
+        // NB: ip-api.com's free tier is HTTP-only (HTTPS requires their paid Pro plan), so there is no TLS handshake on this request. No sslverify flag is needed or meaningful here.
     ));
     delete_transient($lock_key);
     if (is_wp_error($response)) {
