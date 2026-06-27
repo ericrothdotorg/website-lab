@@ -1,6 +1,13 @@
 <?php
 // NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
+// ============================================================
+// THEME-COUPLING MARKERS (search these before/after a theme switch):
+//   THEME RELATED = hard coupling; breaks/orphans on switch — must fix.
+//   THEME REVIEW  = soft coupling; reads a theme-defined value, won't
+//                   break but the value shifts — verify.
+// ============================================================
+
 // =======================================
 // META BOX: LINKED CONTENT
 // =======================================
@@ -205,6 +212,15 @@ function q_output_styles() {
 	if ( ! q_should_load_assets() ) return;
     ?>
 	<style>
+		/* Core Quote Block Base. Loads only on Quote Pages via q_should_load_assets(). */
+		.wp-block-quote {position: relative; width: 85%; max-width: fit-content; margin: 35px auto 70px; padding: 0 25px; border-inline-start: 3px solid var(--color-5) !important; border-right: 3px solid var(--color-5) !important; border-radius: 10px;}
+		.wp-block-quote p, .wp-block-quote ul, .wp-block-quote li {text-align: justify; hyphens: manual; font-family: var(--er-ff-quote); font-style: italic; color: #339966; line-height: var(--er-lh-loose);}
+		.wp-block-quote cite {position: absolute; top: calc(100% - 1.25em); right: 30px; font-family: var(--er-ff-cite); font-size: var(--er-fs-cite); font-style: normal;}
+		/* THEME RELATED — :root :where(.is-layout-flow) reads core/parent flow layout to space a trailing quote. Same coupling as child style.css §6. On switch: re-confirm the flow selector. */
+		:root :where(.is-layout-flow) > :last-child.wp-block-quote {margin-block-end: 25px;}
+		body.dark-mode .wp-block-quote {border-inline-start: 3px solid var(--color-3) !important; border-right: 3px solid var(--color-3) !important;}
+		body.dark-mode .my-quote-slide-content {background: var(--color-10); border: 1px solid var(--color-4);}
+		.quote-text p, .quote-text ul, .quote-text li {font-size: var(--er-fs-body);}
 		/* Shortcode [quotes_slider]: Shared Layout → For both horizontal and vertical */
 		.my-quote-slide-dps .display-posts-listing {margin: 0;}
 		.my-quote-slide-dps .display-posts-listing img {display: block; width: 100%; height: auto;}
@@ -220,67 +236,118 @@ function q_output_styles() {
 			.my-quote-slide-inner.layout-horizontal {flex-direction: column; gap: 1.5em;}
 			.my-quote-slide-inner.layout-horizontal .my-quote-slide-dps,
 			.my-quote-slide-inner.layout-horizontal .my-quote-slide-content {flex: 0 0 100%; max-width: 100%;}
-			.my-quote-slide-inner.layout-horizontal .my-quote-slide-content .wp-block-quote {padding-bottom: 0.75em;}
+			.my-quote-slide-inner.layout-horizontal .my-quote-slide-content .wp-block-quote {margin-bottom: 0; padding-bottom: 0;}
+			.my-quote-slide-inner.layout-horizontal .my-quote-slide-content .wp-block-quote cite {position: static; display: block; text-align: right; margin-top: 0.8em; margin-right: 30px;}
 		}
 		/* Shortcode [quotes_slider]: Vertical Layout → Image top, Content below — Always stacked */
 		.my-quote-slide-inner.layout-vertical {display: flex; flex-direction: column; gap: 1.5em;}
 		.my-quote-slide-inner.layout-vertical .my-quote-slide-content .wp-block-quote p,
 		.my-quote-slide-inner.layout-vertical .my-quote-slide-content .wp-block-quote ul,
-		.my-quote-slide-inner.layout-vertical .my-quote-slide-content .wp-block-quote li {font-size: 1rem;}
-		.my-quote-slide-inner.layout-vertical .my-quote-slide-content .wp-block-quote {padding-bottom: 0.75em;}
+		.my-quote-slide-inner.layout-vertical .my-quote-slide-content .wp-block-quote li {font-size: var(--er-fs-body);}
+		.my-quote-slide-inner.layout-vertical .my-quote-slide-content .wp-block-quote {margin-bottom: 1.5em !important; position: relative;}
+		.my-quote-slide-inner.layout-vertical .my-quote-slide-content .wp-block-quote cite {position: absolute; top: calc(100% - 0.5em); bottom: auto; right: 30px;}
 		/* Shortcode [quotes_slider]: Typography and List Offset inside Card */
 		.my-quote-slide-content .wp-block-quote {margin: 0 auto !important;}
 		.my-quote-slide-content .wp-block-quote p,
 		.my-quote-slide-content .wp-block-quote ul,
-		.my-quote-slide-content .wp-block-quote li {font-size: clamp(1rem, 1.25vw + 0.5rem, 1.25rem);}
-		.my-quote-slide-content .wp-block-quote ul,
-		.my-quote-slide-content .wp-block-quote li {margin-left: -20px;}
+		.my-quote-slide-content .wp-block-quote li {font-size: var(--er-fs-lg);}
 		/* Shortcode [quote_text]: Typography to match that of [quotes_slider] → Higher Specificity wins */
 		.single-my-quotes .my-quote-text-content .wp-block-quote p,
 		.single-my-quotes .my-quote-text-content .wp-block-quote ul,
-		.single-my-quotes .my-quote-text-content .wp-block-quote li {font-size: clamp(1rem, 1.25vw + 0.5rem, 1.25rem);}
+		.single-my-quotes .my-quote-text-content .wp-block-quote li {font-size: var(--er-fs-body);}
 		/* Shortcode [quote_text]: Default Typography for this Output */
 		.my-quote-text-content .wp-block-quote p,
 		.my-quote-text-content .wp-block-quote ul,
-		.my-quote-text-content .wp-block-quote li {font-size: 1rem;}
-		/* Shortcode [quote_text]: List Offset remains the same regardless of Context */
-		.my-quote-text-content .wp-block-quote ul,
-		.my-quote-text-content .wp-block-quote li {margin-left: -20px;}
+		.my-quote-text-content .wp-block-quote li {font-size: var(--er-fs-body);}
 		/* Shortcode [quote_text]: Style "See all Quotes" Link after cite Eric Roth (only outside .single-my-quotes) */
-		.my-quote-text-content .wp-block-quote cite .q-see-all-link {display: inline-block; margin-left: 0.4rem; font-size: 0.85rem; font-style: italic; font-weight: normal; white-space: nowrap; vertical-align: middle;}
+		.my-quote-text-content .wp-block-quote cite .q-see-all-link {display: inline-block; margin-left: 0.4rem; font-size: var(--er-fs-xs); font-style: italic; font-weight: normal; white-space: nowrap; vertical-align: middle;}
 	</style>
     <?php
 }
 add_action( 'wp_head', 'q_output_styles' );
 
-// Conditionally loaded — Only on Singular Post / Pages containing [quotes_slider] or [quote_text]
+// Conditionally loaded — Only on Singular Posts / Pages containing [quotes_slider] or [quote_text]
 function q_output_scripts() {
 	if ( ! q_should_load_assets() ) return;
-    ?>
-    <script>
-	// Inject "See all Quotes" Link after cite Eric Roth (only outside .single-my-quotes)
-	(function() {
+	?>
+	<script>
+	( function() {
+		'use strict';
+		var DESKTOP_MIN = 769; // Below this, horizontal cards stack and CSS handles sizing
+		var FLOOR_PX    = 14;   // Smallest quote font before shrinking stops (~0.75rem)
+		var STEP_PX     = 0.5;
+		// Inject "See all Quotes" link into the Eric Roth cite (only outside single quote pages)
 		function injectSeeAllLink() {
-			if (document.body.classList.contains('single-my-quotes')) return;
-			var cites = document.querySelectorAll('.my-quote-text-content .wp-block-quote cite');
-			cites.forEach(function(cite) {
-				if (!cite.textContent.includes('Eric Roth')) return;
-				if (cite.querySelector('.q-see-all-link')) return; // already injected
-				var a = document.createElement('a');
-				a.href = 'https://ericroth.org/about-me/my-quotes/';
-				a.className = 'q-see-all-link';
-				a.textContent = '> See all of Eric\'s Quotes';
-				cite.appendChild(a);
-			});
+			if ( document.body.classList.contains( 'single-my-quotes' ) ) return;
+			document.querySelectorAll( '.my-quote-text-content .wp-block-quote cite' ).forEach( function( cite ) {
+				if ( ! cite.textContent.includes( 'Eric Roth' ) ) return;
+				if ( cite.querySelector( '.q-see-all-link' ) ) return;
+				var link = document.createElement( 'a' );
+				link.href        = '/about-me/my-quotes/';
+				link.className    = 'q-see-all-link';
+				link.textContent  = '> See all of Eric\'s Quotes';
+				cite.appendChild( link );
+			} );
 		}
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', injectSeeAllLink);
-		} else {
+		// Horizontal slider cards have a fixed height (driven by the image column). Shrink a long quote's font until it fits, leaving room for the cite.
+		function horizontalQuotes() {
+			return document.querySelectorAll(
+				'.slideshow-quotes .layout-horizontal .my-quote-slide-content .wp-block-quote'
+			);
+		}
+		function fitQuote( quote ) {
+			var card = quote.closest( '.my-quote-slide-content' );
+			if ( ! card ) return;
+			var cite = quote.querySelector( 'cite' );
+			var text = quote.querySelectorAll( 'p, ul, li' );
+			if ( ! text.length ) return;
+			text.forEach( function( el ) { el.style.fontSize = ''; } );
+			var cs     = getComputedStyle( card );
+			var budget = card.clientHeight
+				- parseFloat( cs.paddingTop )
+				- parseFloat( cs.paddingBottom )
+				- ( cite ? cite.offsetHeight : 0 )
+				- 8; // Breathing gap above the cite
+			var size  = parseFloat( getComputedStyle( text[0] ).fontSize );
+			var guard = 0;
+			while ( quote.scrollHeight > budget && size > FLOOR_PX && guard++ < 200 ) {
+				size -= STEP_PX;
+				text.forEach( function( el ) { el.style.fontSize = size + 'px'; } );
+			}
+		}
+		function fitAll() {
+			var quotes = horizontalQuotes();
+			if ( window.innerWidth < DESKTOP_MIN ) {
+				// Stacked layout: hand sizing back to CSS
+				quotes.forEach( function( quote ) {
+					quote.querySelectorAll( 'p, ul, li' ).forEach( function( el ) { el.style.fontSize = ''; } );
+				} );
+				return;
+			}
+			quotes.forEach( fitQuote );
+		}
+		function init() {
 			injectSeeAllLink();
+			fitAll();
+			if ( 'ResizeObserver' in window ) {
+				var ro = new ResizeObserver( fitAll );
+				document.querySelectorAll(
+					'.slideshow-quotes .layout-horizontal .my-quote-slide-content'
+				).forEach( function( card ) { ro.observe( card ); } );
+			}
+			window.addEventListener( 'resize', fitAll );
+			if ( document.fonts && document.fonts.ready ) {
+				document.fonts.ready.then( fitAll );
+			}
 		}
-	})();
-    </script>
-    <?php
+		if ( document.readyState === 'loading' ) {
+			document.addEventListener( 'DOMContentLoaded', init );
+		} else {
+			init();
+		}
+	} )();
+	</script>
+	<?php
 }
 add_action( 'wp_footer', 'q_output_scripts', 100 );
 
