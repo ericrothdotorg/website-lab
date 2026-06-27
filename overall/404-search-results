@@ -1,6 +1,13 @@
 <?php
 // NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
+// ============================================================
+// THEME-COUPLING MARKERS (search these before/after a theme switch):
+//   THEME RELATED = hard coupling; breaks/orphans on switch — must fix.
+//   THEME REVIEW  = soft coupling; reads a theme-defined value, won't
+//                   break but the value shifts — verify.
+// ============================================================
+
 // ======================================
 // HELPER: Render a private Page
 // ======================================
@@ -44,7 +51,9 @@ function er_render_private_page( $slug, $loop_html = '' ) {
     $wp_query->queried_object     = $page;
     $wp_query->queried_object_id  = $page->ID;
 
-    // Let Blocksy load its own Page Template - THEME RELATED
+    // THEME REVIEW — relies on the active theme being a block/FSE theme that serves the
+    // page template via get_page_template(). Core API (theme-agnostic across block themes);
+    // a classic (non-FSE) theme resolves templates differently — verify on switch.
     $template = get_page_template();
     if ( ! $template ) {
         $template = get_template_directory() . '/index.php';
@@ -81,35 +90,29 @@ add_filter( 'template_include', function( $template ) {
     }
 
     if ( have_posts() ) {
-        // My Search Results custom Page
+        $limit = 12;
+
         ob_start();
-        echo '<div class="display-posts-listing grid" id="four-columns">';
-        while ( have_posts() ) {
+        echo '<div class="er-cpt-grid" data-search="' . esc_attr( get_search_query() ) . '"'
+           . ' data-limit="' . esc_attr( $limit ) . '" data-offset="' . esc_attr( $limit ) . '">';
+
+        $shown = 0;
+        while ( have_posts() && $shown < $limit ) {
             the_post();
-            $img      = get_the_post_thumbnail_url( get_the_ID(), 'large' );
-            $cat      = get_the_terms( get_the_ID(), 'types' );
-            $cat_name = $cat && ! is_wp_error( $cat ) ? $cat[0]->name : '';
-            echo '<div class="listing-item">';
-            if ( $img ) {
-                echo '<a class="image" href="' . esc_url( get_permalink() ) . '">
-                        <img src="' . esc_url( $img ) . '" alt="">
-                      </a>';
-            }
-            echo '<a class="title" href="' . esc_url( get_permalink() ) . '">' . esc_html( get_the_title() ) . '</a>';
-            if ( $cat_name ) {
-                echo '<span class="category">🖿 ' . esc_html( $cat_name ) . '</span>';
-            }
-            echo '</div>';
+            er_render_card( get_the_ID(), er_taxonomy_for_post( get_the_ID() ) );
+            $shown++;
         }
         echo '</div>';
-        the_posts_pagination();
-        // Build Loop HTML into a Variable
-        $loop_html = ob_get_clean();
 
+        global $wp_query;
+        if ( intval( $wp_query->found_posts ) > $limit ) {
+            echo '<div class="er-load-more-sentinel"></div>';
+        }
+
+        $loop_html = ob_get_clean();
         er_render_private_page( 'search-results', $loop_html );
 
     } else {
-        // My Search NO Results custom Page
         er_render_private_page( 'search-no-results' );
     }
 
