@@ -1,6 +1,13 @@
 <?php
 // NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
+// ============================================================
+// THEME-COUPLING MARKERS (search these before/after a theme switch):
+//   THEME RELATED = hard coupling; breaks/orphans on switch — must fix.
+//   THEME REVIEW  = soft coupling; reads a theme-defined value, won't
+//                   break but the value shifts — verify.
+// ============================================================
+
 // ======================================
 // 📇 AT A GLANCE
 // ======================================
@@ -38,8 +45,25 @@ function custom_render_theme_snapshot_widget() {
         esc_html($updated)
     );
     echo '<div class="cd-widget" style="display: flex; gap: 10px;">';
-    echo '<a class="button" href="' . esc_url(admin_url('customize.php')) . '" target="_blank" rel="noopener noreferrer">Open Customizer</a>';
-    echo '<a class="button" href="https://ericroth.org/wp-admin/admin.php?page=ct-dashboard#/changelog" target="_blank" rel="noopener noreferrer">View Changelog</a>';
+    echo '<a class="button" href="' . esc_url(admin_url('site-editor.php')) . '" target="_blank" rel="noopener noreferrer">Site Editor</a>';
+    // THEME RELATED — hardcoded parent-theme changelog URL (olliewp.com). Points to the current theme's docs; update or remove on a theme switch.
+    echo '<a class="button" href="https://olliewp.com/docs/ollie-block-theme/ollie-changelog/" target="_blank" rel="noopener noreferrer">View Changelog</a>';
+    echo '</div>';
+}
+
+// ======================================
+// 📌 EDITING RULES — FILE-BASED REMINDER
+// ======================================
+
+function custom_render_editing_rules_widget() {
+    echo '<div style="font-size: 14px; line-height: 1.6;">';
+    echo '<p style="margin: 0 0 10px;"><strong class="cd-alert cd-bold">This Site is file-based.</strong></p>';
+    echo '<ul style="margin: 0 0 10px; padding-left: 18px; list-style: disc;">';
+    echo '<li>Templates &amp; Parts → Edit the Theme Files (<code>Templates/</code>, <code>Parts/</code>) directly.</li>';
+    echo '<li>Styles → Edit <code>theme.json</code>, <code>style.css</code>, <code>snippet.css</code></li>';
+    echo '<li><strong class="cd-alert">Never</strong> edit in Appearance → Editor cuz saving there creates a DB Copy that silently overrides the File.</li>';
+    echo '</ul>';
+    echo '<p style="margin: 0;"><span class="cd-success cd-bold">OK to edit in the Editor</span>: The <strong>Synced Patterns</strong> (→ <strong>Design Blocks</strong>) and the <strong>Nav Menus</strong> cuz these have no File Form.</p>';
     echo '</div>';
 }
 
@@ -51,12 +75,12 @@ function custom_render_hosting_repo_widget() {
     $row1 = [
         '🔐 Login' => 'https://auth.hostinger.com/login',
         '📬 Webmail' => 'https://mail.hostinger.com/',
-        '🧠 AI' => 'https://ericroth.org/wp-admin/admin.php?page=hostinger-ai-assistant'
+        '🧠 AI' => admin_url('admin.php?page=hostinger-ai-assistant')
     ];
     $row2 = [
         '💾 GitHub' => 'https://github.com/ericrothdotorg',
-        '🎨 Design Blocks' => 'https://ericroth.org/wp-admin/themes.php?page=design-block-tracker',
-        '✂️ Snippets' => 'https://ericroth.org/wp-admin/admin.php?page=snippets'
+        '🎨 Design Blocks' => admin_url('themes.php?page=design-block-tracker'),
+        '✂️ Snippets' => admin_url('admin.php?page=snippets')
     ];
     echo '<div class="cd-widget cd-flex">';
     foreach ($row1 as $label => $url) {
@@ -198,7 +222,10 @@ function custom_render_analytics_toolkit() {
 }
 
 function custom_handle_youtube_check_submission() {
-    if (!isset($_POST['check_broken_yt'])) return;
+	if (!isset($_POST['check_broken_yt'])) return;
+    if (!current_user_can('manage_options')) {
+        wp_die('Unauthorized access');
+    }
     check_admin_referer('check_broken_yt_action', 'check_broken_yt_nonce');
     $result = custom_check_broken_yt_links();
     update_option('custom_broken_yt_results', $result);
@@ -207,7 +234,7 @@ function custom_handle_youtube_check_submission() {
 }
 
 function custom_render_external_tools_buttons() {
-    $site_url = 'https://ericroth.org/';
+    $site_url = home_url('/');
     $urls = [
         'googlerich' => 'https://search.google.com/test/rich-results?url=' . urlencode($site_url),
         'schemaorg' => 'https://validator.schema.org/?url=' . urlencode($site_url),
@@ -232,10 +259,31 @@ function custom_render_site_metrics() {
     global $wpdb;
     $tables = $wpdb->get_col('SHOW TABLES');
     $db_table_count = count($tables);
-    $visitor_ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
-    if (filter_var($visitor_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-        $visitor_ip = gethostbyname(gethostname());
-    }
+	$visitor_ip = '';
+	foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'] as $h) {
+		if (!empty($_SERVER[$h])) {
+			foreach (explode(',', $_SERVER[$h]) as $c) {
+				$c = trim($c);
+				if (filter_var($c, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) { $visitor_ip = $c; break 2; }
+			}
+		}
+	}
+	if ($visitor_ip !== '') {
+		$cd_display = '🧊 Your IP: <strong>' . esc_html($visitor_ip) . '</strong>';
+	} else {
+		$cd_raw = $_SERVER['REMOTE_ADDR'] ?? '';
+		$cd_loc = 'Unknown';
+		if (filter_var($cd_raw, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+			$cd_resp = wp_remote_get("http://ip-api.com/json/{$cd_raw}?fields=status,city,country", array('timeout' => 5));
+			if (!is_wp_error($cd_resp)) {
+				$cd_data = json_decode(wp_remote_retrieve_body($cd_resp), true);
+				if (isset($cd_data['status']) && $cd_data['status'] === 'success') {
+					$cd_loc = trim(($cd_data['city'] ?? '') . ', ' . ($cd_data['country'] ?? ''), ', ');
+				}
+			}
+		}
+		$cd_display = '📍 Place: <strong>' . esc_html($cd_loc) . '</strong>';
+	}
     if (!function_exists('get_plugins')) {
         require_once ABSPATH . 'wp-admin/includes/plugin.php';
     }
@@ -247,7 +295,7 @@ function custom_render_site_metrics() {
     echo '<p style="margin-top: -5px;">🧵 InnoDB Tables: <strong>' . $db_table_count . '</strong></p>';
     echo '</div>';
     echo '<div style="width: calc(50% - 5px);">';
-    echo '<p>🧊 Your IP: <strong>' . esc_html($visitor_ip) . '</strong></p>';
+    echo '<p>' . $cd_display . '</p>'; // Shows 🧊 Your IP: (IPv4, not IPv6) or 📍 Place: (depending if IPv4 is available)
     echo '<p style="margin-top: -5px;">🔌 Active Plugins Installed: <strong>' . $plugin_count . '</strong></p>';
     echo '</div>';
     echo '</div>';
@@ -400,7 +448,7 @@ function custom_render_database_stats() {
 
 function custom_render_stat_row($label, $count) {
     $status = custom_get_health_status($count);
-    echo '<p style="margin: 5px 0;">' . $label . ': <strong>' . number_format_i18n($count) . '</strong> ';
+    echo '<p style="margin: 5px 0;">' . esc_html($label) . ': <strong>' . number_format_i18n($count) . '</strong> ';
     echo '<span class="' . esc_attr($status[0]) . '">— ' . esc_html($status[1]) . '</span></p>';
 }
 
@@ -524,7 +572,7 @@ function custom_render_cleanup_history() {
 // ======================================
 
 function custom_render_blog_rss_widget() {
-    custom_render_rss_widget('blog', 'https://ericroth.org/feed/');
+    custom_render_rss_widget('blog', home_url('/feed/'));
 }
 
 // ======================================
@@ -532,7 +580,7 @@ function custom_render_blog_rss_widget() {
 // ======================================
 
 function custom_render_interests_rss_widget() {
-    custom_render_rss_widget('interests', 'https://ericroth.org/my-interests/feed/');
+    custom_render_rss_widget('interests', home_url('/my-interests/feed/'));
 }
 
 // ======================================
@@ -555,7 +603,7 @@ function custom_render_rss_widget($id_prefix, $feed_url) {
             $edit_link = '';
             $guid = $item->get_id();
             if (preg_match('/p=(\d+)/', $guid, $matches)) {
-                $edit_link = 'https://ericroth.org/wp-admin/post.php?post=' . $matches[1] . '&action=edit';
+                $edit_link = admin_url('post.php?post=' . $matches[1] . '&action=edit');
             }
             echo '<div class="rss-item" data-index="' . $index . '" style="display: none; margin-bottom: 15px;">';
             echo '<div><a href="' . $link . '" target="_blank" class="cd-bold cd-link">' . $title . '</a> – ';
@@ -768,6 +816,7 @@ add_action('wp_dashboard_setup', function () {
 
     // Register all Widgets
     wp_add_dashboard_widget('custom_theme_snapshot',       '🎨 Theme Snapshot',        'custom_render_theme_snapshot_widget'); // THEME RELATED
+    wp_add_dashboard_widget('custom_editing_rules',        '📌 Editing Rules',         'custom_render_editing_rules_widget');
     wp_add_dashboard_widget('hosting_code_repo',           '🌀 Hosting & Code Repos',   'custom_render_hosting_repo_widget');
     wp_add_dashboard_widget('ai_chatbots',                 '🤖 AI Chatbots',           'custom_render_ai_chatbots_widget');
     wp_add_dashboard_widget('sponsor_channels',            '🎁 Sponsor Channels',      'custom_render_sponsor_channels_widget');
