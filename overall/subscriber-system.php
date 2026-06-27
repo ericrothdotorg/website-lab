@@ -68,23 +68,9 @@ function er_add_subscriber( $email ) {
     $result = $wpdb->insert( $table, [
         'email'  => $email,
         'token'  => $token,
-        'status' => 'pending',
+        'status' => 'active',
     ] );
     return $result ? $token : false;
-}
-
-function er_activate_subscriber( $email, $token ) {
-    global $wpdb;
-    $table = $wpdb->prefix . 'er_subscribers';
-    $row   = $wpdb->get_row(
-        $wpdb->prepare(
-            "SELECT * FROM {$table} WHERE email = %s AND token = %s AND status = 'pending'",
-            $email, $token
-        )
-    );
-    if ( ! $row ) return false;
-    $wpdb->update( $table, [ 'status' => 'active' ], [ 'id' => $row->id ] );
-    return true;
 }
 
 function er_remove_subscriber( $email, $token ) {
@@ -113,7 +99,7 @@ function er_get_ip() {
 function er_log_nonce_failure( $ip ) {
     global $wpdb;
     $wpdb->insert(
-        $wpdb->prefix . 'contact_nonce_log',
+        $wpdb->prefix . 'er_contact_nonce_log',
         [ 'ip' => $ip, 'failed_at' => current_time( 'mysql' ) ]
     );
 }
@@ -162,12 +148,12 @@ add_action( 'wp_footer', function () {
         .er-subscribe-wrapper label {display: block; margin-bottom: 0.5em;}
         .er-subscribe-wrapper input[type="email"] {
             display: block; width: 100%; padding: 10px;
-            font-size: 16px; box-sizing: border-box; border-radius: 5px;
+            font-size: var(--er-fs-sm); box-sizing: border-box; border-radius: 5px;
         }
         .er-subscribe-wrapper input[type="email"]:focus {outline: 1px solid var(--color-1); outline-offset: 2px;}
         .er-subscribe-wrapper button[type="submit"] {
             display: block; width: auto; padding: 10px 25px;
-            font-size: 16px; cursor: pointer; border-radius: 5px;
+            font-size: var(--er-fs-sm); font-weight: var(--er-fw-bold); cursor: pointer; border-radius: 5px;
             border: none; background: var(--color-1); color: var(--color-8);
         }
         .er-subscribe-wrapper button[type="submit"]:hover,
@@ -265,59 +251,20 @@ function er_handle_subscribe_ajax() {
         wp_send_json_error( [ 'message' => 'Something went wrong. Please try again.' ] );
     }
 
-    $confirm_url = add_query_arg( [
-        'er_confirm' => 1,
-        'email'      => urlencode( $email ),
-        'token'      => $token,
-    ], home_url() );
-
-    $subject = 'Please confirm your subscription — ericroth.org';
+    // Single opt-in: subscriber is already active (see er_add_subscriber).
+    // Welcome email is fire-and-forget; its delivery does not gate the success response.
+    $subject = "You're now subscribed — ericroth.org";
     $body    = "Hi,\n\n"
-             . "Please confirm your subscription by clicking the link below:\n\n"
-             . $confirm_url . "\n\n"
-             . "If you did not request this, simply ignore this email.\n\n"
+             . "Your subscription to ericroth.org is confirmed.\n"
+             . "You'll receive a notification whenever new content is published.\n\n"
              . get_bloginfo( 'name' );
 
     wp_mail( $email, $subject, $body );
-    wp_send_json_success( [ 'message' => 'Almost there → Please check your inbox.' ] );
+    wp_send_json_success( [ 'message' => "You're subscribed - welcome!" ] );
 }
 
 /* =============================================================================
-   6. OPT-IN CONFIRMATION HANDLER
-============================================================================= */
-
-add_action( 'init', function () {
-    if ( empty( $_GET['er_confirm'] ) ) return;
-    $email = sanitize_email( urldecode( $_GET['email'] ?? '' ) );
-    $token = sanitize_text_field( $_GET['token'] ?? '' );
-    $home  = esc_url( home_url() );
-
-    if ( er_activate_subscriber( $email, $token ) ) {
-        $subject = "You're now subscribed — ericroth.org";
-        $body    = "Hi,\n\n"
-                 . "Your subscription to ericroth.org is confirmed.\n"
-                 . "You'll receive a notification whenever new content is published.\n\n"
-                 . get_bloginfo( 'name' );
-        wp_mail( $email, $subject, $body );
-        wp_die(
-            '<p>Your subscription is confirmed. Welcome!</p>'
-            . '<p>You will be redirected to ericroth.org in 2 seconds.</p>'
-            . '<p><a href="' . $home . '">Click here if you are not redirected automatically.</a></p>'
-            . '<script>setTimeout(function(){ window.location.href="' . $home . '"; }, 2000);</script>',
-            'Confirmed',
-            [ 'response' => 200 ]
-        );
-    } else {
-        wp_die(
-            '<p>This confirmation link is invalid or has already been used.</p>',
-            'Error',
-            [ 'response' => 400 ]
-        );
-    }
-} );
-
-/* =============================================================================
-   7. UNSUBSCRIBE HANDLER
+   6. UNSUBSCRIBE HANDLER
 ============================================================================= */
 
 add_action( 'init', function () {
@@ -345,19 +292,10 @@ add_action( 'init', function () {
 } );
 
 /* =============================================================================
-   8. PUBLISH TRIGGER
+   7. PUBLISH TRIGGER
    Fires when a watched Post Type transitions to 'publish'.
    Logs send Status and any Error back to the Subscriber Record.
 ============================================================================= */
-
-add_filter( 'wp_mail', function( $args ) {
-    global $er_plain_text_body;
-    add_action( 'phpmailer_init', function( $phpmailer ) use ( $er_plain_text_body ) {
-        $phpmailer->AltBody = $er_plain_text_body;
-        $phpmailer->ContentType = 'multipart/alternative';
-    });
-    return $args;
-});
 
 add_action( 'transition_post_status', function ( $new_status, $old_status, $post ) {
     global $wpdb, $phpmailer;
@@ -379,19 +317,25 @@ add_action( 'transition_post_status', function ( $new_status, $old_status, $post
         return;
     }
     $table    = $wpdb->prefix . 'er_subscribers';
-    $title    = get_the_title( $post );
+	$title    = get_the_title( $post );
     $url      = get_permalink( $post );
     $excerpt  = has_excerpt( $post )
         ? get_the_excerpt( $post )
         : wp_trim_words( strip_tags( $post->post_content ), 30 );
     $sitename = get_bloginfo( 'name' );
 
+    // HTML-escaped copies for the HTML body. Raw versions above stay for the plain-text body and the email subject
+    $title_html    = esc_html( $title );
+    $excerpt_html  = esc_html( $excerpt );
+    $sitename_html = esc_html( $sitename );
+    $url_html      = esc_url( $url );
+
     foreach ( $subscribers as $sub ) {
         $unsub_url = add_query_arg(
             [
                 'er_unsub' => 1,
                 'email'    => urlencode( $sub->email ),
-                'token'    => $sub->token,
+                'token'    => rawurlencode( $sub->token ),
             ],
             home_url()
         );
@@ -400,17 +344,17 @@ add_action( 'transition_post_status', function ( $new_status, $old_status, $post
 
         // HTML + PLAIN TEXT BODIES
         
-        $body_html = "
+		$body_html = "
         <p>Hi,</p>
         <p>A new post has just been published on ericroth.org:</p>
-        <p><strong>• {$title}</strong></p>
-        <p><em>{$excerpt}</em></p>
+        <p><strong>• {$title_html}</strong></p>
+        <p><em>{$excerpt_html}</em></p>
         <p><strong>Read it here:</strong><br>
-        <a href=\"{$url}\">{$url}</a></p>
-        <p>{$sitename}</p>
+        <a href=\"{$url_html}\">{$url_html}</a></p>
+        <p>{$sitename_html}</p>
         <p>-----</p>
         <p><em>To unsubscribe:</em><br>
-        <a href=\"{$unsub_url}\">{$unsub_url}</a></p>
+        <a href=\"" . esc_url( $unsub_url ) . "\">" . esc_html( $unsub_url ) . "</a></p>
         ";
 
         $body_plain = "Hi,
@@ -430,13 +374,19 @@ To unsubscribe:
 {$unsub_url}
 ";
 
-        global $er_plain_text_body;
-        $er_plain_text_body = $body_plain;
+		// EMAIL SENDING + LOGGING
 
-        // EMAIL SENDING + LOGGING
-        
+        // Attach the plain-text alternative for THIS send only, then detach it immediately so no other wp_mail() call on the site is affected
+        $attach_altbody = function ( $phpmailer ) use ( $body_plain ) {
+            $phpmailer->AltBody     = $body_plain;
+            $phpmailer->ContentType = 'multipart/alternative';
+        };
+        add_action( 'phpmailer_init', $attach_altbody );
+
         $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
-        $sent  = wp_mail( $sub->email, $subject, $body_html, $headers );
+        $sent    = wp_mail( $sub->email, $subject, $body_html, $headers );
+
+        remove_action( 'phpmailer_init', $attach_altbody );
         $error = null;
         if ( ! $sent ) {
             $error = ! empty( $phpmailer->ErrorInfo )
@@ -458,7 +408,7 @@ To unsubscribe:
 }, 10, 3 );
 
 /* =============================================================================
-   9. ADMIN PAGE
+   8. ADMIN PAGE
 ============================================================================= */
 
 add_action( 'admin_menu', function () {
