@@ -66,10 +66,11 @@ add_action( 'wp_footer', function () {
         .formsubmit-wrapper input[type="email"],
         .formsubmit-wrapper textarea {
             width: 100%;
-            padding: 20px;
+            padding: 10px 20px;
             margin-bottom: 2em;
             border-radius: 5px;
-            font-size: 16px;
+            font-size: var(--er-fs-sm);
+			line-height: 1;
             background: var(--color-8);
             box-sizing: border-box;
         }
@@ -79,7 +80,7 @@ add_action( 'wp_footer', function () {
             padding: 10px 20px;
             border: none;
             border-radius: 5px;
-            font-size: 18px;
+            font-size: var(--er-fs-md);
             cursor: pointer;
             width: 125px;
             transition: background-color 0.3s ease;
