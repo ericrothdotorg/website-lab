@@ -193,13 +193,14 @@ add_action('wp_footer', function() {
             // German Singles
             '150592')) ||
         is_tax('topics', 124) ||
-        is_tax('things', array(137, 258))
+        is_tax('things', array(137, 258)) ||
+		is_tax('types', 182)
     ) {
         ?>
         <script>
             (function() {
                 const initNinja = function() {
-                    const targetContainer = document.querySelector(".hero-section[data-type='type-2'] > .entry-header.ct-container"); // THEME RELATED
+                    const targetContainer = document.querySelector(".er-hero-section .er-hero-inner"); // the dark panel itself (rgba(0,0,0,.65) in child style.css); near-symmetric padding so top:50% centers cleanly
                     if (targetContainer) {
                         const wrapper = document.createElement("div");
                         wrapper.className = "custom-ninja-wrapper";
@@ -207,7 +208,7 @@ add_action('wp_footer', function() {
                         wrapper.setAttribute("aria-label", "Illustration of a Ninja Character");
 
                         const link = document.createElement("a");
-                        link.href  = "https://ericroth.org/services/";
+                        link.href  = "/services/";
                         link.style.pointerEvents = "auto";
                         link.title = "Ninja Services";
                         link.setAttribute("aria-label", "Visit Ninja Services Page");
@@ -215,7 +216,7 @@ add_action('wp_footer', function() {
                         link.setAttribute("tabindex", "0");
 
                         const img = document.createElement("img");
-                        img.src     = "https://ericroth.org/wp-content/uploads/2025/08/Ninja-Character-Stroke-1px.png";
+                        img.src     = "/wp-content/uploads/2025/08/Ninja-Character-Stroke-1px.png";
                         img.alt     = "Ninja Character Illustration";
                         img.className = "custom-ninja-image daneden-slideInRight";
                         img.width   = 100;
@@ -239,7 +240,7 @@ add_action('wp_footer', function() {
         <style>
             .custom-ninja-wrapper {
                 position: absolute;
-                top: calc(50% - 25px);
+                top: 50%;
                 right: 25px;
                 transform: translateY(-50%);
                 z-index: 99;
@@ -254,7 +255,9 @@ add_action('wp_footer', function() {
                 height: auto;
                 border: 0;
             }
-            .entry-header.ct-container .page-description p { /* THEME RELATED */
+            /* Reserve right-side gutter so long description text wraps before the ninja zone.
+               er_hero (own shortcode, Companion PHP) outputs the text bare in .page-description (no <p>), so target the div. */
+            .er-hero-section .er-entry-header .page-description {
                 margin-right: clamp(120px, calc(10vw + 20px), 150px);
             }
         </style>
