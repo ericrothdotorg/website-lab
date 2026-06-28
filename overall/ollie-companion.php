@@ -55,6 +55,18 @@ function er_taxonomy_map() {
 	);
 }
 
+// ---- Things hub: canonical "My Pages" landing for the `page` taxonomy ----
+// Stored as an option so it survives slug / parent changes and edits in one place.
+// er_things_hub_id() is the single accessor; both er_things_hub_url() and the breadcrumb trail read the option only through it.
+function er_things_hub_id() {
+	return (int) get_option( 'er_things_hub_page' );
+}
+
+function er_things_hub_url() {
+	$id = er_things_hub_id();
+	return $id ? get_permalink( $id ) : home_url( '/' );
+}
+
 // Per-row taxonomy for mixed-type (search) loops: map lookup, else 'category'.
 function er_taxonomy_for_post( $post_id ) {
 	$map  = er_taxonomy_map();
@@ -157,35 +169,31 @@ function er_breadcrumbs() {
 				$crumbs[] = '<a href="' . esc_url( get_permalink( $ancestor_id ) ) . '">' . esc_html( get_the_title( $ancestor_id ) ) . '</a>';
 			}
 
-			// Filtered CPT listing Page (e.g. /personal/my-interests/?topics=slug):
-			// a CPT listing is a real Page whose slug equals the CPT name, hosting
-			// [er_cpt_archive]. When a recognised taxonomy GET param is present and
-			// resolves to a real term, mirror the term-archive trail: demote the page
-			// title to a LINK and make the filtered term the current item — so the
-			// breadcrumb agrees with the hero, pills and grid (all of which already
-			// read this param). Taxonomy is resolved through er_taxonomy_map() (single
-			// source of truth), keyed by the page slug = CPT name. No param, or an
-			// unmapped page → this block is inert and the shared span below runs as before.
-			$listing_post_type = get_post_field( 'post_name', get_the_ID() );
-			$taxonomy_map      = er_taxonomy_map();
-			if ( isset( $taxonomy_map[ $listing_post_type ] ) ) {
-				$listing_taxonomy = $taxonomy_map[ $listing_post_type ];
-				if ( ! empty( $_GET[ $listing_taxonomy ] ) ) {
-					$filter_term = get_term_by( 'slug', sanitize_key( wp_unslash( $_GET[ $listing_taxonomy ] ) ), $listing_taxonomy );
+			// Filtered listing Page (e.g. /this-site/my-pages/?things=slug or
+			// /personal/my-interests/?topics=slug): any Page hosting [er_cpt_archive]
+			// with a taxonomy filter param in the URL. Iterate the taxonomies in
+			// er_taxonomy_map() (single source of truth); for whichever filter param is
+			// present and resolves to a real term, mirror the term-archive trail —
+			// demote the page title to a LINK and make the filtered term the current
+			// item, so the breadcrumb agrees with the hero, pills and grid (all of which
+			// read this param). No valid param → this block is inert and the shared
+			// current-item span below runs as before.
+			$taxonomy_map = er_taxonomy_map();
+			foreach ( $taxonomy_map as $map_taxonomy ) {
+				if ( ! empty( $_GET[ $map_taxonomy ] ) ) {
+					$filter_term = get_term_by( 'slug', sanitize_key( wp_unslash( $_GET[ $map_taxonomy ] ) ), $map_taxonomy );
 					if ( $filter_term instanceof WP_Term ) {
-						// Page title becomes a link back to the unfiltered listing
 						$crumbs[]            = '<a href="' . esc_url( get_permalink( get_the_ID() ) ) . '">' . esc_html( get_the_title() ) . '</a>';
-						// Filtered term is the current item
 						$crumbs[]            = '<span aria-current="page">' . esc_html( $filter_term->name ) . '</span>';
-						$er_crumb_self_built = true; // suppress the shared current-item span below
+						$er_crumb_self_built = true;
+						break;
 					}
 				}
 			}
 		}
 
 		// Current item — no link
-		// Skipped only when a branch above already appended its own current item
-		// (filtered CPT listing). All other singular contexts are unaffected.
+		// Skipped only when a branch above already appended its own current item (filtered listing page). All other singular contexts are unaffected.
 		if ( empty( $er_crumb_self_built ) ) {
 			$crumbs[] = '<span aria-current="page">' . esc_html( get_the_title() ) . '</span>';
 		}
@@ -255,7 +263,18 @@ function er_breadcrumbs() {
 			}
 		}
 
-		// Current term — no link
+		// Current term — no link.
+		// For `things` (taxonomy on the page post type, no CPT archive), route the trail through the My Pages hub, then end on the term name
+		if ( $term->taxonomy === 'things' ) {
+			$hub_id = er_things_hub_id();
+			if ( $hub_id ) {
+				$hub_ancestors = array_reverse( get_post_ancestors( $hub_id ) );
+				foreach ( $hub_ancestors as $ancestor_id ) {
+					$crumbs[] = '<a href="' . esc_url( get_permalink( $ancestor_id ) ) . '">' . esc_html( get_the_title( $ancestor_id ) ) . '</a>';
+				}
+				$crumbs[] = '<a href="' . esc_url( get_permalink( $hub_id ) ) . '">' . esc_html( get_the_title( $hub_id ) ) . '</a>';
+			}
+		}
 		$crumbs[] = '<span aria-current="page">' . esc_html( $term->name ) . '</span>';
 
 	} elseif ( is_home() ) {
@@ -743,8 +762,7 @@ add_shortcode( 'er_cpt_archive', function( $atts ) {
 				$posts_page_id = (int) get_option( 'page_for_posts' );
 				$all_url       = $posts_page_id ? get_permalink( $posts_page_id ) : home_url( '/' );
 			} elseif ( $post_type === 'page' ) {
-				// Pages have no post-type archive; point ALL at a sensible landing page.
-				$all_url = home_url( '/' ); // ← change to get_permalink( <page_id> ) if you have a "Things" hub page
+				$all_url = er_things_hub_url();
 			} else {
 				$archive_link = get_post_type_archive_link( $post_type );
 				$all_url      = $archive_link ? $archive_link : home_url( '/' );
@@ -789,7 +807,17 @@ add_shortcode( 'er_cpt_archive', function( $atts ) {
 					       : 'rand',
 		'order'          => in_array( strtoupper( $atts['order'] ), [ 'ASC', 'DESC' ] ) ? strtoupper( $atts['order'] ) : 'DESC',
 	);
-
+	
+	// Page hub (unfiltered): restrict to pages that actually carry a `things` term
+	if ( ! $is_term_archive && $post_type === 'page' && $active_slug === '' ) {
+		$query_args['tax_query'] = array(
+			array(
+				'taxonomy' => $taxonomy,        // 'things'
+				'operator' => 'EXISTS',
+			),
+		);
+	}
+	
 	if ( $active_slug !== '' ) {
 		$term = get_term_by( 'slug', $active_slug, $taxonomy );
 		if ( $term && ! is_wp_error( $term ) ) {
