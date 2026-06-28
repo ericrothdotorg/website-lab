@@ -48,6 +48,7 @@
 function er_taxonomy_map() {
 	return array(
 		'post'         => 'category',
+		'page'         => 'things',
 		'my-interests' => 'topics',
 		'my-quotes'    => 'groups',
 		'my-traits'    => 'types',
@@ -506,7 +507,7 @@ function er_hero_shortcode() {
 	// --------------------------------------------------------
 	// Shared helper: build background span from attachment ID
 	// --------------------------------------------------------
-
+	
 	// NOTE on the "has-background-dim" class below:
 	// This is WordPress's core cover-block class name, reused here ONLY as a
 	// flag meaning "this hero has a background image". It does NOT add any
@@ -741,6 +742,9 @@ add_shortcode( 'er_cpt_archive', function( $atts ) {
 			if ( $post_type === 'post' ) {
 				$posts_page_id = (int) get_option( 'page_for_posts' );
 				$all_url       = $posts_page_id ? get_permalink( $posts_page_id ) : home_url( '/' );
+			} elseif ( $post_type === 'page' ) {
+				// Pages have no post-type archive; point ALL at a sensible landing page.
+				$all_url = home_url( '/' ); // ← change to get_permalink( <page_id> ) if you have a "Things" hub page
 			} else {
 				$archive_link = get_post_type_archive_link( $post_type );
 				$all_url      = $archive_link ? $archive_link : home_url( '/' );
