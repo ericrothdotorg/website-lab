@@ -40,43 +40,60 @@ add_action( 'the_posts', function( $posts, $query ) {
 // =====================================
 
 function dps_get_page_menu_groups( $menu_location = 'menu_1' ) {
-    static $cache = [];
-    if ( isset( $cache[ $menu_location ] ) ) {
-        return $cache[ $menu_location ];
-    }
-    $locations = get_nav_menu_locations();
-    if ( empty( $locations[ $menu_location ] ) ) {
-        return $cache[ $menu_location ] = [];
-    }
-    $menu_items = wp_get_nav_menu_items( $locations[ $menu_location ] );
-    if ( empty( $menu_items ) ) {
-        return $cache[ $menu_location ] = [];
-    }
-    // Step 1: Index all Items by their own Menu Item ID
-    $by_id = [];
-    foreach ( $menu_items as $item ) {
-        $by_id[ $item->ID ] = $item;
-    }
-    // Step 2: Find the top-level Page Items (menu_item_parent == 0) and map every page_id under them
-    $result = [];
-    foreach ( $menu_items as $item ) {
-        if ( $item->object !== 'page' ) {
-            continue;
-        }
-        // Walk up to the Root
-        $current = $item;
-        while ( ! empty( $current->menu_item_parent )
-                && (int) $current->menu_item_parent !== 0
-                && isset( $by_id[ $current->menu_item_parent ] ) ) {
-            $current = $by_id[ $current->menu_item_parent ];
-        }
-        // $current is now the top-level Ancestor
-        $result[ (int) $item->object_id ] = [
-            'label' => wp_strip_all_tags( $current->title ),
-            'order' => (int) $current->menu_order,
-        ];
-    }
-    return $cache[ $menu_location ] = $result;
+	// Block-theme nav: parse the wp_navigation post and map each page ID to its
+	// top-level section (About Me / Personal / Professional / This Site). Labels
+	// may contain HTML, so strip to text. $menu_location kept for compat, unused
+	static $cache = null;
+	if ( $cache !== null ) {
+		return $cache;
+	}
+
+	$nav_post_id = 158986; // wp_navigation post backing the primary nav block
+	$nav         = get_post( $nav_post_id );
+	if ( ! $nav || empty( $nav->post_content ) ) {
+		return $cache = [];
+	}
+
+	$blocks = parse_blocks( $nav->post_content );
+	$result = [];
+
+	// Recursive walker: carries the active top-level label down through nesting.
+	$walk = function ( $blocks, $top_label, $top_order ) use ( &$walk, &$result ) {
+		foreach ( $blocks as $block ) {
+			$name  = $block['blockName'] ?? '';
+			$attrs = $block['attrs'] ?? [];
+
+			if ( $name === 'core/navigation-submenu' ) {
+				$is_top = ! empty( $attrs['isTopLevelItem'] );
+
+				if ( $is_top || $top_label === null ) {
+					// Establish (or re-establish) the top-level section here.
+					$label = trim( wp_strip_all_tags( $attrs['label'] ?? '' ) );
+					$order = isset( $attrs['id'] ) ? (int) $attrs['id'] : PHP_INT_MAX;
+					$top_label = $label;
+					$top_order = $order;
+				}
+
+				// A submenu that is itself a page belongs to the current top section.
+				if ( ( $attrs['type'] ?? '' ) === 'page' && isset( $attrs['id'] ) ) {
+					$result[ (int) $attrs['id'] ] = [ 'label' => $top_label, 'order' => $top_order ];
+				}
+
+				if ( ! empty( $block['innerBlocks'] ) ) {
+					$walk( $block['innerBlocks'], $top_label, $top_order );
+				}
+
+			} elseif ( $name === 'core/navigation-link' ) {
+				if ( ( $attrs['type'] ?? '' ) === 'page' && isset( $attrs['id'] ) && $top_label !== null ) {
+					$result[ (int) $attrs['id'] ] = [ 'label' => $top_label, 'order' => $top_order ];
+				}
+			}
+		}
+	};
+
+	$walk( $blocks, null, PHP_INT_MAX );
+
+	return $cache = $result;
 }
 
 // =====================================
