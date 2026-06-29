@@ -808,14 +808,8 @@ add_shortcode( 'er_cpt_archive', function( $atts ) {
 		'order'          => in_array( strtoupper( $atts['order'] ), [ 'ASC', 'DESC' ] ) ? strtoupper( $atts['order'] ) : 'DESC',
 	);
 	
-	// Page hub (unfiltered): restrict to pages that actually carry a `things` term
-	if ( ! $is_term_archive && $post_type === 'page' && $active_slug === '' ) {
-		$query_args['tax_query'] = array(
-			array(
-				'taxonomy' => $taxonomy,        // 'things'
-				'operator' => 'EXISTS',
-			),
-		);
+	if ( $post_type === 'page' ) {
+		$query_args['post__not_in'] = array( 14581 ); // exclude DUMMY
 	}
 	
 	if ( $active_slug !== '' ) {
@@ -935,6 +929,10 @@ function er_load_more_handler() {
 		'order'          => $order,
 		'offset'         => $offset,
 	);
+
+	if ( $post_type === 'page' ) {
+		$query_args['post__not_in'] = array( 14581 ); // exclude DUMMY — must match 5b
+	}
 
 	if ( $active_slug !== '' ) {
 		$term = get_term_by( 'slug', $active_slug, $taxonomy );
