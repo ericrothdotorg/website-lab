@@ -56,42 +56,41 @@ add_action('wp_footer', function() use ($counter_pages) {
     if (!is_page($counter_pages)) return;
     ?>
     <!-- NOTE: These styles are mirrored in the EDITOR LIVE PREVIEWS snippet for editor display. Update both when changing. -->
-    <script>
-        function init() {
-            var a = 0;
-            function checkCounter() {
-                var counterElement = document.getElementById('counter');
-                if (counterElement) {
-                    var oTop = counterElement.offsetTop - window.innerHeight;
-                    if (a == 0 && window.scrollY >= oTop) {
-                        document.querySelectorAll('.counter-value').forEach(function(counter) {
-                            var countTo = counter.getAttribute('data-count');
-                            var countNum = 0;
-                            var duration = 7500;
-                            var step = countTo / (duration / 16);
-                            function updateCounter() {
-                                countNum += step;
-                                if (countNum < countTo) {
-                                    counter.textContent = Math.floor(countNum);
-                                    requestAnimationFrame(updateCounter);
-                                } else {
-                                    counter.textContent = countTo;
-                                }
-                            }
-                            requestAnimationFrame(updateCounter);
-                        });
-                        a = 1;
-                    }
-                }
-            }
-            window.addEventListener('scroll', checkCounter);
-            checkCounter();
-        }
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init);
-        } else {
-            init();
-        }
-    </script>
+	<script>
+	function init() {
+		var counters = document.querySelectorAll('.counter-value');
+		if (!counters.length) return;
+
+		var observer = new IntersectionObserver(function(entries, obs) {
+			entries.forEach(function(entry) {
+				if (!entry.isIntersecting) return;
+				var counter = entry.target;
+				obs.unobserve(counter);
+
+				var countTo = parseFloat(counter.getAttribute('data-count'));
+				var countNum = 0;
+				var step = countTo / (7500 / 16);
+
+				function update() {
+					countNum += step;
+					if (countNum < countTo) {
+						counter.textContent = Math.floor(countNum);
+						requestAnimationFrame(update);
+					} else {
+						counter.textContent = countTo;
+					}
+				}
+				requestAnimationFrame(update);
+			});
+		}, { threshold: 0.3 });
+
+		counters.forEach(function(c) { observer.observe(c); });
+	}
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', init);
+	} else {
+		init();
+	}
+	</script>
     <?php
 });
