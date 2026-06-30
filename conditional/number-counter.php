@@ -23,7 +23,6 @@ $counter_pages = [
 add_action('wp_head', function() use ($counter_pages) {
     if (!is_page($counter_pages)) return;
     ?>
-    <!-- NOTE: These styles are mirrored in the EDITOR LIVE PREVIEWS snippet for editor display. Update both when changing. -->
     <style>
         :root {--disc-size: 185px;}
         .counter-grid {display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; justify-content: center;}
