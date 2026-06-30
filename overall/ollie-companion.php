@@ -698,7 +698,7 @@ add_shortcode( 'er_cpt_archive', function( $atts ) {
 	// Context detection
 	// Term archive (/topics/x/, /category/y/ ...): post_type, taxonomy and term are all
 	// derived from the URL; the grid is locked to that single term and shows no filter tabs.
-	// Listing page (My Blog / My Interests / My Quotes): attribute-driven with ?taxonomy tabs.
+	// Listing page (My Blog and CPTs): attribute-driven with ?taxonomy tabs.
 	$queried         = get_queried_object();
 	$is_term_archive = ( $queried instanceof WP_Term ) && in_array( $queried->taxonomy, $taxonomy_map, true );
 	$has_explicit_pt = is_array( $atts ) && ! empty( $atts['post_type'] );
@@ -809,7 +809,7 @@ add_shortcode( 'er_cpt_archive', function( $atts ) {
 	);
 	
 	if ( $post_type === 'page' ) {
-		$query_args['post__not_in'] = array( 14581 ); // exclude DUMMY
+		$query_args['post__not_in'] = array( 14581, 159702 ); // exclude DUMMY and My Pages — must match 5c
 	}
 	
 	if ( $active_slug !== '' ) {
@@ -931,7 +931,7 @@ function er_load_more_handler() {
 	);
 
 	if ( $post_type === 'page' ) {
-		$query_args['post__not_in'] = array( 14581 ); // exclude DUMMY — must match 5b
+		$query_args['post__not_in'] = array( 14581, 159702 ); // exclude DUMMY and My Pages — must match 5b
 	}
 
 	if ( $active_slug !== '' ) {
@@ -974,8 +974,7 @@ function er_load_more_handler() {
 // ======================================
 
 // [er_related_posts] — auto-detects post_type, matches by taxonomy (CPTs) or
-// category (posts), excludes current post, renders 12 via Eric Slider.
-// (Flexy buffer/rewrite removed — Eric Slider replaces Flexy.)
+// category (posts), excludes current post, renders 12 via Eric Slider
 
 add_shortcode( 'er_related_posts', function() {
 	global $post;
