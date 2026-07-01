@@ -41,7 +41,7 @@ add_action('wp_head', function() use ($counter_pages) {
 		body.dark-mode .counter-body {color: var(--color-5);}
 		
         /*Page specific*/
-        .page-id-179 .counter-card {background: #00000085 !important; border: none !important;}
+        .page-id-179 .counter-card {background: rgba(0, 0, 0, 0.65) !important; border: none !important;}
         .page-id-179 .counter-card:hover {background: var(--color-6) !important;}
         .page-id-179 .counter-body {color: var(--color-5);}
     </style>
