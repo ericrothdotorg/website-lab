@@ -546,6 +546,7 @@ add_action('template_redirect', function() {
         '/contact-me/'		=> '/about-me/contact/',
         '/services/'		=> '/professional/',
         '/my-background/'	=> '/professional/my-background/',
+		'/my-traits/'		=> '/professional/my-background/my-traits/',
         '/my-blog/'			=> '/personal/my-blog/',
         '/my-interests/'	=> '/personal/my-interests/',
 		'/my-quotes/'		=> '/about-me/my-quotes/',
