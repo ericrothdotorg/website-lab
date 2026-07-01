@@ -345,7 +345,7 @@ body.dark-mode option {
 /* ============================================================
    C. CONTENT COMPONENTS: grid / cards / related / slider / post-footer
    Emitted by [er_cpt_archive] / [er_related_posts] / [er_post_footer].
-   PHP for these is in Snippet #7; this is their (theme-wide) CSS.
+   PHP for these is in Ollie Companion PHP; this is their (theme-wide) CSS.
    ============================================================ */
 
 /* Container is the rounded, clipping frame (excludes hero, which has no media-container).
@@ -369,32 +369,36 @@ body.dark-mode option {
 	transform: scale(1.05);
 }
 
-/* ---- CPT grid (shared by blog + CPT archives) ----
-   The two archives render in different wrappers, so the card carries its own
-   spacing and alignment rather than inheriting them — keeps both contexts
-   identical. Row spacing is the grid gap alone; inside-card spacing is explicit. */
+/* ---- Cards: archive grid + related (shared) ----
+   Archive grid and related-posts cards render in different wrappers but share
+   one card style: title, media-container spacing, and meta are defined once
+   here for both .er-cpt-grid and .er-related-posts, so the two contexts stay
+   identical. Grid layout (columns/gaps) below is archive-only; the related
+   slider supplies its own layout. Inside-card spacing is explicit. */
 .er-cpt-grid {display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 30px; row-gap: 50px;}
 @media (min-width: 600px) and (max-width: 1024px) {.er-cpt-grid {grid-template-columns: repeat(3, 1fr);}}
 @media (max-width: 600px) {.er-cpt-grid {grid-template-columns: repeat(2, 1fr);}}
-
 .er-cpt-grid .entry-card {
 	text-align: start;
 	padding: 0;
 	margin: 0;
 }
 .er-cpt-grid .entry-card > * {margin-block-start: 0;}
-.er-cpt-grid .entry-title {
+.er-cpt-grid .entry-title,
+.er-related-posts .entry-title {
 	margin: 0 0 1rem;
 	font-size: var(--er-fs-md);
 	line-height: 1.3;
 	font-weight: var(--er-fw-bold);
 	text-align: start;
 }
-.er-cpt-grid .er-media-container {
+.er-cpt-grid .er-media-container,
+.er-related-posts .er-media-container {
 	display: flex;
 	margin: 0 0 1rem;
 }
-.er-cpt-grid .entry-meta {
+.er-cpt-grid .entry-meta,
+.er-related-posts .entry-meta {
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -408,11 +412,16 @@ body.dark-mode option {
 	text-transform: uppercase;
 	letter-spacing: var(--er-ls-label);
 }
-.er-cpt-grid .entry-meta li {display: inline-flex; align-items: center; gap: 0.35em;}
-.er-cpt-grid .entry-meta svg {width: 1em; height: 1em; flex: none;}
-.er-cpt-grid .entry-meta li + li::before {content: "/"; color: var(--color-9);}
-.er-cpt-grid .entry-meta .er-reading-time {color: var(--color-3);}
-.er-cpt-grid .entry-meta .meta-categories {color: var(--color-1);}
+.er-cpt-grid .entry-meta li,
+.er-related-posts .entry-meta li {display: inline-flex; align-items: center; gap: 0.35em;}
+.er-cpt-grid .entry-meta svg,
+.er-related-posts .entry-meta svg {width: 1em; height: 1em; flex: none;}
+.er-cpt-grid .entry-meta li + li::before,
+.er-related-posts .entry-meta li + li::before {content: "/"; color: var(--color-9);}
+.er-cpt-grid .entry-meta .er-reading-time,
+.er-related-posts .entry-meta .er-reading-time {color: var(--color-3);}
+.er-cpt-grid .entry-meta .meta-categories,
+.er-related-posts .entry-meta .meta-categories {color: var(--color-1);}
 
 /* ---- Quote-card marker: neutral grey outline ring with quote marks inside, on my-quotes cards only
    (get_post_class emits .type-my-quotes). Grey (--color-9, not the accent --color-1) so it reads as a
@@ -469,12 +478,6 @@ body.dark-mode article > .er-related-posts {border-top: 1px solid var(--color-3)
 .slideshow-multiple-items-4 .eric-slider-arrow-next {right: 10px; left: auto;}
 .slideshow-multiple-items-4 .eric-slider-arrow-prev {right: 60px; left: auto;}
 
-/* Related-posts cards (related-only LAYOUT): scoped under .er-related-posts; reorder title BELOW image + stacked margins. Title size/meta shared above. */
-.er-related-posts .entry-card {display: flex; flex-direction: column;}
-.er-related-posts .entry-card .er-media-container {order: 1;}
-.er-related-posts .entry-card .entry-title {order: 2; margin: 1rem 0 0.5rem;}
-.er-related-posts .entry-card .entry-meta {order: 3;}
-
 /* Gap between cards and slider dots — related slider only. */
 .er-related-posts .eric-slider-dots {margin-top: 25px;}
 
@@ -482,8 +485,8 @@ body.dark-mode article > .er-related-posts {border-top: 1px solid var(--color-3)
 .er-related-title {margin: 1.75rem 0 1.25rem;}
 
 /* ---- Post footer: share row + prev/next (emitted by [er_post_footer], single only).
-   Isolated to this component; lives here for parity with related (PHP in #7, CSS here).
-   JS opener (data-share) stays in #7. ---- */
+   Isolated to this component; lives here for parity with related (PHP in Ollie Companion PHP, CSS here).
+   JS opener (data-share) stays in Ollie Companion PHP. ---- */
 /* THEME REVIEW — this block + my-quotes override below use --wp--preset--spacing--medium/--small; values shift on switch, won't break. */
 .er-post-footer {
 	/* No explicit width — fills its container (the post-content column), so it stays
@@ -825,7 +828,7 @@ main > .wp-block-columns { align-items: stretch; }
 
 /* ============================================================
    G. DARK-MODE TOGGLE BUTTON
-   The switch UI. Toggle JS + the anti-FOUC preload live in Snippet #7.
+   The switch UI. Toggle JS + the anti-FOUC preload live in Ollie Companion PHP
    ============================================================ */
 
 #dark-mode-toggle-btn {display: flex; align-items: center; gap: 10px;}
