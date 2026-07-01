@@ -370,7 +370,7 @@ body.dark-mode option {
 }
 
 /* ---- CPT grid ---- */
-.er-cpt-grid {display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 30px; row-gap: 35px;}
+.er-cpt-grid {display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 30px; row-gap: 25px;}
 @media (min-width: 600px) and (max-width: 1024px) {.er-cpt-grid {grid-template-columns: repeat(3, 1fr);}}
 @media (max-width: 600px) {.er-cpt-grid {grid-template-columns: repeat(2, 1fr);}}
 .er-cpt-grid .entry-title {margin-block-end: 1rem;}
