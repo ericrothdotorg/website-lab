@@ -1448,10 +1448,15 @@ add_action( 'wp_footer', function() {
 
 		// ---- 9d. Infinite scroll: observer that fetches & appends more cards ----
 		// Infinite Scroll
-		const grid     = document.querySelector( '.er-cpt-grid' );
-		const sentinel = document.querySelector( '.er-load-more-sentinel' );
+		const grids = document.querySelectorAll( '.er-cpt-grid' );
 
-		if ( grid && sentinel ) {
+		grids.forEach( function( grid ) {
+			// Each grid emits its sentinel as the immediately-following sibling.
+			const sentinel = grid.nextElementSibling;
+			if ( ! sentinel || ! sentinel.classList.contains( 'er-load-more-sentinel' ) ) return;
+
+			// Per-grid state — kept in this closure so multiple grids on one
+			// page don't share loading/offset/hasMore.
 			let loading  = false;
 			let hasMore  = true;
 			let offset   = parseInt( grid.dataset.offset );
@@ -1465,47 +1470,71 @@ add_action( 'wp_footer', function() {
 			// Read active Filter from the grid (server-set: ?taxonomy on listing pages, the term on archives)
 			const activeSlug = grid.dataset.activeSlug || '';
 
+			// Fetch next batch and append — callable from the observer and the <details> open handler.
+			function loadMore() {
+				if ( loading || ! hasMore ) return;
+				loading = true;
+
+				const formData = new FormData();
+				formData.append( 'action',      'er_load_more' );
+				formData.append( 'nonce',       erLoadMore.nonce );
+				formData.append( 'post_type',   postType );
+				formData.append( 'taxonomy',    taxonomy );
+				formData.append( 'limit',       limit );
+				formData.append( 'orderby',     orderby );
+				formData.append( 'order',       order );
+				formData.append( 'offset',      offset );
+				formData.append( 'active_slug', activeSlug );
+
+				const searchTerm = grid.dataset.search || '';
+				if ( searchTerm ) { formData.append( 'search', searchTerm ); }
+
+				fetch( erLoadMore.ajaxUrl, { method: 'POST', body: formData } )
+					.then( function( res ) { return res.json(); } )
+					.then( function( data ) {
+						if ( data.success && data.data.html ) {
+							grid.insertAdjacentHTML( 'beforeend', data.data.html );
+							const newCards = Array.from( grid.querySelectorAll( 'article:not([data-revealed])' ) );
+							newCards.forEach( function( card ) { card.setAttribute( 'data-revealed', '1' ); } );
+							revealCards( newCards );
+							offset  += limit;
+							hasMore  = data.data.has_more;
+						} else {
+							hasMore = false;
+						}
+						loading = false;
+						maybeLoad();
+					} )
+					.catch( function() { loading = false; } );
+			}
+
+			// Load if this grid's sentinel is within 200px of the viewport now.
+			// A hidden sentinel (collapsed <details>) has a zero-size rect, so it's skipped.
+			function maybeLoad() {
+				if ( loading || ! hasMore ) return;
+				const rect = sentinel.getBoundingClientRect();
+				const inView = rect.top < ( window.innerHeight + 200 ) && rect.bottom > 0;
+				const hasLayout = rect.width > 0 || rect.height > 0;
+				if ( inView && hasLayout ) { loadMore(); }
+			}
+
 			const observer = new IntersectionObserver( function( entries ) {
 				entries.forEach( function( entry ) {
-					if ( ! entry.isIntersecting || loading || ! hasMore ) return;
-					loading = true;
-
-					const formData = new FormData();
-					formData.append( 'action',      'er_load_more' );
-					formData.append( 'nonce',       erLoadMore.nonce );
-					formData.append( 'post_type',   postType );
-					formData.append( 'taxonomy',    taxonomy );
-					formData.append( 'limit',       limit );
-					formData.append( 'orderby',     orderby );
-					formData.append( 'order',       order );
-					formData.append( 'offset',      offset );
-					formData.append( 'active_slug', activeSlug );
-
-					// Search mode: forward the term.
-					const searchTerm = grid.dataset.search || '';
-					if ( searchTerm ) { formData.append( 'search', searchTerm ); }
-
-					fetch( erLoadMore.ajaxUrl, { method: 'POST', body: formData } )
-						.then( function( res ) { return res.json(); } )
-						.then( function( data ) {
-							if ( data.success && data.data.html ) {
-								grid.insertAdjacentHTML( 'beforeend', data.data.html );
-								const newCards = Array.from( grid.querySelectorAll( 'article:not([data-revealed])' ) );
-								newCards.forEach( function( card ) { card.setAttribute( 'data-revealed', '1' ); } );
-								revealCards( newCards );
-								offset  += limit;
-								hasMore  = data.data.has_more;
-							} else {
-								hasMore = false;
-							}
-							loading = false;
-						} )
-						.catch( function() { loading = false; } );
+					if ( entry.isIntersecting ) { loadMore(); }
 				} );
 			}, { rootMargin: '200px' } );
 
 			observer.observe( sentinel );
-		}
+
+			// If this grid sits inside a <details>, its sentinel has no layout
+			// while collapsed, so the observer never fires. Re-check on open.
+			const detailsParent = grid.closest( 'details' );
+			if ( detailsParent ) {
+				detailsParent.addEventListener( 'toggle', function() {
+					if ( detailsParent.open ) { maybeLoad(); }
+				} );
+			}
+		} );
 
 		// ---- 9e. <details> persistence across filter-tab navigation ----
 		document.addEventListener('DOMContentLoaded', function() {
