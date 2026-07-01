@@ -369,33 +369,50 @@ body.dark-mode option {
 	transform: scale(1.05);
 }
 
-/* ---- CPT grid ---- */
-.er-cpt-grid {display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 30px; row-gap: 25px;}
+/* ---- CPT grid (shared by blog + CPT archives) ----
+   The two archives render in different wrappers, so the card carries its own
+   spacing and alignment rather than inheriting them — keeps both contexts
+   identical. Row spacing is the grid gap alone; inside-card spacing is explicit. */
+.er-cpt-grid {display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 30px; row-gap: 50px;}
 @media (min-width: 600px) and (max-width: 1024px) {.er-cpt-grid {grid-template-columns: repeat(3, 1fr);}}
 @media (max-width: 600px) {.er-cpt-grid {grid-template-columns: repeat(2, 1fr);}}
-.er-cpt-grid .entry-title {margin-block-end: 1rem;}
-.er-cpt-grid .er-media-container {display: flex; margin-block-end: 1rem;}
-.er-cpt-grid .entry-card {padding-bottom: 30px; text-align: start;}
 
-/* ---- Card title + meta: shared by every er_render_card card (archive/listing/related/load-more). Reaches only .entry-card. Context-specific LAYOUT stays in the related block. ---- */
-.entry-card .entry-title {font-size: var(--er-fs-md); line-height: 1.3;}
-.entry-card .entry-meta {
+.er-cpt-grid .entry-card {
+	text-align: start;
+	padding: 0;
+	margin: 0;
+}
+.er-cpt-grid .entry-card > * {margin-block-start: 0;}
+.er-cpt-grid .entry-title {
+	margin: 0 0 1rem;
+	font-size: var(--er-fs-md);
+	line-height: 1.3;
+	font-weight: var(--er-fw-bold);
+	text-align: start;
+}
+.er-cpt-grid .er-media-container {
+	display: flex;
+	margin: 0 0 1rem;
+}
+.er-cpt-grid .entry-meta {
 	list-style: none;
 	margin: 0;
 	padding: 0;
 	display: flex;
 	flex-flow: row wrap;
 	align-items: center;
+	justify-content: flex-start;
+	text-align: start;
 	gap: 0.5rem;
 	font-size: var(--er-fs-xs);
 	text-transform: uppercase;
 	letter-spacing: var(--er-ls-label);
 }
-.entry-card .entry-meta li {display: inline-flex; align-items: center; gap: 0.35em;}
-.entry-card .entry-meta svg {width: 1em; height: 1em; flex: none;}
-.entry-card .entry-meta li + li::before {content: "/"; color: var(--color-9);}
-.entry-card .entry-meta .er-reading-time {color: var(--color-3);}
-.entry-card .entry-meta .meta-categories {color: var(--color-1);}
+.er-cpt-grid .entry-meta li {display: inline-flex; align-items: center; gap: 0.35em;}
+.er-cpt-grid .entry-meta svg {width: 1em; height: 1em; flex: none;}
+.er-cpt-grid .entry-meta li + li::before {content: "/"; color: var(--color-9);}
+.er-cpt-grid .entry-meta .er-reading-time {color: var(--color-3);}
+.er-cpt-grid .entry-meta .meta-categories {color: var(--color-1);}
 
 /* ---- Quote-card marker: neutral grey outline ring with quote marks inside, on my-quotes cards only
    (get_post_class emits .type-my-quotes). Grey (--color-9, not the accent --color-1) so it reads as a
