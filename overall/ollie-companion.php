@@ -22,6 +22,7 @@
 //   9. FOOTER SCRIPTS (JS)     dark-mode toggle, card reveal, infinite scroll,
 //                              details-open persistence
 //   10. WOOCOMMERCE            Hide unused WooCommerce template and parts
+//   11. TEMPLATE ROUTING       my-quotes + my-traits -> single-no-sidebar.html
 //   
 // CONVENTIONS
 // 
@@ -1626,3 +1627,18 @@ add_filter( 'get_block_templates', function ( $query_result, $query, $template_t
         }
     );
 }, 10, 3 );
+
+// ======================================
+// 11. TEMPLATE ROUTING
+// ======================================
+// THEME RELATED — routes my-quotes + my-traits singles to this child theme's
+// templates/single-no-sidebar.html via one shared file instead of duplicate
+// per-CPT templates. Coupled to the child theme's template folder + these CPT
+// slugs; on theme switch it orphans (file gone) but degrades safely.
+function ollie_route_no_sidebar( $templates ) {
+	if ( is_singular( array( 'my-quotes', 'my-traits' ) ) ) {
+		array_unshift( $templates, 'single-no-sidebar' );
+	}
+	return $templates;
+}
+add_filter( 'single_template_hierarchy', 'ollie_route_no_sidebar' );
