@@ -1634,7 +1634,7 @@ add_filter( 'get_block_templates', function ( $query_result, $query, $template_t
 // THEME RELATED — routes my-quotes + my-traits singles to this child theme's
 // templates/single-no-sidebar.html via one shared file instead of duplicate
 // per-CPT templates. Coupled to the child theme's template folder + these CPT
-// slugs; on theme switch it orphans (file gone) but degrades safely.
+// slugs; on theme switch it orphans (file gone: theme.json) but degrades safely.
 
 function ollie_route_no_sidebar( $templates ) {
 	if ( is_singular( array( 'my-quotes', 'my-traits' ) ) ) {
