@@ -246,8 +246,19 @@ body.dark-mode .er-archive-filter .er-filter-tab:hover {background: none;}
 	75% {border-radius: 20% 80% 70% 30% / 40% 60% 40% 60%;}
 }
 .blob-animation figcaption {font-size: 1.5em;}
-/* THEME RELATED — out-specifies parent figcaption x-small (parent style.css:51). */
-.wp-block-image figcaption.wp-element-caption {font-size: var(--er-fs-body);}
+/* THEME RELATED — out-specifies parent figcaption x-small (parent style.css:51).
+   Unified caption styling: standard images + video embeds (YouTube/Vimeo).
+   Bedps captions excluded (own rule). font-style omitted on purpose — italic
+   comes from the browser user-agent default and is consistent cross-browser. */
+.wp-block-image figcaption.wp-element-caption,
+figure.wp-block-embed figcaption.wp-element-caption {
+	font-size: var(--er-fs-xs);
+	color: var(--color-3);
+}
+body.dark-mode .wp-block-image figcaption.wp-element-caption,
+body.dark-mode figure.wp-block-embed figcaption.wp-element-caption {
+	color: var(--color-5);
+}
 /* Opt-in single-line caption: add class "caption-nowrap" to the image block. */
 .wp-block-image.caption-nowrap figcaption {display: block; width: max-content; margin-inline: auto; white-space: nowrap;}
 body.dark-mode .image-invert {filter: invert(1);}
@@ -420,8 +431,12 @@ body.dark-mode option {
 .er-related-posts .entry-meta li + li::before {content: "/"; color: var(--color-9);}
 .er-cpt-grid .entry-meta .er-reading-time,
 .er-related-posts .entry-meta .er-reading-time {color: var(--color-3);}
+body.dark-mode .er-cpt-grid .entry-meta .er-reading-time,
+body.dark-mode .er-related-posts .entry-meta .er-reading-time {color: var(--color-5);}
 .er-cpt-grid .entry-meta .meta-categories,
 .er-related-posts .entry-meta .meta-categories {color: var(--color-1);}
+body.dark-mode .er-cpt-grid .entry-meta .meta-categories svg,
+body.dark-mode .er-related-posts .entry-meta .meta-categories svg {fill: var(--color-5);}
 
 /* ---- Quote-card marker: neutral grey outline ring with quote marks inside, on my-quotes cards only
    (get_post_class emits .type-my-quotes). Grey (--color-9, not the accent --color-1) so it reads as a
