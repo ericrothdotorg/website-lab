@@ -391,6 +391,7 @@ body.dark-mode option {
 	grid-template-columns: repeat(4, 1fr);
 	column-gap: 30px;
 	row-gap: 50px;
+	padding-bottom: 30px;
 }
 @media (min-width: 600px) and (max-width: 1024px) {.er-cpt-grid {grid-template-columns: repeat(3, 1fr);}}
 @media (max-width: 600px) {.er-cpt-grid {grid-template-columns: repeat(2, 1fr);}}
