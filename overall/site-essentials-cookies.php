@@ -249,7 +249,7 @@ add_action( 'wp_footer', 'fix_wp_lightbox_js' );
 // BREADCRUMBS
 // ======================================
 
-// er_breadcrumbs() lives in Eric Companion PHP.
+// er_breadcrumbs() lives in Ollie Companion PHP.
 // Defined there so it is available in all execution contexts
 // (frontend, admin-ajax.php, Gutenberg editor) — it is called by er_hero_shortcode()
 
@@ -257,7 +257,7 @@ add_action( 'wp_footer', 'fix_wp_lightbox_js' );
 // READING TIME
 // ======================================
 
-// er_reading_time() and its render_block hook live in Eric Companion PHP.
+// er_reading_time() and its render_block hook live in Ollie Companion PHP.
 // Defined there so the function is available in all execution contexts
 // (frontend, admin-ajax.php, Gutenberg editor) — it is called by er_render_card()
 // and er_load_more_handler() which run on admin-ajax.php, and by er_hero_shortcode().
