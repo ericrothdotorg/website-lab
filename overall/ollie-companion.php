@@ -361,7 +361,7 @@ function er_reading_time( $post_id = null, $echo = false ) {
 			.       '<circle cx="12" cy="12" r="10" fill="none"/>'
 			.       '<polyline points="12 6 12 12 16 14" fill="none"/>'
 			.   '</svg>'
-			.   ' ' . $minutes . ' min read'
+			.   $minutes . ' min read'
 			. '</li>';
 	if ( $echo ) {
 		echo $output;
