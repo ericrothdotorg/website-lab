@@ -1021,23 +1021,31 @@ add_shortcode( 'er_related_posts', function() {
 	}
 
 	$related = new WP_Query( $query_args );
-	if ( ! $related->have_posts() ) return '';
-
-	ob_start();
-	echo '<div class="er-related-posts-container">';
-	echo '<h3 class="er-related-title">Related</h3>';
-	echo '<div class="er-related-posts slideshow-multiple-items-4">';
-
-	while ( $related->have_posts() ) {
-		$related->the_post();
-		er_render_card( get_the_ID(), $taxonomy );
-	}
-	wp_reset_postdata();
-
-	echo '</div>';
-	echo '</div>';
-
-	return ob_get_clean();
+		if ( ! $related->have_posts() ) return '';
+	
+		// Count what we actually got back so we can pick the layout.
+		$count = $related->post_count;
+		// 4 or fewer → static grid (no slider, no clones, no duplicates). More than 4 → the slider kicks in.
+		$is_slider = ( $count > 4 );
+		$layout_class = $is_slider
+			? 'slideshow-multiple-items-4 is-layout-slider'
+			: 'is-layout-grid is-count-' . $count;
+	
+		ob_start();
+		echo '<div class="er-related-posts-container">';
+		echo '<h3 class="er-related-title">Related</h3>';
+		echo '<div class="er-related-posts ' . esc_attr( $layout_class ) . '">';
+	
+		while ( $related->have_posts() ) {
+			$related->the_post();
+			er_render_card( get_the_ID(), $taxonomy );
+		}
+		wp_reset_postdata();
+	
+		echo '</div>';
+		echo '</div>';
+	
+		return ob_get_clean();
 } );
 
 // ======================================
