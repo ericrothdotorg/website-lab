@@ -396,8 +396,7 @@ body.dark-mode option {
 @media (max-width: 600px) {.er-cpt-grid {grid-template-columns: repeat(2, 1fr);}}
 @media (max-width: 1200px) {
 	.er-cpt-grid .entry-meta li,
-	.er-related-posts
-	.entry-meta li {
+	.er-related-posts .entry-meta li {
 		font-size: calc(var(--er-fs-xs) * 0.85);
 	}
 }
