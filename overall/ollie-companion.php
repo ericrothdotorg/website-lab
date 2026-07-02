@@ -2,9 +2,8 @@
 // NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
 // ============================================================
-// CHILD THEME COMPANION PHP — emits all custom block markup, shortcodes,
+// This emits all custom block markup, shortcodes,
 // critical head CSS, and front-end JS for the child theme.
-// (Its CSS counterpart is the "Child Theme Companion CSS" snippet + theme style.css.)
 // 
 // CONTENTS
 // 
@@ -76,7 +75,7 @@ function er_taxonomy_for_post( $post_id ) {
 }
 
 // ---- 1b. Breadcrumbs — [er_breadcrumbs]; called by er_hero_shortcode() ----
-// Defined here (not in Site Essentials) so it's available on front end, admin, and AJAX.
+// Defined here (not in Site Essentials & Cookies PHP) so it's available on front end, admin, and AJAX.
 function er_breadcrumbs() {
 	// Never show on front page
 	if ( is_front_page() ) {
@@ -142,6 +141,8 @@ function er_breadcrumbs() {
 					}
 					$crumbs[] = '<a href="' . esc_url( get_permalink( $listing_page->ID ) ) . '">' . esc_html( get_the_title( $listing_page->ID ) ) . '</a>';
 				} else {
+					// This line rarely runs. Visiting /my-interests/ (and /my-traits/, /my-quotes/) redirects to real Page instead
+					// See redirect list in Site Essentials & Cookies PHP. This is just a backup in case that ever changes.
 					$archive_link = get_post_type_archive_link( $post_type );
 					if ( $archive_link ) {
 						$crumbs[] = '<a href="' . esc_url( $archive_link ) . '">' . esc_html( $post_type_obj->labels->name ) . '</a>';
@@ -246,6 +247,8 @@ function er_breadcrumbs() {
 						}
 						$crumbs[] = '<a href="' . esc_url( get_permalink( $listing_page->ID ) ) . '">' . esc_html( get_the_title( $listing_page->ID ) ) . '</a>';
 					} else {
+						// This line rarely runs. Visiting /my-interests/ (and /my-traits/, /my-quotes/) redirects to real Page instead
+						// See redirect list in Site Essentials & Cookies PHP. This is just a backup in case that ever changes.
 						$archive_link = get_post_type_archive_link( $pt );
 						if ( $archive_link ) {
 							$crumbs[] = '<a href="' . esc_url( $archive_link ) . '">' . esc_html( $pt_obj->labels->name ) . '</a>';
@@ -340,7 +343,7 @@ function er_breadcrumbs() {
 add_shortcode( 'er_breadcrumbs', 'er_breadcrumbs' );
 
 // ---- 1c. Reading time — used by er_render_card() for archive cards ----
-// READING_SPEED_WPM is defined in Site Essentials; falls back to 200 via defined() guard.
+// READING_SPEED_WPM is defined in Site Essentials & Cookies PHP; falls back to 200 via defined() guard.
 // (On single posts, reading time shows via [post_stats] in the sidebar — no injection here.)
 
 function er_reading_time( $post_id = null, $echo = false ) {
@@ -765,6 +768,8 @@ add_shortcode( 'er_cpt_archive', function( $atts ) {
 			} elseif ( $post_type === 'page' ) {
 				$all_url = er_things_hub_url();
 			} else {
+				// This line rarely runs. Visiting /my-interests/ (and /my-traits/, /my-quotes/) redirects to real Page instead
+				// See redirect list in Site Essentials & Cookies PHP. This is just a backup in case that ever changes.
 				$archive_link = get_post_type_archive_link( $post_type );
 				$all_url      = $archive_link ? $archive_link : home_url( '/' );
 			}
@@ -1642,5 +1647,4 @@ function ollie_route_no_sidebar( $templates ) {
 	}
 	return $templates;
 }
-add_filter( 'single_template_hierarchy', 'ollie_route_no_sidebar' );
 add_filter( 'single_template_hierarchy', 'ollie_route_no_sidebar' );
