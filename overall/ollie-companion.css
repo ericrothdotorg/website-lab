@@ -466,6 +466,40 @@ body.dark-mode article > .er-related-posts {border-top: 1px solid var(--color-3)
 @media (max-width: 992px) {.er-related-posts.is-layout-slider {--grid-columns-width: 33.333%;}}
 @media (max-width: 768px) {.er-related-posts.is-layout-slider {--grid-columns-width: 50%;}}
 
+/* Static related layout — used when there are 4 or fewer related posts.
+   THEME REVIEW: shares --grid-columns-gap / --grid-columns-width with the
+   slider layout above; keep both reading the same tokens so widths stay in
+   sync if the gap ever changes. */
+.er-related-posts.is-layout-grid {
+	--grid-columns-gap: 30px;
+	--grid-columns-width: 25%;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--grid-columns-gap);
+}
+.er-related-posts.is-layout-grid > * {
+	flex: 0 0 calc(var(--grid-columns-width) - (var(--grid-columns-gap) * 3 / 4));
+	max-width: calc(var(--grid-columns-width) - (var(--grid-columns-gap) * 3 / 4));
+}
+@media (max-width: 992px) {
+	.er-related-posts.is-layout-grid { --grid-columns-width: 33.333%; }
+	.er-related-posts.is-layout-grid > * {
+		flex-basis: calc(var(--grid-columns-width) - (var(--grid-columns-gap) * 2 / 3));
+		max-width:  calc(var(--grid-columns-width) - (var(--grid-columns-gap) * 2 / 3));
+	}
+}
+@media (max-width: 768px) {
+	.er-related-posts.is-layout-grid { --grid-columns-width: 50%; }
+	.er-related-posts.is-layout-grid > * {
+		flex-basis: calc(var(--grid-columns-width) - (var(--grid-columns-gap) / 2));
+		max-width:  calc(var(--grid-columns-width) - (var(--grid-columns-gap) / 2));
+	}
+}
+@media (max-width: 350px) {
+	.er-related-posts.is-layout-grid { --grid-columns-width: 100%; }
+	.er-related-posts.is-layout-grid > * { flex-basis: 100%; max-width: 100%; }
+}
+
 /* Eric Slider arrows (related-posts layout) */
 .slideshow-multiple-items-4 .eric-slider-arrow-prev,
 .slideshow-multiple-items-4 .eric-slider-arrow-next {
