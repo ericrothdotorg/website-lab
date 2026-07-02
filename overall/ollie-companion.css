@@ -386,9 +386,21 @@ body.dark-mode option {
    here for both .er-cpt-grid and .er-related-posts, so the two contexts stay
    identical. Grid layout (columns/gaps) below is archive-only; the related
    slider supplies its own layout. Inside-card spacing is explicit. */
-.er-cpt-grid {display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 30px; row-gap: 50px;}
+.er-cpt-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	column-gap: 30px;
+	row-gap: 50px;
+}
 @media (min-width: 600px) and (max-width: 1024px) {.er-cpt-grid {grid-template-columns: repeat(3, 1fr);}}
 @media (max-width: 600px) {.er-cpt-grid {grid-template-columns: repeat(2, 1fr);}}
+@media (max-width: 1200px) {
+	.er-cpt-grid .entry-meta li,
+	.er-related-posts
+	.entry-meta li {
+		font-size: calc(var(--er-fs-xs) * 0.85);
+	}
+}
 .er-cpt-grid .entry-card {
 	text-align: start;
 	padding: 0;
@@ -418,17 +430,18 @@ body.dark-mode option {
 	align-items: center;
 	justify-content: flex-start;
 	text-align: start;
-	gap: 0.5rem;
 	font-size: var(--er-fs-xs);
 	text-transform: uppercase;
 	letter-spacing: var(--er-ls-label);
 }
 .er-cpt-grid .entry-meta li,
-.er-related-posts .entry-meta li {display: inline-flex; align-items: center; gap: 0.35em;}
+.er-related-posts .entry-meta li {display: inline-flex; align-items: center; gap: 0.75em;}
 .er-cpt-grid .entry-meta svg,
 .er-related-posts .entry-meta svg {width: 1em; height: 1em; flex: none;}
+.er-related-posts .entry-meta li svg,
+.er-cpt-grid .entry-meta li svg {margin-right: 0.1em;}
 .er-cpt-grid .entry-meta li + li::before,
-.er-related-posts .entry-meta li + li::before {content: "/"; color: var(--color-9);}
+.er-related-posts .entry-meta li + li::before {content: "/"; margin-left: 0.5rem; color: var(--color-9);}
 .er-cpt-grid .entry-meta .er-reading-time,
 .er-related-posts .entry-meta .er-reading-time {color: var(--color-3);}
 body.dark-mode .er-cpt-grid .entry-meta .er-reading-time,
