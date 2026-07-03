@@ -19,7 +19,7 @@
 //   7. POST FOOTER             [er_post_footer] share row + prev/next + helpers
 //   8. HEADER / NAV            header-scroll/submenu JS, mobile-overlay inject
 //   9. FOOTER SCRIPTS (JS)     dark-mode toggle, card reveal, infinite scroll,
-//                              details-open persistence
+//                              details-open persistence, whole-card click
 //   10. WOOCOMMERCE            Hide unused WooCommerce template and parts
 //   11. TEMPLATE ROUTING       my-quotes + my-traits -> single-no-sidebar.html
 //   
@@ -669,7 +669,7 @@ function er_render_card( $post_id, $taxonomy ) {
 	$post_terms = get_the_terms( $post_id, $taxonomy );
 	$term_obj   = ( $post_terms && ! is_wp_error( $post_terms ) ) ? $post_terms[0] : null;
 
-	echo '<article class="' . esc_attr( implode( ' ', get_post_class( 'entry-card card-content', $post_id ) ) ) . '">';
+	echo '<article class="' . esc_attr( implode( ' ', get_post_class( 'entry-card card-content is-clickable-card', $post_id ) ) ) . '">';
 	echo '<h2 class="entry-title"><a href="' . esc_url( $url ) . '" rel="bookmark">' . esc_html( $title ) . '</a></h2>';
 
 	if ( $thumb ) {
@@ -1589,6 +1589,40 @@ add_action( 'wp_footer', function() {
 			});
 
 		});
+
+		// ---- 9f. Whole-card click: forward any .is-clickable-card to its title link ----
+		// One delegated listener covers both card types — DPS .listing-item and
+		// er_render_card .entry-card — via the shared .is-clickable-card marker.
+		// Delegation on document means slider clones and the cards appended by 9d
+		// are handled with no re-binding. Real links / buttons inside the card are
+		// left alone; the slider's capture-phase drag-swallow still blocks drag-nav.
+		(function () {
+			var SEL = '.is-clickable-card';
+			function cardLink(card) {
+				return card.querySelector('.title a[href]')
+					|| card.querySelector('.entry-title a[href]')
+					|| card.querySelector('a[href]');
+			}
+			function markCursors() {
+				document.querySelectorAll(SEL).forEach(function (card) {
+					if (cardLink(card)) card.style.cursor = 'pointer';
+				});
+			}
+			document.addEventListener('click', function (e) {
+				if (e.target.closest('a, button, select, input, textarea, label')) return;
+				var card = e.target.closest(SEL);
+				if (!card) return;
+				if (window.getSelection && String(window.getSelection()).length > 0) return;
+				var link = cardLink(card);
+				if (!link) return;
+				if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) {
+					window.open(link.href, '_blank');
+					return;
+				}
+				window.location.href = link.href;
+			});
+			markCursors();
+		})();
 
 	</script>
 	<?php
