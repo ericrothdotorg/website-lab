@@ -454,9 +454,10 @@ function custom_render_stat_row($label, $count, $profile = 'meta') {
     echo '<span class="' . esc_attr($status[0]) . '">— ' . esc_html($status[1]) . '</span></p>';
 }
 
-// Per-table health thresholds. 'meta' = default (postmeta / usermeta / etc, unchanged).
-// 'map_views' = er_map_views, whose normal 90-day steady state is ~11,500 rows
-// (~128 distinct page / city per day x 90). Green <15k, orange 15k-30k, red >30k.
+// HEALTH STATUS — Every green / orange / red label on the "Optimize & Clean-Up" stat rows is decided here and nowhere else. To change a cutoff, change it here.
+// How it works: Each row passes a "profile" telling this function which size limits apply. Below each profile's orange number = green ("Healthy"). At / above orange = orange ("Moderate bloat"). At / above red = red ("Consider a cleanup"). Rows with no profile use 'meta' by default.
+//   'meta'      → postmeta, usermeta, termmeta, er_post_stats. Big tables, high limits: orange 10k, red 50k.
+//   'map_views' → er_map_views. Normal size is ~11,500 rows (about 128 visits a day kept for 90 days), so its limits sit higher than that on purpose: orange 15k, red 30k.
 function custom_get_health_status($count, $profile = 'meta') {
     if ($profile === 'map_views') {
         if ($count > 30000) return ['cd-alert',   'Consider running a cleanup.'];
