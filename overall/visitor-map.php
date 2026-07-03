@@ -114,15 +114,20 @@ function lum_background_track() {
 			$current_time
 		));
 		// Map's own per-view log (for the past table's reconcilable "X views from Y locations"). Independent of er_post_stats and the Views snippet.
-		$wpdb->insert(
-			$wpdb->prefix . 'er_map_views',
-			array(
-				'page_url'  => $page_url,
-				'city'      => !empty($geo_data['city']) ? $geo_data['city'] : null,
-				'viewed_at' => $current_time,
-			),
-			array('%s', '%s', '%s')
-		);
+		// DEDUP: one row per visitor per page per 24h. The Past-list "views" column therefore reads as unique daily visitors, not raw page loads. Keyed on visitor_id + page_url, mirroring the geo-cache transient pattern used above. Does NOT affect the map dots (those read from er_live_visitors).
+		$dedup_key = 'lum_view_' . md5($visitor_id . '|' . $page_url);
+		if (get_transient($dedup_key) === false) {
+			$wpdb->insert(
+				$wpdb->prefix . 'er_map_views',
+				array(
+					'page_url'  => $page_url,
+					'city'      => !empty($geo_data['city']) ? $geo_data['city'] : null,
+					'viewed_at' => $current_time,
+				),
+				array('%s', '%s', '%s')
+			);
+			set_transient($dedup_key, 1, DAY_IN_SECONDS);
+		}
     }
     wp_die('OK'); // Important for AJAX
 }
