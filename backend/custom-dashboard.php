@@ -434,25 +434,35 @@ function custom_render_database_stats() {
     $postmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->postmeta}");
     $termmeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->termmeta}");
     $usermeta_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->usermeta}");
-    $er_post_stats_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_post_stats");
-    $total = $postmeta_count + $termmeta_count + $usermeta_count + $er_post_stats_count;
+	$er_post_stats_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_post_stats");
+    $er_map_views_count  = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_map_views");
+    $total = $postmeta_count + $termmeta_count + $usermeta_count + $er_post_stats_count + $er_map_views_count;
 
     echo '<div style="margin-top: 15px;">';
     custom_render_stat_row('Content Meta Rows', $postmeta_count);
     custom_render_stat_row('Term Meta Rows', $termmeta_count);
     custom_render_stat_row('User Meta Rows', $usermeta_count);
     custom_render_stat_row('Post Stats Rows', $er_post_stats_count);
+    custom_render_stat_row('Map View Rows', $er_map_views_count, 'map_views');
     echo '<p style="margin: 5px 0;">TOTAL Meta Rows: <strong>' . number_format_i18n($total) . '</strong></p>';
     echo '</div>';
 }
 
-function custom_render_stat_row($label, $count) {
-    $status = custom_get_health_status($count);
+function custom_render_stat_row($label, $count, $profile = 'meta') {
+    $status = custom_get_health_status($count, $profile);
     echo '<p style="margin: 5px 0;">' . esc_html($label) . ': <strong>' . number_format_i18n($count) . '</strong> ';
     echo '<span class="' . esc_attr($status[0]) . '">— ' . esc_html($status[1]) . '</span></p>';
 }
 
-function custom_get_health_status($count) {
+// Per-table health thresholds. 'meta' = default (postmeta / usermeta / etc, unchanged).
+// 'map_views' = er_map_views, whose normal 90-day steady state is ~11,500 rows
+// (~128 distinct page / city per day x 90). Green <15k, orange 15k-30k, red >30k.
+function custom_get_health_status($count, $profile = 'meta') {
+    if ($profile === 'map_views') {
+        if ($count > 30000) return ['cd-alert',   'Consider running a cleanup.'];
+        if ($count > 15000) return ['cd-warning', 'Moderate bloat detected.'];
+        return                     ['cd-success', 'Healthy state.'];
+    }
     if ($count > 50000) return ['cd-alert',   'Consider running a cleanup.'];
     if ($count > 10000) return ['cd-warning', 'Moderate bloat detected.'];
     return                     ['cd-success', 'Healthy state.'];
@@ -535,13 +545,14 @@ function custom_cleanup_old_data($wpdb, $safe_delete) {
     }
     $deleted += $safe_delete("DELETE FROM {$wpdb->posts} WHERE post_status = 'auto-draft' AND post_content = ''", 'Auto-draft cleanup');
     $deleted += $safe_delete("DELETE FROM {$wpdb->prefix}er_post_stats WHERE row_type = 'event' AND created_at < CURDATE()", 'Old vote/view event log cleanup');
+	$deleted += $safe_delete("DELETE FROM {$wpdb->prefix}er_map_views WHERE viewed_at < NOW() - INTERVAL 90 DAY", 'Old map view log cleanup (90-day retention)');
     $deleted += $safe_delete("DELETE FROM {$wpdb->posts} WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 1 DAY", 'Trash posts cleanup');
     $deleted += $safe_delete("DELETE FROM {$wpdb->prefix}er_subscribers WHERE status = 'pending' AND created_at < NOW() - INTERVAL 7 DAY", 'Stale pending subscriber cleanup');
     return $deleted;
 }
 
 function custom_optimize_tables($wpdb, &$errors) {
-    $tables = ['postmeta', 'usermeta', 'termmeta', 'er_post_stats'];
+    $tables = ['postmeta', 'usermeta', 'termmeta', 'er_post_stats', 'er_map_views'];
     $optimized_count = 0;
     foreach ($tables as $table) {
         $wpdb->query("OPTIMIZE TABLE {$wpdb->prefix}{$table}");
