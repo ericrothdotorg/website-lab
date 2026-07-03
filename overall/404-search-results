@@ -99,7 +99,11 @@ add_filter( 'template_include', function( $template ) {
         $shown = 0;
         while ( have_posts() && $shown < $limit ) {
             the_post();
-            er_render_card( get_the_ID(), er_taxonomy_for_post( get_the_ID() ) );
+            if ( function_exists( 'er_render_card' ) && function_exists( 'er_taxonomy_for_post' ) ) {
+                er_render_card( get_the_ID(), er_taxonomy_for_post( get_the_ID() ) );
+            } else {
+                echo '<article class="entry-card"><h2 class="entry-title"><a href="' . esc_url( get_permalink() ) . '">' . esc_html( get_the_title() ) . '</a></h2></article>';
+            }
             $shown++;
         }
         echo '</div>';
