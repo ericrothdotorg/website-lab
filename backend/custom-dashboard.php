@@ -458,6 +458,7 @@ function custom_render_stat_row($label, $count, $profile = 'meta') {
 // How it works: Each row passes a "profile" telling this function which size limits apply. Below each profile's orange number = green ("Healthy"). At / above orange = orange ("Moderate bloat"). At / above red = red ("Consider a cleanup"). Rows with no profile use 'meta' by default.
 //   'meta'      → postmeta, usermeta, termmeta, er_post_stats. Big tables, high limits: orange 10k, red 50k.
 //   'map_views' → er_map_views. Normal size is ~11,500 rows (about 128 visits a day kept for 90 days), so its limits sit higher than that on purpose: orange 15k, red 30k.
+
 function custom_get_health_status($count, $profile = 'meta') {
     if ($profile === 'map_views') {
         if ($count > 30000) return ['cd-alert',   'Consider running a cleanup.'];
@@ -618,7 +619,7 @@ function custom_render_rss_widget($id_prefix, $feed_url) {
                 $edit_link = admin_url('post.php?post=' . $matches[1] . '&action=edit');
             }
             echo '<div class="rss-item" data-index="' . $index . '" style="display: none; margin-bottom: 15px;">';
-            echo '<div><a href="' . $link . '" target="_blank" class="cd-bold cd-link">' . $title . '</a> – ';
+            echo '<div><a href="' . $link . '" target="_blank" class="cd-link">' . $title . '</a> – ';
             echo '<span class="cd-muted cd-date">🗓️ Published: <strong>' . esc_html($date) . '</strong></span>';
             if ($edit_link) {
                 echo ' – <a href="' . esc_url($edit_link) . '" target="_blank" class="cd-link">Edit</a>';
@@ -698,7 +699,7 @@ function custom_dashboard_inline_assets() {
 			box-shadow: inset 0 1px 0 rgba(255,255,255,.8),0 1px 3px rgba(0,0,0,.12);
 		}
         /* === Utility Classes === */
-        .cd-link             { color: var(--cd-blue); text-decoration: none; }
+        .cd-link             { color: var(--cd-blue); text-decoration: none; font-weight: bold; }
         .cd-link:hover       { color: var(--cd-red); }
         .cd-summary          { color: var(--cd-blue); font-weight: bold; }
         .cd-summary:hover    { color: var(--cd-red); }
