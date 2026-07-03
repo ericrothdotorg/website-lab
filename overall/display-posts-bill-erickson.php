@@ -440,6 +440,25 @@ add_action( 'wp_footer', function () {
     <script>
 		(function() {
 			'use strict';
+			// Make the whole card clickable, forwarding to its title link.
+			function setupCardClicks() {
+				document.querySelectorAll('.display-posts-listing:not([data-live-id]) .listing-item').forEach(function (card) {
+					if (card.dataset.cardClickBound) return;
+					var link = card.querySelector('.title a[href]') || card.querySelector('a[href]');
+					if (!link) return;
+					card.dataset.cardClickBound = '1';
+					card.style.cursor = 'pointer';
+					card.addEventListener('click', function (e) {
+						if (e.target.closest('a, button, select, input, textarea, label')) return;
+						if (window.getSelection && String(window.getSelection()).length > 0) return;
+						if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) {
+							window.open(link.href, '_blank');
+							return;
+						}
+						window.location.href = link.href;
+					});
+				});
+			}
 			// Setup ARIA live Announcements for Select Navigation
 			function setupSelectAnnouncements() {
 				document.querySelectorAll('.display-posts-listing[data-live-id]').forEach(select => {
@@ -460,6 +479,7 @@ add_action( 'wp_footer', function () {
 			function init() {
 				const runInit = () => {
 					setupSelectAnnouncements();
+					setupCardClicks();
 				};
 				if ('requestIdleCallback' in window) {
 					requestIdleCallback(runInit);
