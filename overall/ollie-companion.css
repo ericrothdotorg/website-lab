@@ -40,6 +40,13 @@
      H. MOTION & A11Y               reduced-motion umbrella
    ============================================================ */
 
+/* ---- Frontpage ONLY stuff ---- */
+.er-brand-frontpage {display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 1.75rem;}
+.er-brand-frontpage-logo img {width: clamp(45px, 9vw, 85px); height: auto; animation: rotate3d 5s linear infinite; position: relative; top: 0.05em;}
+.er-brand-frontpage-logo img:hover {animation-play-state: paused;}
+.er-brand-frontpage-title {font-size: clamp(2rem, 6vw, 3.5rem); font-weight: var(--er-fw-bold); color: var(--color-8); line-height: 1; letter-spacing: 0.1em;}
+.er-brand-frontpage-teaser {display: block; width: fit-content; margin: 0 auto; background: rgba(0, 0, 0, 0.65); border-radius: 25px;}
+
 /* ============================================================
    A. TYPOGRAPHY & TEXT HELPERS
    ============================================================ */
@@ -81,9 +88,6 @@ body.page-id-17552 .tabs button:hover {color: var(--color-2);}
 body.page-id-17552 .tab-content {display: none; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 5px 15px 15px 15px; padding: 0rem 2rem 2rem 2rem;}
 body.dark-mode.page-id-17552 .tabs button {background: var(--color-10); border: solid var(--color-4); border-width: 1px 1px 0 1px;}
 body.dark-mode.page-id-17552 .tab-content {background: var(--color-10); border: 1px solid var(--color-4);}
-
-/* ---- Frontpage Teaser ---- */
-.frontpage-teaser {display: block; width: fit-content; margin: 0 auto; background: rgba(0, 0, 0, 0.65); border-radius: 25px;}
 
 /* ============================================================
    B. COMPONENTS
@@ -347,7 +351,7 @@ body.dark-mode option {
 .er-social-icon-link {
 	display: inline-flex; align-items: center; justify-content: center;
 	width: 70px; height: 70px; border-radius: 50%;
-	background: #fff; border: 1px solid rgb(0 0 0 / .12); /* No var Color: white chip + faint ring keep the circle visible on a white page */
+	background: #ffffff; border: 1px solid rgb(0 0 0 / .12); /* No var Color: white chip + faint ring keep the circle visible on a white page */
 	box-sizing: border-box; overflow: hidden; line-height: 0;
 }
 .er-social-icon-link img {width: 100%; height: 100%; object-fit: contain; padding: 12px; box-sizing: border-box; display: block;}
