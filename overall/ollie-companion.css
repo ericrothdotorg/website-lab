@@ -32,7 +32,7 @@
      A. TYPOGRAPHY & TEXT HELPERS   line-break/colour, text-columns, design blocks, page-17552 tabs
      B. COMPONENTS                  tables, details/accordion, tag-cloud pills, image effects,
                                     bedps cards, embeds/video, buttons, boxes, forms, social-icon rows
-     C. CONTENT COMPONENTS          grid / cards / related / slider / post-footer
+     C. CONTENT COMPONENTS          grid / cards / related slider / post-footer
      D. FOOTER                      navy wrapper, columns, logo animation, dropdown, animated word
      E. TEMPLATE-PART COMPONENTS    archive filter tabs, breadcrumbs
      F. SIDEBAR DESIGN              widget titles, cards, stats hero, select+count, author tiles & links, two-column/sidebar-hide
@@ -354,7 +354,7 @@ body.dark-mode option {
 .er-social-icon-fill img {object-fit: cover; padding: 0;} /* icons carrying their own background (LibraryThing, About Me): fill the disc so it clips round */
 
 /* ============================================================
-   C. CONTENT COMPONENTS: grid / cards / related / slider / post-footer
+   C. CONTENT COMPONENTS: grid / cards / related slider / post-footer
    Emitted by [er_cpt_archive] / [er_related_posts] / [er_post_footer].
    PHP for these is in Ollie Companion PHP; this is their (theme-wide) CSS.
    ============================================================ */
@@ -527,18 +527,6 @@ body.dark-mode article > .er-related-posts {border-top: 1px solid var(--color-3)
 	.er-related-posts.is-layout-grid { --grid-columns-width: 100%; }
 	.er-related-posts.is-layout-grid > * { flex-basis: 100%; max-width: 100%; }
 }
-
-/* Eric Slider arrows (related-posts layout) */
-.slideshow-multiple-items-4 .eric-slider-arrow-prev,
-.slideshow-multiple-items-4 .eric-slider-arrow-next {
-	width: 30px; height: 30px; transform: none; opacity: 0.75;
-	background: var(--color-9); color: var(--color-8);
-	position: absolute; top: -55px;
-}
-.slideshow-multiple-items-4 .eric-slider-arrow-prev:hover,
-.slideshow-multiple-items-4 .eric-slider-arrow-next:hover {opacity: 1; background: var(--color-9);}
-.slideshow-multiple-items-4 .eric-slider-arrow-next {right: 10px; left: auto;}
-.slideshow-multiple-items-4 .eric-slider-arrow-prev {right: 60px; left: auto;}
 
 /* Gap between cards and slider dots — related slider only. */
 .er-related-posts .eric-slider-dots {margin-top: 25px;}
