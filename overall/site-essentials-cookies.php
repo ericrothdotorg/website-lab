@@ -747,7 +747,7 @@ add_action('wp_footer', function () {
 						notice.setAttribute("aria-hidden", "false");
 						// Move Focus to the Accept Button when Banner appears
 						document.getElementById("cookie-accept").focus();
-					}, <?php echo is_front_page() ? 2500 : 0; ?>); // Delayed only on Frontpage
+					}, 0);
 					const acceptBtn = document.getElementById("cookie-accept");
 					const rejectBtn = document.getElementById("cookie-reject");
 					acceptBtn.addEventListener("mouseenter", function() {
