@@ -106,12 +106,10 @@ function q_should_load_assets() {
     return false;
 }
 
-// Prepends linked Content Title, appends rendered Block Pattern by Slug
 function q_append_slider_on_single_quote( $content ) {
     if ( ! is_singular( 'my-quotes' ) || ! in_the_loop() || ! is_main_query() ) {
         return $content;
     }
-    // Prepend: Linked Content Title + Permalink before the Quote Text
     $related_id = (int) get_post_meta( get_the_ID(), 'related_content', true );
     $prefix     = '';
     if ( $related_id ) {
@@ -121,9 +119,18 @@ function q_append_slider_on_single_quote( $content ) {
             $prefix = '<h3><a href="' . esc_url( $related_url ) . '">' . esc_html( $related_title ) . '</a></h3>';
         }
     }
-    // Append: Render a Block Pattern by Slug
-    $output = q_render_pattern( 'single-quote-appendix' ); // Slug of Pattern
-    return $prefix . '<div class="my-quote-text-content">' . $content . '</div>' . $output;
+    $output = q_render_pattern( 'single-quote-appendix' );
+    if ( ! preg_match( '/<blockquote\b[^>]*>(.*)<\/blockquote>/is', $content, $m ) ) {
+        return $prefix . '<div class="my-quote-text-content">' . $content . '</div>' . $output;
+    }
+    $inner = $m[1];
+    $pullquote =
+        '<div class="wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained" style="border-width:1px;border-radius:25px">'
+      .   '<figure class="wp-block-pullquote has-text-align-left daneden-zoomIn animate__animated animate__zoomIn" style="padding-top:25px;padding-right:25px;padding-left:25px">'
+      .     '<blockquote>' . $inner . '</blockquote>'
+      .   '</figure>'
+      . '</div>';
+    return $prefix . '<div class="my-quote-text-content">' . $pullquote . '</div>' . $output;
 }
 add_filter( 'the_content', 'q_append_slider_on_single_quote' );
 
@@ -212,13 +219,8 @@ function q_output_styles() {
 	if ( ! q_should_load_assets() ) return;
     ?>
 	<style>
-		/* Core Quote Block Base. Loads only on Quote Pages via q_should_load_assets(). */
-		.wp-block-quote {position: relative; width: 85%; max-width: fit-content; margin: 35px auto 70px; padding: 0 25px; border-inline-start: 3px solid var(--color-5) !important; border-right: 3px solid var(--color-5) !important; border-radius: 10px;}
-		.wp-block-quote p, .wp-block-quote ul, .wp-block-quote li {text-align: justify; hyphens: manual; font-family: var(--er-ff-quote); font-style: italic; color: #339966; line-height: var(--er-lh-loose);}
-		.wp-block-quote cite {position: absolute; top: calc(100% - 1.25em); right: 30px; font-family: var(--er-ff-cite); font-size: var(--er-fs-cite); font-style: normal;}
-		/* THEME RELATED — :root :where(.is-layout-flow) reads core/parent flow layout to space a trailing quote. Same coupling as child style.css §6. On switch: re-confirm the flow selector. */
-		:root :where(.is-layout-flow) > :last-child.wp-block-quote {margin-block-end: 25px;}
-		body.dark-mode .wp-block-quote {border-inline-start: 3px solid var(--color-3) !important; border-right: 3px solid var(--color-3) !important;}
+		/* MY QUOTES feature only (CPT, [quote_text], [quotes_slider], single-quote pages).
+		   Generic quote/pullquote base lives in child style.css §6-7. */
 		body.dark-mode .my-quote-slide-content {background: var(--color-10); border: 1px solid var(--color-4);}
 		.quote-text p, .quote-text ul, .quote-text li {font-size: var(--er-fs-body);}
 		/* Shortcode [quotes_slider]: Shared Layout → For both horizontal and vertical */
@@ -261,6 +263,7 @@ function q_output_styles() {
 		.my-quote-text-content .wp-block-quote li {font-size: var(--er-fs-body);}
 		/* Shortcode [quote_text]: Style "See all Quotes" Link after cite Eric Roth (only outside .single-my-quotes) */
 		.my-quote-text-content .wp-block-quote cite .q-see-all-link {display: inline-block; margin-left: 0.4rem; font-size: var(--er-fs-xs); font-style: italic; font-weight: normal; white-space: nowrap; vertical-align: middle;}
+		.my-quote-text-content .wp-block-pullquote blockquote p {margin-left: 0 !important;}
 	</style>
     <?php
 }
