@@ -43,21 +43,27 @@ function lum_schedule_background_tracking() {
             if (/(bot|crawl|spider|slurp)/i.test(navigator.userAgent)) {
                 return;
             }
-            // Fire async tracking request
-            setTimeout(function() {
-                var xhr = new XMLHttpRequest();
+			// Fire tracking as a non-blocking beacon, after load
+            function fireTracking() {
 				// Set a persistent Visitor ID Cookie if not already set
 				if (!document.cookie.split(';').some(c => c.trim().startsWith('lum_visitor_id='))) {
 					const vid = 'v_' + Math.random().toString(36).substr(2, 12) + Date.now().toString(36);
 					document.cookie = 'lum_visitor_id=' + vid + '; path=/; max-age=' + (365*24*60*60) + '; SameSite=Lax';
 				}
-                xhr.open('POST', '<?php echo admin_url('admin-ajax.php'); ?>');
-                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                xhr.onload = function() {
-                    // Optional: handle response if needed
-                };
-                xhr.send('action=lum_background_track&nonce=<?php echo $nonce; ?>&page_url=' + encodeURIComponent(window.location.href));
-            }, 1000); // Small delay to ensure page loads first
+                var body = 'action=lum_background_track&nonce=<?php echo $nonce; ?>&page_url=' + encodeURIComponent(window.location.href);
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon('<?php echo admin_url('admin-ajax.php'); ?>', body);
+                } else {
+                    fetch('<?php echo admin_url('admin-ajax.php'); ?>', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body, keepalive: true });
+                }
+            }
+            if (document.readyState === 'complete') {
+                ('requestIdleCallback' in window) ? requestIdleCallback(fireTracking) : setTimeout(fireTracking, 0);
+            } else {
+                window.addEventListener('load', function() {
+                    ('requestIdleCallback' in window) ? requestIdleCallback(fireTracking) : setTimeout(fireTracking, 0);
+                });
+            }
         })();
         </script>
         <?php
