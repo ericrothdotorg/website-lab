@@ -126,8 +126,8 @@ function q_append_slider_on_single_quote( $content ) {
     }
     $inner = $m[1];
     $pullquote =
-        '<div class="wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained" style="border-width: 1px; border-radius: 25px">'
-      .   '<figure class="wp-block-pullquote has-text-align-left daneden-zoomIn animate__animated animate__zoomIn" style="padding-top: 25px; padding-right: 25px; padding-left: 25px">'
+        '<div class="wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained">'
+      . '<figure class="wp-block-pullquote has-text-align-left">'
       .     '<blockquote>' . $inner . '</blockquote>'
       .   '</figure>'
       . '</div>';
