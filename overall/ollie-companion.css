@@ -731,6 +731,41 @@ footer.wp-block-template-part .er-breadcrumbs {
    supplies inter-element gaps.
    ============================================================ */
 
+/* ---- Two-column row: equal-height columns so the content column always
+   matches the fixed sidebar height. Without this, a short post leaves the
+   content column shorter than the sidebar, and the Related divider (sibling
+   below the row) ends up measuring from the sidebar instead of sitting a
+   consistent gap below the article. align-items:stretch is the flex default,
+   set explicitly here as the load-bearing rule it is. ---- */
+main > .wp-block-columns { align-items: stretch; }
+
+/* ---- Hide below 1400px, content takes full width.
+   :has() targets the column holding the sidebar template part structurally,
+   so it works on any template with a sidebar — no per-template class.
+   !important overrides the inline flex-basis on the columns. ---- */
+@media (max-width: 1400px) {
+	.wp-block-columns > .wp-block-column:has(> .wp-block-template-part) {display: none;}
+	.wp-block-columns:has(> .wp-block-column > .wp-block-template-part) > .wp-block-column {flex-basis: 100% !important;}
+}
+
+/* ---- Contain content within its column width.
+   Belt-and-suspenders against children (selects, wide list items, images)
+   overflowing the narrow sidebar column. min-width:0 lets flex children
+   (the select+count rows) actually shrink instead of forcing overflow.
+   Scoped to .sidebar-content (the sidebar.html wrapper group) so header/
+   footer template parts are untouched. ---- */
+.sidebar-content,
+.sidebar-content * {
+	max-width: 100%;
+	min-width: 0;
+}
+
+/* ---- Logo → first title: the first title sits flush under the logo
+   (no section above it). Zero the title's top margin and the figure's
+   bottom margin so they meet cleanly. ---- */
+.sidebar-content > .octagon-text-outside {margin-bottom: 0;}
+.sidebar-content > .widget-title:first-of-type {margin-top: 0;}
+
 /* ---- Widget titles (sidebar headings). Constrained from inherited heading size.
    Top margin sets section-to-section rhythm; bottom sets title-to-card gap. ---- */
 .widget-title {
@@ -741,12 +776,6 @@ footer.wp-block-template-part .er-breadcrumbs {
 	margin: 2.5rem 0 1.25rem;
 }
 body.dark-mode .widget-title {color: var(--color-7);}
-
-/* ---- Logo → first title: the first title sits flush under the logo
-   (no section above it). Zero the title's top margin and the figure's
-   bottom margin so they meet cleanly. ---- */
-.sidebar-content > .octagon-text-outside {margin-bottom: 0;}
-.sidebar-content > .widget-title:first-of-type {margin-top: 0;}
 
 /* ---- Carded text sections: Statistics, About Me, My Blog, My Interests.
    The <h2 class="widget-title"> stays OUTSIDE; the card wraps the content
@@ -762,6 +791,29 @@ body.dark-mode .er-card {
 	background: var(--color-10);
 	border-color: var(--color-4);
 }
+
+/* ---- Statistics: hero (Read Time + Words) with single left quote-bracket
+   over a 3-col grid of the remaining 9 metrics. Bracket mirrors .wp-block-quote
+   (3px --color-5 left, --color-3 in dark, radius 10px). ---- */
+.post-stats {font-size: var(--er-fs-sm); line-height: var(--er-lh-base);}
+.post-stats .ps-readtime {display: block; width: 100%; box-sizing: border-box; margin-bottom: 5px;}
+.post-stats .ps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+}
+.post-stats .ps-cell {
+    background: var(--color-7);
+    border: 1px solid var(--color-5);
+    border-radius: 6px;
+    padding: 6px 4px;
+    text-align: center;
+}
+body.dark-mode .post-stats .ps-cell {background: transparent; border-color: var(--color-4);}
+.post-stats .ps-num {display: block; font-weight: var(--er-fw-bold); color: var(--color-4); line-height: 1.2;}
+body.dark-mode .post-stats .ps-num {color: var(--color-7);}
+.post-stats .ps-lbl {display: block; font-size: var(--er-fs-xs); color: var(--color-3);}
+body.dark-mode .post-stats .ps-lbl {color: var(--color-5);}
 
 /* ---- Select + count row (My Blog, My Interests): the post-count dropdown
    and its ( N ) tally on one line, with a gap between them. Replaces the
@@ -788,51 +840,6 @@ body.dark-mode .er-card {
    so it sits evenly between the two display-posts lists around it. ---- */
 .er-explore-embed {padding-top: 20px; padding-bottom: 25px;}
 
-/* ---- Statistics: hero (Read Time + Words) with single left quote-bracket
-   over a 3-col grid of the remaining 9 metrics. Bracket mirrors .wp-block-quote
-   (3px --color-5 left, --color-3 in dark, radius 10px). ---- */
-.post-stats {font-size: var(--er-fs-sm); line-height: var(--er-lh-base);}
-
-.post-stats .ps-hero {
-	background: var(--color-7);
-	border-left: 3px solid var(--color-5);
-	border-radius: 10px;
-	padding: 10px 14px;
-	margin-bottom: 10px;
-}
-body.dark-mode .post-stats .ps-hero {
-	background: var(--color-6);
-	border-left-color: var(--color-3);
-}
-.post-stats .ps-hero-big {
-	display: block;
-	font-size: var(--er-fs-lg);
-	font-weight: var(--er-fw-bold);
-	line-height: 1.15;
-	color: var(--color-4);
-}
-body.dark-mode .post-stats .ps-hero-big {color: var(--color-7);}
-.post-stats .ps-hero-sub {display: block; font-size: var(--er-fs-xs); color: var(--color-3);}
-body.dark-mode .post-stats .ps-hero-sub {color: var(--color-5);}
-
-.post-stats .ps-grid {
-	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	gap: 5px;
-}
-.post-stats .ps-cell {
-	background: var(--color-7);
-	border: 1px solid var(--color-5);
-	border-radius: 6px;
-	padding: 6px 4px;
-	text-align: center;
-}
-body.dark-mode .post-stats .ps-cell {background: transparent; border-color: var(--color-4);}
-.post-stats .ps-num {display: block; font-weight: var(--er-fw-bold); color: var(--color-4); line-height: 1.2;}
-body.dark-mode .post-stats .ps-num {color: var(--color-7);}
-.post-stats .ps-lbl {display: block; font-size: var(--er-fs-xs); color: var(--color-3);}
-body.dark-mode .post-stats .ps-lbl {color: var(--color-5);}
-
 /* ---- About Me author links: two side-by-side icon-tiles (Personal green /
    Professional orange). Real header SVGs wired in sidebar.html serve as the icons. ---- */
 .er-author-links {list-style: none; margin: 0; padding: 0; display: flex; gap: 8px;}
@@ -850,35 +857,6 @@ body.dark-mode .post-stats .ps-lbl {color: var(--color-5);}
 }
 body.dark-mode .er-author-links a {background: var(--color-6);}
 .er-author-links img {display: block; width: 24px; height: 24px; flex: none;}
-
-/* ---- Two-column row: equal-height columns so the content column always
-   matches the fixed sidebar height. Without this, a short post leaves the
-   content column shorter than the sidebar, and the Related divider (sibling
-   below the row) ends up measuring from the sidebar instead of sitting a
-   consistent gap below the article. align-items:stretch is the flex default,
-   set explicitly here as the load-bearing rule it is. ---- */
-main > .wp-block-columns { align-items: stretch; }
-
-/* ---- Sidebar: hide below 1400px, content takes full width.
-   :has() targets the column holding the sidebar template part structurally,
-   so it works on any template with a sidebar — no per-template class.
-   !important overrides the inline flex-basis on the columns. ---- */
-@media (max-width: 1400px) {
-	.wp-block-columns > .wp-block-column:has(> .wp-block-template-part) {display: none;}
-	.wp-block-columns:has(> .wp-block-column > .wp-block-template-part) > .wp-block-column {flex-basis: 100% !important;}
-}
-
-/* ---- Sidebar: contain content within its column width.
-   Belt-and-suspenders against children (selects, wide list items, images)
-   overflowing the narrow sidebar column. min-width:0 lets flex children
-   (the select+count rows) actually shrink instead of forcing overflow.
-   Scoped to .sidebar-content (the sidebar.html wrapper group) so header/
-   footer template parts are untouched. ---- */
-.sidebar-content,
-.sidebar-content * {
-	max-width: 100%;
-	min-width: 0;
-}
 
 /* ============================================================
    G. DARK-MODE TOGGLE BUTTON
