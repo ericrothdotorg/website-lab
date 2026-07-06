@@ -356,23 +356,23 @@ add_shortcode('post_stats', function() {
     $fmt = fn($n) => number_format($n, 0, '.', ",");
     // Sidebar hero (Read Time + Words) + 9-cell metric grid. Numbers unchanged; only markup restructured.
     $cell = fn( $num, $label ) => '<div class="ps-cell"><span class="ps-num">' . $num . '</span><span class="ps-lbl">' . $label . '</span></div>';
-    $output = '<div class="post-stats">'
-         . '<div class="ps-hero">'
-         .     '<span class="ps-hero-big">' . $stats['minutes'] . ' min</span>'
-         .     '<span class="ps-hero-sub">Read · ' . $fmt($stats['words']) . ' Words</span>'
-         . '</div>'
-         . '<div class="ps-grid">'
-         .     $cell( $fmt($stats['chars']),      'Characters' )
-         .     $cell( $fmt($stats['paragraphs']), 'Paragraphs' )
-         .     $cell( $fmt($sentence_count),      'Sentences' )
-         .     $cell( $avg_words,                 'Words / Sentence' )
-         .     $cell( $fmt($internal),            'Internal Links' )
-         .     $cell( $fmt($external),            'External Links' )
-         .     $cell( $fmt($stats['titles']),     'Titles' )
-         .     $cell( $fmt($stats['images']),     'Images' )
-         .     $cell( $fmt($stats['videos']),     'Videos' )
-         . '</div>'
-         . '</div>';
+	$output = '<div class="post-stats">'
+		 . '<div class="ps-cell ps-readtime">'
+		 .     '<span class="ps-num">' . $stats['minutes'] . ' min</span>'
+		 .     '<span class="ps-lbl">Read · ' . $fmt($stats['words']) . ' Words</span>'
+		 . '</div>'
+		 . '<div class="ps-grid">'
+		 .     $cell( $fmt($stats['chars']),      'Characters' )
+		 .     $cell( $fmt($stats['paragraphs']), 'Paragraphs' )
+		 .     $cell( $fmt($sentence_count),      'Sentences' )
+		 .     $cell( $avg_words,                 'Words / Sentence' )
+		 .     $cell( $fmt($internal),            'Internal Links' )
+		 .     $cell( $fmt($external),            'External Links' )
+		 .     $cell( $fmt($stats['titles']),     'Titles' )
+		 .     $cell( $fmt($stats['images']),     'Images' )
+		 .     $cell( $fmt($stats['videos']),     'Videos' )
+		 . '</div>'
+		 . '</div>';
     set_transient($cache_key, $output, CACHE_POST_STATS);
     return $output;
 });
