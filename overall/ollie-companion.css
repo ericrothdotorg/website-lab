@@ -33,16 +33,16 @@
      B. COMPONENTS                  tables, details/accordion, tag-cloud pills, image effects,
                                     bedps cards, embeds/video, buttons, boxes, forms, social-icon rows
      C. CONTENT COMPONENTS          grid / cards / related slider / post-footer
-     D. FOOTER                      navy wrapper, columns, logo animation, dropdown, animated word
-     E. TEMPLATE-PART COMPONENTS    archive filter tabs, breadcrumbs
-     F. SIDEBAR DESIGN              widget titles, cards, stats hero, select+count, author tiles & links, two-column/sidebar-hide
+     D. FOOTER                      navy wrapper, columns, dropdown, animated word
+     E. TEMPLATE-PART COMPONENTS    site logo, archive filter tabs, breadcrumbs
+     F. SIDEBAR DESIGN              octagon-text mark, widget titles, cards, stats hero, select+count, author tiles & links, two-column/sidebar-hide
      G. DARK-MODE TOGGLE BUTTON     the switch UI
      H. MOTION & A11Y               reduced-motion umbrella
    ============================================================ */
 
 /* ---- Frontpage ONLY stuff ---- */
 .er-brand-frontpage {display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 1.75rem;}
-.er-brand-frontpage-logo img {width: clamp(45px, 9vw, 85px); height: auto; animation: rotate3d 5s linear infinite; position: relative; top: 0.05em;}
+.er-brand-frontpage-logo img {width: clamp(45px, 9vw, 85px); aspect-ratio: 1 / 1; height: auto; animation: rotate3d 5s linear infinite; position: relative; top: 0.05em;}
 .er-brand-frontpage-logo img:hover {animation-play-state: paused;}
 .er-brand-frontpage-title {font-size: clamp(2rem, 6vw, 3.5rem); font-weight: var(--er-fw-bold); color: var(--color-8); line-height: 1; letter-spacing: 0.1em;}
 .er-brand-frontpage-teaser {display: block; width: fit-content; margin: 0 auto; background: rgba(0, 0, 0, 0.65); border-radius: 25px;}
@@ -101,7 +101,7 @@ body.dark-mode.page-id-17552 .tab-content {background: var(--color-10); border: 
      - Cells: left-aligned, padding 0.25em 1em, vertical-align middle.
      - No zebra (the grid delineates rows).
      - Mobile-safe: the figure scrolls horizontally if a wide table overflows.
-   !important is confined to BORDER + WIDTH/LAYOUT props (needed to beat the
+   !important is confined to BORDER + WIDTH / LAYOUT props (needed to beat the
    editor's inline styles). Each governed axis has an opt-out utility class so a
    table can deliberately differ from the base:
      .is-custom-borders  -> keep the table's own border settings
@@ -149,7 +149,7 @@ body.dark-mode.page-id-17552 .tab-content {background: var(--color-10); border: 
 .wp-block-table td label {display: inline;}
 .wp-block-table td input[type="checkbox"] {margin-right: 0.5em;}
 
-/* Dark mode: same grid + header emphasis; backgrounds/colours as before. */
+/* Dark mode: same grid + header emphasis; backgrounds / colours as before. */
 body.dark-mode .wp-block-table:not(.is-custom-borders) table {border: 1px solid var(--color-4) !important;}
 body.dark-mode .wp-block-table:not(.is-custom-borders) :is(th, td) {border: 1px solid var(--color-4) !important;}
 body.dark-mode .wp-block-table thead {background: #16202e;} /* No var Color */
@@ -163,7 +163,7 @@ summary {color: var(--color-1); font-weight: var(--er-fw-bold); cursor: pointer;
 summary:hover {color: var(--color-2);}
 summary:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
 summary:focus:not(:focus-visible) {outline: none;}
-/* THEME RELATED — out-specifies parent theme.json: core/details summary {font-weight:600}. On switch: recheck parent value/selector. */
+/* THEME RELATED — Written to override the parent theme's summary weight (it sets 600). If you switch themes, recheck the parent's value. */
 .wp-block-details summary {font-weight: var(--er-fw-bold);}
 .wp-block-details.details-center summary {font-size: var(--er-fs-md); line-height: 1.5; text-align: center;}
 .wp-block-details.details-left summary {font-size: var(--er-fs-md); line-height: 1.5;}
@@ -250,8 +250,8 @@ body.dark-mode .er-archive-filter .er-filter-tab:hover {background: none;}
 	75% {border-radius: 20% 80% 70% 30% / 40% 60% 40% 60%;}
 }
 .blob-animation figcaption {font-size: 1.5em;}
-/* THEME RELATED — out-specifies parent figcaption x-small (parent style.css:51).
-   Unified caption styling: standard images + video embeds (YouTube/Vimeo).
+/* THEME RELATED — Overrides the parent theme's tiny figcaption size (parent style.css line 51).
+   Unified caption styling: standard images + video embeds (YouTube / Vimeo).
    Bedps captions excluded (own rule). font-style omitted on purpose — italic
    comes from the browser user-agent default and is consistent cross-browser. */
 .wp-block-image figcaption.wp-element-caption,
@@ -278,7 +278,7 @@ body.dark-mode .wp-image-148107 {content: url("/wp-content/uploads/2025/07/githu
 	.image-bedps img {width: 100%; height: auto;}
 }
 .image-bedps img:hover {transform: scale(1.05);}
-/* THEME RELATED — bedps captions = card titles (--er-fs-md, bold); 0-2-2 beats parent + body rule. */
+/* THEME RELATED — bedps captions act as card titles (medium size, bold). Written specifically enough to win over the parent theme and the base rule. */
 figure.image-bedps figcaption.wp-element-caption {margin-top: 16px; margin-bottom: 16px; font-size: var(--er-fs-md); font-weight: var(--er-fw-bold);}
 .image-bedps-figcaption {margin-top: 16px !important; margin-bottom: 16px !important; font-size: var(--er-fs-md) !important; color: var(--color-1) !important;} /* Custom HTML: Photo Album "The Countries" */
 .image-bedps-figcaption:hover {color: var(--color-2) !important;}
@@ -373,7 +373,7 @@ body.dark-mode option {
 }
 .er-media-container img:not(.er-hero-section img),
 .er-media-container picture:not(.er-hero-section picture) {
-	border-radius: 25px; /* kept: harmless under the clip, and preserves corners if a card ever renders outside a clipping container */
+	border-radius: 25px; /* Kept: Does no harm normally, and keeps the rounded corners if a card is ever shown outside its usual frame */
 	display: block;
 	width: 100%;
 	object-fit: cover;
@@ -388,8 +388,8 @@ body.dark-mode option {
    Archive grid and related-posts cards render in different wrappers but share
    one card style: title, media-container spacing, and meta are defined once
    here for both .er-cpt-grid and .er-related-posts, so the two contexts stay
-   identical. Grid layout (columns/gaps) below is archive-only; the related
-   slider supplies its own layout. Inside-card spacing is explicit. */
+   identical. Grid layout (columns / gaps) below is archive-only; the related
+   slider supplies its own layout. */
 .er-cpt-grid {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
@@ -455,13 +455,11 @@ body.dark-mode .er-related-posts .entry-meta .er-reading-time {color: var(--colo
 body.dark-mode .er-cpt-grid .entry-meta .meta-categories svg,
 body.dark-mode .er-related-posts .entry-meta .meta-categories svg {fill: var(--color-5);}
 
-/* ---- Quote-card marker: neutral grey outline ring with quote marks inside, on my-quotes cards only
-   (get_post_class emits .type-my-quotes). Grey (--color-9, not the accent --color-1) so it reads as a
-   category marker, not a clickable element. Anchored to the title and vertically centred on it
-   (top:50% + translateY) so it stays centred whether the title is one line or wraps. Ring = ::before
-   (border, no fill). Marks = ::after, filled grey via mask — grey works in both light/dark, so no
-   card-bg swap needed. NOTE: the glyph data-URI is URL-encoded (%3C %22 etc.) — do NOT replace with
-   raw <, >, " characters; unencoded they make the mask fail to load and the marker renders nothing. ---- */
+/* ---- Quote marker: a small grey ring with quote marks, shown only on my-quotes cards.
+   Grey (not the accent colour) so it looks like a label, not a button. Sits at the right
+   of the title and stays centred even if the title wraps to two lines.
+   DO NOT "clean up" the icon code below: the %3C %22 etc. are encoded on purpose. If you
+   swap them back to normal <, >, " characters, the marker disappears. ---- */
 .entry-card.type-my-quotes .entry-title {
 	position: relative;
 	padding-right: 38px; /* reserve space so a long title doesn't run under the ring */
@@ -490,7 +488,7 @@ body.dark-mode .er-related-posts .entry-meta .meta-categories svg {fill: var(--c
 }
 
 /* ---- Related content container ---- */
-/* THEME REVIEW — --wp--preset--spacing--large resolves to active theme's scale; value shifts on switch, won't break. */
+/* THEME REVIEW — This top gap uses a spacing value from the theme. Switch themes and the gap may change size, but nothing breaks. */
 .er-related-posts-container {border-top: 1px solid var(--color-5) !important; max-width: 1290px; margin: 0 auto; margin-block-start: var(--wp--preset--spacing--large);}
 body.dark-mode .er-related-posts-container {border-top: 1px solid var(--color-3) !important;}
 body.dark-mode article > .er-related-posts {border-top: 1px solid var(--color-3);}
@@ -499,9 +497,7 @@ body.dark-mode article > .er-related-posts {border-top: 1px solid var(--color-3)
 @media (max-width: 768px) {.er-related-posts.is-layout-slider {--grid-columns-width: 50%;}}
 
 /* Static related layout — used when there are 4 or fewer related posts.
-   THEME REVIEW: shares --grid-columns-gap / --grid-columns-width with the
-   slider layout above; keep both reading the same tokens so widths stay in
-   sync if the gap ever changes. */
+   THEME REVIEW: Uses the same gap / width values as the slider layout above; keep them the same so both stay in sync if the gap ever changes. */
 .er-related-posts.is-layout-grid {
 	--grid-columns-gap: 30px;
 	--grid-columns-width: 25%;
@@ -541,7 +537,7 @@ body.dark-mode article > .er-related-posts {border-top: 1px solid var(--color-3)
 /* ---- Post footer: share row + prev/next (emitted by [er_post_footer], single only).
    Isolated to this component; lives here for parity with related (PHP in Ollie Companion PHP, CSS here).
    JS opener (data-share) stays in Ollie Companion PHP. ---- */
-/* THEME REVIEW — this block + my-quotes override below use --wp--preset--spacing--medium/--small; values shift on switch, won't break. */
+/* THEME REVIEW — This and the my-quotes override below use theme spacing values. They may change size if you switch themes, but nothing breaks. */
 .er-post-footer {
 	/* No explicit width — fills its container (the post-content column), so it stays
 	   within the article and never spans the sidebar. Bottom gap is PADDING (not
@@ -557,10 +553,9 @@ body.single-my-quotes .er-post-footer {margin-block-start: var(--wp--preset--spa
 .er-pf-net-label {display: block; margin-bottom: 0.85rem; color: var(--color-4); font-weight: var(--er-fw-bold); font-size: var(--er-fs-md);}
 .er-pf-net-links {display: flex; flex-wrap: wrap; gap: 2.5rem;}
 
-/* Parent-prefixed (0,2,0) so the icon colour beats the theme link colour.
-   Fixed colour — intentionally unchanged on hover and in dark mode. */
+/* Written specifically enough that the icon keeps its own colour instead of the theme's link colour. Colour stays the same on hover and in dark mode, on purpose. */
 .er-pf-net-links .er-pf-net-link {display: inline-flex; color: var(--color-3); line-height: 0; cursor: pointer;}
-.er-pf-net-links .er-pf-net-link:hover {color: var(--color-3);} /* hold colour — beat theme.json link:hover */
+.er-pf-net-links .er-pf-net-link:hover {color: var(--color-3);} /* keep this colour — don't let the theme's link-hover override it */
 
 /* Prev / Next */
 .er-postnav {position: relative; display: flex; justify-content: space-between; gap: 2.5rem; margin-top: 3.5rem;}
@@ -593,7 +588,7 @@ body.dark-mode .er-postnav-title:hover {color: var(--color-2);}
    D. FOOTER
    THEME RELATED — targets footer.wp-block-template-part + footer column/item
    classes emitted by the active theme's footer template part. Matched the
-   previous theme's class names so migrated as-is; on switch the markup/classes
+   previous theme's class names so migrated as-is; on switch the markup / classes
    change and these orphan. Retargets baked in: "#footer" id -> footer.wp-block-template-part;
    gaps scoped to footer.flex-container so they don't leak to the toggles (also .flex-container).
    ============================================================ */
@@ -621,23 +616,8 @@ footer.flex-container {max-width: var(--er-wide-row); margin-inline: auto; paddi
 .logo-copyright-wrapper > a {position: relative; top: 2px;}
 .copyright-text {margin: 0; padding-left: 35px;}
 
-/* Site logo: octagon mark, spins once on the front page, slow 3D spin elsewhere (paused on hover). */
-.site-logo {width: 50px; height: auto; animation: rotate3d 5s linear infinite;}
-.site-logo:hover {animation-play-state: paused;}
-@keyframes rotate3d {
-	from {transform: rotate3d(0, 0, 0, 0deg);}
-	to {transform: rotate3d(1, 1, 1, 360deg);}
-}
-.octagon-text-outside {
-	animation-name: rotate-image-frontpage;
-	animation-duration: 15s;
-	animation-iteration-count: 1;
-}
-.octagon-text-outside:hover {animation-play-state: paused;}
-@keyframes rotate-image-frontpage {
-	0% {transform: rotate(0deg);}
-	100% {transform: rotate(360deg);}
-}
+/* Site logo is in section E, the octagon-text mark in section F — neither is
+   footer-only, so they moved out of here. */
 
 /* Hoverable dropdown menu */
 .dropdown {display: inline-block; position: relative;}
@@ -678,6 +658,16 @@ footer.flex-container {max-width: var(--er-wide-row); margin-inline: auto; paddi
    breadcrumbs, sidebar widget titles, and the responsive sidebar-hide.
    (Authored to the live reference; their original theme CSS is gone.)
    ============================================================ */
+
+/* ---- Site logo: used in both the header (header.html) and footer (footer.html),
+   both with the .site-logo class, so this one rule sizes both. Spins continuously,
+   pausing on hover. ---- */
+.site-logo {width: 50px; height: 50px; animation: rotate3d 5s linear infinite;}
+.site-logo:hover {animation-play-state: paused;}
+@keyframes rotate3d {
+	from {transform: rotate3d(0, 0, 0, 0deg);}
+	to {transform: rotate3d(1, 1, 1, 360deg);}
+}
 
 /* ---- Filter tabs (pill row; .er-active = current). Pill styling SHARED with .tag-cloud a (section B above). Here: centred wrap, inter-tab spacing, persistent red active tab. ---- */
 .er-archive-filter {text-align: center; margin-bottom: 35px;}
@@ -758,6 +748,19 @@ main > .wp-block-columns { align-items: stretch; }
 .sidebar-content * {
 	max-width: 100%;
 	min-width: 0;
+}
+
+/* ---- Octagon-text mark: the sidebar figure (sidebar.html). A different element
+   from the site logo. Rotates once on load, pausing on hover. ---- */
+.octagon-text-outside {
+	animation-name: rotate-image-frontpage;
+	animation-duration: 15s;
+	animation-iteration-count: 1;
+}
+.octagon-text-outside:hover {animation-play-state: paused;}
+@keyframes rotate-image-frontpage {
+	0% {transform: rotate(0deg);}
+	100% {transform: rotate(360deg);}
 }
 
 /* ---- Logo → first title: the first title sits flush under the logo
