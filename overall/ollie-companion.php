@@ -1028,7 +1028,7 @@ add_shortcode( 'er_related_posts', function() {
 		// 4 or fewer → static grid (no slider, no clones, no duplicates). More than 4 → the slider kicks in.
 		$is_slider = ( $count > 4 );
 		$layout_class = $is_slider
-			? 'slideshow-multiple-items-4 is-layout-slider'
+			? 'slideshow-multiple-items-4 is-layout-slider daneden-slideInUp'
 			: 'is-layout-grid is-count-' . $count;
 	
 		ob_start();
@@ -1442,20 +1442,6 @@ add_action( 'wp_footer', function() {
 			if ( initialCards.length ) {
 				initialCards.forEach( function( card ) { card.setAttribute( 'data-revealed', '1' ); } );
 				revealCards( initialCards );
-			}
-
-			// Eric Slider: Entrance Animation for related posts and other sliders
-			const sliderElements = document.querySelectorAll( '.slideshow-multiple-items-4' );
-			if ( sliderElements.length ) {
-				const observer = new IntersectionObserver( function( entries ) {
-					entries.forEach( function( entry ) {
-						if ( entry.isIntersecting ) {
-							entry.target.classList.add( 'daneden-slideInUp' );
-							observer.unobserve( entry.target );
-						}
-					} );
-				}, { threshold: 0.1 } );
-				sliderElements.forEach( function( el ) { observer.observe( el ); } );
 			}
 
 		} );
