@@ -83,7 +83,7 @@ add_filter('pre_ping', '__return_empty_array');
 // Strip ?ver=, but stamp filemtime on theme my-assets/ and code-snippets files so edits bust cache
 // THEME RELATED — the 'ollie-child' handle and '/themes/ollie-child/my-assets/' path below are the
 // child theme's enqueue handle + asset dir (FUNCTIONAL strings, not comments). On a theme switch both
-// change to the new theme's handle/slug; update them here or asset versioning misses the new theme's files.
+// change to the new theme's handle / slug; update them here or asset versioning misses the new theme's files.
 add_filter('style_loader_src', 'er_version_assets', 10, 2);
 add_filter('script_loader_src', 'er_version_assets', 10, 2);
 function er_version_assets($src, $handle = '') {
@@ -184,21 +184,29 @@ add_filter('render_block', function($html, $block) {
     );
 }, 10, 2);
 
-// Preload header logo at 150px (its rendered size; displays at 50px) + mark eager/high
+// Preload the header logo at 100px (it displays at 50px; 100px keeps it sharp on
+// retina screens) and mark it high priority.
 add_action('wp_head', function() {
     $logo_id = get_theme_mod('custom_logo');
     if (!$logo_id) return;
-    $src = wp_get_attachment_image_url($logo_id, array(150, 150));
+    $src = wp_get_attachment_image_url($logo_id, array(100, 100));
     if ($src) {
         echo '<link rel="preload" as="image" href="' . esc_url($src) . '" fetchpriority="high">' . "\n";
     }
 }, 1);
 
-// Mark the site-logo <img> eager + high priority
+// Load the logo eagerly at high priority, and give it an explicit height if the
+// block didn't (it sets width="50" but the height can be missing). The logo is
+// square and displays at 50px.
 add_filter('get_custom_logo', function($html) {
+    if (strpos($html, 'height=') === false) {
+        $html = preg_replace('/<img /', '<img height="50" ', $html, 1);
+    }
+    // data-no-lazy="1" tells LiteSpeed not to lazy-load just this image. Keeping the
+    // logo out of lazy-load stops it shifting the layout as it loads.
     return preg_replace(
         '/<img(?![^>]*fetchpriority)([^>]+)>/',
-        '<img$1 fetchpriority="high" loading="eager">',
+        '<img$1 data-no-lazy="1" fetchpriority="high" loading="eager">',
         $html, 1
     );
 });
@@ -828,7 +836,7 @@ add_action('wp_footer', function () {
 					// Extract Classes once (cheaper than repeated className checks)
 					const className = link.className || '';
 					const attrs = link.getAttribute('class') || ''; // for contains checks
-					// Quick Skip Conditions (mirroring your PHP logic)
+					// Skip links we don't want to touch
 					const skipReasons = [
 						// Structural / Special Links
 						href.startsWith('#'),
