@@ -699,9 +699,9 @@ add_shortcode( 'er_cpt_archive', function( $atts ) {
 
 	$taxonomy_map = er_taxonomy_map();
 
-	// Context detection
+	// Context detection:
 	// Term archive (/topics/x/, /category/y/ ...): post_type, taxonomy and term are all
-	// derived from the URL; the grid is locked to that single term and shows no filter tabs.
+	// derived from the URL; the grid is locked to that single term.
 	// Listing page (My Blog and CPTs): attribute-driven with ?taxonomy tabs.
 	$queried         = get_queried_object();
 	$is_term_archive = ( $queried instanceof WP_Term ) && in_array( $queried->taxonomy, $taxonomy_map, true );
@@ -759,7 +759,7 @@ add_shortcode( 'er_cpt_archive', function( $atts ) {
 
 		// Pill URLs differ by mode:
 		// - Listing page: ?taxonomy=slug query args on the current page (original behaviour).
-		// - Term archive: clean term-archive permalinks; the ALL pill points back to the
+		// - Term archive: Clean term-archive permalinks; the ALL pill points back to the
 		//   listing page (the assigned Posts page for 'post', the post type archive for CPTs).
 		if ( $is_term_archive ) {
 			if ( $post_type === 'post' ) {
@@ -1053,7 +1053,7 @@ add_shortcode( 'er_related_posts', function() {
 // ======================================
 
 // [er_post_footer] — share row + prev/next navigation, single posts only.
-// CSS lives in style.css; share opener + blocker-evasion explained inline.
+// CSS lives in style.css; the share-link opener JS is in 7d.
 
 // ---- 7a. [er_post_footer] — share row + prev/next ----
 add_shortcode( 'er_post_footer', function () {
@@ -1577,11 +1577,10 @@ add_action( 'wp_footer', function() {
 		});
 
 		// ---- 9f. Whole-card click: forward any .is-clickable-card to its title link ----
-		// One delegated listener covers both card types — DPS .listing-item and
-		// er_render_card .entry-card — via the shared .is-clickable-card marker.
-		// Delegation on document means slider clones and the cards appended by 9d
-		// are handled with no re-binding. Real links / buttons inside the card are
-		// left alone; the slider's capture-phase drag-swallow still blocks drag-nav.
+		// One delegated listener covers both card types (.listing-item and .entry-card)
+		// via the shared .is-clickable-card marker. Listening on document means slider
+		// clones and cards appended by 9d work without re-binding. Real links and buttons
+		// inside the card are left alone.
 		(function () {
 			var SEL = '.is-clickable-card';
 			function cardLink(card) {
