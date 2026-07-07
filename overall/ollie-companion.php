@@ -1029,7 +1029,7 @@ add_shortcode( 'er_related_posts', function() {
 		$is_slider = ( $count > 4 );
 		$layout_class = $is_slider
 			? 'slideshow-multiple-items-4 is-layout-slider daneden-slideInUp'
-			: 'is-layout-grid is-count-' . $count;
+			: 'is-layout-grid is-count-' . $count . ' daneden-slideInUp';
 	
 		ob_start();
 		echo '<div class="er-related-posts-container">';
