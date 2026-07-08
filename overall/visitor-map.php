@@ -35,7 +35,6 @@ add_action('template_redirect', 'lum_track_visitor');
 function lum_schedule_background_tracking() {
     // Use a small inline script to fire off an async request
     add_action('wp_footer', function() {
-        $nonce = wp_create_nonce('lum_track_nonce');
         ?>
         <script>
         (function() {
@@ -50,11 +49,19 @@ function lum_schedule_background_tracking() {
 					const vid = 'v_' + Math.random().toString(36).substr(2, 12) + Date.now().toString(36);
 					document.cookie = 'lum_visitor_id=' + vid + '; path=/; max-age=' + (365*24*60*60) + '; SameSite=Lax';
 				}
-                var body = 'action=lum_background_track&nonce=<?php echo $nonce; ?>&page_url=' + encodeURIComponent(window.location.href);
+				// Send as form-encoded so PHP populates $_POST and admin-ajax
+				// routes the action. A raw sendBeacon string would go out as
+				// text/plain, which PHP does NOT parse into $_POST -> admin-ajax
+				// sees no action and returns HTTP 400.
+                var params = new URLSearchParams();
+                params.set('action', 'lum_background_track');
+                params.set('page_url', window.location.href);
+                var ajaxUrl = '<?php echo admin_url('admin-ajax.php'); ?>';
                 if (navigator.sendBeacon) {
-                    navigator.sendBeacon('<?php echo admin_url('admin-ajax.php'); ?>', body);
+                    var blob = new Blob([params.toString()], { type: 'application/x-www-form-urlencoded' });
+                    navigator.sendBeacon(ajaxUrl, blob);
                 } else {
-                    fetch('<?php echo admin_url('admin-ajax.php'); ?>', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body, keepalive: true });
+                    fetch(ajaxUrl, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString(), keepalive: true });
                 }
             }
             if (document.readyState === 'complete') {
@@ -72,10 +79,21 @@ function lum_schedule_background_tracking() {
 
 // Background tracking handler
 function lum_background_track() {
-    // Verify nonce
-	if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'lum_track_nonce')) {
+    // Runs for logged-out visitors on full-page-cached pages, so a nonce baked
+    // into the cached footer is unreliable. This endpoint only writes an
+    // anonymized, geo-only visitor row (no auth state), so it is guarded by:
+    // a POST-only check, a per-IP rate limit, and the server-side bot filter
+    // already applied further below — no nonce, no host-string matching.
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
         wp_die('Invalid request');
     }
+    // Per-IP rate limit: cap writes from one IP to protect against flooding.
+    $rl_key = 'lum_track_rl_' . md5(lum_anonymize_ip(lum_get_client_ip()));
+    $rl_hits = (int) get_transient($rl_key);
+    if ($rl_hits >= 30) { // max ~30 tracking writes per IP per minute
+        wp_die('Rate limited');
+    }
+    set_transient($rl_key, $rl_hits + 1, MINUTE_IN_SECONDS);
     // Get or create a persistent visitor ID via Cookie
     $visitor_id = isset($_COOKIE['lum_visitor_id']) ? sanitize_text_field($_COOKIE['lum_visitor_id']) : '';
     if (empty($visitor_id)) {
@@ -364,11 +382,9 @@ function lum_get_geolocation($ip) {
 
 // AJAX endpoint to get map data
 function lum_get_map_data() {
-    // More permissive nonce check
-    if (!isset($_REQUEST['nonce']) || !wp_verify_nonce($_REQUEST['nonce'], 'lum_map_nonce')) {
-        wp_send_json_error('Invalid nonce');
-        return;
-    }
+    // Public read of already-public map data (the same rows shown as map dots).
+    // No nonce (unreliable under full-page caching) and no host matching — this
+    // returns nothing sensitive.
     global $wpdb;
     $table_name = $wpdb->prefix . 'er_live_visitors';
     $current_time = current_time('timestamp');
@@ -475,14 +491,93 @@ function lum_enqueue_map_assets() {
 }
 add_action('wp_enqueue_scripts', 'lum_enqueue_map_assets');
 
-// Shortcode
+// ---------------------------------------------------------------------------
+// SHARED DATA BUS  (printed once per page)
+// ---------------------------------------------------------------------------
+// One poll loop shared by the map and both tables (all read lum_get_map_data).
+//   window.LUM.subscribe(fn) -> fn(data) on every refresh, replayed on join
+//   window.LUM.start(url) -> starts the single 60s loop (idempotent)
+function lum_print_data_bus() {
+    static $done = false;
+    if ($done) {
+        return '';
+    }
+    $done = true;
+    $ajax_url = admin_url('admin-ajax.php');
+    ob_start();
+    ?>
+    <script>
+    window.LUM = window.LUM || (function() {
+        const bus = {
+            subs: [],
+            last: null,
+            started: false,
+            subscribe: function(fn) {
+                this.subs.push(fn);
+                if (this.last) { try { fn(this.last); } catch (e) { console.error('LUM subscriber error:', e); } }
+            },
+            broadcast: function(data) {
+                this.last = data;
+                this.subs.forEach(function(fn) {
+                    try { fn(data); } catch (e) { console.error('LUM subscriber error:', e); }
+                });
+            },
+            start: function(ajaxUrl) {
+                if (this.started) { return; } // another component already drives the loop
+                this.started = true;
+                const self = this;
+                const load = function() {
+                    const url = ajaxUrl + '?action=lum_get_map_data&_=' + Date.now();
+                    fetch(url, { method: 'GET', cache: 'no-cache', headers: { 'Cache-Control': 'no-cache' } })
+                        .then(function(r) { if (!r.ok) { throw new Error('Network response was not ok'); } return r.json(); })
+                        .then(function(res) {
+                            if (res.success) { self.broadcast(res.data); }
+                            else { console.error('LUM: AJAX returned error:', res); }
+                        })
+                        .catch(function(err) { console.error('LUM: load error:', err); });
+                };
+                if (document.readyState === 'complete') {
+                    load();
+                } else {
+                    window.addEventListener('load', load);
+                }
+                setInterval(load, 60000); // single shared 60s refresh
+            }
+        };
+        return bus;
+    })();
+    window.LUM._config = { url: <?php echo wp_json_encode($ajax_url); ?> };
+    </script>
+    <?php
+    return ob_get_clean();
+}
+
+// ---------------------------------------------------------------------------
+// SHORTCODE  [live_user_map]  →  Leaflet map + stats/legend bar
+// ---------------------------------------------------------------------------
+// Send no-cache headers ONLY on a real front-end render. During a REST/AJAX/
+// admin render (e.g. when the block editor saves and re-renders content),
+// emitting headers here corrupts the JSON response and causes the editor's
+// "response is not a valid JSON response" save error — so we skip it there.
+function lum_maybe_nocache() {
+    if (headers_sent()) {
+        return;
+    }
+    if ((defined('REST_REQUEST') && REST_REQUEST) || wp_doing_ajax() || is_admin()) {
+        return;
+    }
+    nocache_headers();
+}
+
 function lum_map_shortcode($atts) {
-	nocache_headers();
+	lum_maybe_nocache();
+	$bus = lum_print_data_bus();
     $atts = shortcode_atts(array(
         'height' => '600px',
         'zoom' => '2'
     ), $atts);
     ob_start();
+    echo $bus;
     ?>
     <div id="live-user-map" style="height: <?php echo esc_attr($atts['height']); ?>; width: 100%; border-radius: 15px; position: relative; z-index: 1;"></div>
 	<div id="map-stats" style="margin-top: 15px; padding: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
@@ -502,18 +597,7 @@ function lum_map_shortcode($atts) {
 			</span>
 		</div>
 	</div>
-    <div class="wp-block-table" id="visited-pages">
-        <h3 style="margin-top: 0; margin-bottom: 25px; font-weight: 700; font-size: 20px; line-height: 1.5;">Currently Visited Pages</h3>
-        <div id="pages-list" style="max-height: 350px; overflow-y: auto;">
-            <p style="color: #999999;">Loading...</p>
-        </div>
-    </div>
-	<div class="wp-block-table" id="past-visited-pages">
-        <h3 style="margin-top: 25px; margin-bottom: 25px; font-weight: 700; font-size: 20px; line-height: 1.5;">Past Visited Pages</h3>
-        <div id="past-pages-list" style="max-height: 350px; overflow-y: auto;">
-            <p style="color: #999999;">Loading...</p>
-        </div>
-    </div>
+    <?php // Tables are separate shortcodes: [currently_visited_pages] / [past_visited_pages]. This outputs map + stats only. ?>
 
     <style>
 	
@@ -532,34 +616,6 @@ function lum_map_shortcode($atts) {
     .badge-live {background: #d4edda; color: #155724;}
     .badge-past {background: #d1ecf1; color: #0c5460;}
     .leaflet-control-attribution a {pointer-events: auto !important;}
-	
-	#visited-pages table,
-	#past-visited-pages table {
-		table-layout: fixed !important;
-		width: 100% !important;
-	}
-	
-	#visited-pages col.col-page,
-	#past-visited-pages col.col-page {width: 58%;}
-	#visited-pages col.col-visitors,
-	#past-visited-pages col.col-visitors {width: 15%;}
-	#visited-pages col.col-location,
-	#past-visited-pages col.col-location {width: 27%;}
-
-	#visited-pages .url-short,
-	#past-visited-pages .url-short {display: none;}
-
-	@media (max-width: 600px) {
-			#visited-pages .url-full,
-			#past-visited-pages .url-full {display: none;}
-			#visited-pages .url-short,
-			#past-visited-pages .url-short {display: inline;}
-			#visited-pages table th,
-			#visited-pages table td,
-			#past-visited-pages table th,
-			#past-visited-pages table td {font-size: var(--er-fs-sm);}
-		}
-
     </style>
 
     <script>
@@ -567,10 +623,8 @@ function lum_map_shortcode($atts) {
         let map, liveMarkers = [], pastMarkers = [], terminator;
         let isFirstLoad = true;
         let userHasInteracted = false;
-        // Shared HTML escaper — used by both the map popups and the pages list to neutralise untrusted values (city/country from the geo API, page_url from the visitor's own request) before innerHTML/bindPopup
+        // HTML escaper — neutralises untrusted values (city/country from the geo API) before use in map popups.
         const escapeHtml = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        // Decode percent-encoded UTF-8 (e.g. %CF%83 -> σ) for display only; falls back to raw string if malformed
-        const prettyUrl = (str) => { try { return decodeURIComponent(String(str)); } catch (e) { return String(str); } };
         function initMap() {
             map = L.map('live-user-map', {
                 center: [20, 0],
@@ -594,39 +648,13 @@ function lum_map_shortcode($atts) {
             setInterval(function() {
                 terminator.setTime();
             }, 60000);
-            loadMapData();
-            setInterval(loadMapData, 60000); // Refresh every 60 seconds
-        }
-        function loadMapData() {
-            const url = '<?php echo admin_url('admin-ajax.php'); ?>?action=lum_get_map_data&nonce=<?php echo wp_create_nonce('lum_map_nonce'); ?>&_=' + Date.now(); // Added cache-busting
-            fetch(url, {
-                method: 'GET',
-                cache: 'no-cache',
-                headers: {
-                    'Cache-Control': 'no-cache'
-                }
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        updateMarkers(data.data, isFirstLoad);
-                        updateStats(data.data.counts);
-                        updatePagesList(data.data.live);
-						updatePastPagesList(data.data.past);
-                        isFirstLoad = false;
-                    } else {
-                        console.error('AJAX returned error:', data);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading map data:', error);
-                    document.getElementById('pages-list').innerHTML = '<p style="color: #dc3545;">Error loading data. Check console.</p>';
-                });
+            // Feed the map from the shared bus.
+            window.LUM.subscribe(function(data) {
+                updateMarkers(data, isFirstLoad);
+                updateStats(data.counts);
+                isFirstLoad = false;
+            });
+            window.LUM.start(window.LUM._config.url);
         }
 
         function updateMarkers(data, skipZoom) {
@@ -721,15 +749,6 @@ function lum_map_shortcode($atts) {
             return url.length > 40 ? url.substring(0, 40) + '...' : url;
         }
 
-		function shortenUrl(url) {
-            try {
-                const u = new URL(url);
-                return u.pathname === '/' ? 'Home' : prettyUrl(u.pathname);
-            } catch (e) {
-                return url;
-            }
-        }
-        
         function parseBrowser(ua) {
             if (!ua) return 'Unknown';
             if (ua.includes('Edge')) return 'Edge';
@@ -759,11 +778,68 @@ function lum_map_shortcode($atts) {
             }
         }
         
-        function updatePagesList(liveUsers) {
-            const pagesListEl = document.getElementById('pages-list');
-            if (!pagesListEl) return;
-            if (liveUsers.length === 0) {
-                pagesListEl.innerHTML = '<p style="color: #999999;">No live visitors</p>';
+        window.addEventListener('load', initMap);
+    })();
+    </script>
+
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('live_user_map', 'lum_map_shortcode');
+
+// ============================================================================
+// VISITED-PAGES TABLES — standalone shortcodes
+//   [currently_visited_pages]  live table (data.live)
+//   [past_visited_pages]       past table (data.past)
+// No headings emitted (add your own in the editor). Both read the existing
+// lum_get_map_data endpoint via the shared bus — no new SQL, map untouched.
+// ============================================================================
+
+// Shared CSS + JS helpers for both tables. Printed once per page.
+function lum_print_tables_assets() {
+    static $done = false;
+    if ($done) {
+        return '';
+    }
+    $done = true;
+    $out = lum_print_data_bus(); // shared bus markup (returned, appended below)
+    ob_start();
+    ?>
+    <style>
+    /* Scoped to .lum-pages-table so it can't leak into other page tables. */
+    .lum-pages-table {max-height: 350px; overflow-y: auto;}
+    .lum-pages-table table {table-layout: fixed !important; width: 100% !important;}
+    .lum-pages-table col.col-page     {width: 58%;}
+    .lum-pages-table col.col-visitors {width: 15%;}
+    .lum-pages-table col.col-location {width: 27%;}
+    .lum-pages-table .url-short {display: none;}
+    @media (max-width: 600px) {
+        .lum-pages-table .url-full  {display: none;}
+        .lum-pages-table .url-short {display: inline;}
+        .lum-pages-table table th,
+        .lum-pages-table table td {font-size: var(--er-fs-sm);}
+    }
+    </style>
+
+    <script>
+    (function() {
+        // Display helpers
+        const escapeHtml = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        // Decode percent-encoded UTF-8 (e.g. %CF%83 -> σ) for display only.
+        const prettyUrl  = (str) => { try { return decodeURIComponent(String(str)); } catch (e) { return String(str); } };
+        const shortenUrl = (url) => {
+            try {
+                const u = new URL(url, window.location.origin);
+                return u.pathname === '/' ? 'Home' : prettyUrl(u.pathname);
+            } catch (e) { return url; }
+        };
+
+        // Renderer: currently visited (live)
+        function renderCurrent(liveUsers) {
+            const el = document.getElementById('lum-current-pages');
+            if (!el) return;
+            if (!liveUsers || liveUsers.length === 0) {
+                el.innerHTML = '<p style="color: #999999;">No live visitors</p>';
                 return;
             }
             const pageMap = new Map();
@@ -775,48 +851,47 @@ function lum_map_shortcode($atts) {
                 pageMap.get(url).count++;
             });
             let html = '<table>';
-			html += '<colgroup><col class="col-page"><col class="col-visitors"><col class="col-location"></colgroup>';
+            html += '<colgroup><col class="col-page"><col class="col-visitors"><col class="col-location"></colgroup>';
             html += '<thead><tr><th>Page</th><th>Visitors</th><th>Location</th></tr></thead><tbody>';
-            Array.from(pageMap.entries()).forEach(([url, data]) => {
+            pageMap.forEach((data, url) => {
                 const safeUrl = escapeHtml(url);
-                const safeCity = escapeHtml(data.city || '');
-                const safeCountry = escapeHtml(data.country || '');
                 html += `<tr>
                     <td><a href="${safeUrl}" target="_blank"><span class="url-full">${escapeHtml(prettyUrl(url))}</span><span class="url-short">${escapeHtml(shortenUrl(url))}</span></a></td>
                     <td>${data.count}</td>
-                    <td>${safeCity}, ${safeCountry}</td>
+                    <td>${escapeHtml(data.city || '')}, ${escapeHtml(data.country || '')}</td>
                 </tr>`;
             });
             html += '</tbody></table>';
-            pagesListEl.innerHTML = html;
+            el.innerHTML = html;
         }
 
-		function updatePastPagesList(pastUsers) {
-            const pagesListEl = document.getElementById('past-pages-list');
-            if (!pagesListEl) return;
-            if (pastUsers.length === 0) {
-                pagesListEl.innerHTML = '<p style="color: #999999;">No past visitors</p>';
+        // Renderer: past visited
+        function renderPast(pastUsers) {
+            const el = document.getElementById('lum-past-pages');
+            if (!el) return;
+            if (!pastUsers || pastUsers.length === 0) {
+                el.innerHTML = '<p style="color: #999999;">No past visitors</p>';
                 return;
             }
             const pageMap = new Map();
             pastUsers.forEach(user => {
-                if (!user.is_post) return;
+                if (!user.is_post) return; // only resolvable posts/pages get a row
                 const url = user.page_url;
                 if (!pageMap.has(url)) {
                     pageMap.set(url, { views: user.views || 0, locations: user.locations || 0 });
                 }
             });
             if (pageMap.size === 0) {
-                pagesListEl.innerHTML = '<p style="color: #999999;">No past visitors</p>';
+                el.innerHTML = '<p style="color: #999999;">No past visitors</p>';
                 return;
             }
             let html = '<table>';
-			html += '<colgroup><col class="col-page"><col class="col-visitors"><col class="col-location"></colgroup>';
+            html += '<colgroup><col class="col-page"><col class="col-visitors"><col class="col-location"></colgroup>';
             html += '<thead><tr><th>Page</th><th>Views</th><th>Location</th></tr></thead><tbody>';
             Array.from(pageMap.entries())
                 .sort((a, b) => b[1].views - a[1].views)
-				.forEach(([url, data]) => {
-                    const safeUrl = escapeHtml(url);
+                .forEach(([url, data]) => {
+                    const safeUrl  = escapeHtml(url);
                     const locCount = data.locations;
                     const locLabel = locCount + (locCount === 1 ? ' location' : ' Locations');
                     html += `<tr>
@@ -826,14 +901,49 @@ function lum_map_shortcode($atts) {
                     </tr>`;
                 });
             html += '</tbody></table>';
-            pagesListEl.innerHTML = html;
+            el.innerHTML = html;
         }
 
-		window.addEventListener('load', initMap);
+        // Feed both tables from the shared bus
+        window.LUM.subscribe(function(data) {
+            renderCurrent(data.live);
+            renderPast(data.past);
+        });
+        window.LUM.start(window.LUM._config.url);
     })();
     </script>
+    <?php
+    return $out . ob_get_clean();
+}
 
+// ---------------------------------------------------------------------------
+// SHORTCODE  [currently_visited_pages]  →  live table, no heading
+// ---------------------------------------------------------------------------
+function lum_currently_visited_pages_shortcode() {
+    lum_maybe_nocache();
+    ob_start();
+    echo lum_print_tables_assets();
+    ?>
+    <div class="wp-block-table lum-pages-table" id="lum-current-pages">
+        <p style="color: #999999;">Loading...</p>
+    </div>
     <?php
     return ob_get_clean();
 }
-add_shortcode('live_user_map', 'lum_map_shortcode');
+add_shortcode('currently_visited_pages', 'lum_currently_visited_pages_shortcode');
+
+// ---------------------------------------------------------------------------
+// SHORTCODE  [past_visited_pages]  →  past table, no heading
+// ---------------------------------------------------------------------------
+function lum_past_visited_pages_shortcode() {
+    lum_maybe_nocache();
+    ob_start();
+    echo lum_print_tables_assets();
+    ?>
+    <div class="wp-block-table lum-pages-table" id="lum-past-pages">
+        <p style="color: #999999;">Loading...</p>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('past_visited_pages', 'lum_past_visited_pages_shortcode');
