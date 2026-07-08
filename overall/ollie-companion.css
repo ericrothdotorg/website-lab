@@ -60,7 +60,10 @@
 /* ---- Text as columns ---- */
 .two-columns-text, .three-columns-text, .four-columns-text {
 	column-gap: 40px;
-	column-rule: 1px solid var(--color-9);
+	column-rule: 1px solid var(--color-5);
+}
+body.dark-mode .two-columns-text, .three-columns-text, .four-columns-text {
+	column-rule: 1px solid var(--color-4);
 }
 .two-columns-text {column-count: 2;}
 .three-columns-text {column-count: 3;}
@@ -80,6 +83,18 @@
 .font-design-red {color: #990033;} /* No var Color */
 body.dark-mode .emphasized-design-red {color: #cc0044;} /* No var Color */
 body.dark-mode .font-design-red {color: #cc0044;} /* No var Color */
+
+/* ---- Higlighted paragraphs ---- */
+.paragraph-highlight {
+	background: var(--color-8);
+    border: 1px solid var(--color-5);
+	border-radius: 25px;
+	padding: var(--wp--preset--spacing--60);
+}
+body.dark-mode .paragraph-highlight {
+    background: var(--color-10);
+    border: 1px solid var(--color-4);
+}
 
 /* ---- Tabs (page 17552 — custom-HTML .tabs/.tab-content; JS = setupTabs() in Site Essentials & Cookies PHP ---- */
 body.page-id-17552 .tabs {overflow: hidden;}
