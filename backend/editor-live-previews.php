@@ -45,8 +45,12 @@
 //                                              never executed (see IDs filter)
 //     - shortcode's own inline <style> ....... already inside the rendered HTML
 //     - editor-only overrides ................ small tweaks that apply only in the
-//                                              editor (reveal JS sliders, shrink
-//                                              titles/excerpts in the panel)
+//                                              editor (reveal JS sliders)
+//     - preview-iframe-only overrides ........ tweaks that apply ONLY inside the
+//                                              narrow preview panel (flatten
+//                                              grids into a card row, shrink
+//                                              titles/excerpts). Never applied to
+//                                              the full-width editor canvas.
 //
 //   Preview (A) loads these into an <iframe>, so body.dark-mode rules work by
 //   toggling class="dark-mode" on the iframe body. Canvas (B) injects the same
@@ -56,7 +60,7 @@
 //
 // FILE MAP
 //   HELPERS      — read site-css snippets; extract <style> from PHP snippets;
-//                  editor-only overrides
+//                  editor-only overrides (shared) + preview-iframe-only overrides
 //   SECTION 1    — REST endpoint: render shortcode + build the style payload
 //   SECTION 2    — editor CSS for the preview panel chrome (sidebar, buttons)
 //   SECTION 3    — editor JavaScript: the Inspector preview panel (React)
@@ -252,11 +256,58 @@ function shortcode_live_preview_editor_overrides() {
             min-width: 0 !important;
             margin: 0 !important;
         }
+    ';
+}
 
-        /* 2. Smaller Display Posts titles in the editor only. */
+// PREVIEW-IFRAME-ONLY overrides. These are NOT applied to the editor canvas.
+//
+// WHY: the preview iframe is only as wide as the Inspector panel (~280px, or
+// 600px when the sidebar is expanded). CSS media queries inside an iframe
+// resolve against the IFRAME's width, so the desktop breakpoints the grids rely
+// on never match and each grid falls back to its BASE column count:
+//   - .display-posts-listing.grid ... base `repeat(2, 1fr)` (see the "Display
+//     Posts - Bill Erickson" snippet; #four-columns / #six-columns only widen at
+//     min-width:600px / 992px)
+//   - .er-cpt-grid ................. base `repeat(4, 1fr)` (see "Ollie Companion
+//     CSS"; it only narrows at max-width:1024px / 600px)
+// Either way the cards are crushed into columns far too narrow to read — the
+// grids "do not look fine" while the sliders do.
+//
+// FIX: give the grids the exact same treatment the sliders already get above —
+// a wrapping flex row whose children have a min-width basis and may grow. In the
+// narrow panel that yields a single vertical column of cards (same as sliders);
+// with the sidebar expanded to 600px it yields several per row. Identical gap in
+// both cases, and no breakpoint depends on the container width.
+//
+// The canvas is deliberately excluded: it is full width, its media queries DO
+// match, and the real grids already render correctly there. Flattening them in
+// the canvas would break something that currently works.
+//
+// The Display Posts title/excerpt shrink also lives here (not in the shared
+// overrides): it exists purely because the frontend sizes look oversized in the
+// narrow preview panel — a reason that does not apply to the full-width canvas.
+function shortcode_live_preview_iframe_overrides() {
+    return '
+        /* Flatten grids into the same static card row/column the sliders use. */
+        .display-posts-listing.grid,
+        .er-cpt-grid {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: wrap !important;
+            align-items: stretch !important;
+            gap: 1rem !important;
+        }
+        .display-posts-listing.grid > *,
+        .er-cpt-grid > * {
+            flex: 1 1 140px !important;
+            min-width: 0 !important;
+            margin: 0 !important;
+        }
+
+        /* Smaller Display Posts titles in the preview panel only. */
         .display-posts-listing .title { font-size: var(--er-fs-sm) !important; }
 
-        /* 2b. Smaller Display Posts excerpts in the editor only (match titles). */
+        /* Smaller Display Posts excerpts in the preview panel only (match titles). */
         .display-posts-listing .excerpt { font-size: var(--er-fs-xs) !important; }
     ';
 }
@@ -270,7 +321,7 @@ function shortcode_live_preview_editor_overrides() {
 // the child style.css and a hash of the snippet inputs, so editing any source
 // produces a new key and a fresh build. Pass $with_child_css=true for the canvas
 // (which inlines child style.css); the preview iframe <link>s it instead.
-function shortcode_live_preview_build_inline_css( $with_child_css = false ) {
+function shortcode_live_preview_build_inline_css( $with_child_css = false, $for_iframe = false ) {
     $child_css_path = get_stylesheet_directory() . '/style.css';
     $child_mtime    = file_exists( $child_css_path ) ? filemtime( $child_css_path ) : 0;
 
@@ -278,7 +329,7 @@ function shortcode_live_preview_build_inline_css( $with_child_css = false ) {
     $php_style_css = shortcode_live_preview_get_php_snippet_styles();
 
     // Version key: any change to the snippet CSS or the child stylesheet busts it.
-    $version = md5( $child_mtime . '|' . $with_child_css . '|' . $snippet_css . '|' . $php_style_css );
+    $version = md5( $child_mtime . '|' . $with_child_css . '|' . $for_iframe . '|' . $snippet_css . '|' . $php_style_css );
     $cache_key = 'sc_live_preview_css_' . $version;
 
     $cached = get_transient( $cache_key );
@@ -290,7 +341,8 @@ function shortcode_live_preview_build_inline_css( $with_child_css = false ) {
     $child_css      = ( $with_child_css && file_exists( $child_css_path ) ) ? file_get_contents( $child_css_path ) : '';
 
     $css = $theme_json_css . "\n" . $child_css . "\n" . $snippet_css . "\n" . $php_style_css
-        . "\n" . shortcode_live_preview_editor_overrides();
+        . "\n" . shortcode_live_preview_editor_overrides()
+        . ( $for_iframe ? "\n" . shortcode_live_preview_iframe_overrides() : '' );
 
     // Short TTL: fresh enough for editing, still spares repeated rebuilds in a
     // working session. The version key already guarantees correctness on change.
@@ -348,7 +400,7 @@ function shortcode_live_preview_payload( $html ) {
     // theme.json tokens + site-css snippets + PHP-snippet layout CSS + editor
     // overrides, assembled and cached once. Child style.css is <link>ed above
     // (not inlined here), so pass false.
-    $inline_css = shortcode_live_preview_build_inline_css( false );
+    $inline_css = shortcode_live_preview_build_inline_css( false, true );
 
     return [
         'html'      => $html,
