@@ -712,8 +712,7 @@ function custom_dashboard_inline_assets() {
         .cd-flex             { display: flex; gap: 6px; flex-wrap: wrap; }
         .cd-form             { margin: 0; }
         /* === Widget Header === */
-        [id^="custom_"] .postbox-header .hndle,
-        #dashboard_right_now .postbox-header .hndle {
+        #dashboard-widgets .postbox-header .hndle {
             display: flex;
             justify-content: flex-start;
             align-items: center;
