@@ -99,8 +99,8 @@ function custom_render_hosting_repo_widget() {
 
 function custom_render_ai_chatbots_widget() {
     $bots = [
-        '✨ Copilot' => 'https://copilot.microsoft.com/',
-        '✨ ChatGPT' => 'https://chatgpt.com/',
+        '✨ Copilot' => 'https://m365.cloud.microsoft/chat',
+        '✨ Frontier' => 'https://stride.microsoft.com/',
         '✨ Claude' => 'https://claude.ai/',
         '✨ DS' => 'https://chat.deepseek.com/'
     ];
