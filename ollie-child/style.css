@@ -1,0 +1,678 @@
+/*
+Theme Name: Ollie Child
+Theme URI:
+Author: Eric Roth
+Author URI:
+Description: Child of Ollie Parent
+Requires at least: 7.0
+Tested up to: 7.0
+Requires PHP: 5.7
+Version:
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Template: ollie
+Text Domain: ollie-child
+Tags:
+*/
+
+/* ============================================================
+   TABLE OF CONTENTS  —  child theme / style.css  (THEME)
+   ------------------------------------------------------------
+   This file holds ONLY the CSS that must ride the child theme's
+   enqueue: tokens everything references, and rules that override
+   the parent theme or theme.json (so they need guaranteed
+   load-after-parent ordering). Self-contained component/utility CSS lives in
+   the "Ollie Companion CSS" snippet (site-wide CSS). If you're hunting for
+   tables, footer, toggle, breadcrumbs, image effects, buttons,
+   forms, grid/cards, tabs etc. — they're in that snippet, not here.
+
+   THEME-COUPLING MARKERS (search these before/after a theme switch):
+     THEME RELATED = hard coupling; breaks/orphans on switch — must fix.
+     THEME REVIEW  = soft coupling; reads a theme-defined value, won't
+                     break but the value shifts — verify.
+
+    1. TOKENS              palette, a11y vars, list dials, shared row width
+    2. DARK CANVAS         body-level dark-mode base
+    3. BASE                links, external-link glyph, html/body, code, generic dark misc
+    4. LAYOUT              clearfix, columns, flexbox, page-links, show/hide helpers
+    5. EDITORIAL LISTS     single source of truth (beats parent's list reset + phantom rule)
+    6. QUOTE               green Georgia box (lifted from My Quotes #23; was quote-page-only)
+    7. PULLQUOTE           green Georgia (overrides theme.json's forced border/padding)
+    8. HEADER              bar inner row, nav (desktop + mobile overlay), submenus, search
+    9. HERO                fluid hero box + inner (overrides #7's wp_head critical values)
+    10. SIDEBAR            sticky 25% sidebar column
+
+   CONVENTIONS
+     - Light body/heading base colours live in theme.json, not here.
+     - Dark-mode rules sit DIRECTLY BESIDE their light rule on purpose.
+     - Asset URLs (e.g. the external-link SVG) are root-relative.
+     - "No var Color" marks an intentional one-off hex outside the palette.
+   ============================================================ */
+
+/* ============================================================
+   1. TOKENS
+   ============================================================ */
+
+/* ---- Brand palette (each colour carries a light meaning and, where noted, a dark one) ---- */
+:root {
+	--color-1:  #1e73be; /* Link, Button, Focus Outline, Toggle Accent */
+	--color-2:  #c53030; /* Hover State for Link & Button */
+	--color-3:  #3a4f66; /* LIGHT Mode Body Text, DARK Mode Element Border I */
+	--color-4:  #192a3d; /* LIGHT Mode Headings, DARK Mode Element Border II */
+	--color-5:  #e1e8ed; /* LIGHT Mode Separator & Border, DARK Mode Body Text */
+	--color-6:  #070c12; /* DARK Mode Background & Element Hover */
+	--color-7:  #fafbfc; /* LIGHT Mode Background & Element Hover, DARK Mode Heading */
+	--color-8:  #ffffff; /* LIGHT Mode Element Background, Button Text, Form Field */
+	--color-9:  #8da6b9; /* Design Block Border, Eric Slider Arrow & Active Dot, Tag & Dropdown Separator */
+	--color-10: #0e1825; /* DARK Mode Element-, Box- and Card Background */
+
+	/* Accessibility focus ring */
+	--a11y-focus-color:  var(--color-1);
+	--a11y-focus-width:  1px;
+	--a11y-focus-offset: 2px;
+
+    /* Editorial list + paragraph dials (see section 5). --er-list-indent mirrors the parent theme's old "medium". */
+	--er-list-gap:    0.1em;                       /* gap between items   */
+	--er-para-list-gap: 0.5rem;                    /* paragraph-to-list gap */
+	--er-para-gap:      1.3rem;                    /* gap between content paragraphs */
+	--er-list-indent: clamp(1.5rem, 4vw, 2rem);    /* indent per level    */
+
+    /* Table row density — base + compact/roomy opt-ins (set padding-block in the table rules) */
+    --er-table-pad-base:         0.25em;   /* base row padding */
+    --er-table-pad-compact: 0.1em;    /* table-compact opt-in */
+    --er-table-pad-roomy:   0.5em;    /* table-roomy opt-in */
+
+	/* ---- TYPE SCALE — single source of truth for every font-size ----
+	   Fluid (clamp) so the whole site scales together. Every font-size in
+	   style.css, the companion snippet, and My Quotes references a step here;
+	   no raw literals remain. Relationships (cite < body) use calc() so they
+	   hold at every viewport and survive any rescale. */
+	--er-fs-xs:   clamp(0.8125rem, 0.2vw + 0.78rem, 0.875rem);  /* meta, page-links, filter tabs, see-all */
+	--er-fs-sm:   clamp(0.9rem,   0.2vw + 0.86rem, 1rem);       /* tag cloud, small UI */
+	--er-fs-body: clamp(1rem,     0.4vw + 0.92rem, 1.05rem);    /* ALL body + ALL static quote text, summaries */
+	--er-fs-cite: calc(var(--er-fs-body) * 0.92);               /* cite - always a step under its quote */
+	--er-fs-md:   clamp(1.1rem,   0.4vw + 1rem,    1.25rem);    /* figcaptions, card titles */
+	--er-fs-lg:   clamp(1.05rem,  1vw + 0.8rem,    1.25rem);    /* slider quote - deliberate bigger fluid step */
+	--er-fs-xl:   clamp(1.5rem,   2vw + 1rem,      1.875rem);   /* site title, section display */
+
+	/* ---- Line height ---- */
+	--er-lh-tight: 1.3;    /* headings, card/widget titles */
+	--er-lh-base:  1.6;    /* body — parent theme default is ~1.6; named so it's deliberate */
+	--er-lh-loose: 1.6;    /* quotes / long-form (kept = base for now; tune independently) */
+
+	/* ---- Font family ---- */
+	--er-ff-quote: Georgia, serif;   /* quote + pullquote body */
+	--er-ff-cite:  sans-serif;       /* cite lines */
+
+	/* ---- Font weight (numeric vocabulary) ---- */
+	--er-fw-normal: 400;
+	--er-fw-bold:   700;
+
+	/* ---- Label style (uppercase micro-label: meta, filter tabs) ---- */
+	--er-ls-label: 0.02em;
+
+	/* THEME REVIEW — parent theme's wide-block formula: caps at --wp--style--global--wide-size, inset by --wp--style--root--padding-right gutter. Reads theme-defined values; recompute/verify on switch.
+	   Used by header inner row, footer column row, footer breadcrumbs. */
+	--er-wide-row: min(var(--wp--style--global--wide-size), calc(100% - 2 * var(--wp--style--root--padding-right, var(--wp--preset--spacing--medium))));
+}
+
+/* ============================================================
+   2. DARK CANVAS  (driven by body.dark-mode; toggle JS in the "Ollie Companion PHP" snippet)
+   ============================================================ */
+
+body.dark-mode {
+	background: var(--color-6);
+	color: var(--color-5);
+}
+body.dark-mode :is(h1, h2, h3, h4, h5, h6) {
+	color: var(--color-7);
+}
+
+/* ============================================================
+   3. BASE
+   ============================================================ */
+
+/* ---- Links ---- */
+a:link {font-weight: bold; color: var(--color-1);}
+a:link:hover {color: var(--color-2);}
+a:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
+a:focus:not(:focus-visible) {outline: none;}
+
+/* External-link indicator: small SVG glyph after the link (the .external-link
+   class is added by client-side JS in the "Site Essentials & Cookies" snippet). */
+a.external-link::after {
+	content: "";
+	background: url("/wp-content/uploads/2024/03/external-link-greyblue.svg") no-repeat center;
+	width: .75em;
+	height: .75em;
+	margin-left: .25em;
+	display: inline-block;
+}
+
+/* ---- Base elements (light body/headings are theme.json's job) ---- */
+html {text-size-adjust: 100%; scroll-behavior: smooth;}
+p {text-align: justify; hyphens: auto;}
+code {background: none !important; border: none; padding: 0;}
+
+/* ---- Generic block dark misc ---- */
+body.dark-mode .wp-block-group.has-border-color {border-color: var(--color-9);}
+
+/* ============================================================
+   4. LAYOUT
+   ============================================================ */
+
+/* ---- Clearfix ---- */
+.row::after {content: ""; display: table; clear: both;}
+
+/* ---- Columns ---- */
+.two-columns, .four-columns { float: left; }
+.two-columns { width: 49%; }
+.two-columns:nth-child(odd) { margin-right: 1%; }
+.two-columns:nth-child(even) { margin-left: 1%; }
+@media (max-width: 768px) {
+	.two-columns:nth-of-type(2),
+	.four-columns:nth-of-type(n+3) {margin-top: 25px;}
+	.two-columns {width: 100%;}
+	.four-columns {width: 49%;}
+}
+
+/* ---- Flexbox ---- */
+.flex-container {display: flex; align-items: center; flex-flow: row wrap;}
+.flex-container.left-align {justify-content: flex-start;}
+.flex-container.center-align {justify-content: center;}
+
+/* ---- Page links (paginated posts) ---- */
+.page-links {padding-bottom: 50px;}
+.page-links a, .page-links .current, .page-links .post-pages-label {border: none; font-size: var(--er-fs-xs);}
+.page-links a {color: var(--color-1);}
+.page-links a:hover {box-shadow: 0 0 0 1px var(--color-1);}
+.page-links a:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
+.page-links a:focus:not(:focus-visible) {outline: none;}
+.page-links .current {border-color: var(--color-1); background: var(--color-1); color: var(--color-8);}
+.post-pages-label {text-transform: uppercase;}
+
+/* ---- Manual show/hide helpers ---- */
+@media (max-width: 768px) {.hide-on-small {display: none;}}
+@media (min-width: 768px) {.hide-on-big {display: none;}}
+.flex-item-country-icons {flex: 0 0 60px;} /* Used for Photo Album */
+
+/* ============================================================
+   5. EDITORIAL LISTS — single source of truth (rhythm + indent).
+   Owns every reader-facing list regardless of wrapper: block lists,
+   the Page List block, classic <ul>/<ol> in content, and the My
+   Quotes component. Depends only on CORE WP block classes + the two
+   list dials in section 1, so it is theme-agnostic (parent's
+   ol,ul{padding:0} + selective restore no longer relied on). UI lists
+   (nav, breadcrumbs, tag cloud, filter tabs) are never matched: they set
+   list-style:none and live in template parts outside content roots.
+   EXCEPTION: .entry-meta (er_render_card's meta <ul>) DOES land inside
+   .wp-block-post-content on Page-rendered archives (page.html > post-content
+   hosting [er_cpt_archive]), so it is explicitly excluded via :not(.entry-meta)
+   on all three rules below — otherwise the card meta inherits the editorial
+   indent/gap on CPT/page archives but not on the blog (home.html, no
+   post-content wrapper), and the two render differently.
+   Per-context fine-tuning = a more specific rule that wins, never another base case.
+   ------------------------------------------------------------
+   ONE editorial-root union, reused for all three rules. The 0-2-2
+   specificity beats the server-side "phantom" list-spacing rule. Chrome
+   excluded structurally (outside content roots); :not(.wp-block-navigation)
+   adds weight without dropping the Page List submenu; :not(.entry-meta)
+   keeps card metas flush in every context.
+   ============================================================ */
+
+/* indent — every level of an editorial list */
+:is(.wp-block-post-content, .wp-block-quote, .quote-text) :is(ul, ol):not(.wp-block-navigation):not(.entry-meta) {padding-inline-start: var(--er-list-indent);}
+
+/* item rhythm — gap below each item */
+:is(.wp-block-post-content, .wp-block-quote, .quote-text) :is(ul, ol):not(.wp-block-navigation):not(.entry-meta) > li {margin-block: 0 var(--er-list-gap);}
+
+/* nested list opening under its parent item gets the same gap above */
+:is(.wp-block-post-content, .wp-block-quote, .quote-text) :is(ul, ol):not(.wp-block-navigation):not(.entry-meta) li :is(ul, ol) {margin-block-start: var(--er-list-gap);}
+
+/* paragraph → list gap: tighten space above a content list following a paragraph.
+   Scoped to editorial roots (UI lists never matched); only the list's top margin
+   changes — item rhythm and global block gap untouched. */
+:is(.wp-block-post-content, .wp-block-quote, .quote-text) p + :is(ul, ol):not(.wp-block-navigation) {
+	margin-block-start: var(--er-para-list-gap);
+}
+
+/* paragraph rhythm: lower the flow gap (--wp--preset--spacing--medium is what
+   :root :where(.is-layout-flow) > * reads, = ~32px). */
+/* THEME RELATED — redefines --wp--preset--spacing--medium that the parent/core flow rule (:root :where(.is-layout-flow) > *) reads, to tighten the ~32px paragraph gap. On switch: re-confirm the parent's flow-gap mechanism still reads this var. */
+.is-layout-flow {
+	--wp--preset--spacing--medium: var(--er-para-gap);
+}
+
+/* site-overview Page List: hide functional/non-content pages by URL substring.
+   Matches at any nesting depth (top-level or reassigned children); a stale URL just no-ops. One selector per hidden page below. */
+.wp-block-page-list.site-overview li:has(> a[href*="/berufswelt/"]),
+.wp-block-page-list.site-overview li:has(> a[href*="/dummy/"]),
+.wp-block-page-list.site-overview li:has(> a[href*="/terra-gate/"]),
+.wp-block-page-list.site-overview li:has(> a[href*="/my-pages/"]),
+.wp-block-page-list.site-overview li:has(> a[href*="/ueber-mich/"]),
+.wp-block-page-list.site-overview li:has(> a[href="https://ericroth.org/"]) {display: none;}
+
+/* ============================================================
+   6. QUOTE  (green Georgia box)
+   THEME RELATED — overrides the parent theme's core/quote styling and must
+   load after it (rides the child enqueue); the last-child rule below also
+   reads core/parent flow layout (:root :where(.is-layout-flow)). On switch:
+   re-confirm the parent's quote rules and flow selector.
+   ------------------------------------------------------------
+   Base core/quote appearance. Was trapped in the My Quotes PHP
+   snippet's <style> behind q_should_load_assets(), so plain quotes
+   on non-quote pages rendered unstyled. Lifted here so every
+   core/quote matches My Quotes site-wide. Token-based; must out-
+   order the parent's .wp-block-quote, so it rides the child enqueue.
+   ------------------------------------------------------------
+   BOUNDARY: this file = GENERIC quotes/pullquotes (anybody's, any page).
+   MY QUOTES feature (slider, [quote_text], .single-my-quotes) -> My Quotes PHP snippet.
+   ============================================================ */
+
+.wp-block-quote {position: relative; width: 85%; max-width: fit-content; margin: 35px auto 70px; padding: 0 25px; border-inline-start: 3px solid var(--color-5) !important; border-right: 3px solid var(--color-5) !important; border-radius: 10px;}
+.wp-block-quote p, .wp-block-quote ul, .wp-block-quote li {text-align: justify; hyphens: manual; font-family: var(--er-ff-quote); font-style: italic; color: #339966; line-height: var(--er-lh-loose);} /* No var Color */
+.wp-block-quote p, .wp-block-quote ul, .wp-block-quote li {font-size: var(--er-fs-body);}
+.wp-block-quote cite {position: absolute; top: calc(100% - 1.25em); right: 30px; font-family: var(--er-ff-cite); font-size: var(--er-fs-cite); font-style: normal;}
+:root :where(.is-layout-flow) > :last-child.wp-block-quote {margin-block-end: 25px;}
+body.dark-mode .wp-block-quote {border-inline-start: 3px solid var(--color-3) !important; border-right: 3px solid var(--color-3) !important;}
+
+/* ============================================================
+   7. PULLQUOTE  (green Georgia)
+   THEME RELATED — styles core/pullquote. The full card (background,
+   border, radius, padding) lives on figure.wp-block-pullquote itself,
+   so every pullquote — generated, manual, bulleted, light + dark —
+   renders identically from this one place. On a theme switch:
+   re-confirm the parent theme.json doesn't reintroduce competing
+   pullquote/quote block styles.
+   ============================================================ */
+
+/* Pullquote frame (all pullquotes: generated, manual, bulleted; light + dark) — single source of truth on the figure. */
+figure.wp-block-pullquote {position: relative; max-width: fit-content; margin-inline: 0; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 25px; padding: 25px 25px 5px;}
+body.dark-mode figure.wp-block-pullquote {background: var(--color-10); border: 1px solid var(--color-4);}
+.wp-block-pullquote blockquote {border-inline-start: none !important; padding-bottom: 1em;}
+.wp-block-pullquote blockquote p, .wp-block-pullquote blockquote ul, .wp-block-pullquote blockquote li {margin-left: 25px; text-align: left; hyphens: manual; font-family: var(--er-ff-quote); font-style: italic; color: #339966; line-height: var(--er-lh-loose);} /* No var Color */
+.wp-block-pullquote blockquote ul, .wp-block-pullquote blockquote li {margin-left: 0;} /* lists: no extra left margin, bullets already indent */
+.wp-block-pullquote blockquote p, .wp-block-pullquote blockquote ul, .wp-block-pullquote blockquote li {font-size: var(--wp--preset--font-size--medium);} /* parent core/pullquote size = medium (1.65rem), pinned in child so it survives a theme switch */
+.wp-block-pullquote blockquote cite {display: block; text-align: right; margin-top: 0.75em; margin-right: 25px; font-family: var(--er-ff-cite); font-size: var(--er-fs-cite); font-style: normal;}
+
+/* ============================================================
+   8. HEADER  (non-critical layout)
+   THEME RELATED — the entire nav system below targets the parent theme's
+   navigation block markup (.wp-block-navigation__*, .is-menu-open, submenu
+   containers) and out-specifies its nav CSS. On a theme switch the nav markup
+   changes and this whole section orphans — rebuild against the new theme's nav.
+   ------------------------------------------------------------
+   Bar styling (fixed, blur, rgba bg, height, scroll-shrink) is in
+   Ollie Companion PHP critical CSS (.er-header). Submenu vertical POSITION is in
+   Ollie Companion PHP JS. Submenu rules below are scoped like the parent theme's own nav CSS
+   (.wp-block-navigation__responsive-container:not(.is-menu-open)) and
+   prefixed with .er-header so they reliably out-specify core + parent theme.
+   ------------------------------------------------------------
+   The site logo (.site-logo, used in header and footer) is styled in the Ollie
+   Companion CSS snippet, not here. The separate octagon-text sidebar mark lives
+   there too.
+   ============================================================ */
+
+/* ---- Inner row: align like the hero / any parent-theme wide block (cap at wide-size, inset by root-padding gutter, NOT a hardcoded 2rem). ---- */
+.er-header-inner {
+	width: 100%;
+	max-width: var(--er-wide-row);
+	margin-inline: auto;
+	padding-inline: 0;
+	gap: 2rem;
+}
+.er-header-left,
+.er-header-right {
+	gap: 1.75rem;
+}
+
+/* ---- Socials / Support: icon + label inline, centred, spaced. Stay blue + bold. ---- */
+.er-header-icon {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.55rem;
+}
+.er-header-icon img {
+	display: block;
+	width: 20px;
+	height: 20px;
+}
+.er-header-label {
+	line-height: 1;
+}
+.er-socials-support {display: inline-flex; align-items: center; gap: 1.5rem; vertical-align: middle;}
+
+/* ---- Nav text colour + no-underline ---- */
+/* (a) No underline on any header link, any state (incl. parent's .has-child button:hover). */
+.er-header a,
+.er-header a:hover,
+.er-header a:focus,
+.er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation__container .has-child button:hover {
+	text-decoration: none;
+}
+
+/* (a2) Kill the parent theme's underline on the current-page menu item (core-navigation.css). */
+.er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation__container .current-menu-item > a {
+	text-decoration: none;
+}
+
+/* (2) Nav text + arrows on the dark bar (top level). */
+.er-header .wp-block-navigation,
+.er-header .wp-block-navigation a,
+.er-header .wp-block-navigation .wp-block-navigation-item__content,
+.er-header .wp-block-navigation .wp-block-navigation__submenu-icon,
+.er-header .wp-block-navigation .wp-block-navigation-submenu__toggle {
+	color: var(--color-8);
+	fill: currentColor;
+}
+
+/* (2b) Site title in every state, explicit size. Parent theme pins core/site-title to BASE size, so the h3 level is purely semantic — only this font-size drives the look (true h3 = 1.875rem). */
+.er-header .wp-block-site-title {
+	font-size: var(--er-fs-xl);
+}
+.er-header .wp-block-site-title,
+.er-header .wp-block-site-title a,
+.er-header .wp-block-site-title a:hover,
+.er-header .wp-block-site-title a:focus {
+	color: var(--color-8);
+}
+
+/* (3) Top-level item: link fills full bar height for an easy, forgiving click
+   target. Hover anywhere on the item still opens the submenu (the hover
+   listener is on the parent <li>), so the arrow needs no precise aiming. */
+.er-header .wp-block-navigation__container > .wp-block-navigation-item {
+	display: flex;
+	align-items: stretch;
+}
+.er-header .wp-block-navigation__container > .wp-block-navigation-item > .wp-block-navigation-item__content {
+	display: flex;
+	align-items: center;
+	height: 100%;
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
+/* ---- Submenu panel (desktop dropdown) ---- */
+
+/* (a) Panel = same translucent-black + blur as the bar. */
+.er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation__submenu-container {
+	background-color: rgba(0, 0, 0, 0.65);
+	-webkit-backdrop-filter: blur(10px);
+	backdrop-filter: blur(10px);
+}
+/* (b) Items inherit background-color (core sets inherit), stacking the rgba toward near-black. Force transparent so the panel shows ONE translucent layer, matching the bar. */
+.er-header .wp-block-navigation__submenu-container .wp-block-navigation-item,
+.er-header .wp-block-navigation__submenu-container .wp-block-navigation-item__content {
+	background-color: transparent;
+}
+/* (b2) Submenu item hover: darken the whole row as ONE rectangle.
+   Target the item wrapper (spans full width: label + arrow), overriding rule (b)'s transparent. Covers leaf and parent items identically. */
+.er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation__submenu-container > .wp-block-navigation-item:hover {
+	background-color: rgba(0, 0, 0, 0.35);
+}
+.er-header .wp-block-navigation__submenu-container .wp-block-navigation-submenu__toggle,
+.er-header .wp-block-navigation__submenu-container .wp-block-navigation__submenu-icon {
+	background-color: transparent !important;
+}
+/* (c) Inset thin divider between links via ::before (skip first item = no line at panel top). */
+.er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation__submenu-container > .wp-block-navigation-item {
+	position: relative;
+}
+.er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation__submenu-container > .wp-block-navigation-item + .wp-block-navigation-item::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 1.25rem;
+	right: 1.25rem;
+	height: 1px;
+	background: rgba(255, 255, 255, 0.15);
+}
+/* (d) Links + arrows (high specificity to beat core's white-dropdown rule). */
+.er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation__submenu-container a,
+.er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation__submenu-container .wp-block-navigation-item__content,
+.er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation__submenu-container .wp-block-navigation__submenu-icon {
+	color: var(--color-8);
+	fill: currentColor;
+}
+/* (e) Link padding. Parent theme pins dropdown links small/medium via :where() (0 specificity) + !important; we beat it with .er-header scope + !important. 1st value = vertical, 2nd = horizontal. */
+.er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation__submenu-container a,
+.er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation__submenu-container .wp-block-navigation-submenu__toggle {
+	padding: 0.65rem 1.25rem !important;
+}
+/* (f) First / last item-content top / bottom = panel's outer breathing room. */
+.er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation__submenu-container > .wp-block-navigation-item:first-child > .wp-block-navigation-item__content {
+	padding-top: 0.25rem !important;
+}
+.er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation__submenu-container > .wp-block-navigation-item:last-child > .wp-block-navigation-item__content {
+	padding-bottom: 0.25rem !important;
+}
+/* (g) Keep submenu LABELS on one line (scoped to the label span so deeper descriptions still wrap). */
+.er-header .wp-block-navigation__submenu-container .wp-block-navigation-item__label {
+	white-space: nowrap;
+}
+/* (h) Chevrons: stroked SVG (fill:none) -> colour the STROKE white (top-level + nested). */
+.er-header .wp-block-navigation__submenu-icon svg,
+.er-header .wp-block-navigation-submenu__toggle svg {
+	stroke: var(--color-8);
+}
+/* (i) Hover bridge: invisible strip fills the gap between top-level link and panel so the mouse doesn't cross dead space. Top-level submenus only. */
+.er-header .wp-block-navigation__container > .wp-block-navigation-item > .wp-block-navigation__submenu-container::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 100%;
+	height: 3rem;
+}
+
+/* ---- Search button: square brand-blue box, white (hardcoded) magnifier, hover -> brand hover colour. ---- */
+
+.er-header-search {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	height: 34px;
+	background: var(--color-1);
+	border-radius: 6px;
+	color: var(--color-8); /* SVG strokes with currentColor */
+	transition: background 0.2s ease;
+}
+.er-header-search:hover,
+.er-header-search:focus-visible {
+	background: var(--color-2);
+	color: var(--color-8);
+}
+.er-header-search svg {
+	width: 24px;
+	height: 24px;
+	fill: #ffffff; /* pinned (no var color): the button is an <a>, a:link's color (0-1-1) beats the class, so currentColor would resolve blue */
+}
+
+/* ---- Desktop / overlay breakpoint ----
+   Nav is overlayMenu:"always" (hamburger at all widths) so we pick our OWN
+   breakpoint. Above 1050px, restore the inline desktop menu and hide the toggle. */
+@media (min-width: 1051px) {
+	/* hide the hamburger button */
+	.er-header .wp-block-navigation__responsive-container-open {
+		display: none !important;
+	}
+	/* show the menu inline (undo the hidden-by-default overlay state) */
+	.er-header .wp-block-navigation__responsive-container {
+		display: block !important;
+		position: static !important;
+		width: auto !important;
+		height: auto !important;
+		background-color: transparent !important;
+	}
+	.er-header .wp-block-navigation__responsive-container .wp-block-navigation__responsive-container-content {
+		display: flex !important;
+		position: static !important;
+		background-color: transparent !important;
+	}
+	/* hide the close button + the injected overlay pair on desktop */
+	.er-header .wp-block-navigation__responsive-container-close,
+	.er-header .er-nav-overlay-extra {
+		display: none !important;
+	}
+}
+
+/* ---- Socials/Support, mobile copy ----
+   These live in TWO places:
+   - Desktop: the .er-header-icon HTML anchors in .er-header-left (above, untouched).
+   - Mobile overlay: duplicate .er-nav-icon menu items (menu 158986) ride into the hamburger.
+   Each copy shows only at its own breakpoint. */
+
+/* Below the overlay breakpoint, hide the LEFT desktop HTML copy so it's not in the bar. */
+@media (max-width: 1050px) {
+	.er-header-left .er-header-icon {
+		display: none;
+	}
+}
+
+/* Inside the OPEN overlay: keep Socials + Support together on ONE line (PHP-injected via er_socials_support).
+   Hidden on desktop; the .er-header-left HTML copy serves desktop. */
+.er-nav-overlay-extra { display: none; }
+.er-header .wp-block-navigation__responsive-container.is-menu-open .er-nav-overlay-extra {
+	display: flex;
+	gap: 1.5rem;
+	padding: 1.5rem 0 0;
+}
+.er-header .wp-block-navigation__responsive-container.is-menu-open .er-nav-overlay-extra a {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.55rem;
+	color: var(--color-1) !important;
+	font-weight: 700;
+	text-decoration: none;
+}
+.er-nav-overlay-extra img { display: block; width: 20px; height: 20px; }
+
+/* ---- Mobile overlay menu (hamburger) ----
+   .er-header's backdrop-filter makes it the containing block for position:fixed, so the overlay opened as a sliver; release it back to the full viewport. */
+.er-header .wp-block-navigation__responsive-container.is-menu-open {
+	height: 100vh;
+	height: 100dvh;
+	bottom: auto;
+	overflow-y: auto;
+	background-color: #0e1825 !important;
+}
+/* Some WP builds paint the modal bg on the inner content wrapper too. */
+.er-header .wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content {
+	background-color: #0e1825 !important;
+}
+/* Mobile menu: consistent vertical rhythm, open or closed */
+.er-header .wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content {gap: 0;}
+.er-header .wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content .wp-block-navigation-item__content,
+.er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation-item__content {padding-top: 10px; padding-bottom: 10px;}
+
+/* ============================================================
+   9. HERO
+   THEME REVIEW — the hero box + inner read parent/core layout values
+   (--wp--style--global--wide-size, --wp--style--root--padding-right,
+   --wp--preset--spacing--medium) to align with the parent theme's WIDE
+   blocks. Won't break on switch, but these values shift — verify the hero
+   still lines up with body content under the new theme.
+   ------------------------------------------------------------
+   The hero GROWS to fit its content; --hero-gap sets the visible space
+   above and below the box, applied as equal top/bottom padding so the two
+   gaps are equal by construction and fluid. The bar overlaps the hero, so
+   the top padding also includes the bar height as clearance. The box can
+   never overflow because the hero always sizes to contain box + gaps.
+   These override Ollie Companion PHP wp_head critical values.
+   ============================================================ */
+
+/* ---- Hero text over the dimmed image (black box) ---- */
+.er-hero-section.has-background-dim .page-title,
+.er-hero-section.has-background-dim .page-description { color: var(--color-8); }
+.er-hero-section .page-title {font-size: clamp(1.6rem, 4vw, 2rem); line-height: 1.1;} /* fluid, scales down on small screens */
+
+/* NOTE: ".has-background-dim" is WordPress's cover-block class, reused here only
+   as a "hero has an image" flag — NOT an overlay over the image. The sole dim in
+   the hero is the rgba(0,0,0,0.65) box on .er-hero-inner (below), which sits
+   behind the title/breadcrumbs text. Set by the PHP er_hero shortcode + JS injector. */
+
+/* ---- Hero box (image heroes): grows to fit its content.
+   The nav bar overlaps the top of the hero, so the box needs top padding to clear it:
+   --hero-bar (the bar's height) + --hero-gap (breathing space). The bottom only needs
+   --hero-gap. The bar is NOT a fixed height: it's ~90px up to 1050px wide and 120px
+   from 1051px up. So --hero-bar defaults to 90px and is bumped to 120px only at
+   1051px and above. If these don't match the real bar, the top gap grows too tall
+   wherever the bar is shorter than the clearance. ---- */
+.er-hero-section.has-background-dim {
+	/* --hero-x = parent theme's content gutter (root padding = Medium, clamp(1.5rem,4vw,2rem)). */
+	--hero-x: var(--wp--style--root--padding-right, var(--wp--preset--spacing--medium));
+	--hero-gap: clamp(20px, 4vw, 48px);             /* breathing space above and below the box */
+	--hero-bar: 90px;                               /* nav-bar height up to 1050px; grows to 120px from 1051px (see below) */
+	align-items: flex-start;
+	min-height: clamp(180px, 25vw, 240px);          /* minimum height if content is very short; padding normally sets the height */
+	padding-top: calc(var(--hero-bar) + var(--hero-gap));
+	padding-bottom: calc(1.1 * var(--hero-gap));    /* larger bottom gap */
+	box-sizing: border-box;
+}
+
+/* ---- Hero inner: cap to wide-size and centre (matches a parent-theme WIDE block). ---- */
+.er-hero-inner {
+	max-width: var(--wp--style--global--wide-size);
+	margin-inline: auto;
+	padding-inline: var(--wp--preset--spacing--medium);
+}
+.er-hero-section.has-background-dim .er-hero-inner {
+	/* Cap at wide-size, inset by the gutter only when narrower; centred so the edge lines up with body content. */
+	box-sizing: border-box;
+	width: 100%;
+	max-width: min(
+		var(--wp--style--global--wide-size),
+		calc(100% - 2 * var(--hero-x))
+	);
+	margin-inline: auto;
+	padding: clamp(1rem, 2.5vw, 1.4rem) clamp(1.1rem, 3vw, 1.5rem);
+	background: rgba(0, 0, 0, 0.65);
+	border-radius: 8px;
+}
+
+/* In a mid-width band the box grows wide enough that its right corner overlaps the hero
+   image's rounded right corner and spills past it. Pin the left edge where it already sits
+   and pull the right edge in just enough to stay inside the rounding. The inset is
+   viewport-relative because the image's radius is — a fixed length wouldn't track it.
+   Narrower and wider screens keep the box clear of the corner, so they're left alone. */
+@media (min-width: 700px) and (max-width: 1440px) {
+	.er-hero-section.has-background-dim .er-hero-inner {
+		margin-inline: 0;
+		margin-left: var(--hero-x);
+		max-width: calc(100% - var(--hero-x) - 5vw);
+	}
+}
+
+/* Keep internal top/bottom padding even — drop first/last child margins (flat markup + er-entry-header wrap). */
+.er-hero-section.has-background-dim .er-hero-inner > :first-child,
+.er-hero-section.has-background-dim .er-entry-header > :first-child {margin-top: 0;}
+.er-hero-section.has-background-dim .er-hero-inner > :last-child,
+.er-hero-section.has-background-dim .er-entry-header > :last-child {margin-bottom: 0;}
+
+/* Desktop (≥1051px): the nav bar grows to 120px, so the hero needs more top clearance. */
+@media (min-width: 1051px) {
+	.er-hero-section.has-background-dim {--hero-bar: 120px;}
+}
+
+/* Mobile: drop the description so the box stays compact (bar clearance is the 90px default). */
+@media (max-width: 767px) {
+	.er-hidden-sm {display: none;}
+}
+
+/* ============================================================
+   10. STICKY SIDEBAR  (single posts, desktop)
+   The 25% sidebar column scrolls with the post, then parks below the fixed
+   header so it stays beside the article on long posts. align-self:start is
+   REQUIRED — without it the flex column stretches to full height and sticky
+   never engages. Scoped to >1050px (the nav overlay breakpoint) so it only
+   applies when the sidebar sits beside the post, not stacked on mobile.
+   ============================================================ */
+
+@media (min-width: 1051px) {
+	.single .wp-block-columns.alignwide > .wp-block-column:last-child {
+		position: sticky;
+		top: 135px;
+		align-self: start;
+	}
+}
