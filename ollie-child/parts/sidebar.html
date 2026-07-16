@@ -1,0 +1,61 @@
+<!-- wp:html -->
+<div class="sidebar-content">
+
+  <!-- LOGO -->
+  <figure class="wp-block-image octagon-text-outside">
+    <a href="/"><img class="priority-high" src="/wp-content/uploads/2024/08/Octagon-Text-Outside.png" alt="ericroth.org" title="ericroth.org"/></a>
+  </figure>
+
+  <!-- STATISTICS -->
+  <h2 class="widget-title">Statistics</h2>
+  <div class="er-card">
+    [post_stats]
+  </div>
+
+  <!-- ABOUT ME -->
+  <h2 class="widget-title"><a href="/about-me/">About Me</a></h2>
+  <div class="er-card">
+    <ul class="er-author-links">
+      <li><a href="/personal/"><img src="/wp-content/uploads/2024/11/user-solid-green.svg" alt="" width="24" height="24" aria-hidden="true"/>Personal</a></li>
+      <li><a href="/professional/"><img src="/wp-content/uploads/2024/11/user-tie-solid-orange.svg" alt="" width="24" height="24" aria-hidden="true"/>Professional</a></li>
+    </ul>
+  </div>
+
+  <!-- MY BLOG -->
+  <h2 class="widget-title">My Blog</h2>
+  <div class="er-card">
+    <div class="er-select-count">
+      [display-posts post_type="post" posts_per_page="-1" order="ASC" orderby="title" wrapper="select"]
+      <p class="er-count">( <strong>[total_post]</strong> )</p>
+    </div>
+    <div class="er-card-tail">
+      <h6 class="wp-block-heading">🡒 <a href="/personal/my-blog/">Discover All</a></h6>
+    </div>
+  </div>
+
+  <!-- LATEST -->
+  <h2 class="widget-title">Latest</h2>
+  [display-posts post_type="my-interests, post" image_size="large" posts_per_page="3" orderby="date" exclude_current="true" exclude="14581, 179" wrapper="div" wrapper_class="display-posts-listing" wrapper_id="latest"]
+
+  <!-- MY INTERESTS -->
+  <h2 class="widget-title">My Interests</h2>
+  <div class="er-card">
+    <div class="er-select-count">
+      [display-posts post_type="my-interests" posts_per_page="-1" order="ASC" orderby="title" wrapper="select"]
+      <p class="er-count">( <strong>[total_my_interests]</strong> )</p>
+    </div>
+    <div class="er-card-tail">
+      <h6 class="wp-block-heading">🡒 <a href="/personal/my-interests/">Discover All</a></h6>
+    </div>
+  </div>
+
+  <!-- EXPLORE -->
+  <h2 class="widget-title">Explore</h2>
+  [display-posts post_type="page" id="51969" image_size="large" wrapper="div" wrapper_class="display-posts-listing"]
+  <div class="er-explore-embed">
+    [reusable id="158725"]
+  </div>
+  [display-posts post_type="page" id="152324" image_size="large" wrapper="div" wrapper_class="display-posts-listing"]
+
+</div>
+<!-- /wp:html -->
