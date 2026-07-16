@@ -1,0 +1,99 @@
+<!-- wp:html -->
+
+<!-- BREADCRUMBS (shared source: same [er_breadcrumbs] as the hero) -->
+[er_breadcrumbs]
+
+<footer class="flex-container" style="padding-top: 15px;">
+  <!-- FOOTER LEFT -->
+  <div class="flex-item-footer-left">
+    <div class="qr-and-links-wrapper">
+      <img src="/wp-content/uploads/2024/03/QR-Code.png" alt="QR Code linking to ericroth.org" title="ericroth.org | Scan Me" width="90" height="90" loading="lazy"/>
+      <div class="qr-links-column">
+        <a href="/services/" class="ninja-services-link">
+          <img src="/wp-content/uploads/2025/12/ninja-solid-white.svg" alt="" width="20" height="20" loading="lazy"/>
+          <span>Ninja Services</span>
+        </a>
+        <!-- START Toggle Switch -->
+        <div class="flex-container" id="tts-toggle-btn" title="Mute | Unmute">
+          <img src="/wp-content/uploads/2025/04/volume-xmark-solid-white.svg" alt="" width="20" height="18" aria-hidden="true" loading="lazy"/>
+          <input type="checkbox" id="tts-toggle-switch" aria-label="Enable text-to-speech" />
+          <span class="toggle-visual" aria-hidden="true"></span>
+          <img src="/wp-content/uploads/2025/04/volume-high-solid-white.svg" alt="" width="20" height="16" aria-hidden="true" loading="lazy"/>
+        </div>
+        <div id="tts-status" aria-live="polite" class="tts-toggle-btn-accessibility-label"></div>
+        <!-- END Toggle Switch -->
+      </div>
+    </div>
+  </div>
+  
+  <!-- FOOTER MIDDLE -->
+  <nav class="flex-item-footer-middle" aria-label="Footer navigation">
+    <!-- START Dropdown Menu -->
+    <div class="dropdown" tabindex="0">
+      <a href="/about-me/">About Me</a><span class="dropdown-separator" aria-hidden="true">|</span>
+        <div class="dropdown-content">
+          <a href="/about-me/contact/">Contact</a><br />
+          <a href="/about-me/endorsemonials/">Endorsemonials</a><br />
+          <a href="/about-me/faqs/">FAQs</a><br />
+          <a href="/about-me/my-quotes/">My Quotes</a>
+        </div>
+    </div>
+    <div class="dropdown" tabindex="0">
+      <a href="/personal/">Personal</a><span class="dropdown-separator" aria-hidden="true">|</span>
+        <div class="dropdown-content">
+          <a href="/personal/my-blog/">My Blog</a><br />
+          <a href="/personal/my-interests/">My Interests</a><br />
+          <a href="/personal/my-media/">My Media</a><br />
+          <a href="/personal/my-world/">My World</a>
+        </div>
+    </div>
+    <div class="dropdown" tabindex="0">
+      <a href="/professional/">Professional</a><span class="dropdown-separator" aria-hidden="true">|</span>
+        <div class="dropdown-content">
+          <a href="/professional/my-availability/">My Availability</a><br />
+          <a href="/professional/my-background/">My Background</a><br />
+          <a href="/professional/my-compass/">My Compass</a><br />
+          <a href="/professional/my-publications/">My Publications</a>
+        </div>
+    </div>
+    <div class="dropdown" tabindex="0">
+      <a href="/this-site/">This Site</a>
+        <div class="dropdown-content">
+          <a href="/this-site/site-accessibility/">Site Accessibility</a><br />
+          <a href="/this-site/site-composition/">Site Composition</a><br />
+          <a href="/this-site/site-overview/">Site Overview</a><br />
+          <a href="/this-site/site-policies/">Site Policies</a><br />
+          <a href="/this-site/site-reach/">Site Reach</a><br />
+          <a href="/this-site/site-updates/">Site Updates</a>
+        </div>
+    </div>
+    <!-- END Dropdown Menu -->
+    <div class="logo-copyright-wrapper">
+      <a href="/" title="Home | Start Over" aria-label="Return to Home"><img src="/wp-content/uploads/2024/03/Site-Logo.png" class="site-logo" alt="Eric Roth logo" width="50" height="50" loading="lazy"/></a>
+      <p class="copyright-text">Another thing from <a href="/about-me/">Eric Roth</a><br />Copyright © 2017-<span id="current-year"></span></p>
+    </div>
+  </nav>
+  
+  <!-- FOOTER RIGHT -->
+  <div class="flex-item-footer-right">
+    <!-- wp:shortcode -->
+	[er_socials_support]
+	<!-- /wp:shortcode -->
+    <div class="site-updates-wrapper">
+      <!-- START Toggle Switch -->
+      <div class="flex-container" id="dark-mode-toggle-btn" title="Dark | Light">
+        <img src="/wp-content/uploads/2024/03/sun-solid-white.svg" alt="" width="18" height="18" aria-hidden="true" loading="lazy"/>
+        <input type="checkbox" id="change-mode-switch" aria-label="Enable dark mode" />
+        <span class="toggle-visual" aria-hidden="true"></span>
+        <img src="/wp-content/uploads/2024/03/moon-solid-white.svg" alt="" width="14" height="19" aria-hidden="true" loading="lazy"/>
+      </div>
+      <div id="dark-mode-status" aria-live="polite" class="dark-mode-toggle-btn-accessibility-label"></div>
+      <!-- END Toggle Switch -->
+      <p class="site-updates-text"><a href="/this-site/site-updates/">Site Updates</a> to stay tuned<br/>for the latest <span class="content-text"></span></p>
+    </div>
+  </div>
+  <!-- FOOTER SECOND ROW -->
+  <div style="padding-top: 25px;">
+    [merged_tag_cloud taxonomies="category, topics, things" class="tag-cloud-footer" separator="|"]
+  </div>
+</footer>
