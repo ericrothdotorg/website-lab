@@ -9,4 +9,4 @@ Contains all site-specific assets, parts, templates and custom functionality.
 
 A lightweight, zero-dependency vanilla JavaScript slider / carousel. No jQuery, no bloat - just clean, accessible HTML output with smallest footprint possible.
 
-In the live site environment, all required files reside in [my-assets](https://github.com/ericrothdotorg/website-lab/tree/main/ollie-child/my-assets). However, for better distribution, these files are available in a standalone GitHub repo. This allows you to download or integrate it as an isolated plugin if preferred.
+In the live site environment, all required files reside in **my-assets**. However, for better distribution, these files are available in a **standalone GitHub repo**. This allows you to download or integrate it as an isolated plugin if preferred.
