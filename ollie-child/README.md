@@ -1,7 +1,7 @@
 # Ollie Child Files
 **Contributors:** [ericrothdotorg](https://github.com/ericrothdotorg)
 
-Contains all site-specific assets, templates and custom functionality.
+Contains all site-specific assets, parts, templates and custom functionality.
 
 ---
 
