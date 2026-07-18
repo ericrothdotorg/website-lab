@@ -3,6 +3,8 @@
 
 My website code. Does stuff. I (mostly) know what it does. Ha!
 
+**Tags:** wordpress, ollie-theme, website-lab, eric-slider
+
 ---
 
 **Eric Slider:** [eric-slider](https://github.com/ericrothdotorg/eric-slider)
