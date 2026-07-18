@@ -3,6 +3,8 @@
 
 Contains all site-specific assets, parts, templates and custom functionality.
 
+**Tags:** wordpress, ollie-theme, website-lab, eric-slider
+
 ---
 
 **Eric Slider:** [eric-slider](https://github.com/ericrothdotorg/eric-slider)
