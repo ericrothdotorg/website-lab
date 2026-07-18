@@ -3,6 +3,8 @@
 
 Contains all site-specific code snippets and reusable functionality.
 
+**Tags:** wordpress, ollie-theme, website-lab, eric-slider
+
 ---
 
 A collection of modular PHP, JavaScript, CSS and WordPress code snippets with direct file-based execution. Self-contained, version-controlled functionality organized by purpose: **backend** and **frontend** (conditional and overall).
