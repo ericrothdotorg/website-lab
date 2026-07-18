@@ -3,7 +3,7 @@
 
 Contains all site-specific code snippets and reusable functionality.
 
-A collection of modular PHP, JavaScript, CSS and WordPress code snippets with direct file-based execution. No monolithic code repository, no theme-bound customizations—just self-contained, version-controlled functionality organized by purpose
+A collection of modular PHP, JavaScript, CSS and WordPress code snippets with direct file-based execution. Self-contained, version-controlled functionality organized by purpose: **backend**, **conditional** and **overall**.
 
 ---
 
