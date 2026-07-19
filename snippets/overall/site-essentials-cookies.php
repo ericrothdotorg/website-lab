@@ -819,6 +819,7 @@ add_action('wp_footer', function () {
 					'facebook.com',
 					'github.com',
 					'linkedin.com',
+					'youtube.com',
 					'patreon.com',
 					'bsky.app',
 					'bsky.social',
