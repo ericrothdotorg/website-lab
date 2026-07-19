@@ -11,7 +11,6 @@ $counter_pages = [
     '179'    => 'ericroth.org',
 	'67784'  => 'This Site',
     '51969'  => 'Site Overview',
-    '104510' => 'Site Composition',
     '26874'  => 'Site Updates',
     '87873'  => 'About Me',
     '150455' => 'Über Mich'
