@@ -9,6 +9,7 @@ $counter_pages = [
     '100674' => 'My Competencies',
     '150120' => 'Meine Kompetenzen',
     '179'    => 'ericroth.org',
+	'67784'  => 'This Site',
     '51969'  => 'Site Overview',
     '104510' => 'Site Composition',
     '26874'  => 'Site Updates',
