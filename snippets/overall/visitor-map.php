@@ -494,6 +494,7 @@ add_action('wp_enqueue_scripts', 'lum_enqueue_map_assets');
 // ---------------------------------------------------------------------------
 // SHARED DATA BUS  (printed once per page)
 // ---------------------------------------------------------------------------
+
 // One poll loop shared by the map and both tables (all read lum_get_map_data).
 //   window.LUM.subscribe(fn) -> fn(data) on every refresh, replayed on join
 //   window.LUM.start(url) -> starts the single 60s loop (idempotent)
@@ -555,6 +556,7 @@ function lum_print_data_bus() {
 // ---------------------------------------------------------------------------
 // SHORTCODE  [live_user_map]  →  Leaflet map + stats/legend bar
 // ---------------------------------------------------------------------------
+
 // Send no-cache headers ONLY on a real front-end render. During a REST/AJAX/
 // admin render (e.g. when the block editor saves and re-renders content),
 // emitting headers here corrupts the JSON response and causes the editor's
@@ -787,13 +789,13 @@ function lum_map_shortcode($atts) {
 }
 add_shortcode('live_user_map', 'lum_map_shortcode');
 
-// ============================================================================
+// ---------------------------------------------------------------------------
 // VISITED-PAGES TABLES — standalone shortcodes
 //   [currently_visited_pages]  live table (data.live)
 //   [past_visited_pages]       past table (data.past)
 // No headings emitted (add your own in the editor). Both read the existing
 // lum_get_map_data endpoint via the shared bus — no new SQL, map untouched.
-// ============================================================================
+// ---------------------------------------------------------------------------
 
 // Shared CSS + JS helpers for both tables. Printed once per page.
 function lum_print_tables_assets() {
@@ -919,6 +921,7 @@ function lum_print_tables_assets() {
 // ---------------------------------------------------------------------------
 // SHORTCODE  [currently_visited_pages]  →  live table, no heading
 // ---------------------------------------------------------------------------
+
 function lum_currently_visited_pages_shortcode() {
     lum_maybe_nocache();
     ob_start();
@@ -935,6 +938,7 @@ add_shortcode('currently_visited_pages', 'lum_currently_visited_pages_shortcode'
 // ---------------------------------------------------------------------------
 // SHORTCODE  [past_visited_pages]  →  past table, no heading
 // ---------------------------------------------------------------------------
+
 function lum_past_visited_pages_shortcode() {
     lum_maybe_nocache();
     ob_start();
