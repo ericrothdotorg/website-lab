@@ -95,6 +95,11 @@
 			"defaultSpacingSizes": true,
 			"spacingSizes": [
 				{
+					"name": "0",
+					"size": "0.25rem",
+					"slug": "10"
+				},
+				{
 					"name": "1",
 					"size": "0.44rem",
 					"slug": "20"
