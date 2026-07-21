@@ -84,7 +84,17 @@ body.dark-mode .two-columns-text, .three-columns-text, .four-columns-text {
 body.dark-mode .emphasized-design-red {color: #cc0044;} /* No var Color */
 body.dark-mode .font-design-red {color: #cc0044;} /* No var Color */
 
-/* ---- Higlighted paragraphs ---- */
+/* ---- Higlighted columns & paragraphs ---- */
+.column-highlight {
+	background: var(--color-8);
+    border: 1px solid var(--color-5);
+	border-radius: 25px;
+	padding: var(--wp--preset--spacing--10);
+}
+body.dark-mode .column-highlight {
+    background: var(--color-10);
+    border: 1px solid var(--color-4);
+}
 .paragraph-highlight {
 	background: var(--color-8);
     border: 1px solid var(--color-5);
