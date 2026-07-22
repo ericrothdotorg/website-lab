@@ -238,7 +238,7 @@ body.dark-mode .image-bedps:hover {background: var(--color-6);}
 .is-provider-vimeo.wp-embed-aspect-4-3 .wp-block-embed__wrapper::before {padding-top: 56.25%;}
 .wp-block-video-osho video {vertical-align: middle; width: 75%;}
 
-/* ---- B6. Buttons ---- */
+/* ---- B6. Buttons (no wp-element-button in parent's theme style.css so here they win by default, not by load order) ---- */
 .wp-element-button, .wp-block-button__link, .button a, .smaller-button a {
 	color: var(--color-8) !important;
 	background: var(--color-1);
