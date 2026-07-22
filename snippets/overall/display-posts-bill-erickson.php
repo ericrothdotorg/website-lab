@@ -352,7 +352,7 @@ add_action( 'wp_head', function () {
 		.display-posts-listing .listing-item {clear: both; overflow: hidden; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 25px;}
 .display-posts-listing:not(.grid) .listing-item {display: flex; flex-direction: column;}
 		.display-posts-listing .listing-item:hover {background: var(--color-7);}
-		.display-posts-listing img {aspect-ratio: 16/9; transition: transform 0.3s ease; will-change: transform;}
+		.display-posts-listing img {aspect-ratio: 16/9; transition: transform 0.3s ease;}
 .display-posts-listing:not(.grid) img {display: block; width: 100%; object-fit: cover;}
 		.display-posts-listing img:hover {transform: scale(1.05);}
 		.display-posts-listing .title {display: flex; align-items: center; justify-content: center; margin: 0; padding: 16px 1rem; text-align: center; font-size: var(--er-fs-md); width: 100%; box-sizing: border-box;}
