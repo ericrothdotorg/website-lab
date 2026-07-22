@@ -19,18 +19,16 @@ Tags:
    TABLE OF CONTENTS  —  child theme / style.css  (THEME)
    ------------------------------------------------------------
    This file holds ONLY the CSS that must ride the child theme's
-   enqueue: tokens everything references, and rules that override
+   enqueue: Tokens everything references and rules that override
    the parent theme or theme.json (so they need guaranteed
-   load-after-parent ordering). Self-contained component/utility CSS lives in
-   the "Ollie Companion CSS" snippet (site-wide CSS). If you're hunting for
-   tables, footer, toggle, breadcrumbs, image effects, buttons,
-   forms, grid/cards, tabs etc. — they're in that snippet, not here.
-
-   THEME-COUPLING MARKERS (search these before/after a theme switch):
+   load-after-parent ordering). Self-contained component / utility CSS lives in
+   the "Ollie Companion CSS" snippet (site-wide CSS).
+   ------------------------------------------------------------
+   THEME-COUPLING MARKERS (search these before / after a theme switch):
      THEME RELATED = hard coupling; breaks/orphans on switch — must fix.
      THEME REVIEW  = soft coupling; reads a theme-defined value, won't
                      break but the value shifts — verify.
-
+   ------------------------------------------------------------
     1. TOKENS           palette, a11y vars, list dials, shared row width
     2. DARK CANVAS      body-level dark-mode base
     3. BASE             links, external-link glyph, html / body, code, figcaptions, generic dark misc
@@ -43,9 +41,9 @@ Tags:
     10. HEADER          bar inner row, nav (desktop + mobile overlay), submenus, search
     11. HERO            fluid hero box + inner (overrides #7's wp_head critical values)
     12. SIDEBAR         sticky 25% sidebar column
-
+   ------------------------------------------------------------
    CONVENTIONS
-     - Light body/heading base colours live in theme.json, not here.
+     - Light body / heading base colours live in theme.json, not here.
      - Dark-mode rules sit DIRECTLY BESIDE their light rule on purpose.
      - Asset URLs (e.g. the external-link SVG) are root-relative.
      - "No var Color" marks an intentional one-off hex outside the palette.
