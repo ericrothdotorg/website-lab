@@ -31,16 +31,18 @@ Tags:
      THEME REVIEW  = soft coupling; reads a theme-defined value, won't
                      break but the value shifts — verify.
 
-    1. TOKENS              palette, a11y vars, list dials, shared row width
-    2. DARK CANVAS         body-level dark-mode base
-    3. BASE                links, external-link glyph, html/body, code, generic dark misc
-    4. LAYOUT              clearfix, columns, flexbox, page-links, show/hide helpers
-    5. EDITORIAL LISTS     single source of truth (beats parent's list reset + phantom rule)
-    6. QUOTE               green Georgia box (lifted from My Quotes #23; was quote-page-only)
-    7. PULLQUOTE           green Georgia (overrides theme.json's forced border/padding)
-    8. HEADER              bar inner row, nav (desktop + mobile overlay), submenus, search
-    9. HERO                fluid hero box + inner (overrides #7's wp_head critical values)
-    10. SIDEBAR            sticky 25% sidebar column
+    1. TOKENS           palette, a11y vars, list dials, shared row width
+    2. DARK CANVAS      body-level dark-mode base
+    3. BASE             links, external-link glyph, html / body, code, figcaptions, generic dark misc
+    4. LAYOUT           clearfix, columns, flexbox, page-links, show / hide helpers
+    5. EDITORIAL LISTS  single source of truth (beats parent's list reset + phantom rule)
+    6. TABLES           tables — full system (govern once; opt out per-table with a class)
+    7. FORMS            overrides parent theme form system
+    8. QUOTE            green Georgia box (lifted from My Quotes #23; was quote-page-only)
+    9. PULLQUOTE        green Georgia (overrides theme.json's forced border/padding)
+    10. HEADER          bar inner row, nav (desktop + mobile overlay), submenus, search
+    11. HERO            fluid hero box + inner (overrides #7's wp_head critical values)
+    12. SIDEBAR         sticky 25% sidebar column
 
    CONVENTIONS
      - Light body/heading base colours live in theme.json, not here.
@@ -149,10 +151,22 @@ a.external-link::after {
 	display: inline-block;
 }
 
-/* ---- Base elements (light body/headings are theme.json's job) ---- */
+/* ---- Base elements (light body / headings are theme.json's job) ---- */
 html {text-size-adjust: 100%; scroll-behavior: smooth;}
 p {text-align: justify; hyphens: auto;}
 code {background: none !important; border: none; padding: 0;}
+
+/* ---- Overrides the parent theme's tiny figcaption size (parent style.css line 51)
+        Unified caption styling: Standard images + video embeds (YouTube / Vimeo) ---- */
+.wp-block-image figcaption.wp-element-caption,
+figure.wp-block-embed figcaption.wp-element-caption {
+	font-size: var(--er-fs-xs);
+	color: var(--color-3);
+}
+body.dark-mode .wp-block-image figcaption.wp-element-caption,
+body.dark-mode figure.wp-block-embed figcaption.wp-element-caption {
+	color: var(--color-5);
+}
 
 /* ---- Generic block dark misc ---- */
 body.dark-mode .wp-block-group.has-border-color {border-color: var(--color-9);}
@@ -253,7 +267,107 @@ body.dark-mode .wp-block-group.has-border-color {border-color: var(--color-9);}
 .wp-block-page-list.site-overview li:has(> a[href="https://ericroth.org/"]) {display: none;}
 
 /* ============================================================
-   6. QUOTE  (green Georgia box)
+   6. TABLES
+   THEME RELATED — replaces the parent theme's full table system
+   (parent style.css: .wp-block-table table, td, th, thead, tfoot).
+   !important on border + width beats parent's inline editor styles.
+   ------------------------------------------------------------
+   Base look, uniform across every core/table:
+     - Full grid borders (outer frame + every cell line), light + dark.
+     - Full-width table, columns sized to content (table-layout: auto).
+     - Header: bold, left-aligned, with an emphasis underline (both modes).
+     - Cells: left-aligned, padding 0.25em 1em, vertical-align middle.
+     - No zebra (the grid delineates rows).
+     - Mobile-safe: the figure scrolls horizontally if a wide table overflows.
+   !important is confined to BORDER + WIDTH / LAYOUT props (needed to beat the
+   editor's inline styles). Each governed axis has an opt-out utility class so a
+   table can deliberately differ from the base:
+     .is-custom-borders  -> keep the table's own border settings
+     .is-custom-width     -> keep the table's own width / column sizing
+     .align-right / .align-center  -> per-table cell text alignment
+   ============================================================ */
+
+/* Width + column behaviour: fill the content column, size columns to content. */
+.wp-block-table:not(.is-custom-width) table {width: 100% !important; table-layout: auto !important;}
+
+/* Mobile safety: wide tables scroll inside the figure instead of breaking layout. */
+.wp-block-table {overflow-x: auto;}
+
+/* Grid borders (light). */
+.wp-block-table:not(.is-custom-borders) table {border-collapse: collapse !important; border: 1px solid var(--color-5) !important;}
+.wp-block-table:not(.is-custom-borders) :is(th, td) {border: 1px solid var(--color-5) !important;}
+
+/* Backgrounds + header emphasis (light). */
+.wp-block-table thead {background: var(--color-5);}
+.wp-block-table tbody tr {background: var(--color-8);}
+.wp-block-table tr:hover {background: var(--color-7);}
+.wp-block-table thead th {border-bottom: 3px solid var(--color-5);}
+
+/* Header + cell typography / alignment. */
+.wp-block-table th {font-weight: var(--er-fw-bold); text-align: left;}
+.wp-block-table td {text-align: left;}
+.wp-block-table td,
+.wp-block-table th {padding-block: var(--er-table-pad-base); padding-inline: 1em; font-size: var(--er-fs-body); line-height: var(--er-lh-base); vertical-align: middle;}
+
+/* Per-table opt-out (alignment for cells only; header stays left for scannability). */
+.wp-block-table.align-right td {text-align: right;}
+.wp-block-table.align-center td {text-align: center;}
+/* Per-table opt-in: compact rows (add class "table-compact" in editor). */
+.wp-block-table.table-compact td,
+.wp-block-table.table-compact th {padding-block: var(--er-table-pad-compact);}
+/* Per-table opt-in: roomier rows (add class "table-roomy" in editor). */
+.wp-block-table.table-roomy td,
+.wp-block-table.table-roomy th {padding-block: var(--er-table-pad-roomy);}
+
+/* Inner-block margin reset (unchanged). */
+.wp-block-table td > *:first-child,
+.wp-block-table th > *:first-child {margin-top: 0;}
+.wp-block-table td > *:last-child,
+.wp-block-table th > *:last-child {margin-bottom: 0;}
+.wp-block-table td label {display: inline;}
+.wp-block-table td input[type="checkbox"] {margin-right: 0.5em;}
+
+/* Dark mode: same grid + header emphasis; backgrounds / colours as before. */
+body.dark-mode .wp-block-table:not(.is-custom-borders) table {border: 1px solid var(--color-4) !important;}
+body.dark-mode .wp-block-table:not(.is-custom-borders) :is(th, td) {border: 1px solid var(--color-4) !important;}
+body.dark-mode .wp-block-table thead {background: #16202e;} /* No var Color */
+body.dark-mode .wp-block-table thead th {border-bottom: 3px solid var(--color-4);}
+body.dark-mode .wp-block-table th {color: var(--color-7); background: #16202e;} /* No var Color */
+body.dark-mode .wp-block-table tbody tr {background: var(--color-10);}
+body.dark-mode .wp-block-table tr:hover {background: var(--color-6);}
+
+/* ============================================================
+   7. FORMS
+   THEME RELATED — overrides parent theme's full form system
+   (parent style.css: border, border-radius, padding, font-size,
+   background-color, box-shadow, focus-visible on input/select/textarea).
+   Dark mode beside each rule.
+   ============================================================ */
+
+.wp-block-post-content :is(input[type=email], input[type=search], input[type=text], textarea) {
+	width: 100%; box-sizing: border-box;
+}
+:is(select, input[type=email], input[type=search], input[type=text], textarea) {
+	background: var(--color-8); border: 1px solid var(--color-5); transition: border 0.2s ease;
+}
+:is(select, input[type=email], input[type=search], input[type=text], textarea):focus {
+	outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);
+}
+:is(select, input[type=email], input[type=search], input[type=text], textarea):focus:not(:focus-visible) {
+	outline: none;
+}
+body.dark-mode :is(select, input[type=email], input[type=search], input[type=text], textarea) {
+	background: var(--color-10); color: var(--color-5); border: 1px solid var(--color-3);
+}
+body.dark-mode option {
+	background: var(--color-10); color: var(--color-5);
+}
+.wp-block-post-content :is(input[type=button], input[type=reset], input[type=submit]) {
+	all: revert;
+}
+
+/* ============================================================
+   8. QUOTE  (green Georgia box)
    THEME RELATED — overrides the parent theme's core/quote styling and must
    load after it (rides the child enqueue); the last-child rule below also
    reads core/parent flow layout (:root :where(.is-layout-flow)). On switch:
@@ -277,7 +391,7 @@ body.dark-mode .wp-block-group.has-border-color {border-color: var(--color-9);}
 body.dark-mode .wp-block-quote {border-inline-start: 3px solid var(--color-3) !important; border-right: 3px solid var(--color-3) !important;}
 
 /* ============================================================
-   7. PULLQUOTE  (green Georgia)
+   9. PULLQUOTE  (green Georgia)
    THEME RELATED — styles core/pullquote. The full card (background,
    border, radius, padding) lives on figure.wp-block-pullquote itself,
    so every pullquote — generated, manual, bulleted, light + dark —
@@ -296,7 +410,7 @@ body.dark-mode figure.wp-block-pullquote {background: var(--color-10); border: 1
 .wp-block-pullquote blockquote cite {display: block; text-align: right; margin-top: 0.75em; margin-right: 25px; font-family: var(--er-ff-cite); font-size: var(--er-fs-cite); font-style: normal;}
 
 /* ============================================================
-   8. HEADER  (non-critical layout)
+   10. HEADER  (non-critical layout)
    THEME RELATED — the entire nav system below targets the parent theme's
    navigation block markup (.wp-block-navigation__*, .is-menu-open, submenu
    containers) and out-specifies its nav CSS. On a theme switch the nav markup
@@ -567,7 +681,7 @@ body.dark-mode figure.wp-block-pullquote {background: var(--color-10); border: 1
 .er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation-item__content {padding-top: 10px; padding-bottom: 10px;}
 
 /* ============================================================
-   9. HERO
+   11. HERO
    THEME REVIEW — the hero box + inner read parent/core layout values
    (--wp--style--global--wide-size, --wp--style--root--padding-right,
    --wp--preset--spacing--medium) to align with the parent theme's WIDE
@@ -661,7 +775,7 @@ body.dark-mode figure.wp-block-pullquote {background: var(--color-10); border: 1
 }
 
 /* ============================================================
-   10. STICKY SIDEBAR  (single posts, desktop)
+   12. STICKY SIDEBAR  (single posts, desktop)
    The 25% sidebar column scrolls with the post, then parks below the fixed
    header so it stays beside the article on long posts. align-self:start is
    REQUIRED — without it the flex column stretches to full height and sticky
