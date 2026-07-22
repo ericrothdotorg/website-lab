@@ -262,6 +262,8 @@ body.dark-mode .tag-cloud a:hover,
 body.dark-mode .er-archive-filter .er-filter-tab:hover {background: none;}
 
 /* ---- B4. Image styles & effects ---- */
+.wp-block-image a img {transition: transform 0.3s ease;}
+.wp-block-image a:hover img {transform: scale(1.05);}
 .zoom {width: 35%; transform-origin: center center; transition: transform 1.5s ease-in-out;}
 .zoom:hover {transform: scale(2.857);} /* 100% / 35% = 2.857 */
 .zoom-x2 {transition: transform 1.5s ease-in-out;}
