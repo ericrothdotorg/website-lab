@@ -30,12 +30,12 @@
 
    CONTENTS
      A. TYPOGRAPHY & TEXT HELPERS   line-break/colour, text-columns, design blocks, page-17552 tabs
-     B. COMPONENTS                  tables, details/accordion, tag-cloud pills, image effects,
-                                    bedps cards, embeds/video, buttons, boxes, forms, social-icon rows
+     B. COMPONENTS                  details / accordion, tag-cloud pills, image effects,
+                                    bedps cards, embeds / video, buttons, boxes, social-icon rows
      C. CONTENT COMPONENTS          grid / cards / related slider / post-footer
      D. FOOTER                      navy wrapper, columns, dropdown, animated word
      E. TEMPLATE-PART COMPONENTS    site logo, archive filter tabs, breadcrumbs
-     F. SIDEBAR DESIGN              octagon-text mark, widget titles, cards, stats hero, select+count, author tiles & links, two-column/sidebar-hide
+     F. SIDEBAR DESIGN              octagon-text mark, widget titles, cards, stats hero, select+count, author tiles & links, two-column / sidebar-hide
      G. DARK-MODE TOGGLE BUTTON     the switch UI
      H. MOTION & A11Y               reduced-motion umbrella
    ============================================================ */
@@ -118,72 +118,7 @@ body.dark-mode.page-id-17552 .tab-content {background: var(--color-10); border: 
    B. COMPONENTS
    ============================================================ */
 
-/* ---- B1. Tables — full system (govern once; opt out per-table with a class) ----
-   Base look, uniform across every core/table:
-     - Full grid borders (outer frame + every cell line), light + dark.
-     - Full-width table, columns sized to content (table-layout: auto).
-     - Header: bold, left-aligned, with an emphasis underline (both modes).
-     - Cells: left-aligned, padding 0.25em 1em, vertical-align middle.
-     - No zebra (the grid delineates rows).
-     - Mobile-safe: the figure scrolls horizontally if a wide table overflows.
-   !important is confined to BORDER + WIDTH / LAYOUT props (needed to beat the
-   editor's inline styles). Each governed axis has an opt-out utility class so a
-   table can deliberately differ from the base:
-     .is-custom-borders  -> keep the table's own border settings
-     .is-custom-width     -> keep the table's own width / column sizing
-     .align-right / .align-center  -> per-table cell text alignment
-   ============================================================ */
-
-/* Width + column behaviour: fill the content column, size columns to content. */
-.wp-block-table:not(.is-custom-width) table {width: 100% !important; table-layout: auto !important;}
-
-/* Mobile safety: wide tables scroll inside the figure instead of breaking layout. */
-.wp-block-table {overflow-x: auto;}
-
-/* Grid borders (light). */
-.wp-block-table:not(.is-custom-borders) table {border-collapse: collapse !important; border: 1px solid var(--color-5) !important;}
-.wp-block-table:not(.is-custom-borders) :is(th, td) {border: 1px solid var(--color-5) !important;}
-
-/* Backgrounds + header emphasis (light). */
-.wp-block-table thead {background: var(--color-5);}
-.wp-block-table tbody tr {background: var(--color-8);}
-.wp-block-table tr:hover {background: var(--color-7);}
-.wp-block-table thead th {border-bottom: 3px solid var(--color-5);}
-
-/* Header + cell typography / alignment. */
-.wp-block-table th {font-weight: var(--er-fw-bold); text-align: left;}
-.wp-block-table td {text-align: left;}
-.wp-block-table td,
-.wp-block-table th {padding-block: var(--er-table-pad-base); padding-inline: 1em; font-size: var(--er-fs-body); line-height: var(--er-lh-base); vertical-align: middle;}
-
-/* Per-table opt-out (alignment for cells only; header stays left for scannability). */
-.wp-block-table.align-right td {text-align: right;}
-.wp-block-table.align-center td {text-align: center;}
-/* Per-table opt-in: compact rows (add class "table-compact" in editor). */
-.wp-block-table.table-compact td,
-.wp-block-table.table-compact th {padding-block: var(--er-table-pad-compact);}
-/* Per-table opt-in: roomier rows (add class "table-roomy" in editor). */
-.wp-block-table.table-roomy td,
-.wp-block-table.table-roomy th {padding-block: var(--er-table-pad-roomy);}
-
-/* Inner-block margin reset (unchanged). */
-.wp-block-table td > *:first-child,
-.wp-block-table th > *:first-child {margin-top: 0;}
-.wp-block-table td > *:last-child,
-.wp-block-table th > *:last-child {margin-bottom: 0;}
-.wp-block-table td label {display: inline;}
-.wp-block-table td input[type="checkbox"] {margin-right: 0.5em;}
-
-/* Dark mode: same grid + header emphasis; backgrounds / colours as before. */
-body.dark-mode .wp-block-table:not(.is-custom-borders) table {border: 1px solid var(--color-4) !important;}
-body.dark-mode .wp-block-table:not(.is-custom-borders) :is(th, td) {border: 1px solid var(--color-4) !important;}
-body.dark-mode .wp-block-table thead {background: #16202e;} /* No var Color */
-body.dark-mode .wp-block-table thead th {border-bottom: 3px solid var(--color-4);}
-body.dark-mode .wp-block-table th {color: var(--color-7); background: #16202e;} /* No var Color */
-body.dark-mode .wp-block-table tbody tr {background: var(--color-10);}
-body.dark-mode .wp-block-table tr:hover {background: var(--color-6);}
-
-/* ---- B2. Details & summary ---- */
+/* ---- B1. Details & summary ---- */
 summary {color: var(--color-1); font-weight: var(--er-fw-bold); cursor: pointer;}   /* raw-HTML <details> rely on this */
 summary:hover {color: var(--color-2);}
 summary:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
@@ -203,7 +138,7 @@ summary:focus:not(:focus-visible) {outline: none;}
 .wp-block-details.details-button summary:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
 .wp-block-details.details-button summary:focus:not(:focus-visible) {outline: none;}
 
-/* ---- B2a. Accordion variant ---- */
+/* ---- B1a. Accordion variant ---- */
 .details-accordion {transition: margin-bottom 0.5s ease-in-out; margin-bottom: 0.5rem;}
 .details-accordion + .details-accordion {margin-top: -0.6rem;}
 .details-accordion[open] {padding-bottom: 0.75rem;}
@@ -230,7 +165,7 @@ body.dark-mode .details-accordion summary {background: var(--color-10); border-t
 body.dark-mode .details-accordion summary:hover,
 body.dark-mode .details-accordion summary:focus {background: var(--color-6);}
 
-/* ---- B3. Tag-cloud pills (shared with the archive filter tabs in section E) ---- */
+/* ---- B2. Tag-cloud pills (shared with the archive filter tabs in section E) ---- */
 .tag-cloud a,
 .er-archive-filter .er-filter-tab {
 	background: var(--color-8);
@@ -261,7 +196,7 @@ body.dark-mode .er-archive-filter .er-filter-tab {background: var(--color-10);}
 body.dark-mode .tag-cloud a:hover,
 body.dark-mode .er-archive-filter .er-filter-tab:hover {background: none;}
 
-/* ---- B4. Image styles & effects ---- */
+/* ---- B3. Image styles & effects ---- */
 .wp-block-image a img {transition: transform 0.3s ease;}
 .wp-block-image a:hover img {transform: scale(1.05);}
 .zoom {width: 35%; transform-origin: center center; transition: transform 1.5s ease-in-out;}
@@ -277,25 +212,12 @@ body.dark-mode .er-archive-filter .er-filter-tab:hover {background: none;}
 	75% {border-radius: 20% 80% 70% 30% / 40% 60% 40% 60%;}
 }
 .blob-animation figcaption {font-size: 1.5em;}
-/* THEME RELATED — Overrides the parent theme's tiny figcaption size (parent style.css line 51).
-   Unified caption styling: standard images + video embeds (YouTube / Vimeo).
-   Bedps captions excluded (own rule). font-style omitted on purpose — italic
-   comes from the browser user-agent default and is consistent cross-browser. */
-.wp-block-image figcaption.wp-element-caption,
-figure.wp-block-embed figcaption.wp-element-caption {
-	font-size: var(--er-fs-xs);
-	color: var(--color-3);
-}
-body.dark-mode .wp-block-image figcaption.wp-element-caption,
-body.dark-mode figure.wp-block-embed figcaption.wp-element-caption {
-	color: var(--color-5);
-}
 /* Opt-in single-line caption: add class "caption-nowrap" to the image block. */
 .wp-block-image.caption-nowrap figcaption {display: block; width: max-content; margin-inline: auto; white-space: nowrap;}
 body.dark-mode .image-invert {filter: invert(1);}
 body.dark-mode .wp-image-148107 {content: url("/wp-content/uploads/2025/07/github-mark-white.png");} /* Github logo in Happy Coding! */
 
-/* ---- B5. "Imitate DPS - Bill Erickson" cards (.image-bedps) ---- */
+/* ---- B4. "Imitate DPS - Bill Erickson" cards (.image-bedps) ---- */
 /* Flex-row cards: allow shrink + equal columns (min-width:auto trap). */
 .wp-block-group.is-layout-flex > .image-bedps {min-width: 0; flex: 1;}
 .image-bedps {clear: both; overflow: hidden; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 25px;}
@@ -305,14 +227,14 @@ body.dark-mode .wp-image-148107 {content: url("/wp-content/uploads/2025/07/githu
 	.image-bedps img {width: 100%; height: auto;}
 }
 .image-bedps img:hover {transform: scale(1.05);}
-/* THEME RELATED — bedps captions act as card titles (medium size, bold). Written specifically enough to win over the parent theme and the base rule. */
+/* bedps captions act as card titles (medium size, bold). Written specifically enough to win over the parent theme and the base rule. */
 figure.image-bedps figcaption.wp-element-caption {margin-top: 16px; margin-bottom: 16px; font-size: var(--er-fs-md); font-weight: var(--er-fw-bold);}
 .image-bedps-figcaption {margin-top: 16px !important; margin-bottom: 16px !important; font-size: var(--er-fs-md) !important; color: var(--color-1) !important;} /* Custom HTML: Photo Album "The Countries" */
 .image-bedps-figcaption:hover {color: var(--color-2) !important;}
 body.dark-mode .image-bedps {background: var(--color-10); border: 1px solid var(--color-10);}
 body.dark-mode .image-bedps:hover {background: var(--color-6);}
 
-/* ---- B6. Embeds & video ---- */
+/* ---- B5. Embeds & video ---- */
 .embed-responsively {position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;}
 .embed-responsively iframe, .embed-responsively object, .embed-responsively embed {position: absolute; top: 0; left: 0; width: 100%; height: 100%;}
 .is-provider-youtube.wp-embed-aspect-4-3 .wp-block-embed__wrapper::before,
@@ -320,7 +242,7 @@ body.dark-mode .image-bedps:hover {background: var(--color-6);}
 .is-provider-vimeo.wp-embed-aspect-4-3 .wp-block-embed__wrapper::before {padding-top: 56.25%;}
 .wp-block-video-osho video {vertical-align: middle; width: 75%;}
 
-/* ---- B7. Buttons ---- */
+/* ---- B6. Buttons ---- */
 .wp-element-button, .wp-block-button__link, .button a, .smaller-button a {
 	color: var(--color-8) !important;
 	background: var(--color-1);
@@ -341,7 +263,7 @@ body.dark-mode .image-bedps:hover {background: var(--color-6);}
 .button a {margin: auto; max-width: fit-content;}
 .smaller-button a {cursor: pointer; min-height: 25px; padding: 5px 10px 7.5px;}
 
-/* ---- B8. Boxes ---- */
+/* ---- B7. Boxes ---- */
 .text-box {overflow: hidden; padding: 25px; margin-bottom: 25px;}
 .box-background {background: var(--color-8); border: 1px solid var(--color-5); transition: background 0.2s ease;}
 .box-shadow {box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.25);}
@@ -349,30 +271,7 @@ body.dark-mode .image-bedps:hover {background: var(--color-6);}
 body.dark-mode .box-background {background: var(--color-10); border: 1px solid var(--color-4);}
 body.dark-mode .box-shadow {background: var(--color-10); border: 1px solid var(--color-4);}
 
-/* ---- B9. Forms & Inputs ---- */
-.wp-block-post-content :is(input[type=email], input[type=search], input[type=text], textarea) {
-	width: 100%; box-sizing: border-box;
-}
-:is(select, input[type=email], input[type=search], input[type=text], textarea) {
-	background: var(--color-8); border: 1px solid var(--color-5); transition: border 0.2s ease;
-}
-:is(select, input[type=email], input[type=search], input[type=text], textarea):focus {
-	outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);
-}
-:is(select, input[type=email], input[type=search], input[type=text], textarea):focus:not(:focus-visible) {
-	outline: none;
-}
-body.dark-mode :is(select, input[type=email], input[type=search], input[type=text], textarea) {
-	background: var(--color-10); color: var(--color-5); border: 1px solid var(--color-3);
-}
-body.dark-mode option {
-	background: var(--color-10); color: var(--color-5);
-}
-.wp-block-post-content :is(input[type=button], input[type=reset], input[type=submit]) {
-	all: revert;
-}
-
-/* ---- B10. Social icon rows (Contact): white-circle chips on plain linked images (no core social-links block, so cosmetic ad-block filters can't hide them). Legible on light + dark; icon URLs root-relative. Hover/reduced-motion live in section G. ---- */
+/* ---- B8. Social icon rows (Contact): white-circle chips on plain linked images (no core social-links block, so cosmetic ad-block filters can't hide them). Legible on light + dark; icon URLs root-relative. Hover/reduced-motion live in section G. ---- */
 .er-social-icon-row {display: flex; flex-wrap: wrap; justify-content: center; gap: 4.7rem; margin: 0 auto;}
 .er-social-icon-row + .er-social-icon-row {margin-top: 25px;}
 .er-social-icon-link {
