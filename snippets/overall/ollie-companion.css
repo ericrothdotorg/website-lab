@@ -1,41 +1,37 @@
 /* ============================================================
    Child Theme — Component & Utility Styles
    Maintained in Code Snippets Pro (CSS snippet, file-based).
-
+   ------------------------------------------------------------
    WHY THIS LIVES HERE (and not in the theme's style.css):
    These are SELF-CONTAINED styles for the site's own classes
    (.er-*, custom utilities, footer, toggle). They don't fight the
    parent theme's cascade, so they don't need the theme enqueue's
-   guaranteed "load-after-parent" ordering.
-
-   WHAT STAYS IN the child theme's style.css (do NOT move here):
-   tokens (:root) + dark canvas, base links, editorial lists,
-   pullquote, header/nav, hero — everything that overrides the parent
-   theme or theme.json and therefore depends on the child load order.
-
+   guaranteed "load-after-parent" ordering (LOAD ORDER).
+   ------------------------------------------------------------
    DEPENDENCY NOTE: rules here use var(--color-*), --er-wide-row and
    the list dials, which are defined in the theme's style.css :root.
    CSS variables resolve at use-time across files, so this is fine AS
    LONG AS the theme stylesheet loads first (it does: theme enqueue
    runs before this file-based snippet). If colours ever render as
    unset/black, that load-order assumption broke — check first.
-
-   THEME-COUPLING MARKERS (search these before/after a theme switch):
-     THEME RELATED = hard coupling; breaks/orphans on switch — must fix.
+   ------------------------------------------------------------
+   THEME-COUPLING MARKERS (search these before / after a theme switch):
+     THEME RELATED = hard coupling; breaks / orphans on switch — must fix.
      THEME REVIEW  = soft coupling; reads a theme-defined value, won't
                      break but the value shifts — verify.
-
+   ------------------------------------------------------------
    CONVENTIONS: dark-mode rules sit beside their light rule; asset
    URLs are root-relative; "No var Color" = intentional one-off hex.
-
+   ------------------------------------------------------------
    CONTENTS
-     A. TYPOGRAPHY & TEXT HELPERS   line-break/colour, text-columns, design blocks, page-17552 tabs
+     A. TYPOGRAPHY & TEXT HELPERS   line-break / colour, text-columns, design blocks, page-17552 tabs
      B. COMPONENTS                  details / accordion, tag-cloud pills, image effects,
                                     bedps cards, embeds / video, buttons, boxes, social-icon rows
      C. CONTENT COMPONENTS          grid / cards / related slider / post-footer
      D. FOOTER                      navy wrapper, columns, dropdown, animated word
      E. TEMPLATE-PART COMPONENTS    site logo, archive filter tabs, breadcrumbs
-     F. SIDEBAR DESIGN              octagon-text mark, widget titles, cards, stats hero, select+count, author tiles & links, two-column / sidebar-hide
+     F. SIDEBAR DESIGN              octagon-text mark, widget titles, cards, stats hero, select + count,
+									author tiles & links, two-column / sidebar-hide
      G. DARK-MODE TOGGLE BUTTON     the switch UI
      H. MOTION & A11Y               reduced-motion umbrella
    ============================================================ */
