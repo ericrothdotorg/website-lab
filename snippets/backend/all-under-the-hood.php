@@ -45,11 +45,13 @@ add_filter('preview_post_link', function($url){
     return add_query_arg('ts', time(), $url);
 });
 
-// Prevent cached Frontend for logged-in Editors (so edits aren't masked by stale cache)
+// Prevent cached Frontend for logged-in Editors
 add_action('template_redirect', function () {
     if (!is_user_logged_in()) return;
     if (!current_user_can('edit_posts')) return;
-    nocache_headers();
+    if (function_exists('litespeed_cache_disable')) {
+        litespeed_cache_disable();
+    }
 });
 
 // Limit Post Revisions
