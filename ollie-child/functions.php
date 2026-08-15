@@ -13,6 +13,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // No direct access.
 }
+
 /**
  * Enqueue the child stylesheet.
  *
@@ -41,3 +42,15 @@ function ollie_child_enable_page_excerpts() {
 	add_post_type_support( 'page', 'excerpt' );
 }
 add_action( 'init', 'ollie_child_enable_page_excerpts' );
+
+/**
+ * Load the child stylesheet into the block editor too.
+ *
+ * The parent calls add_editor_style( 'style.css' ), but that resolves against the
+ * PARENT directory. Without this, the editor canvas renders with the parent's
+ * base styles only — the child's tokens, form, list and quote rules are missing,
+ * so what you see in the editor is not what the front end shows.
+ */
+add_action( 'after_setup_theme', function () {
+	add_editor_style( 'style.css' );
+} );
