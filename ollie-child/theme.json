@@ -74,6 +74,7 @@
 			]
 		},
 		"typography": {
+		    "_note": "THEME REVIEW - Deliberately replaces the parent's five font families with two system stacks. WP replaces (not merges) indexed preset arrays, so ollie's 'expanded', 'condensed' and 'narrow' presets no longer exist. Verified unused across templates, parts, style.css and the companion CSS. Intentional: Zero font requests, no FOUT, no swap-induced CLS.",
 			"fontFamilies": [
 				{
 					"slug": "primary",
