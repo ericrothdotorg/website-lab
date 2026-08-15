@@ -338,6 +338,59 @@ function display_taxonomies_shortcode( $atts ) {
 add_shortcode( 'display-taxonomies', 'display_taxonomies_shortcode' );
 
 // =====================================
+// CACHED SHORTCODE WRAPPER
+// =====================================
+
+/* Wraps any shortcode in a transient so a heavy query runs once per cache period
+   instead of once per page view. Built for the sidebar's two posts_per_page="-1"
+   selects: every entry stays selectable, but the query no longer runs on every hit.
+
+   The cache key carries a version stamp that is bumped on every post save, trash,
+   untrash or delete, so new or renamed posts appear at once and a stale list is
+   impossible. Old transients are orphaned, expire on their own and get swept by
+   the Custom Dashboard's transient cleanup.
+
+   Lives here (scope: everywhere) and not in Site Essentials (scope: front-end)
+   because the shortcode must also exist in the admin for Editor Live Previews.
+
+   Usage:  [er_cached key="blog-select"][display-posts ...][/er_cached] */
+
+add_shortcode( 'er_cached', function ( $atts, $content = '' ) {
+	$atts = shortcode_atts( [
+		'key' => '',
+		'ttl' => 12 * HOUR_IN_SECONDS,
+	], $atts, 'er_cached' );
+
+	if ( '' === trim( (string) $content ) ) {
+		return '';
+	}
+
+	$version   = (int) get_option( 'er_cached_version', 0 );
+	$cache_key = 'er_cached_' . md5( $version . '|' . $atts['key'] . '|' . $content );
+
+	$out = get_transient( $cache_key );
+	if ( false === $out ) {
+		$out = do_shortcode( $content );
+		set_transient( $cache_key, $out, (int) $atts['ttl'] );
+	}
+
+	return $out;
+} );
+
+/* Version stamp: one small autoloaded integer, read on every page view,
+   written only when content actually changes. */
+function er_cached_bump_version( $post_id = 0 ) {
+	if ( $post_id && ( wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) ) {
+		return;
+	}
+	update_option( 'er_cached_version', time(), true );
+}
+add_action( 'save_post',      'er_cached_bump_version' );
+add_action( 'deleted_post',   'er_cached_bump_version' );
+add_action( 'trashed_post',   'er_cached_bump_version' );
+add_action( 'untrashed_post', 'er_cached_bump_version' );
+
+// =====================================
 // INLINE STYLES (in Head)
 // =====================================
 
