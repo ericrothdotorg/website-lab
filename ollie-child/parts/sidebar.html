@@ -25,7 +25,7 @@
   <h2 class="widget-title">My Blog</h2>
   <div class="er-card">
     <div class="er-select-count">
-      [display-posts post_type="post" posts_per_page="-1" order="ASC" orderby="title" wrapper="select"]
+      [er_cached key="blog-select"][display-posts post_type="post" posts_per_page="-1" order="ASC" orderby="title" wrapper="select"][/er_cached]
       <p class="er-count">( <strong>[total_post]</strong> )</p>
     </div>
     <div class="er-card-tail">
@@ -41,7 +41,7 @@
   <h2 class="widget-title">My Interests</h2>
   <div class="er-card">
     <div class="er-select-count">
-      [display-posts post_type="my-interests" posts_per_page="-1" order="ASC" orderby="title" wrapper="select"]
+      [er_cached key="interests-select"][display-posts post_type="my-interests" posts_per_page="-1" order="ASC" orderby="title" wrapper="select"][/er_cached]
       <p class="er-count">( <strong>[total_my_interests]</strong> )</p>
     </div>
     <div class="er-card-tail">
