@@ -80,41 +80,22 @@ add_filter('pre_ping', '__return_empty_array');
 // PERFORMANCE & ASSET LOADING
 // ======================================
 
-// Strip ?ver=, but stamp filemtime on theme my-assets/ and code-snippets files so edits bust cache
-// THEME RELATED — the 'ollie-child' handle and '/themes/ollie-child/my-assets/' path below are the
-// child theme's enqueue handle + asset dir (FUNCTIONAL strings, not comments). On a theme switch both
-// change to the new theme's handle / slug; update them here or asset versioning misses the new theme's files.
+// Stamp filemtime on theme my-assets/ and code-snippets files so edits bust cache.
+// Everything else keeps its own version string untouched.
+// THEME RELATED — '/themes/ollie-child/my-assets/' is the child theme's asset dir
+// (a FUNCTIONAL string, not a comment). On a theme switch the slug changes; update it
+// here or asset versioning silently misses the new theme's files.
 add_filter('style_loader_src', 'er_version_assets', 10, 2);
 add_filter('script_loader_src', 'er_version_assets', 10, 2);
 function er_version_assets($src, $handle = '') {
-    if ($handle === 'ollie-child') return $src;
     if (strpos($src, '/wp-content/code-snippets/') !== false
         || strpos($src, '/themes/ollie-child/my-assets/') !== false) {
         $path = WP_CONTENT_DIR . substr($src, strpos($src, '/wp-content') + strlen('/wp-content'));
         $path = strtok($path, '?');
         return file_exists($path) ? add_query_arg('ver', filemtime($path), $src) : $src;
     }
-    return remove_query_arg('ver', $src);
+    return $src;
 }
-
-// Critical CSS: these load normally; everything else defers via preload
-// THEME RELATED — 'ollie-child' is the child theme's style handle (functional); update on theme switch.
-add_filter('er_critical_css_handles', function($handles) {
-    return array_merge($handles, ['ollie-child']);
-});
-add_filter('style_loader_tag', function($html, $handle) {
-    $critical = apply_filters('er_critical_css_handles', []);
-    if (in_array($handle, $critical, true)
-        || strpos($handle, 'global-styles') === 0
-        || strpos($handle, 'wp-block') === 0) {
-        return $html;
-    }
-    return str_replace(
-        "rel='stylesheet'",
-        "rel='preload' as='style' onload=\"this.onload=null;this.rel='stylesheet'\"",
-        $html
-    ) . '<noscript>' . $html . '</noscript>';
-}, 10, 2);
 
 // ======================================
 // LCP OPTIMIZATIONS
