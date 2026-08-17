@@ -516,7 +516,7 @@ body.dark-mode .er-postnav-title:hover {color: var(--color-2);}
    ============================================================ */
 
 /* ---- Outer footer box: navy bg, light text, hero-matching hover curve ---- */
-footer.wp-block-template-part {background: var(--color-10); color: var(--color-5); transition: border-radius 1s ease; padding-block: 60px;}
+footer.wp-block-template-part {background: var(--color-10); border: 1px solid var(--color-4); color: var(--color-5); transition: border-radius 1s ease; padding-block: 60px;}
 footer.wp-block-template-part:hover {border-top-right-radius: 15vw;}
 
 /* ---- Footer column row (scoped so the gap doesn't hit other flex-containers). ---- */
