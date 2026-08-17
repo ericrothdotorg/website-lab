@@ -515,8 +515,8 @@ body.dark-mode .er-postnav-title:hover {color: var(--color-2);}
    gaps scoped to footer.flex-container so they don't leak to the toggles (also .flex-container).
    ============================================================ */
 
-/* ---- Outer footer box: navy bg, light text, hero-matching hover curve. (#001a33 = recorded "same as Footer BG".) ---- */
-footer.wp-block-template-part {background: #001a33; color: var(--color-5); transition: border-radius 1s ease; padding-block: 60px;}
+/* ---- Outer footer box: navy bg, light text, hero-matching hover curve ---- */
+footer.wp-block-template-part {background: var(--color-10); color: var(--color-5); transition: border-radius 1s ease; padding-block: 60px;}
 footer.wp-block-template-part:hover {border-top-right-radius: 15vw;}
 
 /* ---- Footer column row (scoped so the gap doesn't hit other flex-containers). ---- */
@@ -548,8 +548,8 @@ footer.flex-container {max-width: var(--er-wide-row); margin-inline: auto; paddi
 	position: absolute;
 	padding: 7.5px 10px 10px;
 	white-space: nowrap;
-	background: #001a33; /* No var Color (same as Footer BG) */
-	border: 1px solid var(--color-3);
+	background: var(--color-10);
+	border: 1px solid var(--color-4);
 	border-bottom-left-radius: 5px;
 	border-bottom-right-radius: 5px;
 	z-index: 1;
