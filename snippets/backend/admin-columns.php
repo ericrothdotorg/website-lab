@@ -62,7 +62,17 @@ function initialize_custom_admin_columns() {
                 echo get_the_post_thumbnail($post_id, [65, 65], ['style' => 'border-radius:4px;']);
                 break;
 			case 'custom_excerpt':
-				echo get_the_excerpt($post_id);
+				// get_the_excerpt() runs the full the_content pipeline (do_blocks plus every attached filter) for any post without a manual excerpt.
+				// Per row. This reads the stored excerpt and otherwise trims raw content.
+				$raw = get_post_field('post_excerpt', $post_id);
+				if ($raw) {
+					echo esc_html($raw);
+				} else {
+					echo esc_html(wp_trim_words(
+						strip_shortcodes(wp_strip_all_tags(get_post_field('post_content', $post_id))),
+						25
+					));
+				}
 				break;
             case 'word_count':
                 if (!isset($word_counts[$post_id])) {
@@ -433,19 +443,29 @@ add_action('edit_term', function($term_id) {
     wp_cache_delete($term_id, 'term_taxonomy');
 });
 
-// Force Description to load from Database on Admin Screens
+// Force Description to load from Database — ONLY on the term edit screens.
+// Elsewhere in wp-admin this bypassed the term cache and fired one raw query
+// per term object (list tables with taxonomy columns pull dozens per page load).
 add_filter('get_term', function($term) {
-    if (is_admin() && $term && isset($term->term_id)) {
-        global $wpdb;
-        $description = $wpdb->get_var($wpdb->prepare(
-            "SELECT description FROM {$wpdb->term_taxonomy} 
-             WHERE term_id = %d AND taxonomy = %s",
-            $term->term_id,
-            $term->taxonomy
-        ));
-        if ($description !== null) {
-            $term->description = $description;
-        }
+    if (!is_admin() || !$term || !isset($term->term_id)) {
+        return $term;
+    }
+    if (!function_exists('get_current_screen')) {
+        return $term;
+    }
+    $screen = get_current_screen();
+    if (!$screen || $screen->base !== 'edit-tags') {
+        return $term;
+    }
+    global $wpdb;
+    $description = $wpdb->get_var($wpdb->prepare(
+        "SELECT description FROM {$wpdb->term_taxonomy} 
+         WHERE term_id = %d AND taxonomy = %s",
+        $term->term_id,
+        $term->taxonomy
+    ));
+    if ($description !== null) {
+        $term->description = $description;
     }
     return $term;
 }, 10, 1);
