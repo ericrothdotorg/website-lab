@@ -453,7 +453,7 @@ function increment_likes() {
     $wpdb->query("
         UPDATE {$table} ps
         INNER JOIN {$wpdb->posts} p ON p.ID = ps.post_id
-        SET ps.count = ps.count + FLOOR(10 + RAND() * 11)
+        SET ps.count = ps.count + FLOOR(RAND() * 7)
         WHERE ps.type = 'like' AND ps.row_type = 'total'
         AND p.post_status = 'publish'
     ");
