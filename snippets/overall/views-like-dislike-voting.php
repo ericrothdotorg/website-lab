@@ -472,7 +472,7 @@ function increment_dislikes() {
     $wpdb->query("
         UPDATE {$table} ps
         INNER JOIN {$wpdb->posts} p ON p.ID = ps.post_id
-        SET ps.count = ps.count + FLOOR(1 + RAND() * 2)
+        SET ps.count = ps.count + IF(RAND() < 0.35, 1, 0)
         WHERE ps.type = 'dislike' AND ps.row_type = 'total'
         AND p.post_status = 'publish'
     ");
@@ -481,5 +481,23 @@ function increment_dislikes() {
 // Schedule automatic Increments for Dislikes
 add_action('increment_dislikes_event', 'increment_dislikes');
 if (!wp_next_scheduled('increment_dislikes_event')) {
-    wp_schedule_event(time(), 'monthly', 'increment_dislikes_event');
+    wp_schedule_event(time(), 'weekly', 'increment_dislikes_event');
+}
+
+// ======================================
+// DAILY CLEANUP OF EVENT ROWS
+// ======================================
+
+// Mirrors the manual Dashboard cleanup in custom_cleanup_old_data(), but runs on its own.
+// Only 'event' rows are touched — the 'total' counter rows that hold the actual numbers are never deleted.
+add_action('er_stats_daily_cleanup', function() {
+    global $wpdb;
+    $table = $wpdb->prefix . 'er_post_stats';
+    $wpdb->query("
+        DELETE FROM {$table}
+        WHERE row_type = 'event' AND created_at < CURDATE()
+    ");
+});
+if (!wp_next_scheduled('er_stats_daily_cleanup')) {
+    wp_schedule_event(time(), 'daily', 'er_stats_daily_cleanup');
 }
