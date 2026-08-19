@@ -27,7 +27,8 @@ function er_render_private_page( $slug, $loop_html = '' ) {
 
     // Strip the "Private: " prefix WP adds to private Page Titles
     $page->post_title = preg_replace( '/^Private:\s*/i', '', $page->post_title );
-	add_filter( 'private_title_format', fn( $format ) => '%s' );
+    $remove_private_prefix = fn( $format ) => '%s';
+    add_filter( 'private_title_format', $remove_private_prefix );
 
     // If Search Results: Inject Loop into Content before anything renders
     if ( $loop_html ) {
