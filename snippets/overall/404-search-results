@@ -70,13 +70,10 @@ function er_render_private_page( $slug, $loop_html = '' ) {
 // ======================================
 
 add_filter( 'template_include', function( $template ) {
-
     if ( ! is_404() ) {
         return $template;
     }
-
     er_render_private_page( '404-error' );
-
     return $template;
 }, 99 );
 
@@ -85,18 +82,14 @@ add_filter( 'template_include', function( $template ) {
 // ======================================
 
 add_filter( 'template_include', function( $template ) {
-
     if ( ! is_search() ) {
         return $template;
     }
-
     if ( have_posts() ) {
         $limit = 12;
-
         ob_start();
         echo '<div class="er-cpt-grid" data-search="' . esc_attr( get_search_query() ) . '"'
            . ' data-limit="' . esc_attr( $limit ) . '" data-offset="' . esc_attr( $limit ) . '">';
-
         $shown = 0;
         while ( have_posts() && $shown < $limit ) {
             the_post();
@@ -108,18 +101,14 @@ add_filter( 'template_include', function( $template ) {
             $shown++;
         }
         echo '</div>';
-
         global $wp_query;
         if ( intval( $wp_query->found_posts ) > $limit ) {
             echo '<div class="er-load-more-sentinel"></div>';
         }
-
         $loop_html = ob_get_clean();
         er_render_private_page( 'search-results', $loop_html );
-
     } else {
         er_render_private_page( 'search-no-results' );
     }
-
     return $template;
 }, 99 );
