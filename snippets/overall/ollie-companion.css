@@ -195,12 +195,10 @@ body.dark-mode .er-archive-filter .er-filter-tab:hover {background: none;}
 /* ---- B3. Image styles & effects ---- */
 .wp-block-image a img {transition: transform 0.3s ease;}
 .wp-block-image a:hover img {transform: scale(1.05);}
-
 .zoom {width: 35%; transform-origin: center center; transition: transform 1.5s ease-in-out;}
 .zoom:hover {transform: scale(2.857);} /* 100% / 35% = 2.857 */
 .zoom-x2 {transition: transform 1.5s ease-in-out;}
 .zoom-x2:hover {transform: scale(2);}
-
 .blob-animation img {animation: animate-blob 7.5s ease-in-out infinite alternate;}
 .blob-animation img:hover {animation-play-state: paused;}
 @keyframes animate-blob {
@@ -210,7 +208,6 @@ body.dark-mode .er-archive-filter .er-filter-tab:hover {background: none;}
 	75% {border-radius: 20% 80% 70% 30% / 40% 60% 40% 60%;}
 }
 .blob-animation figcaption {font-size: 1.5em;}
-
 /* Profile photo in circle shape: Fills whatever width its column gives it.
  * max-width: none cancels the theme's img rule that would otherwise shrink it. */
 .profile-photo img {width: 100%; height: auto; aspect-ratio: 1; max-width: none; border-radius: 50%; object-fit: cover; display: block;}
@@ -218,10 +215,8 @@ body.dark-mode .er-archive-filter .er-filter-tab:hover {background: none;}
 @media (min-width: 782px) {.wp-block-columns > .wp-block-column.profile-photo {flex: 0 0 clamp(125px, 15vw, 180px) !important; max-width: clamp(125px, 15vw, 180px);}}
 /* Phone: The column is full width now, so set the picture's size here instead */
 @media (max-width: 781px) {.profile-photo img {width: clamp(125px, 50vw, 180px); margin-inline: auto;}}
-
 /* Opt-in single-line caption: add class "caption-nowrap" to the image block. */
 .wp-block-image.caption-nowrap figcaption {display: block; width: max-content; margin-inline: auto; white-space: nowrap;}
-
 body.dark-mode .image-invert {filter: invert(1);}
 body.dark-mode .wp-image-148107 {content: url("/wp-content/uploads/2025/07/github-mark-white.png");} /* Github logo in Happy Coding! */
 
