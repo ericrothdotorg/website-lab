@@ -46,6 +46,7 @@ function er_render_private_page( $slug, $loop_html = '' ) {
     $wp_query->found_posts        = 1;
     $wp_query->post_count         = 1;
     $wp_query->is_404             = false;
+	$GLOBALS['er_synthetic_page'] = $page->ID;
     $wp_query->is_page            = true;
     $wp_query->is_singular        = true;
     $wp_query->is_search          = false;
