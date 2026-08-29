@@ -1,6 +1,14 @@
 <?php
 // NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
+// Tagesgrenze in WP-Ortszeit. wp_er_post_stats.created_at wird mit current_time('mysql') geschrieben, MySQL laeuft aber auf UTC.
+// CURDATE() waere daher um den Zeitzonen-Offset verschoben.
+if (!function_exists('er_today_start')) {
+    function er_today_start() {
+        return current_time('Y-m-d') . ' 00:00:00';
+    }
+}
+
 // ======================================
 // ADD POST VIEWS TRACKING
 // ======================================
@@ -102,7 +110,7 @@ function er_today_total_views_shortcode() {
 	$table = $wpdb->prefix . 'er_post_stats';
     $views_today = $wpdb->get_var("
         SELECT COUNT(*) FROM {$table}
-        WHERE type = 'view' AND row_type = 'event' AND DATE(created_at) = CURDATE()
+        WHERE type = 'view' AND row_type = 'event' AND created_at >= '" . er_today_start() . "'
     ");
     $views_total = $wpdb->get_var("
         SELECT SUM(count) FROM {$table}
@@ -410,7 +418,7 @@ function er_today_total_likes_shortcode() {
 	$table = $wpdb->prefix . 'er_post_stats';
     $likes_today = $wpdb->get_var("
         SELECT COUNT(*) FROM {$table}
-        WHERE type = 'like' AND row_type = 'event' AND DATE(created_at) = CURDATE()
+        WHERE type = 'like' AND row_type = 'event' AND created_at >= '" . er_today_start() . "'
     ");
     $likes_total = $wpdb->get_var("
         SELECT SUM(count) FROM {$table}
@@ -434,7 +442,7 @@ function er_today_total_dislikes_shortcode() {
 	$table = $wpdb->prefix . 'er_post_stats';
     $dislikes_today = $wpdb->get_var("
         SELECT COUNT(*) FROM {$table}
-        WHERE type = 'dislike' AND row_type = 'event' AND DATE(created_at) = CURDATE()
+        WHERE type = 'dislike' AND row_type = 'event' AND created_at >= '" . er_today_start() . "'
     ");
     $dislikes_total = $wpdb->get_var("
         SELECT SUM(count) FROM {$table}
@@ -496,7 +504,7 @@ add_action('er_stats_daily_cleanup', function() {
     $table = $wpdb->prefix . 'er_post_stats';
     $wpdb->query("
         DELETE FROM {$table}
-        WHERE row_type = 'event' AND created_at < CURDATE()
+        WHERE row_type = 'event' AND created_at < '" . er_today_start() . "'
     ");
 });
 if (!wp_next_scheduled('er_stats_daily_cleanup')) {
