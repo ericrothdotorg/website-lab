@@ -1,10 +1,10 @@
 <?php
 // NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
-// =========================================
+// ===========================================================================
 // TOGGLE - MUTE | UNMUTE (Text-to-Speech)
 // Markup for the toggle itself lives in the child theme: parts / footer.html
-// =========================================
+// ===========================================================================
 
 // =================================
 // STYLE IN HEAD
