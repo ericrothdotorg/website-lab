@@ -1334,6 +1334,20 @@ add_shortcode( 'er_socials_support', function ( $atts ) {
 	     . '</span>';
 } );
 
+// ---- 8d. Overlay accordion state (see style.css §10) ----
+add_action( 'wp_footer', function () { ?>
+	<script>
+	document.addEventListener('click', function (e) {
+		var toggle = e.target.closest('.wp-block-navigation-submenu__toggle');
+		if (!toggle) return;
+		var overlay = toggle.closest('.wp-block-navigation__responsive-container');
+		if (!overlay || !overlay.classList.contains('is-menu-open')) return;
+		var item = toggle.closest('.wp-block-navigation-item');
+		if (item) item.classList.toggle('er-submenu-open');
+	});
+	</script>
+<?php }, 15 );
+
 // ======================================
 // 9. FOOTER SCRIPTS  (JS)
 // ======================================
