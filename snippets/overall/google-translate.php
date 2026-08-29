@@ -15,9 +15,13 @@ add_action('wp_footer', function () {
 	// Offered languages. Keep in sync with LANG_MAP
 	// in the "Toggle - Mute | Unmute" snippet.
 	$er_langs = 'ar,da,de,es,fi,fr,hi,id,it,ja,ko,no,ru,sv,th,tl,tr,vi,zh-CN';
+
 	?>
 
-<div id="google_translate_element" role="dialog" aria-label="Language selector" aria-hidden="true"></div>
+<div id="google_translate_element" role="dialog" aria-label="Language selector" aria-hidden="true">
+	<div id="er-lang-loading"><span id="er-lang-loading-text">Loading languages…</span></div>
+	<button type="button" id="er-lang-retry">Try again</button>
+</div>
 
 <button type="button" id="er-lang-toggle" title="Language Switcher"
         aria-label="Open language switcher" aria-expanded="false" aria-controls="google_translate_element">
@@ -64,6 +68,62 @@ add_action('wp_footer', function () {
 
 	#er-lang-announcer {position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;}
 
+	/* Placeholder while Google fetches its widget — same footprint as the
+	   select box that replaces it, so the panel does not jump. */
+	#er-lang-loading {
+		display: none;
+		align-items: center;
+		gap: 8px;
+		box-sizing: border-box;
+		width: 200px;
+		padding: 8px;
+		border: 1px solid var(--color-5);
+		border-radius: 4px;
+		font-family: Arial, sans-serif;
+		font-size: 14px;
+		line-height: 1.2;
+		color: var(--color-9);
+	}
+	#google_translate_element.is-loading #er-lang-loading {display: flex;}
+	#er-lang-loading::before {
+		content: '';
+		flex: none;
+		width: 14px;
+		height: 14px;
+		border: 2px solid var(--color-5);
+		border-top-color: var(--color-1);
+		border-radius: 50%;
+		animation: er-lang-spin 0.8s linear infinite;
+	}
+	#google_translate_element.has-error #er-lang-loading {color: var(--color-2);}
+	#google_translate_element.has-error #er-lang-loading::before {
+		animation: none;
+		border-color: var(--color-5);
+		border-top-color: var(--color-2);
+	}
+	#er-lang-retry {
+		display: none;
+		width: 200px;
+		margin-top: 8px;
+		padding: 8px;
+		border: none;
+		border-radius: 4px;
+		background: var(--color-1);
+		color: var(--color-8);
+		font-family: Arial, sans-serif;
+		font-size: 14px;
+		cursor: pointer;
+		-webkit-appearance: none;
+		appearance: none;
+	}
+	#er-lang-retry:hover {background: var(--color-2);}
+	#er-lang-retry:focus-visible {outline: 2px solid var(--color-1); outline-offset: 2px;}
+	#google_translate_element.has-error #er-lang-retry {display: block;}
+	@keyframes er-lang-spin {to {transform: rotate(360deg);}}
+	@media (prefers-reduced-motion: reduce) {
+		#er-lang-loading::before {animation: none; border-top-color: var(--color-9);}
+	}
+
 	/* Google Translate widget cosmetics */
 	.goog-te-gadget {font-family: Arial, sans-serif; font-size: 14px;}
 	.goog-te-gadget-simple .goog-te-menu-value span:first-child {display: none;}
@@ -80,10 +140,10 @@ add_action('wp_footer', function () {
 (function () {
 	'use strict';
 
-	var LANGS   = '<?php echo esc_js($er_langs); ?>';
-	var COOKIE  = 'googtrans';
+	var LANGS  = '<?php echo esc_js($er_langs); ?>';
+	var COOKIE = 'googtrans';
 
-	var panel, toggle, announcer;
+	var panel, toggle, announcer, loadingText, retryBtn;
 	var loading = false, loaded = false, retries = 0;
 	var observer = null, observerTimer = null;
 
@@ -135,7 +195,7 @@ add_action('wp_footer', function () {
 			loading = false;
 			s.remove();
 			if (retries++ < 3) { setTimeout(loadWidget, 1000); }
-			else { announce('Language switcher currently unavailable'); }
+			else { showError('Language list unavailable'); }
 		};
 		document.body.appendChild(s);
 	}
@@ -151,6 +211,27 @@ add_action('wp_footer', function () {
 		watchForSelect();
 	};
 
+	function showError(msg) {
+		if (loadingText) loadingText.textContent = msg;
+		panel.classList.add('is-loading', 'has-error');
+		announce(msg);
+	}
+
+	// Wipe every trace of the failed attempt, then start over from scratch
+	function retryWidget() {
+		var stale = document.querySelector('script[src*="translate.google.com/translate_a/element.js"]');
+		if (stale) stale.remove();
+		loaded = false;
+		loading = false;
+		retries = 0;
+		stopWatching();
+		panel.classList.remove('has-error');
+		panel.classList.add('is-loading');
+		if (loadingText) loadingText.textContent = 'Loading languages…';
+		announce('Retrying');
+		loadWidget();
+	}
+
 	function stopWatching() {
 		if (observer) { observer.disconnect(); observer = null; }
 		if (observerTimer) { clearTimeout(observerTimer); observerTimer = null; }
@@ -161,7 +242,10 @@ add_action('wp_footer', function () {
 		if (observer) return;
 		observer = new MutationObserver(function () { bindSelect(); });
 		observer.observe(panel, { childList: true, subtree: true });
-		observerTimer = setTimeout(stopWatching, 10000); // give up instead of observing forever
+		observerTimer = setTimeout(function () {
+			stopWatching();
+			if (!panel.querySelector('.goog-te-combo')) showError('Language list unavailable');
+		}, 5000); // give up instead of observing forever
 	}
 
 	function bindSelect() {
@@ -170,6 +254,7 @@ add_action('wp_footer', function () {
 		if (select.dataset.erBound) { stopWatching(); return true; }
 		select.dataset.erBound = '1';
 		stopWatching();
+		panel.classList.remove('is-loading', 'has-error');
 
 		select.setAttribute('aria-label', 'Select language');
 		select.addEventListener('change', function () {
@@ -199,8 +284,13 @@ add_action('wp_footer', function () {
 		panel.setAttribute('aria-hidden', 'false');
 		toggle.setAttribute('aria-expanded', 'true');
 		toggle.setAttribute('aria-label', 'Close language switcher');
+		if (!panel.querySelector('.goog-te-combo')) {
+			panel.classList.add('is-loading');
+			announce('Language selector opened, loading languages');
+		} else {
+			announce('Language selector opened');
+		}
 		loadWidget();
-		announce('Language selector opened');
 		setTimeout(function () {
 			var select = panel.querySelector('.goog-te-combo');
 			if (select) select.focus();
@@ -224,12 +314,22 @@ add_action('wp_footer', function () {
 	// --- Init ----------------------------------------------------
 
 	function init() {
-		panel     = document.getElementById('google_translate_element');
-		toggle    = document.getElementById('er-lang-toggle');
-		announcer = document.getElementById('er-lang-announcer');
+		panel      = document.getElementById('google_translate_element');
+		toggle     = document.getElementById('er-lang-toggle');
+		announcer  = document.getElementById('er-lang-announcer');
+		loadingText = document.getElementById('er-lang-loading-text');
+		retryBtn    = document.getElementById('er-lang-retry');
 		if (!panel || !toggle) return;
 
 		toggle.addEventListener('click', togglePanel);
+
+		// Start fetching before the click lands, so the panel is usually filled
+		// by the time it opens. Visitors who never go near the globe load nothing.
+		toggle.addEventListener('pointerenter', loadWidget); // mouse
+		toggle.addEventListener('pointerdown', loadWidget);  // touch — fires before the click
+		toggle.addEventListener('focus', loadWidget);        // keyboard
+
+		if (retryBtn) retryBtn.addEventListener('click', retryWidget);
 
 		document.addEventListener('click', function (e) {
 			if (!panel.classList.contains('visible')) return;
