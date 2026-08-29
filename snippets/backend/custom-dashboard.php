@@ -1,6 +1,14 @@
 <?php
 // NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
+// Tagesgrenze in WP-Ortszeit. wp_er_post_stats.created_at wird mit current_time('mysql') geschrieben, MySQL laeuft aber auf UTC.
+// CURDATE() waere daher um den Zeitzonen-Offset verschoben.
+if (!function_exists('er_today_start')) {
+    function er_today_start() {
+        return current_time('Y-m-d') . ' 00:00:00';
+    }
+}
+
 // ============================================================
 // THEME-COUPLING MARKERS (search these before/after a theme switch):
 //   THEME RELATED = hard coupling; breaks/orphans on switch — must fix.
@@ -136,16 +144,17 @@ function custom_render_sponsor_channels_widget() {
 function custom_render_activity_widget() {
     global $wpdb;
     $table = $wpdb->prefix . 'er_post_stats';
+	$today = er_today_start();
     $cached = get_transient('custom_activity_stats');
     if ($cached === false) {
         $cached = [
             'contact_today'  => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_contact_messages WHERE DATE(submitted_at) = CURDATE()"),
             'contact_total'  => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_contact_messages"),
-            'views_today'    => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'view' AND row_type = 'event' AND DATE(created_at) = CURDATE()"),
+            'views_today'    => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'view' AND row_type = 'event' AND created_at >= '{$today}'"),
             'views_total'    => $wpdb->get_var("SELECT SUM(count) FROM {$table} WHERE type = 'view' AND row_type = 'total'"),
-            'likes_today'    => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'like' AND row_type = 'event' AND DATE(created_at) = CURDATE()"),
+            'likes_today'    => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'like' AND row_type = 'event' AND created_at >= '{$today}'"),
             'likes_total'    => $wpdb->get_var("SELECT SUM(count) FROM {$table} WHERE type = 'like' AND row_type = 'total'"),
-            'dislikes_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'dislike' AND row_type = 'event' AND DATE(created_at) = CURDATE()"),
+            'dislikes_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'dislike' AND row_type = 'event' AND created_at >= '{$today}'"),
             'dislikes_total' => $wpdb->get_var("SELECT SUM(count) FROM {$table} WHERE type = 'dislike' AND row_type = 'total'"),
 			'subscribers_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_subscribers WHERE status = 'active' AND DATE(created_at) = CURDATE()"),
 			'subscribers_total' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_subscribers WHERE status = 'active'"),
@@ -159,7 +168,7 @@ function custom_render_activity_widget() {
         FROM {$table} ps
         JOIN {$wpdb->posts} p ON p.ID = ps.post_id
         WHERE ps.type = 'like' AND ps.row_type = 'event'
-        AND DATE(ps.created_at) = CURDATE()
+        AND ps.created_at >= '{$today}'
         AND p.post_status = 'publish'
         ORDER BY p.post_title ASC
     ");
@@ -170,7 +179,7 @@ function custom_render_activity_widget() {
         FROM {$table} ps
         JOIN {$wpdb->posts} p ON p.ID = ps.post_id
         WHERE ps.type = 'dislike' AND ps.row_type = 'event'
-        AND DATE(ps.created_at) = CURDATE()
+        AND ps.created_at >= '{$today}'
         AND p.post_status = 'publish'
         ORDER BY p.post_title ASC
     ");
@@ -546,7 +555,7 @@ function custom_cleanup_old_data($wpdb, $safe_delete) {
         $deleted += $safe_delete("DELETE FROM {$wpdb->prefix}actionscheduler_actions WHERE status = 'complete' AND scheduled_date_gmt < NOW() - INTERVAL 30 DAY", 'ActionScheduler cleanup');
     }
     $deleted += $safe_delete("DELETE FROM {$wpdb->posts} WHERE post_status = 'auto-draft' AND post_content = ''", 'Auto-draft cleanup');
-    $deleted += $safe_delete("DELETE FROM {$wpdb->prefix}er_post_stats WHERE row_type = 'event' AND created_at < CURDATE()", 'Old vote/view event log cleanup');
+    $deleted += $safe_delete("DELETE FROM {$wpdb->prefix}er_post_stats WHERE row_type = 'event' AND created_at < '" . er_today_start() . "'", 'Old vote/view event log cleanup');
 	$deleted += $safe_delete("DELETE FROM {$wpdb->prefix}er_map_views WHERE viewed_at < NOW() - INTERVAL 90 DAY", 'Old map view log cleanup (90-day retention)');
     $deleted += $safe_delete("DELETE FROM {$wpdb->posts} WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 1 DAY", 'Trash posts cleanup');
     $deleted += $safe_delete("DELETE FROM {$wpdb->prefix}er_subscribers WHERE status = 'pending' AND created_at < NOW() - INTERVAL 7 DAY", 'Stale pending subscriber cleanup');
