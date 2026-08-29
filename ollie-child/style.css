@@ -682,6 +682,20 @@ body.dark-mode figure.wp-block-pullquote {background: var(--color-10); border: 1
 .er-header .wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content .wp-block-navigation-item__content,
 .er-header .wp-block-navigation__responsive-container:not(.is-menu-open) .wp-block-navigation-item__content {padding-top: 10px; padding-bottom: 10px;}
 
+/* ---- Overlay accordion: rewire Ollie's trigger ----
+   Core now binds aria-expanded to state.isSubmenuOpen, which returns true for
+   EVERY toggle while the overlay is open. Ollie's accordion keys on exactly that
+   attribute, so it expands everything. Kill Ollie's open-rule inside the overlay
+   and drive the state from our own class instead (set in Ollie Companion PHP §8d). */
+@media (max-width: 1050px) {
+	.er-header .is-menu-open .wp-block-navigation-submenu__toggle[aria-expanded="true"] ~ .wp-block-navigation__submenu-container {
+		display: none;
+	}
+	.er-header .is-menu-open .wp-block-navigation-item.er-submenu-open > .wp-block-navigation__submenu-container {
+		display: flex;
+	}
+}
+
 /* ============================================================
    11. HERO
    THEME REVIEW — the hero box + inner read parent/core layout values
