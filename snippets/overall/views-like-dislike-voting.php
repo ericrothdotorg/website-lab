@@ -55,6 +55,7 @@ add_action('transition_post_status', function($new_status, $old_status, $post) {
     }
 }, 10, 3);
 add_action('wp_head', function() {
+    if (!empty($GLOBALS['er_synthetic_page'])) return;
     if (is_singular()) er_track_post_views(get_the_ID());
 });
 
