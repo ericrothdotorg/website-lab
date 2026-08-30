@@ -246,7 +246,7 @@ body.dark-mode .image-bedps:hover {background: var(--color-6);}
 .wp-block-video-osho video {vertical-align: middle; width: 75%;}
 
 /* ---- B6. Buttons (no wp-element-button in parent's theme style.css so here they win by default, not by load order) ---- */
-.wp-element-button, .wp-block-button__link, .button a, .smaller-button a {
+.wp-element-button, .wp-block-button__link {
 	color: var(--color-8) !important;
 	background: var(--color-1);
 	display: flex;
@@ -260,11 +260,9 @@ body.dark-mode .image-bedps:hover {background: var(--color-6);}
 	border: 2px solid transparent;
 	transition: background-color 0.2s ease, color 0.2s ease;
 }
-.wp-element-button:hover, .wp-block-button__link:hover, .button a:hover, .smaller-button a:hover {background: var(--color-2); border: 2px solid transparent;}
-.wp-element-button:focus, .wp-block-button__link:focus, .button a:focus, .smaller-button a:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
-.wp-element-button:focus:not(:focus-visible), .wp-block-button__link:focus:not(:focus-visible), .button a:focus:not(:focus-visible), .smaller-button a:focus:not(:focus-visible) {outline: none;}
-.button a {margin: auto; max-width: fit-content;}
-.smaller-button a {cursor: pointer; min-height: 25px; padding: 5px 10px 7.5px;}
+.wp-element-button:hover, .wp-block-button__link:hover {background: var(--color-2); border: 2px solid transparent; transform: scale(1.05);}
+.wp-element-button:focus, .wp-block-button__link:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
+.wp-element-button:focus:not(:focus-visible), .wp-block-button__link:focus:not(:focus-visible) {outline: none;}
 
 /* ---- B7. Boxes ---- */
 .text-box {overflow: hidden; padding: 25px; margin-bottom: 25px;}
