@@ -258,7 +258,7 @@ body.dark-mode .image-bedps:hover {background: var(--color-6);}
 	text-align: center;
 	text-decoration: none;
 	border: 2px solid transparent;
-	transition: background-color 0.2s ease, color 0.2s ease;
+	transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 .wp-element-button:hover, .wp-block-button__link:hover {background: var(--color-2); border: 2px solid transparent; transform: scale(1.05);}
 .wp-element-button:focus, .wp-block-button__link:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
