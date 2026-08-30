@@ -151,14 +151,16 @@ add_action( 'wp_footer', function () {
             font-size: var(--er-fs-sm); box-sizing: border-box; border-radius: 5px;
         }
         .er-subscribe-wrapper input[type="email"]:focus {outline: 1px solid var(--color-1); outline-offset: 2px;}
-        .er-subscribe-wrapper button[type="submit"] {
-            display: block; width: auto; padding: 10px 25px;
-            font-size: var(--er-fs-sm); font-weight: var(--er-fw-bold); cursor: pointer; border-radius: 5px;
-            border: none; background: var(--color-1); color: var(--color-8);
-        }
-        .er-subscribe-wrapper button[type="submit"]:hover,
-        .er-subscribe-wrapper button[type="submit"]:focus {background: var(--color-2);}
-        .er-subscribe-wrapper button[type="submit"]:focus {outline: 1px solid var(--color-1); outline-offset: 2px;}
+		.er-subscribe-wrapper button[type="submit"] {
+			display: inline-flex; align-items: center; justify-content: center;
+			width: auto; padding: 10px 20px;
+			font-size: var(--er-fs-sm); font-weight: var(--er-fw-bold); cursor: pointer; border-radius: 4px;
+			border: 2px solid transparent; background: var(--color-1); color: var(--color-8);
+			text-align: center; transition: background-color 0.2s ease, color 0.2s ease;
+		}
+		.er-subscribe-wrapper button[type="submit"]:hover {background: var(--color-2); transform: scale(1.05);}
+		.er-subscribe-wrapper button[type="submit"]:focus {outline: var(--a11y-focus-width) solid var(--a11y-focus-color); outline-offset: var(--a11y-focus-offset);}
+		.er-subscribe-wrapper button[type="submit"]:focus:not(:focus-visible) {outline: none;}
         .er-subscribe-wrapper #er-confirmation {margin-top: 1em; width: 100%; word-wrap: break-word; overflow-wrap: break-word;}
     </style>
     <script>
