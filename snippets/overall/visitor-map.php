@@ -56,6 +56,7 @@ function lum_schedule_background_tracking() {
                 var params = new URLSearchParams();
                 params.set('action', 'lum_background_track');
                 params.set('page_url', window.location.href);
+				params.set('post_id', '<?php echo (int) ((is_singular() && empty($GLOBALS['er_synthetic_page'])) ? get_the_ID() : 0); ?>');
                 var ajaxUrl = '<?php echo admin_url('admin-ajax.php'); ?>';
                 if (navigator.sendBeacon) {
                     var blob = new Blob([params.toString()], { type: 'application/x-www-form-urlencoded' });
@@ -152,6 +153,16 @@ function lum_background_track() {
 			);
 			set_transient($dedup_key, 1, DAY_IN_SECONDS);
 		}
+    }
+    // View-Zaehlung: Gleiche Regel wie die Map (1 Besucher / 1 Seite / 24h).
+    // Eigener Dedup-Key und bewusst ausserhalb des Geo-Blocks, damit ein Ausfall der Geo-API die Zaehlung nicht blockiert.
+    $post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
+    if ($post_id && !is_user_logged_in() && function_exists('er_track_post_views')) {
+        $view_key = 'er_view_' . md5($visitor_id . '|' . $post_id);
+        if (get_transient($view_key) === false) {
+            er_track_post_views($post_id);
+            set_transient($view_key, 1, DAY_IN_SECONDS);
+        }
     }
     wp_die('OK'); // Important for AJAX
 }
