@@ -15,8 +15,7 @@ if (!function_exists('er_today_start')) {
 
 // Increment View Count on single Posts, Pages, CPT
 function er_track_post_views($post_id) {
-    if (!is_singular()) return;
-    if (empty($post_id)) $post_id = get_the_ID();
+    if (empty($post_id)) return;
     global $wpdb;
     $table = $wpdb->prefix . 'er_post_stats';
     // Increment the Counter Row
@@ -62,10 +61,6 @@ add_action('transition_post_status', function($new_status, $old_status, $post) {
         er_init_views_meta($post->ID);
     }
 }, 10, 3);
-add_action('wp_head', function() {
-    if (!empty($GLOBALS['er_synthetic_page'])) return;
-    if (is_singular()) er_track_post_views(get_the_ID());
-});
 
 // Shortcode with Prefix / Suffix Options for Views
 function er_post_views_shortcode($atts) {
