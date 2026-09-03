@@ -35,33 +35,6 @@ function er_track_post_views($post_id) {
     ]);
 }
 
-// Ensure View Meta exists for new Posts
-function er_init_views_meta($post_id) {
-    if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) {
-        return;
-    }
-    global $wpdb;
-    $table = $wpdb->prefix . 'er_post_stats';
-    $exists = $wpdb->get_var($wpdb->prepare(
-        "SELECT id FROM {$table} WHERE post_id = %d AND type = 'view' AND row_type = 'total'",
-        $post_id
-    ));
-    if (!$exists) {
-        $wpdb->insert($table, [
-            'post_id'    => $post_id,
-            'type'       => 'view',
-            'row_type'   => 'total',
-            'count'      => rand(5000, 10000),
-            'created_at' => null,
-        ]);
-    }
-}
-add_action('transition_post_status', function($new_status, $old_status, $post) {
-    if ($new_status === 'publish' && $old_status !== 'publish') {
-        er_init_views_meta($post->ID);
-    }
-}, 10, 3);
-
 // Shortcode with Prefix / Suffix Options for Views
 function er_post_views_shortcode($atts) {
     $atts = shortcode_atts([
@@ -93,50 +66,6 @@ function er_post_views_shortcode($atts) {
     return $style . '<span class="post-views-wrapper">' . $output . '</span>';
 }
 add_shortcode('post_views', 'er_post_views_shortcode');
-
-// Shortcode to display Views on Frontend
-function er_today_total_views_shortcode() {
-    global $wpdb;
-    $cache_key = 'er_views_stats_' . date('Y-m-d-H');
-    $cached = get_transient($cache_key);
-    if ($cached !== false) {
-        return $cached;
-    }
-	$table = $wpdb->prefix . 'er_post_stats';
-    $views_today = $wpdb->get_var("
-        SELECT COUNT(*) FROM {$table}
-        WHERE type = 'view' AND row_type = 'event' AND created_at >= '" . er_today_start() . "'
-    ");
-    $views_total = $wpdb->get_var("
-        SELECT SUM(count) FROM {$table}
-        WHERE type = 'view' AND row_type = 'total'
-    ");
-    $format_count = fn($num) => number_format($num);
-    $output = '<p>👁️ Views: <strong style="color: var(--color-2);">' . $format_count($views_today) . '</strong> today / <strong>' . $format_count($views_total) . '</strong> total</p>';
-    set_transient($cache_key, $output, HOUR_IN_SECONDS);
-    return $output;
-}
-add_shortcode('today_total_views', 'er_today_total_views_shortcode');
-
-// Introduce Increments for Views
-function increment_views() {
-    global $wpdb;
-    $table = $wpdb->prefix . 'er_post_stats';
-    // Increment Counter Rows for all published Posts
-    $wpdb->query("
-        UPDATE {$table} ps
-        INNER JOIN {$wpdb->posts} p ON p.ID = ps.post_id
-        SET ps.count = ps.count + FLOOR(20 + RAND() * 21)
-        WHERE ps.type = 'view' AND ps.row_type = 'total'
-        AND p.post_status = 'publish'
-    ");
-}
-
-// Schedule automatic Increments for Views
-add_action('increment_views_event', 'increment_views');
-if (!wp_next_scheduled('increment_views_event')) {
-    wp_schedule_event(time(), 'weekly', 'increment_views_event');
-}
 
 // ======================================
 // ADD LIKE / DISLIKE BUTTONS
@@ -178,32 +107,6 @@ function update_likes() {
     wp_die();
 }
 
-// Ensure Likes Meta exists for new Posts
-function er_init_likes_meta($post_id) {
-    if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) {
-        return;
-    }
-    global $wpdb;
-    $table = $wpdb->prefix . 'er_post_stats';
-    $exists = $wpdb->get_var($wpdb->prepare(
-        "SELECT id FROM {$table} WHERE post_id = %d AND type = 'like' AND row_type = 'total'",
-        $post_id
-    ));
-    if (!$exists) {
-        $wpdb->insert($table, [
-            'post_id'    => $post_id,
-            'type'       => 'like',
-            'row_type'   => 'total',
-            'count'      => rand(500, 1000),
-            'created_at' => null,
-        ]);
-    }
-}
-add_action('transition_post_status', function($new_status, $old_status, $post) {
-    if ($new_status === 'publish' && $old_status !== 'publish') {
-        er_init_likes_meta($post->ID);
-    }
-}, 10, 3);
 add_action('wp_ajax_update_likes', 'update_likes');
 add_action('wp_ajax_nopriv_update_likes', 'update_likes');
 
@@ -243,32 +146,6 @@ function update_dislikes() {
     wp_die();
 }
 
-// Ensure Dislikes Meta exists for new Posts
-function er_init_dislikes_meta($post_id) {
-    if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) {
-        return;
-    }
-    global $wpdb;
-    $table = $wpdb->prefix . 'er_post_stats';
-    $exists = $wpdb->get_var($wpdb->prepare(
-        "SELECT id FROM {$table} WHERE post_id = %d AND type = 'dislike' AND row_type = 'total'",
-        $post_id
-    ));
-    if (!$exists) {
-        $wpdb->insert($table, [
-            'post_id'    => $post_id,
-            'type'       => 'dislike',
-            'row_type'   => 'total',
-            'count'      => rand(5, 10),
-            'created_at' => null,
-        ]);
-    }
-}
-add_action('transition_post_status', function($new_status, $old_status, $post) {
-    if ($new_status === 'publish' && $old_status !== 'publish') {
-        er_init_dislikes_meta($post->ID);
-    }
-}, 10, 3);
 add_action('wp_ajax_update_dislikes', 'update_dislikes');
 add_action('wp_ajax_nopriv_update_dislikes', 'update_dislikes');
 
@@ -402,91 +279,22 @@ function custom_like_dislike_shortcode() {
 }
 add_shortcode('like_dislike_buttons', 'custom_like_dislike_shortcode');
 
-// Shortcode to display Likes on Frontend
-function er_today_total_likes_shortcode() {
-    global $wpdb;
-    $cache_key = 'er_likes_stats_' . date('Y-m-d-H');
-    $cached = get_transient($cache_key);
-    if ($cached !== false) {
-        return $cached;
-    }
-	$table = $wpdb->prefix . 'er_post_stats';
-    $likes_today = $wpdb->get_var("
-        SELECT COUNT(*) FROM {$table}
-        WHERE type = 'like' AND row_type = 'event' AND created_at >= '" . er_today_start() . "'
-    ");
-    $likes_total = $wpdb->get_var("
-        SELECT SUM(count) FROM {$table}
-        WHERE type = 'like' AND row_type = 'total'
-    ");
-    $format_count = fn($num) => number_format($num);
-    $output = '<p>👍 Likes: <strong style="color: var(--color-2);">' . $format_count($likes_today) . '</strong> today / <strong>' . $format_count($likes_total) . '</strong> total</p>';
-    set_transient($cache_key, $output, HOUR_IN_SECONDS); // ⏱️ Cached 1hr — lags behind Dashboard (which is 5min)
-    return $output;
-}
-add_shortcode('today_total_likes', 'er_today_total_likes_shortcode');
-
-// Shortcode to display Dislikes on Frontend
-function er_today_total_dislikes_shortcode() {
-    global $wpdb;
-    $cache_key = 'er_dislikes_stats_' . date('Y-m-d-H');
-    $cached = get_transient($cache_key);
-    if ($cached !== false) {
-        return $cached;
-    }
-	$table = $wpdb->prefix . 'er_post_stats';
-    $dislikes_today = $wpdb->get_var("
-        SELECT COUNT(*) FROM {$table}
-        WHERE type = 'dislike' AND row_type = 'event' AND created_at >= '" . er_today_start() . "'
-    ");
-    $dislikes_total = $wpdb->get_var("
-        SELECT SUM(count) FROM {$table}
-        WHERE type = 'dislike' AND row_type = 'total'
-    ");
-    $format_count = fn($num) => number_format($num);
-    $output = '<p>👎 Dislikes: <strong style="color: var(--color-2);">' . $format_count($dislikes_today) . '</strong> today / <strong>' . $format_count($dislikes_total) . '</strong> total</p>';
-    set_transient($cache_key, $output, HOUR_IN_SECONDS); // ⏱️ Cached 1hr — lags behind Dashboard (which is 5min)
-    return $output;
-}
-add_shortcode('today_total_dislikes', 'er_today_total_dislikes_shortcode');
-
-// Introduce Increments for Likes
-function increment_likes() {
-    global $wpdb;
-    $table = $wpdb->prefix . 'er_post_stats';
-    $wpdb->query("
-        UPDATE {$table} ps
-        INNER JOIN {$wpdb->posts} p ON p.ID = ps.post_id
-        SET ps.count = ps.count + FLOOR(RAND() * 7)
-        WHERE ps.type = 'like' AND ps.row_type = 'total'
-        AND p.post_status = 'publish'
-    ");
+// Shortcodes fuer die Frontend-Ausgabe.
+// Alle drei holen ihre Zahlen aus derselben Quelle wie das Dashboard,
+// damit vorne und hinten nie Unterschiedliches steht.
+function er_render_stat_line($type, $icon, $label) {
+    if (!function_exists('er_stats_snapshot')) return '';
+    $s = er_stats_snapshot();
+    $today = number_format_i18n($s[$type . 's_today']);
+    $total = number_format_i18n($s[$type . 's_total']);
+    return '<p>' . $icon . ' ' . $label . ': '
+         . '<strong style="color: var(--color-2);">' . $today . '</strong> today / '
+         . '<strong>' . $total . '</strong> total</p>';
 }
 
-// Schedule automatic Increments for Likes
-add_action('increment_likes_event', 'increment_likes');
-if (!wp_next_scheduled('increment_likes_event')) {
-    wp_schedule_event(time(), 'weekly', 'increment_likes_event');
-}
-
-// Introduce Increments for Dislikes
-function increment_dislikes() {
-    global $wpdb;
-    $table = $wpdb->prefix . 'er_post_stats';
-    $wpdb->query("
-        UPDATE {$table} ps
-        INNER JOIN {$wpdb->posts} p ON p.ID = ps.post_id
-        SET ps.count = ps.count + IF(RAND() < 0.35, 1, 0)
-        WHERE ps.type = 'dislike' AND ps.row_type = 'total'
-        AND p.post_status = 'publish'
-    ");
-}
-
-// Schedule automatic Increments for Dislikes
-add_action('increment_dislikes_event', 'increment_dislikes');
-if (!wp_next_scheduled('increment_dislikes_event')) {
-    wp_schedule_event(time(), 'weekly', 'increment_dislikes_event');
-}
+add_shortcode('today_total_views',    fn() => er_render_stat_line('view',    '👁️', 'Views'));
+add_shortcode('today_total_likes',    fn() => er_render_stat_line('like',    '👍', 'Likes'));
+add_shortcode('today_total_dislikes', fn() => er_render_stat_line('dislike', '👎', 'Dislikes'));
 
 // ======================================
 // DAILY CLEANUP OF EVENT ROWS
