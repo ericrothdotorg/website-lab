@@ -147,19 +147,21 @@ function custom_render_activity_widget() {
 	$today = er_today_start();
     $cached = get_transient('custom_activity_stats');
     if ($cached === false) {
-        $cached = [
+        // Views, Likes und Dislikes kommen aus dem Snippet "Stats Engine" -
+        // dieselbe Quelle, aus der auch die Frontend-Shortcodes lesen.
+        // Ist die Engine mal abgeschaltet, stehen hier Nullen statt einem Absturz.
+        $stats = function_exists('er_stats_snapshot') ? er_stats_snapshot() : [
+            'views_today'    => 0, 'views_total'    => 0,
+            'likes_today'    => 0, 'likes_total'    => 0,
+            'dislikes_today' => 0, 'dislikes_total' => 0,
+        ];
+        $cached = array_merge($stats, [
             'contact_today'  => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_contact_messages WHERE DATE(submitted_at) = CURDATE()"),
             'contact_total'  => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_contact_messages"),
-            'views_today'    => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'view' AND row_type = 'event' AND created_at >= '{$today}'"),
-            'views_total'    => $wpdb->get_var("SELECT SUM(count) FROM {$table} WHERE type = 'view' AND row_type = 'total'"),
-            'likes_today'    => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'like' AND row_type = 'event' AND created_at >= '{$today}'"),
-            'likes_total'    => $wpdb->get_var("SELECT SUM(count) FROM {$table} WHERE type = 'like' AND row_type = 'total'"),
-            'dislikes_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE type = 'dislike' AND row_type = 'event' AND created_at >= '{$today}'"),
-            'dislikes_total' => $wpdb->get_var("SELECT SUM(count) FROM {$table} WHERE type = 'dislike' AND row_type = 'total'"),
-			'subscribers_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_subscribers WHERE status = 'active' AND DATE(created_at) = CURDATE()"),
-			'subscribers_total' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_subscribers WHERE status = 'active'"),
-        ];
-        set_transient('custom_activity_stats', $cached, 5 * MINUTE_IN_SECONDS); // ⏱️ Cached 5min — leads the Frontend (which is 1hr)
+            'subscribers_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_subscribers WHERE status = 'active' AND DATE(created_at) = CURDATE()"),
+            'subscribers_total' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_subscribers WHERE status = 'active'"),
+        ]);
+        set_transient('custom_activity_stats', $cached, 5 * MINUTE_IN_SECONDS);
     }
 
     // Posts liked today
