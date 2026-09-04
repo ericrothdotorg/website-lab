@@ -135,8 +135,19 @@ add_action('wp_head', function() {
     }
     if (is_front_page()) { // Add Cover Block Poster on Front Page
         preg_match('/poster="([^"]+)"/', $post->post_content, $m);
-        if (!empty($m[1])) $preload_images[] = ['url' => $m[1], 'type' => 'single'];
-    } 
+        if (!empty($m[1])) {
+            // The poster is usually also the featured image. Only add it if it
+            // isn't already queued, or the phone fetches the same file twice.
+            $already = false;
+            foreach ($preload_images as $existing) {
+                if (($existing['url'] ?? '') === $m[1] || ($existing['desktop'] ?? '') === $m[1]) {
+                    $already = true;
+                    break;
+                }
+            }
+            if (!$already) $preload_images[] = ['url' => $m[1], 'type' => 'single'];
+        }
+    }
     
     // 3. Output preload Links for all collected Images
     foreach ($preload_images as $img) {
