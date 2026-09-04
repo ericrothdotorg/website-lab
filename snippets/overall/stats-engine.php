@@ -2,55 +2,51 @@
 // NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
 // ============================================================================
-// STATS ENGINE - Die eine Quelle fuer alle Zahlen
-// Muss VOR dem Voting-Snippet und dem Dashboard laden -> Prioritaet niedrig
+// STATS ENGINE - single source for all counters
+// Must load before the voting snippet and the dashboard -> low priority
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// GRUNDEINSTELLUNGEN
+// BASE CONFIGURATION
 // ----------------------------------------------------------------------------
-// Die Tageswerte kommen aus dem Zehnjahresschnitt der Seite:
-//   3.638.531 Views / 3650 Tage = rund 1000
-//     567.391 Likes / 3650 Tage = rund 156
-//       5.786 Dislikes / 3650 Tage = rund 1,6
-// Wenn du die Zahlen spaeter anders willst, nur hier anfassen.
+// Baseline daily rates. Change here and nowhere else.
 
 function er_stats_base_rates() {
     return ['view' => 1000, 'like' => 156, 'dislike' => 1.6];
 }
 
-// Nur diese Inhaltstypen bekommen ueberhaupt Zaehler.
-// Damit kann oembed_cache & Co. nie wieder mitzaehlen.
+// Only these content types get counters at all.
+// Keeps oembed_cache and similar internal types out of the totals.
 function er_stats_tracked_types() {
     return ['post', 'page', 'my-interests', 'my-quotes', 'my-traits'];
 }
 
 // ----------------------------------------------------------------------------
-// DER TAGESWERT
+// DAILY VALUE
 // ----------------------------------------------------------------------------
-// Fester Wert pro Datum. Gleiches Datum ergibt immer dieselbe Zahl, egal wie
-// oft die Funktion aufgerufen wird. Kein Zufall zur Laufzeit - sonst wuerde
-// sich die Anzeige bei jedem Seitenaufruf aendern.
+// Deterministic per date: The same date always yields the same number, no
+// matter how often the function is called. No randomness at runtime, otherwise
+// the output would change on every page load.
 
 function er_stats_synth_daily($type, $date) {
     $rates = er_stats_base_rates();
     if (!isset($rates[$type])) return 0;
 
-    // Hash des Datums als Zahl zwischen 0 und 1.
+    // Hash of the date, normalised to a value between 0 and 1.
     $u = hexdec(substr(hash('sha256', 'er-stats|' . $type . '|' . $date), 0, 8)) / 0xffffffff;
 
-    // Wochentags-Muster. Der Schnitt ueber die Woche bleibt bei 1,0.
+    // Weekday pattern. The average across the week stays at 1.0.
     $dow = (int) date('N', strtotime($date));
     $wd  = ($dow >= 6) ? 0.75 : 1.10;
 
-    // Streuung von plus/minus 25 Prozent, damit es nicht wie ein Metronom wirkt.
+    // Spread of plus / minus 25 percent so the curve is not perfectly uniform.
     $noise = 0.75 + $u * 0.5;
 
     return max(0, (int) round($rates[$type] * $wd * $noise));
 }
 
-// Wie weit der Tag fortgeschritten ist, als weiche Kurve statt linear:
-// morgens langsam, mittags am schnellsten, abends wieder flacher.
+// How far the day has advanced, as a smooth curve rather than linear:
+// Slow in the morning, fastest around midday, flattening again in the evening.
 function er_stats_day_progress() {
     $start   = strtotime(current_time('Y-m-d') . ' 00:00:00');
     $elapsed = (current_time('timestamp') - $start) / DAY_IN_SECONDS;
@@ -59,11 +55,10 @@ function er_stats_day_progress() {
 }
 
 // ----------------------------------------------------------------------------
-// TAGEBUCH
+// LOG
 // ----------------------------------------------------------------------------
-// Der Tagesjob schreibt hier hinein, was er tatsaechlich draufgerechnet hat.
-// Die Anzeige liest denselben Eintrag. Dadurch koennen Tageszahl und
-// Gesamtstand gar nicht mehr auseinanderlaufen.
+// The daily job records here what it actually applied. The display reads the
+// same entry, so the daily figure and the running total cannot drift apart.
 
 function er_stats_log_get($date) {
     $log = get_option('er_stats_synth_log', []);
@@ -73,14 +68,14 @@ function er_stats_log_get($date) {
 function er_stats_log_put($date, $values) {
     $log = get_option('er_stats_synth_log', []);
     $log[$date] = $values;
-    if (count($log) > 90) {                       // nur die letzten 90 Tage behalten
+    if (count($log) > 90) {                       // keep only the last 90 days
         ksort($log);
         $log = array_slice($log, -90, null, true);
     }
     update_option('er_stats_synth_log', $log, false);
 }
 
-// Tageswert fuer heute. Falls der Job noch nicht lief, wird er direkt berechnet.
+// Today's value. Computed directly if the job has not run yet.
 function er_stats_today_target($type) {
     $today = current_time('Y-m-d');
     $entry = er_stats_log_get($today);
@@ -91,11 +86,10 @@ function er_stats_today_target($type) {
 }
 
 // ----------------------------------------------------------------------------
-// DER TAGESJOB
+// DAILY JOB
 // ----------------------------------------------------------------------------
-// Loest den alten Wochenjob ab. Verteilt den Tagesbetrag auf die Inhalte und
-// schreibt ihn ins Tagebuch. Hier ist Zufall in Ordnung: der Job laeuft einmal,
-// das Ergebnis steht danach fest in der Datenbank.
+// Distributes the daily amount across the content and writes it to the log.
+// Randomness is fine here: the job runs once and the result is then fixed in the database.
 
 function er_stats_apply_daily() {
     global $wpdb;
@@ -104,7 +98,7 @@ function er_stats_apply_daily() {
     $in    = "'" . implode("','", array_map('esc_sql', $types)) . "'";
     $date  = current_time('Y-m-d');
 
-    if (er_stats_log_get($date) !== null) return;   // heute schon gelaufen
+    if (er_stats_log_get($date) !== null) return;   // already ran today
 
     $ids = $wpdb->get_col(
         "SELECT ID FROM {$wpdb->posts}
@@ -118,14 +112,13 @@ function er_stats_apply_daily() {
         $applied[$type] = $total;
         if ($total <= 0) continue;
 
-        // Betrag zufaellig auf die Inhalte streuen.
+        // Spread the amount across the content at random.
         $per = array_fill_keys($ids, 0);
         for ($i = 0; $i < $total; $i++) {
             $per[$ids[array_rand($ids)]]++;
         }
 
-        // Nach Betrag gruppieren, damit es wenige grosse Abfragen statt
-        // hunderter kleiner werden.
+        // Group by amount so this becomes a few large queries instead of hundreds of small ones.
         $groups = [];
         foreach ($per as $pid => $n) {
             if ($n > 0) $groups[$n][] = (int) $pid;
@@ -146,15 +139,9 @@ function er_stats_apply_daily() {
 }
 add_action('er_stats_daily_increment', 'er_stats_apply_daily');
 
-// Einplanen, und die alten Wochenjobs abraeumen.
-//
-// Die drei wp_unschedule_event() laufen bei jedem Seitenaufruf, obwohl sie seit
-// dem Umbau am 03.09.2026 nichts mehr finden. Das ist Absicht und keine offene
-// Baustelle: die Jobliste liegt ohnehin im Speicher, die Pruefung kostet also
-// praktisch nichts. Eine Merker-Variable waere zwar sauberer, wuerde die
-// Aufraeumung aber blockieren, falls die Datenbank mal aus einem aelteren Backup
-// zurueckkommt - dann waeren die Wochenjobs wieder da und niemand raeumt sie weg.
-// Also stehenlassen.
+// Schedule the job and clear out the old weekly ones.
+// Unscheduling the legacy weekly events on every load is cheap and idempotent,
+// so an older database restore gets cleaned up too.
 add_action('init', function() {
     foreach (['increment_views_event', 'increment_likes_event', 'increment_dislikes_event'] as $old) {
         $ts = wp_next_scheduled($old);
@@ -163,13 +150,16 @@ add_action('init', function() {
     if (!wp_next_scheduled('er_stats_daily_increment')) {
         wp_schedule_event(strtotime('tomorrow 00:05'), 'daily', 'er_stats_daily_increment');
     }
+    if (!wp_next_scheduled('er_stats_daily_cleanup')) {
+        wp_schedule_event(strtotime('tomorrow 00:15'), 'daily', 'er_stats_daily_cleanup');
+    }
 });
 
 // ----------------------------------------------------------------------------
-// DIE ZAHLEN FUER ANZEIGE UND DASHBOARD
+// FIGURES FOR DISPLAY AND DASHBOARD
 // ----------------------------------------------------------------------------
-// Hier holen sich Shortcodes und Dashboard alles. Eine Funktion, ein
-// Zwischenspeicher, keine zweite Kopie irgendwo.
+// Single entry point for shortcodes and the dashboard. One function, one
+// cache, no second copy anywhere.
 
 function er_stats_snapshot() {
     $cached = get_transient('er_stats_snapshot');
@@ -182,16 +172,16 @@ function er_stats_snapshot() {
     $out      = [];
 
     foreach (['view', 'like', 'dislike'] as $type) {
-        // Echte Besucher und echte Klicks von heute.
+        // Recorded events from today.
         $real = (int) $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$table}
              WHERE type = %s AND row_type = 'event' AND created_at >= %s", $type, $today
         ));
-        // Der Anteil des Tagesbetrags, der bis jetzt "angefallen" ist.
+        // The share of the daily amount accrued so far.
         $synth = (int) round(er_stats_today_target($type) * $progress);
 
         $out[$type . 's_today'] = $synth + $real;
-        // Die echten Klicks separat, fuer die Kontrollzeile im Dashboard.
+        // Recorded events kept separately for the dashboard control line.
         $out['real_' . $type . 's_today'] = $real;
         $out[$type . 's_total'] = (int) $wpdb->get_var($wpdb->prepare(
             "SELECT COALESCE(SUM(count),0) FROM {$table} WHERE type = %s AND row_type = 'total'", $type
@@ -203,11 +193,9 @@ function er_stats_snapshot() {
 }
 
 // ----------------------------------------------------------------------------
-// STARTWERTE FUER NEUE INHALTE
+// INITIAL VALUES FOR NEW CONTENT
 // ----------------------------------------------------------------------------
-// Views werden gewuerfelt, Likes und Dislikes daraus berechnet. Genau das war
-// vorher der Fehler: alle drei wurden unabhaengig gewuerfelt, dadurch hatten
-// manche Seiten 54 Likes je 100 Views und andere 1.
+// Views are drawn, likes and dislikes derived from them to keep ratios consistent.
 
 function er_stats_seed_post($post_id) {
     if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) return;
@@ -218,7 +206,7 @@ function er_stats_seed_post($post_id) {
     $rates  = er_stats_base_rates();
     $views  = rand(5000, 10000);
 
-    // Dieselben Verhaeltnisse wie im Rest der Seite, mit etwas Streuung.
+    // Same ratios as the rest of the site, with a little spread.
     $r_like    = $rates['like']    / $rates['view'];
     $r_dislike = $rates['dislike'] / $rates['view'];
     $j = fn($salt) => 0.8 + (hexdec(substr(hash('sha256', $salt . '|' . $post_id), 0, 8)) / 0xffffffff) * 0.4;
@@ -249,11 +237,10 @@ add_action('transition_post_status', function($new_status, $old_status, $post) {
 }, 10, 3);
 
 // ----------------------------------------------------------------------------
-// AUFRAEUMEN
+// CLEANUP
 // ----------------------------------------------------------------------------
-// Zaehler zu geloeschten Seiten und zu Typen, die nicht mitzaehlen sollen,
-// werden taeglich entfernt. Sonst sammelt sich derselbe Muell wieder an -
-// oembed_cache legt WordPress laufend neu an.
+// Removes counters for deleted posts and for untracked types. Runs daily
+// because WordPress recreates oembed_cache entries continuously.
 
 add_action('er_stats_daily_cleanup', function() {
     global $wpdb;
