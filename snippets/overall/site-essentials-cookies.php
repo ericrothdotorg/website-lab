@@ -101,6 +101,17 @@ function er_version_assets($src, $handle = '') {
 // LCP OPTIMIZATIONS
 // ======================================
 
+// LiteSpeed rewrites image URLs to .webp in the body but not in our preloads,
+// so a preload for "photo.jpg" misses. Returns .webp when accepted and present.
+function er_webp_url( $url ) {
+    if ( ! $url ) return $url;
+    if ( strpos( $_SERVER['HTTP_ACCEPT'] ?? '', 'image/webp' ) === false ) return $url;
+    $uploads = wp_get_upload_dir();
+    if ( strpos( $url, $uploads['baseurl'] ) !== 0 ) return $url;
+    $path = $uploads['basedir'] . substr( $url, strlen( $uploads['baseurl'] ) ) . '.webp';
+    return file_exists( $path ) ? $url . '.webp' : $url;
+}
+
 // Preload LCP Images in <head> (early Priority for maximum Impact)
 add_action('wp_head', function() {
     global $post;
@@ -153,11 +164,11 @@ add_action('wp_head', function() {
     foreach ($preload_images as $img) {
         if ($img['type'] === 'responsive') {
             // Preload 'large' for Mobile, 'full' for Desktop
-            echo '<link rel="preload" as="image" href="' . esc_url($img['mobile']) . '" media="(max-width: 768px)" fetchpriority="high">' . "\n";
-            echo '<link rel="preload" as="image" href="' . esc_url($img['desktop']) . '" media="(min-width: 769px)" fetchpriority="high">' . "\n";
+            echo '<link rel="preload" as="image" href="' . esc_url(er_webp_url($img['mobile'])) . '" media="(max-width: 768px)" fetchpriority="high">' . "\n";
+            echo '<link rel="preload" as="image" href="' . esc_url(er_webp_url($img['desktop'])) . '" media="(min-width: 769px)" fetchpriority="high">' . "\n";
         } else {
             // For priority-high Images, use single URL (already in content)
-            echo '<link rel="preload" as="image" href="' . esc_url($img['url']) . '" fetchpriority="high">' . "\n";
+            echo '<link rel="preload" as="image" href="' . esc_url(er_webp_url($img['url'])) . '" fetchpriority="high">' . "\n";
         }
     }
 }, 1);
@@ -183,7 +194,7 @@ add_action('wp_head', function() {
     if (!$logo_id) return;
     $src = wp_get_attachment_image_url($logo_id, array(100, 100));
     if ($src) {
-        echo '<link rel="preload" as="image" href="' . esc_url($src) . '" fetchpriority="high">' . "\n";
+        echo '<link rel="preload" as="image" href="' . esc_url(er_webp_url($src)) . '" fetchpriority="high">' . "\n";
     }
 }, 1);
 
