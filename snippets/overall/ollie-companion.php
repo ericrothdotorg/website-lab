@@ -540,12 +540,18 @@ function er_hero_shortcode() {
 	
 	$build_bg_span = function( $img_id ) {
 		if ( ! $img_id ) return '';
-		$img_url = wp_get_attachment_image_url( $img_id, 'full' );
-		if ( ! $img_url ) return '';
-		return '<span'
+		$full = wp_get_attachment_image_url( $img_id, 'full' );
+		if ( ! $full ) return '';
+		$mobile = wp_get_attachment_image_url( $img_id, 'large' );
+		// Phones preload 'large' but the hero painted 'full' — a miss. Pages skipped:
+		// Term Image Meta writes a competing rule there.
+		$css = ( $mobile && $mobile !== $full )
+			? '<style>@media (max-width:768px){.er-hero-section:not([data-type="page"]) .er-hero-bg{background-image:url(' . esc_url( $mobile ) . ') !important;}}</style>'
+			: '';
+		return $css . '<span'
 			. ' aria-hidden="true"'
 			. ' class="has-background-dim er-hero-bg"'
-			. ' style="background-image:url(' . esc_url( $img_url ) . ');background-position:center center;">'
+			. ' style="background-image:url(' . esc_url( $full ) . ');background-position:center center;">'
 			. '</span>';
 	};
 
