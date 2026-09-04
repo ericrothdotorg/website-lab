@@ -1,9 +1,24 @@
 <?php
 // NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
-// =================================
+// ==================================================================
+// LAZY-LOAD EMBED IFRAMES
+// The placeholder script below only runs after the page is parsed,
+// by which time the browser has already started fetching the player.
+// This tells it to wait until the video is near the screen.
+// ==================================================================
+
+add_filter( 'render_block', function( $html, $block ) {
+	if ( strpos( $html, '<iframe' ) === false ) return $html;
+	if ( strpos( $html, 'youtube.com/embed' ) === false
+	  && strpos( $html, 'player.vimeo.com' ) === false ) return $html;
+	if ( strpos( $html, 'loading=' ) !== false ) return $html;
+	return str_replace( '<iframe ', '<iframe loading="lazy" ', $html );
+}, 10, 2 );
+
+// ==================================================================
 // STYLE & SCRIPT IN FOOTER
-// =================================
+// ==================================================================
 
 add_action('wp_footer', function () {
     ?>
