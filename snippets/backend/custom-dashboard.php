@@ -401,6 +401,19 @@ function custom_check_broken_yt_links() {
 // 🧹 OPTIMIZE & CLEAN-UP
 // ======================================
 
+// Layout of this section:
+//   1. Widget assembly      — what the dashboard box prints, top to bottom
+//   2. 👆 Manual trigger    — the "🧵 InnoDB Cleanup" button
+//   3. ⏰ Automatic trigger — the weekly scheduled run
+//   4. ⚙️ Cleanup engine    — the actual work; both triggers above call this
+//   5. Buttons & links      — includes two external tools unrelated to the engine
+//   6. Stats & health       — the row counts and their green / orange / red labels
+//   7. History readout      — the "Last cleanup" line, written by either trigger
+
+// --------------------------------------
+// 1. WIDGET ASSEMBLY
+// --------------------------------------
+
 function custom_render_innodb_cleanup() {
 	custom_handle_cleanup_submission();
 	custom_render_action_buttons();
@@ -408,6 +421,12 @@ function custom_render_innodb_cleanup() {
 	custom_render_cleanup_history();
 }
 
+// --------------------------------------
+// 2. 👆 MANUAL TRIGGER
+// --------------------------------------
+
+// Fires only when the "🧵 InnoDB Cleanup" button was actually submitted.
+// Without a click this returns immediately and nothing is deleted.
 function custom_handle_cleanup_submission() {
 	if (!isset($_POST['er_run_full_cleanup'])) return;
 	if (!current_user_can('manage_options')) {
@@ -420,52 +439,32 @@ function custom_handle_cleanup_submission() {
 	update_option('custom_last_cleanup_success', $result['success']);
 }
 
-function custom_render_action_buttons() {
-	echo '<div class="cd-widget cd-flex" style="align-items: center;">';
-	echo '<form method="post" class="cd-form">';
-	wp_nonce_field('custom_cleanup_action', 'custom_cleanup_nonce');
-	echo '<button type="submit" name="er_run_full_cleanup" class="button">🧵 InnoDB Cleanup</button>';
-	echo '</form>';
-	echo '<a href="' . esc_url(admin_url('admin.php?page=litespeed-db_optm')) . '" class="button" target="_blank">🛢️ LiteSpeed DB</a>';
-	$purge = admin_url('index.php?LSCWP_CTRL=purge&LSCWP_NONCE=' . wp_create_nonce('purge') . '&litespeed_type=purge_all');
-	echo '<a href="' . esc_url($purge) . '" class="button">⚡ Purge All</a>';
-	echo '</div>';
-}
+// --------------------------------------
+// 3. ⏰ AUTOMATIC TRIGGER (WEEKLY)
+// --------------------------------------
 
-function custom_render_database_stats() {
-	global $wpdb;
-	$rows = [
-		['Content Meta Rows', (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->postmeta}"), 'meta'],
-		['Term Meta Rows',    (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->termmeta}"), 'meta'],
-		['User Meta Rows',    (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->usermeta}"), 'meta'],
-		['Post Stats Rows',   (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_post_stats"), 'meta'],
-		['Map View Rows',     (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_map_views"), 'map_views'],
-	];
-	$total = 0;
+// Same engine, same three options written, no click needed. The button in
+// section 2 keeps working alongside this and can be used any time.
 
-	echo '<div style="margin-top: 15px;">';
-	foreach ($rows as [$label, $count, $profile]) {
-		$total += $count;
-		$status = custom_get_health_status($count, $profile);
-		echo '<p style="margin: 5px 0;">' . esc_html($label) . ': <strong>' . number_format_i18n($count) . '</strong> ';
-		echo '<span class="' . esc_attr($status[0]) . '">— ' . esc_html($status[1]) . '</span></p>';
+add_action('init', function () {
+	if (!wp_next_scheduled('er_weekly_cleanup')) {
+		wp_schedule_event(time() + HOUR_IN_SECONDS, 'weekly', 'er_weekly_cleanup');
 	}
-	echo '<p style="margin: 5px 0;">TOTAL Meta Rows: <strong>' . number_format_i18n($total) . '</strong></p>';
-	echo '</div>';
-}
+});
 
-// HEALTH STATUS — Every green / orange / red label on the "Optimize & Clean-Up" stat rows is decided here and nowhere else. To change a cutoff, change it here.
-// How it works: Each row passes a "profile" telling this function which size limits apply. Up to and including the orange number = green ("Healthy"). Above orange = orange ("Moderate bloat"). Above red = red ("Consider a cleanup"). Rows with no profile use 'meta' by default.
-//   'meta'      → postmeta, usermeta, termmeta, er_post_stats. Big tables, high limits: orange 10k, red 50k.
-//   'map_views' → er_map_views. Normal size is ~11,500 rows (about 128 visits a day kept for 90 days), so its limits sit higher than that on purpose: orange 15k, red 30k.
+add_action('er_weekly_cleanup', function () {
+	if (!function_exists('custom_run_innodb_cleanup')) return;
+	$result = custom_run_innodb_cleanup();
+	update_option('custom_last_cleanup', time());
+	update_option('custom_last_cleanup_result', $result['message']);
+	update_option('custom_last_cleanup_success', $result['success']);
+});
 
-function custom_get_health_status($count, $profile = 'meta') {
-	[$orange, $red] = ($profile === 'map_views') ? [15000, 30000] : [10000, 50000];
-	if ($count > $red)    return ['cd-alert',   'Consider running a cleanup.'];
-	if ($count > $orange) return ['cd-warning', 'Moderate bloat detected.'];
-	return                       ['cd-success', 'Healthy state.'];
-}
+// --------------------------------------
+// 4. ⚙️ CLEANUP ENGINE
+// --------------------------------------
 
+// The only place rows are actually deleted. Reached from section 2 and 3.
 function custom_run_innodb_cleanup() {
 	global $wpdb;
 	$deleted_total = 0;
@@ -535,6 +534,8 @@ function custom_cleanup_transients($wpdb, $safe_delete) {
 	return $deleted;
 }
 
+// Retention rules live here. They are NOT background jobs: Nothing expires on
+// its own, the "90 days" and "7 days" limits only apply the moment this runs.
 function custom_cleanup_old_data($wpdb, $safe_delete) {
 	$deleted = 0;
 	if ($wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}actionscheduler_actions'") === "{$wpdb->prefix}actionscheduler_actions") {
@@ -562,6 +563,67 @@ function custom_optimize_tables($wpdb, &$errors) {
 	return $optimized_count;
 }
 
+// --------------------------------------
+// 5. BUTTONS & EXTERNAL TOOLS
+// --------------------------------------
+
+// Only the first button runs the engine above. The other two are plain links
+// to LiteSpeed's own pages and have nothing to do with this cleanup.
+function custom_render_action_buttons() {
+	echo '<div class="cd-widget cd-flex" style="align-items: center;">';
+	echo '<form method="post" class="cd-form">';
+	wp_nonce_field('custom_cleanup_action', 'custom_cleanup_nonce');
+	echo '<button type="submit" name="er_run_full_cleanup" class="button">🧵 InnoDB Cleanup</button>';
+	echo '</form>';
+	echo '<a href="' . esc_url(admin_url('admin.php?page=litespeed-db_optm')) . '" class="button" target="_blank">🛢️ LiteSpeed DB</a>';
+	$purge = admin_url('index.php?LSCWP_CTRL=purge&LSCWP_NONCE=' . wp_create_nonce('purge') . '&litespeed_type=purge_all');
+	echo '<a href="' . esc_url($purge) . '" class="button">⚡ Purge All</a>';
+	echo '</div>';
+}
+
+// --------------------------------------
+// 6. STATS & HEALTH
+// --------------------------------------
+
+function custom_render_database_stats() {
+	global $wpdb;
+	$rows = [
+		['Content Meta Rows', (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->postmeta}"), 'meta'],
+		['Term Meta Rows',    (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->termmeta}"), 'meta'],
+		['User Meta Rows',    (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->usermeta}"), 'meta'],
+		['Post Stats Rows',   (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_post_stats"), 'meta'],
+		['Map View Rows',     (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_map_views"), 'map_views'],
+	];
+	$total = 0;
+
+	echo '<div style="margin-top: 15px;">';
+	foreach ($rows as [$label, $count, $profile]) {
+		$total += $count;
+		$status = custom_get_health_status($count, $profile);
+		echo '<p style="margin: 5px 0;">' . esc_html($label) . ': <strong>' . number_format_i18n($count) . '</strong> ';
+		echo '<span class="' . esc_attr($status[0]) . '">— ' . esc_html($status[1]) . '</span></p>';
+	}
+	echo '<p style="margin: 5px 0;">TOTAL Meta Rows: <strong>' . number_format_i18n($total) . '</strong></p>';
+	echo '</div>';
+}
+
+// HEALTH STATUS — the only place the green / orange / red cutoffs live.
+// At or below orange = green. Above orange = orange. Above red = red.
+//   'meta'      → postmeta, usermeta, termmeta, er_post_stats. Orange 10k, red 50k.
+//   'map_views' → er_map_views. Sits at ~11,500 rows normally (~128 visits/day
+//                 over 90 days), so its cutoffs are set above that: orange 15k, red 30k.
+function custom_get_health_status($count, $profile = 'meta') {
+	[$orange, $red] = ($profile === 'map_views') ? [15000, 30000] : [10000, 50000];
+	if ($count > $red)    return ['cd-alert',   'Consider running a cleanup.'];
+	if ($count > $orange) return ['cd-warning', 'Moderate bloat detected.'];
+	return                       ['cd-success', 'Healthy state.'];
+}
+
+// --------------------------------------
+// 7. HISTORY READOUT
+// --------------------------------------
+
+// Written by both triggers, so this line cannot tell you which one ran.
 function custom_render_cleanup_history() {
 	$last_cleanup = get_option('custom_last_cleanup');
 	if (!$last_cleanup) return;
@@ -693,6 +755,12 @@ function custom_dashboard_inline_assets() {
 			background: var(--cd-btn-hover);
 			border-color: var(--cd-btn-border);
 			box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 1px 3px rgba(0,0,0,.12);
+		}
+		.cd-widget .button:focus:not(:focus-visible),
+		.cd-widget button.button:focus:not(:focus-visible) {
+			border-color: var(--cd-btn-border);
+			box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 1px 2px var(--cd-btn-shadow);
+			outline: none;
 		}
 		/* === Utility Classes === */
 		.cd-link          { color: var(--cd-blue); text-decoration: none; font-weight: bold; }
