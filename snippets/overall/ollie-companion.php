@@ -1374,9 +1374,14 @@ add_action( 'wp_footer', function() {
 			var visualToggle     = document.querySelector('#dark-mode-toggle-btn .toggle-visual');
 			var statusEl         = document.getElementById('dark-mode-status');
 
-			// Apply from localStorage
+			// Apply from localStorage.
+			// Condition must stay identical to the wp_head flash guard: An explicit choice wins and with no choice on record we follow the OS.
+			// When the two drift apart you get a dark backdrop with light content on first visit.
 			try {
-				if (localStorage.getItem('changeMode') === 'true') {
+				var stored      = localStorage.getItem('changeMode');
+				var prefersDark = window.matchMedia
+				               && window.matchMedia('(prefers-color-scheme: dark)').matches;
+				if (stored === 'true' || (stored === null && prefersDark)) {
 					body.classList.add('dark-mode');
 				}
 			} catch(e) { console.warn('Could not load dark mode preference'); }
@@ -1650,34 +1655,34 @@ add_action( 'wp_footer', function() {
 // returns automatically if WooCommerce is ever installed.
 
 add_filter( 'get_block_templates', function ( $query_result, $query, $template_type ) {
-    // Only act when WooCommerce is not active.
-    if ( class_exists( 'WooCommerce' ) ) {
-        return $query_result;
-    }
+	// Only act when WooCommerce is not active.
+	if ( class_exists( 'WooCommerce' ) ) {
+		return $query_result;
+	}
 
-    $woo_parts = array(
-        'product-card',
-        'simple-product-add-to-cart-with-options',
-        'variable-product-add-to-cart-with-options',
-    );
+	$woo_parts = array(
+		'product-card',
+		'simple-product-add-to-cart-with-options',
+		'variable-product-add-to-cart-with-options',
+	);
 
-    $woo_templates = array(
-        'archive-product',
-        'single-product',
-        'page-cart',
-        'page-checkout',
-        'order-confirmation',
-        'product-search-results',
-    );
+	$woo_templates = array(
+		'archive-product',
+		'single-product',
+		'page-cart',
+		'page-checkout',
+		'order-confirmation',
+		'product-search-results',
+	);
 
-    $hide = ( 'wp_template_part' === $template_type ) ? $woo_parts : $woo_templates;
+	$hide = ( 'wp_template_part' === $template_type ) ? $woo_parts : $woo_templates;
 
-    return array_filter(
-        $query_result,
-        function ( $template ) use ( $hide ) {
-            return ! in_array( $template->slug, $hide, true );
-        }
-    );
+	return array_filter(
+		$query_result,
+		function ( $template ) use ( $hide ) {
+			return ! in_array( $template->slug, $hide, true );
+		}
+	);
 }, 10, 3 );
 
 // ======================================
