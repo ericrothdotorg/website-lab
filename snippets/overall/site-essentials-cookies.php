@@ -120,7 +120,7 @@ add_action('wp_head', function() {
     $preload_images = [];
     
     // 1. Add featured Image to preload List
-    if (has_post_thumbnail()) {
+    if (has_post_thumbnail() && !is_front_page()) {
         $image_id = get_post_thumbnail_id();
         $mobile_url = wp_get_attachment_image_url($image_id, 'large');
         $desktop_url = wp_get_attachment_image_url($image_id, 'full');
@@ -186,17 +186,6 @@ add_filter('render_block', function($html, $block) {
         $html, 1
     );
 }, 10, 2);
-
-// Preload the header logo at 100px (it displays at 50px; 100px keeps it sharp on
-// retina screens) and mark it high priority.
-add_action('wp_head', function() {
-    $logo_id = get_theme_mod('custom_logo');
-    if (!$logo_id) return;
-    $src = wp_get_attachment_image_url($logo_id, array(100, 100));
-    if ($src) {
-        echo '<link rel="preload" as="image" href="' . esc_url(er_webp_url($src)) . '" fetchpriority="high">' . "\n";
-    }
-}, 1);
 
 // Load the logo eagerly at high priority, and give it an explicit height if the
 // block didn't (it sets width="50" but the height can be missing). The logo is
