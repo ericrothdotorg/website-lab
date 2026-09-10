@@ -366,24 +366,35 @@ function er_frontpage_cover_script() {
 		return H/2 - 1.25 * Math.log(Math.tan(Math.PI/4 + 2*(lat*RAD)/5)) * KK;
 	}
 
-	/* Latitudes where the sun sits at altitude h0, one per longitude.
+	/* Night below altitude h0, as SVG path data. Along a meridian,
 		 sin(h0) = sin(lat)sin(dec) + cos(lat)cos(dec)cos(H) collapses to
-		 R*sin(lat+phi) = sin(h0), which has TWO roots. Normally one lies inside
-		 +/-90; picking the other draws a step across the map. */
+		 R*sin(lat+phi) = sin(h0): zero, one or two roots inside +/-90.
+		 Which case applies is fixed per band, by whether the dark pole itself is
+		 below h0, i.e. |dec| > |h0|:
+		 - yes: the band reaches that pole; one root per meridian, drawn as a
+		   curve closed over the pole;
+		 - no: the band is a loop round the antisolar point; two roots on each
+		   meridian it crosses, drawn as its outline.
+		 Choosing between two roots by continuity, as before, landed on the
+		 wrong one after a stretch of pole clamps: every band deeper than |dec|
+		 collapsed to a sliver at the pole. Near the equinoxes that was seven of
+		 the eight, and the night side got .34 of its veil instead of .81. */
 	function norm180(a){                       // radians -> (-180, 180] degrees
 		var d = a / RAD;
 		d = ((d + 180) % 360 + 360) % 360 - 180;
 		return d;
 	}
-	function curve(h0, s, step){
+	function bandShape(h0, s, step){
 		step = step || 1;
-		var sinH0 = Math.sin(h0*RAD), pts = [], prev = null;
+		var sinH0 = Math.sin(h0*RAD);
 		/* At dec = 0 the terminator is two meridians and both roots are equally
-			 valid everywhere. Holding dec off zero keeps one root in range.
+			 valid everywhere. Holding dec off zero keeps the cases apart.
 			 Worst case is under 20 minutes of daylight at the poles. */
 		var dec = s.dec;
 		var MIN_DEC = 0.35 * RAD;
 		if(Math.abs(dec) < MIN_DEC) dec = (dec < 0 ? -MIN_DEC : MIN_DEC);
+		var poleIn = Math.abs(dec) > -h0*RAD;
+		var line = [], loops = [], run = null;
 
 		for(var lon = -195; lon <= 195; lon += step){
 			var Hh = (lon - s.lon) * RAD;
@@ -392,52 +403,66 @@ function er_frontpage_cover_script() {
 			var R = Math.hypot(A, B);
 			var phi = Math.atan2(B, A);
 			var q = R < 1e-9 ? 0 : sinH0 / R;
-			q = q > 1 ? 1 : (q < -1 ? -1 : q);   /* out-of-range is handled by the clamp below */
-			var a = Math.asin(q);
-
-			var c1 = norm180(a - phi);
-			var c2 = norm180(Math.PI - a - phi);
 			var cands = [];
-			if(c1 >= -90 && c1 <= 90) cands.push(c1);
-			if(c2 >= -90 && c2 <= 90) cands.push(c2);
-
-			var lat;
-			if(cands.length === 1){
-				lat = cands[0];
-			} else if(cands.length === 2){
-				// Both valid: stay with whichever continues the curve.
-				lat = (prev === null) ? cands[0]
-						: (Math.abs(cands[0]-prev) <= Math.abs(cands[1]-prev) ? cands[0] : cands[1]);
-			} else {
-				/* Neither root inside +/-90: the altitude is just out of reach, so
-					 the answer is the pole. Returning 0 here and carrying it in `prev`
-					 drew a flat line at the equator with the band filled below. */
-				var d1 = Math.min(Math.abs(c1 - 90), Math.abs(c1 + 90));
-				var d2 = Math.min(Math.abs(c2 - 90), Math.abs(c2 + 90));
-				var c  = (d1 <= d2) ? c1 : c2;
-				lat = c > 90 ? 90 : (c < -90 ? -90 : c);
+			if(q >= -1 && q <= 1){
+				var a = Math.asin(q);
+				var c1 = norm180(a - phi), c2 = norm180(Math.PI - a - phi);
+				if(c1 >= -90 && c1 <= 90) cands.push(c1);
+				if(c2 >= -90 && c2 <= 90) cands.push(c2);
 			}
-			prev = lat;
-			pts.push([x(lon), y(lat)]);
+			var hi = Math.max.apply(null, cands), lo = Math.min.apply(null, cands);
+
+			if(poleIn){
+				var lat;
+				if(cands.length){
+					/* The root on the lit pole's side is the edge of the night. */
+					lat = dec > 0 ? hi : lo;
+				} else {
+					/* No crossing: the whole meridian is night or day. The equator
+						 says which. */
+					var night = Math.cos(dec) * Math.cos(Hh) < sinH0;
+					lat = (night === (dec > 0)) ? 90 : -90;
+				}
+				line.push([lon, lat]);
+			} else if(cands.length === 2){
+				if(!run){ run = []; loops.push(run); }
+				run.push([lon, hi, lo]);
+			} else {
+				run = null;
+			}
 		}
-		return pts;
+		return poleIn ? { line: line } : { loops: loops };
+	}
+
+	function toD(pts){
+		return pts.map(function(p, i){
+			return (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1);
+		}).join('');
 	}
 
 	function draw(date, step){
 		var s = subsolar(date);
 		/* Northern summer lights the north pole, so night closes south. Beyond
-			 the artwork, so the blur cannot feather against the edge. */
-		var closeY = s.dec > 0 ? H + 400 : -400;
+			 the artwork, so the blur cannot feather against the edge. Same sign
+			 rule as bandShape, including at dec = 0. */
+		var closeY = s.dec < 0 ? -400 : H + 400;
 
 		for(var b = 0; b < bandEls.length; b++){
-			var pts = curve(parseFloat(bandEls[b].getAttribute('data-alt')), s, step);
-			var d = pts.map(function(p,i){
-				return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1);
-			}).join('');
-			bandEls[b].setAttribute('d', d + 'L' + (W + 200) + ' ' + closeY + 'L-200 ' + closeY + 'Z');
-			if(b === 0) edgeEl.setAttribute('d', d);
+			var sh = bandShape(parseFloat(bandEls[b].getAttribute('data-alt')), s, step), full;
+			if(sh.line){
+				var d = toD(sh.line);
+				full = d + 'L' + (W + 200) + ' ' + closeY + 'L-200 ' + closeY + 'Z';
+				if(b === 0) edgeEl.setAttribute('d', d);
+			} else {
+				/* Top edge west to east, bottom edge back. A loop across the
+					 dateline comes as two runs, each closed beyond the map edge. */
+				full = sh.loops.map(function(r){
+					return toD(r.map(function(p){ return [p[0], p[1]]; })
+						.concat(r.slice().reverse().map(function(p){ return [p[0], p[2]]; }))) + 'Z';
+				}).join('');
+			}
+			bandEls[b].setAttribute('d', full);
 		}
-
 	}
 
 	/* Framing, recomputed on resize and orientation change. */
