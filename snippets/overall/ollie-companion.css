@@ -37,7 +37,8 @@
    ============================================================ */
 
 /* ---- Frontpage ONLY stuff ---- */
-.er-brand-frontpage {display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 1.75rem;}
+.er-brand-frontpage {display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 1.75rem; padding-bottom: clamp(2.5rem, 4vw, 3.5rem);}
+@media (max-width: 781px) {.er-brand-frontpage {padding-top: 2.5rem;}}
 .er-brand-frontpage-logo img {width: clamp(45px, 9vw, 85px); aspect-ratio: 1 / 1; height: auto; animation: rotate3d 5s linear infinite; position: relative; top: 0.05em;}
 .er-brand-frontpage-logo img:hover {animation-play-state: paused;}
 .er-brand-frontpage-title {font-size: clamp(2rem, 6vw, 3.5rem); font-weight: var(--er-fw-bold); color: var(--color-8); line-height: 1; letter-spacing: 0.1em;}
