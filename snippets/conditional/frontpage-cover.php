@@ -166,7 +166,7 @@ div.er-cover{
 .er-cover .erc-hello{left: -7.42px; top: -7.42px; width: 14.83px; height: 14.83px; opacity: 0}
 .er-cover .erc-ring{box-shadow: inset 0 0 0 0.83px #28a745; animation: erc-pulse 2.4s cubic-bezier(.2,.7,.3,1) infinite}
 .er-cover .erc-ring-2{animation-delay: 1.2s}
-/* Only the most recent places pulse; the rest stay as still dots. */
+/* Only the most recent places pulse and get a line; the rest stay as still dots. */
 .er-cover .erc-me.is-still .erc-ring{display: none}
 .er-cover .erc-hello{box-shadow: inset 0 0 0 0.4px #28a745; animation: erc-hello 1.8s cubic-bezier(.2,.7,.3,1)}
 .er-cover .erc-odot{
@@ -298,7 +298,7 @@ function er_frontpage_cover_js() {
 	const INTRO_MS = 1400;
 	const POLL_MS = 90000;
 	const SAME_PLACE = 1.5;
-	const PULSE_MAX = 12;
+	const HIGHLIGHT_MAX = 12;
 	const ARC_MS = 1500;
 	const MY_ARC_MS = 1700;
 
@@ -580,7 +580,7 @@ function er_frontpage_cover_js() {
 				return;
 			}
 			const pts = gcPoints(origin, pt, 64);
-			if (pts) next.set(key, { pts, t0: reduce ? -Infinity : now + Math.min(80 * fresh++, 800) });
+			if (pts) next.set(key, { pts, t0: reduce ? -Infinity : now + 80 * fresh++ });
 		});
 		arcRuns = next;
 		showOrigin();
@@ -654,7 +654,7 @@ function er_frontpage_cover_js() {
 			const key = pt.lat + ',' + pt.lon;
 			if (next.has(key)) continue;
 			const el = others.get(key) || addOther(pt, !firstPoll);
-			el.classList.toggle('is-still', targets.length >= PULSE_MAX);
+			el.classList.toggle('is-still', targets.length >= HIGHLIGHT_MAX);
 			next.set(key, el);
 			targets.push(pt);
 		}
@@ -665,7 +665,7 @@ function er_frontpage_cover_js() {
 		});
 		others = next;
 		firstPoll = false;
-		arcsTo(targets);
+		arcsTo(targets.slice(0, HIGHLIGHT_MAX));
 	}
 
 	function fetchOthers() {
