@@ -70,7 +70,7 @@ function er_cover_live_points() {
 		    AND NOT (latitude = 0 AND longitude = 0)
 		  GROUP BY lat, lon
 		  ORDER BY MAX(last_seen) DESC
-		  LIMIT 20",
+		  LIMIT 100",
 		wp_date( 'Y-m-d H:i:s', time() - 15 * MINUTE_IN_SECONDS )
 	) );
 
@@ -166,6 +166,8 @@ div.er-cover{
 .er-cover .erc-hello{left: -7.42px; top: -7.42px; width: 14.83px; height: 14.83px; opacity: 0}
 .er-cover .erc-ring{box-shadow: inset 0 0 0 0.83px #28a745; animation: erc-pulse 2.4s cubic-bezier(.2,.7,.3,1) infinite}
 .er-cover .erc-ring-2{animation-delay: 1.2s}
+/* Only the most recent places pulse; the rest stay as still dots. */
+.er-cover .erc-me.is-still .erc-ring{display: none}
 .er-cover .erc-hello{box-shadow: inset 0 0 0 0.4px #28a745; animation: erc-hello 1.8s cubic-bezier(.2,.7,.3,1)}
 .er-cover .erc-odot{
 	left: -4.5px; top: -4.5px; width: 9px; height: 9px;
@@ -295,8 +297,8 @@ function er_frontpage_cover_js() {
 	const H = 2 * miller(90);
 	const INTRO_MS = 1400;
 	const POLL_MS = 90000;
-	const OTHERS_MAX = 12;
 	const SAME_PLACE = 1.5;
+	const PULSE_MAX = 12;
 	const ARC_MS = 1500;
 	const MY_ARC_MS = 1700;
 
@@ -578,7 +580,7 @@ function er_frontpage_cover_js() {
 				return;
 			}
 			const pts = gcPoints(origin, pt, 64);
-			if (pts) next.set(key, { pts, t0: reduce ? -Infinity : now + 80 * fresh++ });
+			if (pts) next.set(key, { pts, t0: reduce ? -Infinity : now + Math.min(80 * fresh++, 800) });
 		});
 		arcRuns = next;
 		showOrigin();
@@ -646,13 +648,14 @@ function er_frontpage_cover_js() {
 		const next = new Map();
 		const targets = [];
 		for (const item of list) {
-			if (targets.length >= OTHERS_MAX) break;
 			if (!Array.isArray(item)) continue;
 			const pt = { lat: +item[0], lon: +item[1] };
 			if (!Number.isFinite(pt.lat) || !Number.isFinite(pt.lon) || near(pt, me)) continue;
 			const key = pt.lat + ',' + pt.lon;
 			if (next.has(key)) continue;
-			next.set(key, others.get(key) || addOther(pt, !firstPoll));
+			const el = others.get(key) || addOther(pt, !firstPoll);
+			el.classList.toggle('is-still', targets.length >= PULSE_MAX);
+			next.set(key, el);
 			targets.push(pt);
 		}
 		others.forEach((el, key) => {
