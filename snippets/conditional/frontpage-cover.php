@@ -3,7 +3,6 @@
 
 /* ============================================================================
  * Frontpage Cover - [er_frontpage_cover]
- *
  * World map with live day / night shadow, city lights, the visitor's marker
  * (from the browser time zone) and arcs from the origin to live visitors.
  * Place it as the first direct child of a Group block. Snippet scope must be
