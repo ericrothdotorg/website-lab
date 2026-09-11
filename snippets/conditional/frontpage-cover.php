@@ -1,204 +1,143 @@
 <?php
 // NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
-/* ==========================================================================
- * ORIGIN — where the site is run from. The cover's arcs leave from here.
+/* ============================================================================
+ * Frontpage Cover - [er_frontpage_cover]
  *
+ * World map with live day / night shadow, city lights, the visitor's marker
+ * (from the browser time zone) and arcs from the origin to live visitors.
+ * Place it as the first direct child of a Group block. Snippet scope must be
+ * "everywhere": The AJAX endpoint runs in admin context.
+ * ========================================================================== */
+
+/**
+ * ORIGIN — where the site is run from. The cover's arcs leave from here.
  * To move it, change the two numbers: latitude, longitude, decimal degrees,
  * south and west negative. City level is enough.
  *   Zurich    47.37,   8.54
  *   Bangkok   13.76, 100.50
- *
- * The value is written into the page: purge LiteSpeed after changing it.
- * ======================================================================== */
+ */
 defined( 'ER_COVER_ORIGIN' ) || define( 'ER_COVER_ORIGIN', array( 47.37, 8.54 ) );
 
-/**
- * [er_frontpage_cover] — world map background with a live day/night terminator,
- * city lights on the night side, and arcs from the origin to live visitors.
- *
- * Must be the FIRST and a DIRECT child of a Group block. It gives that Group
- * its height, sits behind it, and lifts the siblings in front. Nothing needs
- * setting on the block.
- *
- * Attribute: clock = bottom-left (default) | bottom-right | top-left |
- *            top-right | off
- *
- *  - One palette for both colour modes: hero copy is .has-white-color, so the
- *    background must stay dark either way. body.dark-mode needs no branch.
- *  - Visitor's own marker comes from the browser time zone: no permission
- *    prompt, no IP lookup, no request.
- *  - Other markers come from er_cover_live, polled every 90s, paused when the
- *    tab is hidden. Additive: if it fails, the own marker is unaffected.
- *  - Origin: ER_COVER_ORIGIN, top of file, written into the page. When the
- *    intro lands, an arc runs from it to the visitor (unless they are at the
- *    origin); fainter arcs follow the other live markers as polls bring them.
- *  - Sun, lights and arcs are additive. No JS, no origin or missing markup
- *    leaves the map as it was.
- */
+add_shortcode( 'er_frontpage_cover', 'er_frontpage_cover_shortcode' );
+add_action( 'wp_ajax_er_cover_live', 'er_cover_live_points' );
+add_action( 'wp_ajax_nopriv_er_cover_live', 'er_cover_live_points' );
 
-add_shortcode( 'er_frontpage_cover', function ( $atts ) {
+function er_frontpage_cover_shortcode( $atts ) {
+	static $assets_done = false;
 
-	$atts = shortcode_atts( array(
-		// bottom-left | bottom-right | top-left | top-right | off
-		'clock' => 'bottom-left',
-	), $atts, 'er_frontpage_cover' );
+	$atts  = shortcode_atts( array( 'clock' => 'bottom-left' ), $atts, 'er_frontpage_cover' );
+	$clock = in_array( $atts['clock'], array( 'bottom-left', 'bottom-right', 'top-left', 'top-right' ), true )
+		? $atts['clock']
+		: '';
 
-	$allowed = array( 'bottom-left', 'bottom-right', 'top-left', 'top-right' );
-	$clock   = in_array( $atts['clock'], $allowed, true ) ? $atts['clock'] : '';
+	$html = '';
+	if ( ! $assets_done ) {
+		$assets_done = true;
+		$html       .= '<style id="er-cover-css">' . er_frontpage_cover_css() . '</style>';
+		add_action( 'wp_footer', 'er_frontpage_cover_script', 20 );
+	}
 
-	static $printed = false;
+	$config = wp_json_encode( array(
+		'ajax'   => admin_url( 'admin-ajax.php' ),
+		'origin' => ER_COVER_ORIGIN,
+	) );
 
-	$out = '';
+	$html .= sprintf(
+		'<div class="er-cover" aria-hidden="true" data-config="%s"%s>%s</div>',
+		esc_attr( $config ),
+		$clock ? ' data-clock="' . esc_attr( $clock ) . '"' : '',
+		er_frontpage_cover_svg()
+	);
 
-	if ( ! $printed ) {
-		$printed = true;
-		$css = <<<'CSS'
-/* The parent becomes the positioning context and gets its height here —
-	 theme.json declares no dimensions/appearanceTools, so the editor offers no
-	 Minimum height control. The second rule lifts the siblings in front:
-	 without it the positioned SVG paints over unpositioned blocks. */
-:has(> .er-cover){
-	/* Theme tokens from style.css §1. Change the palette there and the map
-		 follows. No fallbacks: the tokens are defined on :root site-wide, and a
-		 fallback would just be a second copy of the value to keep in sync. */
+	if ( $clock ) {
+		$html .= '<div class="erc-clock" aria-hidden="true"><span class="erc-local"></span><span class="erc-sep">|</span><span class="erc-utc"></span></div>';
+	}
+
+	return $html;
+}
+
+// Coordinates of live visitors, one per ~11 km cell, newest first.
+function er_cover_live_points() {
+	global $wpdb;
+
+	// last_seen is stored in site time (current_time('mysql')), so the cutoff is too.
+	$rows = $wpdb->get_results( $wpdb->prepare(
+		"SELECT ROUND(latitude, 1) AS lat, ROUND(longitude, 1) AS lon
+		   FROM {$wpdb->prefix}er_live_visitors
+		  WHERE last_seen >= %s
+		    AND latitude IS NOT NULL AND longitude IS NOT NULL
+		    AND NOT (latitude = 0 AND longitude = 0)
+		  GROUP BY lat, lon
+		  ORDER BY MAX(last_seen) DESC
+		  LIMIT 20",
+		wp_date( 'Y-m-d H:i:s', time() - 15 * MINUTE_IN_SECONDS )
+	) );
+
+	wp_send_json_success( array_map(
+		static fn( $r ) => array( (float) $r->lat, (float) $r->lon ),
+		(array) $rows
+	) );
+}
+
+function er_frontpage_cover_css() {
+	return <<<'CSS'
+.wp-block-group:has(> .er-cover){
 	--er-c-day: var(--color-9);
 	--er-c-accent: var(--color-1);
 	--er-c-veil: var(--color-6);
-
-	/* Not a theme colour. --color-4 (#192a3d) left only 9 points of luminance
-		 between the day and night sides of the ocean; this gives 21. */
 	--er-c-ocean: #22405e;
-	/* Eight bands at 3-degree steps: 1-(1-.1875)^8 = .81 total, but each
-		 step is small enough not to read as a line. */
-	--er-c-band: 0.1875;
-	/* Not theme colours. One warm hue for the sun, the city lights, the origin
-		 and its arcs, so the map carries exactly two meanings: green is a
-		 visitor, amber is light and the origin. */
 	--er-c-light: #ffc56e;
 	--er-c-light-hi: #fff1d2;
-	/* Clock text. Not --er-c-day: that is the land's colour, and on pale land
-		 the clock measured 1.1:1 at worst, i.e. gone. */
 	--er-c-clock: #e1e8ed;
+	--er-c-band: 0.1875;
+	--erc-fs: clamp(10px, 1.05vw, 14px);
+	--erc-gx: clamp(14px, 3vw, 34px);
+	--erc-gy: clamp(12px, 2.4vh, 26px);
 	position: relative;
-	/* Column flex centres the content and stops the first child's
-		 margin-block-start collapsing through and pushing the cover down.
-		 `safe` is required: plain centring on taller-than-viewport content
-		 overflows both ways and puts the top out of reach. */
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
 	justify-content: safe center;
-	min-height: 100vh;
 	min-height: 100svh;
-	/* Constrained layout caps every child's width and adds a top margin.
-		 Undone here, and one and two levels up for post-content and main. */
-	max-width: none;
 	width: auto;
+	max-width: none;
 	margin: 0;
+	/* Hero blocks animate in with transforms; the cover owns its box and clips them. */
+	overflow: clip;
+	background-color: var(--er-c-veil);
 }
-:has(> * > .er-cover),
-:has(> * > * > .er-cover){margin-top: 0}
-/* A stray empty block before the cover still takes its margin. */
-:empty:has(+ * > .er-cover){display: none}
-/* width:100% because WordPress's constrained layout puts auto side margins on
-	 these, and auto margins in the cross axis cancel a flex item's stretch — the
-	 block then sizes to its content. The counter grid collapsed to its intrinsic
-	 6*185 + 5*10 = 1160px instead of filling contentSize. */
-:has(> .er-cover) > *:not(.er-cover):not(.erc-clock){position: relative; z-index: 1; width: 100%}
-/* A cover starts at its own top edge. */
-:has(> .er-cover) > *:not(.er-cover):not(.erc-clock):first-of-type{margin-top: 0}
+:has(> .wp-block-group > .er-cover),
+:has(> * > .wp-block-group > .er-cover){margin-top: 0}
+:empty:has(+ .wp-block-group > .er-cover){display: none}
+/* width: constrained layout's auto margins cancel flex stretch. */
+.wp-block-group:has(> .er-cover) > :not(.er-cover, .erc-clock){position: relative; z-index: 1; width: 100%}
+.wp-block-group:has(> .er-cover) > :is(.er-cover, .erc-clock) + :not(.erc-clock){margin-top: 0}
 
-/* div.er-cover, not .er-cover: outranks the constrained layout's
-	 max-width/margin on direct children without !important. Inside, in paint
-	 order: the map, the markers, then shadow and scrim. overflow clips a pulse
-	 at the edge, as the single SVG used to. */
 div.er-cover{
-	position: absolute; inset: 0; width: 100%; height: 100%;
-	max-width: none; margin: 0; overflow: hidden;
-	display: block; z-index: 0; pointer-events: none;
+	position: absolute; inset: 0; z-index: 0;
+	display: block; width: 100%; height: 100%; max-width: none; margin: 0;
+	overflow: hidden; pointer-events: none; opacity: 0;
 }
+.er-cover.is-ready{animation: erc-in 1.4s ease-out forwards}
+@media (scripting: none){ div.er-cover{opacity: 1} }
+@keyframes erc-in{to{opacity: 1}}
+
 .er-cover > svg,
-.er-cover > .erc-markers{
-	position: absolute; inset: 0; width: 100%; height: 100%;
-	max-width: none; margin: 0; display: block;
-}
+.er-cover > .erc-markers{position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; margin: 0}
+.er-cover > .erc-markers{z-index: 1}
+
 .er-cover .erc-ocean{fill: var(--er-c-ocean)}
-.er-cover .erc-graticule{
-	stroke: var(--er-c-accent); fill: none;
-	/* Faint, and 1px at any size. At .10 the parallels read as lines: they
-		 cut across the vertical shading, whereas the meridians run with it. */
-	stroke-width: 1; vector-effect: non-scaling-stroke; opacity: 0.05;
-}
+.er-cover .erc-graticule{fill: none; stroke: var(--er-c-accent); stroke-width: 1; vector-effect: non-scaling-stroke; opacity: 0.05}
 .er-cover .erc-land{fill: var(--er-c-day); opacity: 0.85}
 .er-cover .erc-night{fill: var(--er-c-veil); opacity: var(--er-c-band)}
-.er-cover .erc-edge{
-	fill: none; stroke: var(--er-c-accent); opacity: 0.40;
-	/* non-scaling-stroke, or the width scales with the viewBox. */
-	stroke-width: 1; vector-effect: non-scaling-stroke;
-}
-/* Markers are HTML, not SVG. Chrome runs transform and opacity animations of
-	 HTML elements on the compositor; every frame of an SVG animation goes
-	 through the main thread, which cost 33–68% CPU on the live site. Each
-	 marker is a zero-size point placed by fit(); dot and rings centre on it. */
-.er-cover .erc-me{position: absolute; left: 0; top: 0; transition: opacity .8s ease}
-.er-cover .erc-dot,
-.er-cover .erc-ring{position: absolute; border-radius: 50%}
-/* As the SVG dot drew it: 7px fill, and a 4px stroke at .35 across the edge. */
-.er-cover .erc-dot{
-	left: -7px; top: -7px; width: 14px; height: 14px;
-	background: #28a745; box-shadow: 0 0 0 2px rgba(40,167,69,.35);
-}
-/* Green is the Visitor Map's live colour, #28a745. The pulse is an expanding
-	 ring, two of them half a cycle apart. Unlike the SVG's fixed 2.5px stroke,
-	 a scaled ring's line grows with it: 0.83px is 2.5px at scale 3,
-	 where the ring is clearest. An inset shadow, not a border: browsers round
-	 border widths to device pixels. */
-.er-cover .erc-ring{
-	left: -7.42px; top: -7.42px; width: 14.83px; height: 14.83px;
-	box-shadow: inset 0 0 0 0.83px #28a745; opacity: 0;
-	animation: erc-pulse 2.4s cubic-bezier(.2,.7,.3,1) infinite;
-}
-.er-cover .erc-ring-2{animation-delay: 1.2s}
-@keyframes erc-pulse{
-	0%   {transform: scale(1);   opacity: 0.85}
-	75%  {transform: scale(6);   opacity: 0}
-	100% {transform: scale(6);   opacity: 0}
-}
-/* Other visitors fade in when their marker is added. Markers already on the
-	 map are never re-added, so this plays once per visitor. */
-.er-cover .erc-others .erc-me{animation: erc-fade .8s ease-out both}
-@keyframes erc-fade{from{opacity: 0}}
-/* A visitor who arrives while the page is open: one wide ripple, then the
-	 element is removed. Not for the markers of the first poll: they were
-	 already there. */
-.er-cover .erc-hello{
-	position: absolute; border-radius: 50%;
-	left: -7.42px; top: -7.42px; width: 14.83px; height: 14.83px;
-	box-shadow: inset 0 0 0 0.4px #28a745; opacity: 0;
-	animation: erc-hello 1.8s cubic-bezier(.2,.7,.3,1) 1;
-}
-@keyframes erc-hello{
-	0%   {transform: scale(1);  opacity: 1}
-	100% {transform: scale(10); opacity: 0}
-}
-/* Keeps the white copy legible over pale day-side land. */
-.er-cover .erc-scrim{fill: url(#erc-scrim); opacity: 0.55}
-
-/* --- sun, lights, origin --------------------------------------------- */
-/* Sun: a wide, faint warm glow on the subsolar point, under the night bands. */
 .er-cover .erc-sun{fill: url(#erc-sun-glow)}
-/* City lights: 0.1-unit segments with round caps, so each is a dot of
-	 stroke-width px at any framing. Not zero-length: caps on those are in the
-	 spec, but a tenth of a unit does not depend on every engine following it.
-	 Halo under core. Clipped to the -6 band (civil dusk). */
+.er-cover .erc-scrim{fill: url(#erc-scrim); opacity: 0.55}
 .er-cover .erc-lights{fill: none; stroke-linecap: round}
 .er-cover .erc-halo{stroke: var(--er-c-light); stroke-width: 7; opacity: 0.20}
 .er-cover .erc-core{stroke: var(--er-c-light-hi); stroke-width: 2.2; opacity: 0.95}
 .er-cover .erc-halo.erc-lg{stroke-width: 13; opacity: 0.24}
 .er-cover .erc-core.erc-lg{stroke-width: 3.4; opacity: 1}
-/* Arcs out of the origin to the live markers: faint to the other visitors,
-	 brighter to this one. Geometry grows in JS; no dash tricks. */
 .er-cover .erc-arcs,
 .er-cover .erc-arc,
 .er-cover .erc-arc-head{fill: none; stroke-linecap: round; vector-effect: non-scaling-stroke}
@@ -206,715 +145,599 @@ div.er-cover{
 .er-cover .erc-arc{stroke: var(--er-c-light); stroke-width: 1.5; opacity: 0.85; transition: opacity 1.6s ease}
 .er-cover .erc-arc.is-done{opacity: 0.55}
 .er-cover .erc-arc-head{stroke: var(--er-c-light-hi); stroke-width: 2.6; transition: opacity .5s ease}
-/* Origin marker: still, amber, no loop. One ripple when the intro lands. */
-.er-cover .erc-origin{position: absolute; left: 0; top: 0; opacity: 0; transition: opacity .8s ease}
+.er-cover .erc-arc.is-done + .erc-arc-head{opacity: 0}
+
+/* Markers are HTML, not SVG: their animations stay on the compositor. */
+.er-cover .erc-me,
+.er-cover .erc-origin{position: absolute; left: 0; top: 0; transition: opacity .8s ease}
+.er-cover .erc-markers > .erc-me,
+.er-cover .erc-origin{opacity: 0}
+.er-cover .erc-me.is-on,
+.er-cover .erc-origin.is-on{opacity: 1}
+.er-cover .erc-others .erc-me{animation: erc-fade .8s ease-out both}
+.er-cover .erc-dot,
+.er-cover .erc-ring,
+.er-cover .erc-hello,
 .er-cover .erc-odot,
 .er-cover .erc-oring,
 .er-cover .erc-oping{position: absolute; border-radius: 50%}
+.er-cover .erc-dot{left: -7px; top: -7px; width: 14px; height: 14px; background: #28a745; box-shadow: 0 0 0 2px rgba(40,167,69,.35)}
+.er-cover .erc-ring,
+.er-cover .erc-hello{left: -7.42px; top: -7.42px; width: 14.83px; height: 14.83px; opacity: 0}
+.er-cover .erc-ring{box-shadow: inset 0 0 0 0.83px #28a745; animation: erc-pulse 2.4s cubic-bezier(.2,.7,.3,1) infinite}
+.er-cover .erc-ring-2{animation-delay: 1.2s}
+.er-cover .erc-hello{box-shadow: inset 0 0 0 0.4px #28a745; animation: erc-hello 1.8s cubic-bezier(.2,.7,.3,1)}
 .er-cover .erc-odot{
-	left: -4.5px; top: -4.5px; width: 9px; height: 9px; background: var(--er-c-light-hi);
-	box-shadow: 0 0 0 3px rgba(255,197,110,.30), 0 0 16px 5px rgba(255,190,90,.42);
+	left: -4.5px; top: -4.5px; width: 9px; height: 9px;
+	background: #ffe2b0; box-shadow: 0 0 0 2px rgba(255,197,110,.22), 0 0 7px 1px rgba(255,190,90,.25);
+	transition: box-shadow 2s ease, background-color 2s ease;
 }
-.er-cover .erc-oring{left: -12px; top: -12px; width: 24px; height: 24px; box-shadow: inset 0 0 0 1px rgba(255,197,110,.55)}
-.er-cover .erc-oping{left: -12px; top: -12px; width: 24px; height: 24px; box-shadow: inset 0 0 0 1.2px var(--er-c-light); opacity: 0}
-.er-cover .erc-origin.is-out .erc-oping{animation: erc-out 1.8s cubic-bezier(.2,.7,.3,1) 1}
-@keyframes erc-out{
-	0%   {transform: scale(1); opacity: 1}
-	100% {transform: scale(5); opacity: 0}
-}
+.er-cover .erc-origin.is-night .erc-odot{background: #fff4dc; box-shadow: 0 0 0 3px rgba(255,197,110,.40), 0 0 22px 8px rgba(255,180,80,.58)}
+.er-cover .erc-oring,
+.er-cover .erc-oping{left: -12px; top: -12px; width: 24px; height: 24px}
+.er-cover .erc-oring{box-shadow: inset 0 0 0 1px rgba(255,197,110,.55)}
+.er-cover .erc-oping{box-shadow: inset 0 0 0 1.2px var(--er-c-light); opacity: 0}
+.er-cover .erc-origin.is-out .erc-oping{animation: erc-out 1.8s cubic-bezier(.2,.7,.3,1)}
+@keyframes erc-pulse{0%{transform: scale(1); opacity: 0.85} 75%, 100%{transform: scale(6); opacity: 0}}
+@keyframes erc-fade{from{opacity: 0}}
+@keyframes erc-hello{0%{transform: scale(1); opacity: 1} 100%{transform: scale(10); opacity: 0}}
+@keyframes erc-out{0%{transform: scale(1); opacity: 1} 100%{transform: scale(5); opacity: 0}}
 
-/* Entrance: the map settles, then the shadow winds forward to the real time. */
-.er-cover{opacity: 0; animation: erc-in 1.4s ease-out .15s forwards}
-@keyframes erc-in{to{opacity: 1}}
-
-/* --- clock ----------------------------------------------------------- */
 .erc-clock{
-	position: absolute; z-index: 1; pointer-events: none;
-	font-family: ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-	font-size: clamp(10px,1.05vw,14px); letter-spacing: .04em;
-	color: var(--er-c-clock); opacity: 0; white-space: nowrap;
-	animation: erc-clock-in 1.2s ease-out 1.8s forwards;
+	position: absolute; z-index: 1; left: var(--erc-gx); bottom: var(--erc-gy);
+	font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+	font-size: var(--erc-fs); letter-spacing: .04em; white-space: nowrap;
+	color: var(--er-c-clock); opacity: 0; pointer-events: none;
 }
-.erc-clock .erc-sep{opacity: 0.5; margin: 0.6em}
-@keyframes erc-clock-in{to{opacity: 1}}
-.erc-clock[data-pos="bottom-left"] {left: clamp(14px,3vw,34px); bottom: clamp(12px,2.4vh,26px)}
-.erc-clock[data-pos="bottom-right"]{right: clamp(14px,3vw,34px); bottom: clamp(12px,2.4vh,26px)}
-.erc-clock[data-pos="top-left"]    {left: clamp(14px,3vw,34px); top: clamp(12px,2.4vh,26px)}
-.erc-clock[data-pos="top-right"]   {right: clamp(14px,3vw,34px); top: clamp(12px,2.4vh,26px)}
-/* Shade under the clock: a soft dark ellipse in its corner, part of the map
-	 like a vignette rather than a panel, so the times stay legible over pale
-	 day-side land. Measured over a full day, desktop and phone: never below
-	 4.5:1. Sized in the clock's em, so it scales with the text; follows the
-	 clock's corner; clock="off" removes the clock and with it the shade. */
-:has(> .erc-clock) > .er-cover::after{
-	content: ""; position: absolute; font-size: clamp(10px,1.05vw,14px);
-	width: 46em; height: 16em;
-	left: calc(clamp(14px,3vw,34px) - 13.5em); bottom: calc(clamp(12px,2.4vh,26px) - 7.4em);
+.erc-clock .erc-sep{margin: 0 .6em; opacity: 0.5}
+.er-cover.is-ready ~ .erc-clock{animation: erc-in 1.2s ease-out 1.65s forwards}
+.er-cover[data-clock$="right"] ~ .erc-clock{left: auto; right: var(--erc-gx)}
+.er-cover[data-clock^="top"] ~ .erc-clock{bottom: auto; top: var(--erc-gy)}
+/* Vignette behind the clock; keeps it above 4.5:1 over pale land. */
+.er-cover[data-clock]::after{
+	content: ""; position: absolute; font-size: var(--erc-fs); width: 46em; height: 16em;
+	left: calc(var(--erc-gx) - 13.5em); bottom: calc(var(--erc-gy) - 7.4em);
 	background: radial-gradient(closest-side, rgba(7,12,18,.62), rgba(7,12,18,.5) 50%, rgba(7,12,18,.22) 78%, rgba(7,12,18,0));
 }
-:has(> .erc-clock[data-pos$="right"]) > .er-cover::after{left: auto; right: calc(clamp(14px,3vw,34px) - 13.5em)}
-:has(> .erc-clock[data-pos^="top"]) > .er-cover::after{bottom: auto; top: calc(clamp(12px,2.4vh,26px) - 7.4em)}
+.er-cover[data-clock$="right"]::after{left: auto; right: calc(var(--erc-gx) - 13.5em)}
+.er-cover[data-clock^="top"]::after{bottom: auto; top: calc(var(--erc-gy) - 7.4em)}
 
 @media (prefers-reduced-motion: reduce){
-	.er-cover{animation: none; opacity: 1}
-	/* The still ring the SVG showed at scale 2.4: 16.8px out, 2.5px line. */
-	.er-cover .erc-ring{
-		animation: none; opacity: 0.5;
-		left: -18.05px; top: -18.05px; width: 36.1px; height: 36.1px;
-		box-shadow: inset 0 0 0 2.5px #28a745;
-	}
-	.erc-clock{animation: none; opacity: 1}
-	.er-cover .erc-origin,
-	.er-cover .erc-arc{transition: none}
+	div.er-cover, .er-cover.is-ready,
+	.erc-clock, .er-cover.is-ready ~ .erc-clock{animation: none; opacity: 1}
+	.er-cover .erc-ring{animation: none; opacity: 0.5; left: -18.05px; top: -18.05px; width: 36.1px; height: 36.1px; box-shadow: inset 0 0 0 2.5px #28a745}
 	.er-cover .erc-others .erc-me{animation: none}
 	.er-cover .erc-hello{display: none}
+	.er-cover .erc-origin,
+	.er-cover .erc-arc,
+	.er-cover .erc-odot{transition: none}
 }
 CSS;
-		$out .= '<style id="er-cover-css">' . $css . '</style>';
-		// Where to ask about other visitors, and where the arcs leave from.
-		$out .= '<script>window.erCoverAjax=' . wp_json_encode( admin_url( 'admin-ajax.php' ) )
-		      . ';window.erCoverOrigin=' . wp_json_encode( ER_COVER_ORIGIN ) . ';</script>';
-		add_action( 'wp_footer', 'er_frontpage_cover_script', 20 );
-	}
-
-	/* Land path: clipped to x 0–2000, since fit() never frames beyond that, and
-	   written with relative coordinates at the source's 1dp. */
-	$svg = <<<'SVG'
-<div class="er-cover" aria-hidden="true">
-<svg class="erc-map" viewBox="0 0 2000 1466" preserveAspectRatio="xMidYMid slice"
-		 xmlns="http://www.w3.org/2000/svg" focusable="false">
-	<rect class="erc-ocean" x="-9000" y="-9000" width="20000" height="20000"/>
-	<g>
-		<path class="erc-graticule" d="M166.7 0L166.7 1466.4M333.3 0L333.3 1466.4M500.0 0L500.0 1466.4M666.7 0L666.7 1466.4M833.3 0L833.3 1466.4M1000.0 0L1000.0 1466.4M1166.7 0L1166.7 1466.4M1333.3 0L1333.3 1466.4M1500.0 0L1500.0 1466.4M1666.7 0L1666.7 1466.4M1833.3 0L1833.3 1466.4M0 1114.2L2000.0 1114.2M0 905.0L2000.0 905.0M0 733.2L2000.0 733.2M0 561.4L2000.0 561.4M0 352.2L2000.0 352.2"/>
-		<path class="erc-land" d="M669 1317l-3.2 12.3-11.7-1.8-12.4 .8-6.9-4.3-3.1-4.3 24.5 1.8 7.1-9.7zM115.5 1310.1l-10.7 1.8-7.2-4.4-7.1-8.5 3.4-4.5 10.3 1.9 9.8 8.1zM749.1 1292.4l6.9 5.2 2.4 7.4 .9 11.8-17.7 7.3-22.1 5.6-13.1-.8-7.3-4.3 1-5.3 11.8-3.5 4.8-4.2 13-19.2 11.1-2.6zM326.6 1240.8l7.2 1.7 6.6-1.9-8.4 6.6-7.7-.9-5.5-3.8 1.2-3.6zM302.4 1240.6l8.5 4.2-18-4.4 4-2.3zM450.1 1224.3l6.1 1.4 6.1-1.2 3.2 5.9-25.4-.2-5.7-2-2.9-4.3 3.5-1.8zM619.7 1214.3l.7 4.6-2.5 7.9-12.8 3.5-7.3-.2 2.8-4.1-12.8 2.8-4.2-3-.3-4.3 6.1-4 10.2-.8 1.8-16.9 3.2-4.6 5.1-1.5 2.9 3.6zM0 1380.7l5.2-8.4 10 4.6 7.4-5.1 8.6 6.3 8.3-6.9 16.3-2.5 16.3 9.9 28.3 8.4 21.4 3.5 16-4.1 23.6 2.9 13.4 4.7 30.2-8.5 1.2-6.9-21.9-.6-18-3.4-4.7-5.6-14.9-3.1 5.2-17.2-1.1-5.6-9.3-3.6-4.2-4.7-8.6-4.1 13.5 .7 12.8-2 8.1 4.3 19-8.6 4.5-4.3-2-5.3-15.3-7.1-32.2-3.6-3.6-4.6-11.6-8.1-1.7-13.4 7.7 4.8 18-2.8 4.5 5.1 8.9-1.1 20.6-9.6 8.4-1.2-2.2-8.5 1.7-3.9 7.1-2 3.3 3.7 14.9-5 15.5-1.3 20.2-7.4 8.2 1.5 8.2-1.5 15.1 1.7 7.2-1.5 15.8 2.2 24.1 0 7.6-.5 12.4-4.9 7 2.4 12.6-5.8 9.1 10.9 5.8-3.2 6.6 4.1 13.9 4.4 15-2.7 23.5 4 2.9-4.8-6.3-7.6-7.2-.8-3.2-4.1-3.1-11.8 25.2 3.1 5.7 3.1 2.4 3.7 7.5 .7 21.6-4.8 5.7 2.5 7.4-.9 4.8-8.1 4.5 4.8 6.4 1.9 6.9-1.1 4.6 4.2 20.7 4 6.5-7.8 5.6 4.2 7.6-1 9.4 5.9 7.4-1.1 11.5-5 21.6-4.2 8.7-5.6 .7-8.7-7.2-19.4 6.2-15.2-1.7-7.8 2.7-4.3 14.9-11.7 5.2-6.4 32.3-14.5 3.3 2.3-2.1 2.9-8 4.5-4.2-1.4-4.5 .9-10.6 7.1-.4 6.9 2.6 3.1-9 2.9-9.8 10.1-.9 3.5 4.9 7 8.8 5.3 9.4 18.6 .7 9.4 3.8 12.2-.7 5.6-3.1 4.5-3.2 3.6-7.4 1.5-5.9 7.6-8.4 4.2-21.9 6.7-4.4 4.7-36.9 .9 1.7 4.6 14.7 5.3 3.5 4.2-6.2 3.8-9.6-1.2-7.9 3.1-.6 9.8 6.6 4.2 1.2 4.6 7 4.8 11.8 2 28.1 11.7 27.4 5.7 19.8 8.5 8.1 11.6 6.8-4.9 18.8-8.3 21.4-7.2 13.9-.2 24.8 5 3.6-5.8 7.7-3.9 14-.3 45.3-9.7 8.6-3.2-6.3-9 0-4.6-33.1 2.4-1.5-4.6 .7-9.1 2.5-2.6 17.3-5.6 13.5-7 5-4.5 35.7-6.6 27.4-11 10.2-6.9 1.6-4.3-5.9-2.6 2-4.4 3.7-3.3 17.5-7.9 11.1-11.8 6.6 .7 2.7 3.4 6.7 .4 .2-3.8 2.8-4 6 1 1.4 3.8 6.7 .6 14.1-3 6.3 .6 2.4 4.2 6.1-3.4 30.1-8.6 8.1-5.6 4.2 2.5 5.7-1.4 7.2 8.3 6.3-2 2.5-3.9 5.7-2.8 7.3 .6 2.1 3.7 4.6-3.7 18.4-1.3 12.2 1.7 6.2 6.3 6.1-1.8 19-.6 27.2-8 4.3-2.7 6.2-8.5 5.7 1.5 2.2 3.4 4.8 2.3 5.8-.8 8 6 5.7-2.3 1.9-4.2 10.8-5 12-3.2 13.3-6.3 5.2 1.1 8.6-5.9 5.2 .1 4.6-2.2 1.1-3.2 4.6-2.6 15.3-4 10.1 1.5 4.5 2.5 .5 4 8.3 5.7 6.6 1.1 8.3 5.2 5.3 .6 9.3-5.8 15.8 4.3 11 .7 4.4 12.5-.7 4.4-9.7 6.3 .8 3.9 6.2-.2-.8 4-5.4 8 4.2 3.2 6.5 1.1 6.4-1.9 4.9-7.8 6.5-6.2 4.4-8.4 21-4.1 8.1-11 10.1-4.3 6.2-4.9 4.1-1.4 22.1-.6 4-2.6 2.8-6.1 4.7 6.9 4.7 1.8 25-.4 8.9 2.6 16.1-2.6 5.8 1.3 17.3-15.6 7.8 3.8 10.8 8.9 10.6 .2 11.9-2.4 8.4-5.3 10.3-2.3 11.1 7.6 6.1-.4 10.5 4.8 6.9 .9 5.8-.7 8.1-5.9 5-.7 10.7 2.2 10.3-1.5 10 1.8 11-3.1 22.1-1.9 1.7-8.3 3.5 2.5 5.1 11 4.7 1.7 31.1-1.5 13.5 1.1 3.9 2.9-1.1 3.6 3.6 2.7 12.2 4.7 20.3 4.8 6.3 .2 3.6-3.3 14.1 8 13.1 2.1 2.8 3.9 10.5 5.9 31.9 2.6 17.7 5.8 3.9 3-.6 4-10 16.6-7.3 1.7-3.3 3.8-7.2 2.4-10.3 11.9-3.7 8.9-.4 9.5 6.9 13.3 10.4 1.7 2.2 5.2-18.5 4.6-10.6 .5-4.7 7.1-1 5.9-5.3 9.6 7.4 4.4 2.8 5.4 11.6 9.5 16.1 8.6 12.7 4.4 2.8 6.9 16 3.1 5.3 5.4 15.3-3.7 22.3 8.1zM623.6 1065.3l7.2 4.6 7.8 1.9-2.5 3.9-5.3 .4-2.8-2.7-1.8 3.1-4.8 2.4-6-.9-16.9-7.7-13.3-12.6 19.8 9.3 4.6-8.6 5.1-3.1 4 .9zM674.7 1044.8l4.5 3.3-1.7 2.6-7.5 2.2-2.5-2.6-4.7 3.4-2.8-3.4 6.7-4.4 4.7 1.8zM1390.5 1034.7l-8.6 .4 1.1-8.2 8.8 3.1zM1807.8 973.2l5.3 2.3 10.7-1.8 .4 7.9-1.9 2.3-.6 5.4-1.9-1.8-3.9 4.7-4.5-.6-7.4-16 .1-3zM1961.2 974l1.3 2.7 3.9-2.6 1.6 5.6-8.5 10.7 2.1 3.3-4.3 0-4.8 2.6-4.6 11.5-7.2 5.1-14.7-3-.9-2.5 2.9-5.2 7-6.7 12.4-7.4 7.9-10.1 .8-3.7 3.9-3.1zM1970.1 943.2l4 6.7 .1-4.4 2.5 1.8 .8 4.8 4.5 2.1 9.8-1.2-3.1 9.5-4.2-.1-1 4.8-5.7 9.3-4.2 2.6-3.3-2.7 3.2-5.4-1.8-3.6-6-2.6 .1-2.4 4.1-2.3 .6-9.1-2.1-5.4-9.3-12.7 2.1-.5 3 3.5 4.3 1.7zM1928.4 858.3l-2.1 1.4-7-4.2-8-9.1 5.5 2zM1991 830.5l1.9 1.6-.9 3-6.5 .1-.6-2.5 2.2-2zM0 826l0-2.6 1.1-.4zM2000 826l-7.1 2.6-.7-2.1 7.8-3.1zM1928.4 816.8l.9 4.6-3.5-2-.1-4.4zM1278.1 809l1.8 12.2-1 1.6-1.9-3.3-1 1.7 .5 6.6-14.8 46.8-9.4 4-7.6-3.7-3.9-13 .5-8.4 2.6-1 3.1-10-2.8-11.6 2.7-6.8 10.4-2.5 7.7-6.8 1.7-2.8-.8-2.4 2.4 .7 5-9.9zM1797.6 810.1l2 4.5 3.5-2.2 4.5 4.7 .7 7.4 5 15.3 13.6 8.2-.7 1.4 5.3 10 2.3-1.3 2.2 2.5 1.4-.9 .9 6.2 10.9 10.7 1.6 4.8-.3 7 2.7 5.1-2.7 17.1-3.6 10-4.1 3-7.6 16.5-1.9 11.2-3.2 2.2-6.2 .2-11 8-8-4 .8-3.4-7.9 5.9-16.5-5.1-3.6-4-2.3-8-2.7-2.6-5.4-.8 1.9-3-1.4-4.7-2.7 4.4-4.9 1.1 5.9-10.1-.5-4.6-8 7.4-2.1 5-4.3-2.6 .1-3.3-6.4-6.9 1.1-1.4-16.4-6.9-10 .6-13.5 4.2-5.3-.4-10.7 4.6-3.1 5.8-20.9 .6-10.4 6.8-7.8-.3-8.9-5.2 .2-3.5 3.7-2.3-.2-10.2-2.9-6.2-.7-6.9-9.4-20.1 2.4 2.6-1.9-5.5 4.4 4-4.6-11.3 4.2-15.4 .4 4.4 2.3-4 11.5-6.6 4.1 .3 10-4.6 8.9-1.5 7.7-8.6 .4-5.4 3.9-4.9 2.3 5 2.4-1.2-2-2.7 1.8-2.7 2.4 1.2 .7-4.3 7.3-7.6 2.4 .6 .1-1.4 5.1-1.6 7.2 6 7 .6-1.2-3.1 5.2-6.1-.9-1.4 2.5-3.2 3.3-2 7.5-.4-.1-2.9-4-1.8 2.9-.8 16.4 6.3 6.6-2.2 2.5 2.8-3.5 5.3-2 .2 .7 2.2-3.2 7.2 26.2 15.5 3.6-1.9 4.6-13.3-1-7.6 3.5-15 2.1-2.1 1.5 2.7 4 9.5zM1670.6 790.3l-9.7-3.8 5.2-1.1 4.9 3.4zM1893.6 788.2l-5.5-.4-.9-3.1zM1898.2 786.7l-.8 1-5.3-8.2 1.9 0zM1691.3 789.7l-5.4 .6 2.9-5.3 6.1-3.6 12.5-1.4-12.5 5.5zM1655 778.3l5.4 1 1.4 2.4-13.2 1.8 1.9-3.2 3-.1zM1682.8 778.3l-.8 3.1-8.4 1.6-7.4-.7 0-2.1 4.4-1.1 3.5 1.6zM1603.5 770.9l10.6 .6 1.2-2.3 10.3 2.6 2.1 3.7 8.3 1 6.8 3.3-6.3 2.1-6.1-2.2-28.9-3.3-10.1-2.3-.9-2.4-5.1-.4 3.8-5.3 6.7 .3 6.8 2.6zM1748.5 767.8l-2.9 3.8-.5-4.2 2.1-3.9zM1866 771.1l-4-1.5-3.6-7.8 8.4 7.8zM1844.4 763.7l-9.7 4.6-10.7-3.1 .5-1.8 8 .4 1.6-2.8 .6 3 3.1-.5 4.7-3.9-.6-3.2 4.4 .8zM1706.9 752.4l-2 1.9-3.9-1-1.1-2.4 5.7-.3zM1724.8 750.4l2.1 4.2-4.7-2.3-11.6-.2 1.3-3.1zM1850.8 758.2l-1.8 1.5-2.3-5.4-9.7-5.9 1.6-1.3 7.2 4.1 4.3 4.1zM1745.2 739.6l1.6 9 5.7 3.3 4.7-5.9 6.4-3.3 4.9 0 34.7 12 7 5.6 .8 3.3 9.3 3.4 1.3 3-5.1 .6 1.2 3.7 5 3.7 3.6 5.9 3.2-.2-.2 2.5 4.3 1-1.7 1 5.9 2.4-.6 1.6-15.5-2.5-7.4-6.7-2.9-4.9-7.3-2.4-8.1 3.4 .7 4.1-4.3 2-8.9-1.2-4.9-4.6-5.7-1.1-1.3 1.6-7.1 .1 2.4-4.5 3.5-1.6-4.1-10.7-15.4-5.2-8.3-5.1-3.8 3.2-1.3-4.5-4.2-2.7 9.9-1.9-.4-1.5-8.2 0-2.2-3.3-4.9-1-2.4-2.8 10.3-3.1 9 2.2zM1695.8 725.3l-4.5 5.5-4.2 1.1-19.4 0-.8 4.2 5 4.9 3-2.5 10.3-1.9-.4 2.6-2.4-.8-2.5 3.2-4.9 2.2 5.3 7.1-1 1.9 5 6.4-.1 3.7-2.9 1.6-2.2-1.9 2.7-4.6-5.5 2.2-1.4-1.6 .8-2.1-4-3.3 .4-5.4-3.7 1.7 .7 14.4-3.6 .8-2.3-1.6 1.5-5.1-.8-5.4-2.4 0-1.7-3.8 7.1-18.7 4.7-4.2 11.3 2.4 6.4-.2 5.5-4zM1714.9 726.9l-.3 4.9-2.8-.6-.9 3.4 2.3 2.9-1.5 .7-3.9-10.6 1.1-4.5 1.8-2 .4 3 3.3 .5zM1587.9 765.7l-6.2 .2-11.8-9.2-13.6-19.9-4.8-4.6-3.7-9.1-17.9-17.5-.5-2.9 12.2 1.3 17.5 17.5 5.7 .1 12.1 11-2.2 4.6 5.1 2 2.9 7 4.1 .5 2.7 3.5zM1654.9 723l6.2 5.2-6.6 .6-1.8 3.8 .2 5.1-5.3 3.8-2.3 14-.8-2-6.4 2.5-2.2-3.4-6.7-2.1-6.6 2-2-2.7-8.2-.3-.9-7.5-5.4-6.2-.2-10.1 3.3-3.6 4.1 1.9 4.3-1.1 1.1-4.7 9.1-2.2 20.7-21.3 2.2-.1 3.1 5.3 8.3 3.2-.4 2.2-3.7 .3 1 2.7-4.1 1.9-3.2 5 4.1 5.3zM1702.1 686.3l.9 6.9-1.9 5.1-2-5.7-2.6 2.8 1.7 4.1-1.5 2.7-6.6-3.3-1.5-4 1.6-2.7-3.5-2.6-8.4 5.2-1-1.6 2.2-4.7 6.5-3.7 2 2.5 4.2-1.5 .9-2.5 4-.2-.4-4.3 4.5 2.7zM1451.2 698.7l-4.8 1.3-2.7-4.4-.9-8.1 2.5-9.1 3.8 3.2 5.3 9.7-.9 5.8zM661.5 676.8l-5.7 .2 1.5-3.8 3.2-.7zM1688.8 675.9l-5.5 7-3.4-3.8 3.1-6.6 3.1-.3-.9 3.8 4.1-5.5zM1658.4 681.3l-7.4 5.3 13-16.8 .9 4.6zM1677.1 666.8l6.9 1.8-.1 2.3-6.1 4.1zM1697.2 665.3l1.6 6.3-4.3-1.5 1.5 5.3-2.7 1.3-.2-3.9-1.7-.3-.8-3.4 3.2 .4 0-2.1-3.4-4.3 5.3 .1zM1675.2 660.2l-1.5 4.9-5.2-7.2 4.7 .3zM1674 629.2l3.4 1.7 1.7-1.5-.4 3.8 1.9 4.1-1.4 4.8-3.3 1.9 .4 9.1 5.4-.1 6.9 3.2 .7 7-6.4-5.7-1.4 2-3.5-3.4-7.8-.4 2-3.8-1.7-1.3-.7 2.1-2.7-3.3-1.1-7.9 2.3 1.9 2.3-14.2zM635.6 630.8l-1.4 1.5-7.5 .1-.3-2.4 5.4-.8zM572.8 632.9l-1.7 .9-6.3-3 3-1.7 5 .7 3.9 3zM596.8 621.4l14.6 1.2 1 2.1 3-.1-.2 1.7 5.2 2.3-2 2.3-7-1.2-3.2 1.4-.8-1.4-4.1 4.7-1.7-2.5-3.7-1-8.6 1-3-1.7 .5-1.9 9.3 1.3 2-1.3-2.5-4.7-3.5-.9 1.3-1.6zM1613 628.2l-4.8 2.8-4.6-1.8-.1-4.9 2.7-2.6 9.3-1.5 1.2 2.2zM135.9 625.9l-2.2 .1 .4-6.9 5.9 4.3zM557.3 604.5l2.2 2.2 5.2-.7 10.2 7.6 5.1 1.1-.4 1.7 8.3 2.6-.7 1.3-19.2 1.1 3.7-3.2-5.8-1.9-3.2-4.9-17.3-3.5-1.9-1.1 2.1-1.5-5.5-.3-7.1 4.5-5.1 .1 6.7-5.2 8.3-2.3zM569.2 598.7l-1.3 .3-3.5-5.1 1.2-3.7 1.7 .2zM1673.2 604.4l-2.4 4.8-3.5-9.3 7.7-10.3 2.5 1.8zM567.7 582l-6.1 1-.4-2.2 6.3-.3zM1748 535.9l.7 2.1-3.1 3.8-2.3-2-2.9 1.4-1.4 3.6-3.6-1.7 0-3 3.1-3.7 3.1 .7 2.3-2.6zM1192.1 526.3l-3.8 2.7 .6 1.7-5.7 2.5-2.7-.8-1.3-2.5zM1131.7 526.1l3 2.1 11.4 .4-.7 1.9-8 .5-6.8-2.2zM1086.2 509.9l-2.3 10.4-14.8-6.4 .7-3.3zM1051.2 490.5l3.3 4.6-.8 8.7-2.5-.4-2.3 2.2-2.1-1.8-1.5-11.6 3.1 .3zM1783.2 516.9l-2.1 5.1 1 3.2-2.9 4.4-7.1 3-9.8 .4-7.9 7.1-3.7-2.4-.3-4.6-9.6 1.3-6.6 3-6.5 .1 5.6 4.6-3.7 10.5-3.6 2.5-2.7-2.3 1.4-5.6-3.5-1.8-2.3-4.2 5.3-1.9 12.6-11.5 11-1.9 6 1.3 5.8-11.3 3.7 3 11.3-8.9 3.5-7.9-1-7.4 2.4-4.1 5.9-1.3 3 9.2-.2 5.3-5.1 6.5zM1053.1 484.2l-1.8 5.1-2.5-1.3-1.3-4.5 4.7-5.1zM1799.5 470.6l3.9 1.4 3.9-2.9 1.3 7.6-8.3 1.9-4.8 6.6-8.8-4.5-3 7.3-6.2 .1-.7-6.7 2.7-5.1 5.9-.4 3.3-14.8zM646.3 454.2l9.2 .7-4.8 3.3-7.1-2.9-1.3-2.4 2.1-2.1zM656.6 436.1l-9.9-2.1-5.1-3.4 9.2 1.2zM313.8 440.4l-2.8 1-9.1-3.3-7.6-7.1-5.7-1.3-1.7-5.7 14.5 3.5 4.6 5.9 5.5 3zM688.1 424.6l-3.6 6.4 3.6-2.4 3.7 1.5-1.9 2.5 4.9 2 2.6-1.7 5.5 2.2-1.7 5.2 3.9-1.2 2.4 8.2-2.3 6.1-6.2-1 1.2-5.8-1.5-.9-6.5 6.1-3.3-.2 3.9-3.3-5.3-1.7-16.8 .2-.8-2.1 3.4-2.5-2.4-1.9 4.7-4.3 5.7-11.6 8.3-6.7 2.6 .3zM262.7 399.6l5.4-.6-1.7 8.6 4.8 6-2.2 0-8.2-9.2-.7-5.8zM1798 424.2l5.6 12.8-8.2-2.3-3.4 10.3 5.4 7.2-.1 4.9-4.3-4.2-3.6 5.3-1-20.3 1.5-15.2-3.3-7.2 .5-10.3 5.2-3.5-2.2-3.5 2.4-1.1zM962.3 413l-9.9 4.4-7.8-1.1 4.5-7.8-2.9-7.7 11.7-9.6 4.7-.3 5.9 4.8-2.9 5.2 .9 5.4zM1070.5 387.5l-3.3 6.3-5.8-4.4-.8-3.2 8.1-2.6zM150 375.7l-5.6 3-2.8-2.1-.9-3.7 8-4.1 3.7 .6 2.4 2.5zM983.3 363.5l-5.9 8.7 11.7-1.1-1.4 6.5-5 7.1 5.7 .5 5.4 9.9 3.8 1.3 5 11.6 6.8 1.5-.7 4.7-2.9 2.2 2.3 3.8-5 3.9-16.9 1.9-2.6-1.4-3.7 3.4-5.1-.8-3.9 2.7-3-1.4 8.1-7.7 5-1.6-8.7-1.2-1.6-3 5.8-2.3-3-4 1-4.9 8.3 .6 .8-4.4-3.8-4.8-6.7-1.3-1.3-2.1 2-3.5-1.9-2.1-2.9 3.6-.4-7.5-2.8-4 2-8.2 4.4-6.6zM80.1 353l-3.4 1.3-7-3.8 9.9-.7zM559.6 334l-2.1 4.5-4-3.3 2.4-3.1zM545 329.2l-6.5 4.8-3.9-.2-1.2-2.3 4.1-4 7.6 .1zM45.9 319.9l16.9 4.2-4.6 2.8-6.4-3.5-4.9 .5-1.3-.7zM526.9 303l1 4 2.9-1.4 15.6 8.3 .5 4.2 4.1-.7 4 3-5 2.7-8.6-2.1-3.1-4-13.4 9.3-1.9-5.2-7.6 .9 4.9-4.4 2.6-15.3zM919.4 295.7l-1.3 5.9 6.3 6.2-7.2 6.9-20.9 7.7-22.8-4.1 5.5-3.9-12.1-4.4 9.8-1.8-.2-2.6-11.7-2.2 3.8-5.9 8.4-1.4 8.7 6.2 8.4-5 7 2.6 9.1-4.9zM578.5 289.2l-6.2 .5-1.4-4.6 2.4-5.4 5.1-1.3 4.3 2.6-.6 5.4zM0 271.9l28.2 16.8-.5 5.8 3.7 2.3-1.2-6.8 15 1.4 10.9 8.7-5.5 4-9.1 .9-.1 8.8-2.3 1.9-5.2-.3-11.6-5.7-1.2-3.9-5.7-1.5-6.3 1.1-3-3.1 1.2-3.4-6.7 2.1 2.6 4.3-3.2 3.9zM2000 271.9l0 37.3-7.2 4-7.2-.7 5 4.8 5.9 9.6 .6 3.6-1.4 2.3-10.3-1.9-20.5 7.4-16.6 11.1-2 3.8-8-5.8-14.4 6.6-2.6-3.1-5.3 3.6-7.4-1.2-1.8 5.4-6.7 7.9 .2 3.3 6.3 1.8-.7 11.5-5.2 .3-2.4 6.5 2.4 3.4-9.8 3.9-1.9 8.7-8.3 1.8-1.6 7.6-8 6.9-7.6-33 2.7-10.9 4.7-4.7 .3-3.8 8.6-1.8 19.5-18.7 10-6.7 4.4-12.1-6.7 .8-3.3 7-14.1 9.3-4.6-10.4-14.3 2.9-13.9 14 4.6 5.1-21 3 .4-6-8.7-1.2-6.8 4-17-1.4-18.3 2.4-39.3 34.2 8.8 1 2.7 4.8 5.4 1.7 3.5-3.8 6.1 .5 8.1 8.3 .1 6.4-4.3 7.4-3 20.2-8.3 10.2-1.9 4.9-18.6 19.9-7.4 4-3.5 .1-3.5-3.3-12.9 9-1.6 2.3 .2 4.7-12.1 7.4-.8 3.6 5.4 3.9 6.1 11.7 .1 7.3-2.1 3.5-14.5 4.3 .4-8.1-2.4-6.6 4.1-1.1-3.8-5.5-2.7-1.2-2.3 1.8-3.2-2.9 2.9-3.6 .5-5.7-5.8-2.5-17.9 6.7 3-3-1.2-2.5 4.4-4.4-2.9-3.5-11.1 6.9-3.5 4.2-5.4 .3-2.8 3.1 2.9 4.3 4.5 1.1 .2 2.9 4.4 1.8 6.2-4.5 8.6 2.6 .9 3.4-7.9 1.8-10.8 11 5.9 3.4 2.2 6.2 7.2 10.4-.1 4.5-3.5 1.7 1.3 3.3 3.3 1.9-2.3 9.7-3.1 .5-13.7 21.4-15.4 10.3-6.2 .7-3.4 2.6-1.9-1.9-3.2 2.9-13.6 3.8-1.9 6.1-3.1 .4-1.5-4.2 1.4-2.3-7.5-1.8-10 5.9-4.7 5.4-1.2 4 9.5 13.6 8.4 8.1 2.5 10.5-.7 9.9-22.5 17.2-2-3.6 1.6-3.8-4.2-3.2-4.6-.8-5.1-8.7-5-2.6-4.7 .1 .8-4.5-4.9 .1-.4 6.2-4.8 13.2 .3 4 3.7 .2 3.2 10 13.9 10.6 2.3 3.7 .7 11.5 4.1 8.3-4 .4-11.8-8.5-6.6-14.2-.7-6.5-8.8-10.7-.9 3.3-1-3.1 3.4-17.3-1.9-3.4 .5-6.1-2.3-2.9-5.2-18.7-10 6.9-6.5-1.9 1.9-7-1.2-5.4-4.3-6.6 .7-2.1-3.3-.8-3.9-4.7-5.3-12.2-5.1-.2-1.3 5.7-6.9-1.3-.8 2.1-10.6 1.1 .3 4.4-2.9 3.4-8 3.9-16 14.2 0 2.6-10.3 3.7-1.7 4.4 1.4 12-2.3 5.4 0 9.6-2.9 .2-2.5 4.3 1.6 1.9-5 1.5-4.1 5.5-5.3-5.3-4.7-13.5-4.9-8.1-2.3-10.6-5.1-7.8-5-30.8-8.1 3.4-3.9-.7-7.2-7 2.6-2.1-1.6-2.3-10.6-6.5-6-8.7-27 2-22.8-3.9-2.4-7.3-2.6-1-9.9 3.9-6.8-2-5.6-4.6-5.4-1.7-7.8-13.8-3 1-3.5-2-2.1 2.4-3.3-.3 .7 4 4 9.8 7.4 6-.2 4.4 3.9 7.1-.4-4.4 3-3.7 1.7 1.9-1.1 6.9 2.3 3.6 12.3-.6 13-13.5 .2 8.7 2.5 4.1 10.5 3.9 6 7.4-7.4 10.9-3.6 1.1-.8 7.5-6 2.1-1.8 4-5.6 1.4 0 2.4-16.1 4.8-1.2 4.5-14.4 5-5 4-16.9 4-3.5 3.4-8.4 .3-4.9-14.6 1.1-.2-.8-8.7-8-10.8-1.6-4.7-6.3-4.9-3.7-5.6-.4-7.5-3.1-6.5-5.6-3.5-3.1-7.8-10-14.7-2.8 .1 1.6-8.7-5.5 11.1-4.4-4.6-4-8.7 9.4 22.3 8.8 13.1-.9 4.9 7.4 6.4 3.4 19.6 5.2 3.5 4.8 11.9 22.5 20-.2 2.4-3.2 1.3 7.8 7.3 2.8 0 36.1-8.9-.4 7.8-8.9 21.4-9.5 14.4-6.5 7.6-19 14.3-8.7 11-7.3 4.9-3.7 9.9-2.2 1.8-2.6 6.9 .4 3.1 3.5 2.1-1.4 9.2 7.2 12.7 1.6 22.2-3.8 8-3.5 3.5-11.4 5-14.5 12.6-.5 4.2 4.8 9.2-.6 11.9-16 9.5 1.9 2.9-2.5 12.5-13.4 17.2-10.2 10.1-12.8 5.5-.8 1.8-17.8-.5-16.4 5.9-7.6-5.9-1.8-7.8 1.8-1.1-.2-4.8-16.7-27.7-5.3-29.4-13.7-23.3-.1-13 4.1-12.8 6.3-8.5 .2-7.4-4.5-8.7 2-3.4-7.3-19.7-17.3-21.8 5.5-23.3-2.1-3.7-2.6-.9-2.5-4.8-14.4 2.8-8.8-11.2-13.6 .7-21.3 8-14.9-2.5-18.5 4.5-27.6-19.2-1.7-6.2-7.4-7.3-1.5-3.8-6.9-3.6-2.9-3.6-.6-8.1-5-6.4 5.1-5.1 2.4-8.8 0-16.8-4.4-5.3 .5-5.1 3.9-4.7 1.6-6.1 5-4.7 3.6-10.2 3.7-2.2 3.5-6.1 2.9-2.4 5.2-.7 11.8-10.8-1.4-7.6 2.8-8.5 3.6-4.2 9.7-5.4 5.4-10.4 4.1 0 3.4 2.7 13.4 1.1 20.3-9.1 21.4-.8 5.2-2.5 12 1.1 6-2.6 3.9 .8-.1 3.2 4.7-2.3 .4 1.2-2.8 3.1 0 2.9 1.9 1.6-.7 5.5-3.7 3.1 1.1 3.4 2.8 .1 3.5 4 20.9 5.4 2.6 5.4 18.7 6.8 5.4-4.4-1.3-4.7 1.8-3 7.8-3.7 7.5 1.3 1.9 2.7 9.4 1.8 1.3 2 7.4-.1 13.4 4.4 6.6-3.7 4.9-.5 4 .8 1.5 3 1.3-2 8.7 1.8 4.4-3.5 8-19.3 .8-7.4-2-2.8 2.1-2.4-8-1-3.9 3.7-8.4 .7-4.5-3.4-6-.2-1.3 2.6-3.8 .8-5.4-3.4-6 .1-3.3-6.3-4.1-3.6 2.7-5-3.5-3.2 6.2-6.2 8.5-.3 2.4-5 10.5 .9 13.2-6.2 9.2-.2 17.7 7.3 11.2-.4 6.6-3.5-.6-7.4-26.5-17.7 4-1.1 4.6-5.8-3.1-2.7 8.2-2.9-.2-1.5-18.3 4.3-4.8 2.6 .4 4.3 2.7 1.7 5.7-.4-1.1 2.4-13.7 5.2-3-1.4 1.2-3.2-6.1-2 6.3-3.7-1.6-1.5-8.6-1.8-.4-2.6-5.2 .9-6.2 10.7-4.4 .8-1.5 8.2-4.9 7.6 2.4 6.4 4.9 2.2-1.1 1.6-6.6 .4-7 5.5-1.6-4.4-6.3-.8-6.7 1.7 3.8 3.7-2.8 1.1-3.1 0-2.9-3.4-1.1 1.5 4 6.9-2.1 1.4 5.9 4.9 .1 3.6-5.2-1.7 1.7 3.3-3.6 .7 2.1 5.6-3.6 .1-4.6-2.8-3.1-9.4-6.4-10.4-3.1-2.2 .8-9.7-3.7-3.8-15.9-8.2-4.7-5 1.1-.5-2.6-5.2-3.6-1.1-1.7 3-1.6-2.3 1.5-3.2-4.4-1-4.5 2.5-.4 5.3 1.8 3.5 5.3 3.4 2.8 5.6 6.1 5.4 4.4 0 1.3 1.4-1.5 1.4 9 4.4 5.4 4.6-1.1 2.4-3-3.1-4.9-1.1-2.3 4.3 4 2.4-.7 3.4-2.3 .4-2.9 5.5-2.4 .5 2.4-6.8-3.9-7.1-9.9-7.5-4.1-.4-4.3-3-8.9-8.2-1.7-6.7-7.3-3-13.1 8.3-11-1.8-8.1 2.2-.3 7.9-5.3 4.5-7.1 1.4-6.1 11.1 2.2 3.8-3.2 2.8-1.2 4.2-4.2 1.3-3.9 4.9-12.4 0-5.6 4.6-2.7-.5-3.6-5.8-5.2-1-2.3 1.7-5.7-.2 .3-9-3.8-3 4.2-13.3-1.2-12.1-2.3-3 7.9-4.8 33.7 2.2 2.9-4.1 1.1-13.7-9.9-10.9-8.5-2.7-.5-5.2 7.2-1.5 9.3 1.8-1.8-8.1 5.3 3.1 12.9-5.7 1.7-6 12.2-4.9 4.9-11 7.6-3.2 4.6 .3 1.1-1.6 4.6-.5 1 1.7 3.8-3.7-3.8-11.6-.1-8 2.5-4.5 4.9-.5 6.4-4.4-1.8 6.7 .6 2.2 3 1.2-7 7.7 1.6 6.7 5.6 1.8 0 2.8 8.8-3.6 8.9 5.5 19.4-8.4 5.6 1.3 .4 1.9 5.3 .1 1.3-3.4 7.7-2.5-1-12.5 2.7-5 5.2-2.7 4.5 5.9 4.4-.1 1.7-10.9-2 1-3.5-2.9-.5-4.7 14-3.4 11.8 1.1 6.3-4.6-5.8-4-10.1 .7-18.8 4.8-3.3-4.5-5.3-2.8 1.2-8.3-2.7-7.8 2.7-5 5-5.6 16.4-11.5-.6-3.9-7.7-4.3-9.6 2.6-5.3 6.4 .8 5.4-19.5 14.7-4.1 12.1 9.3 10.6-5.1 9.2-5.8 2-2.1 13.5-3.2 7.4-6.7-.8-3.2 6.2-6.4 .3-10.6-27.7-3.8-5.1-10.9 9.5-7.4 1.9-7.7-4.2-3.8-28.2 5.2-5.5 14.6-7.4 11-9.1 23.5-30.6 24.6-19.5 12.2-4.4 9.1 .6 8.5-8.4 10.1 .5 10-2.1 17.4 7.5-7.2 2.6 6.1 6.3 5.7-3.5 9.1 6 15.3 2.3 21 10.9 4.2 4.5 .4 6.2-6.2 4.9-9.1 2.5-24.8-7.1-4 1.2 9 6.8 .7 13.4 11.5 5.1 .8-4.3-3.5-4 3.6-3.3 13.5 5.6 4.7-2.2-3.8-6.6 13-9 5.1 .5 5.2 3.2 3.2-6.3-4.6-5.6 2.7-5.7-4.1-5.9 15.6 3.1 3.1 5.3-7 1.2 0 5.2 4.4 3.2 8.6-2 1.3-6 31-12.8 4.2 .5-5.4 5.8 6.8 1 4-3.3 10.4-.2 8.3-4 6.3 5.8 6.3-6.4-5.8-5.7 2.9-3.2 16.4 3 27.8 14.1 3.7-5.1-5.6-5.1-.2-2.1-6.7-.9 1.9-4.7-3.2-11 10.3-9.3 3.6-9.5 4.2-2.1 14.7 2.8 1.1 5.8-5.2 8.4 3.4 3.2 1.8 7.1-1.3 13.5 6.2 5.9-2.4 6.4-10.9 13.3 6.4 1.4 2.2-3.3 6.1-2.4 1.5-4.7 4.8-4.5-3.3-5.4 2.6-6.4-6.1-.8-1.3-5.4 4.4-10-7.2-8.3 10-7-1.3-7.4 2.8-.3 2.9 5.9-2.2 9.9 5.9 1.9-2.5-7.4 9.3-4.1 11.5-.5 10.3 5.9-5-8.7-.5-11.3 9.7-2.2 25.4-.9-4.6-5.7 6.5-7.3 6.3-.3 10.8-5.6 14.7-1.5 1.9-3.1 14.6-1.1 4.5 2.6 12.5-6.1 10.2 .2 1.5-5 5.3-5 13.1-4.8 9.6 3.8-7.6 2.9 12.6 1.8 1.5 5.7 5.1-2.8 16.2 .2 12.5 5.6 4.5 4.3-1.4 5.8-24.9 12.7 15.1 4.3 5-2.1 2.8 6.9 2.5-2.7 8.8-1.7 17.9 1.7 1.3 5 23.3 1.6 .3-8.2 20.6 1.9 9 5.6 2.6 6.7-3.3 4.4 6.9 8.1 8.8 4.1 5.3-10.7 9 4.6 9.4-2.8 10.8 3.2 4.1-2.9 9.1 1.5-4.1-9.7 7.4-4.5 50.2 6.8 4.7 6.2 14.5 7.7 22.5-1.9 11 1.7 4.6 4.2-.6 7.2 6.8 2.8 7.5-2 20.3 1.7 10.5-1.1 9.7 8.7 6.9-3.1-4.5-6.3 2.5-4.4 17.7 2.8 11.5-.6 16 4.7zM1272.8 490l2.9 4.7 4.3 2.1-4.6 .5-1.9 7.3-2.1 1.5 1.9 8 5.3 1.3 3.9 3.2 7.9 1.2 8.6-1.7 .3-12.8-4.3-2.2 1.4-4.5-3.6-.4 1.2-5.5 5.2 1.6 4.9-2.1-5.6-7.8-4.5 1.7-.6 4.9-1.7-11.1-6.5-2.3-5.7-10 5.4 .6 .2-5 9.6-.1 0-11-10.3-1.4-11.6 4.5-2.5 4.2-5.4 1.1-5.5 7.1 5 6.5-.5 4.5zM468.6 270.5l-3.4 3.4-7.5-3-4.5 1.1-7.6-4.4 8.7-7.3 9.3 4.6zM2000 246.4l0 6.9-6.1 .6-1-3.3zM0 246.4l5.4-.4 8.1 2.9-6.2 3.8-7.3 .6zM497 266.7l-.1 9.9 7.5-7.6 6.6 6.2-1.7 7.2 5.4 6.3 5.8-6.8 4.1-8.3 .3-10.7 16.1 2.2 7.4 4.8 .4 4.9-4.2 5.1 4 5.1-.8 4.6-10.8 6.5-7.8 1.4-5.7-2.8-8.6 16.3-6.5 6-7.9 .6-4.4 3.8-.4 5.7-6.4 1.1-6.8 7-6.1 9.5-2.1 6.6-.3 9.6 8.1 1.4 5.1 13.6 7.8-1.6 10.3 3.5 9.6 6.7 12.8 5.4 15.2 1.2-.9 6.7 1.7 7.6 4.1 8.4 8.2 7 4.3-2.4 3-7.6-2.9-12-3.9-4 8.9-3.6 6.3-5.5 3.1-5.4-.5-5.3-3.8-6.8-6.7-6.1 6.5-8.6-4.2-20.9 3.8-2 15.3 3.2 4.6-2.3 12 7.9 1.7 3.3 9.9 .6 1.7 17.5 5 1.3 4.1 4.8 8-4.5 9-13 17.7 27.4-2.2 5 12.4 8.9 8.8 2 3.6 2.4 2.2 6.5 4.3 1 2.2 2.9 .4 8.4-8 5.4-9.1 2.6-7 6-9.4 1.2-26-1.1-4.6 5.2-7.1 3.2-14.4 15.9 4.7-1.2 8.9-9.2 11.7-6 8.3-.7 4.9 3.5-5.3 4.8 3.6 12.9 7.2 3.4 9.2-1 5.6-7.8 .4 5.1 3.6 2.5-6.9 4.5-17.8 6.8-6.2 4.9-4.3-.5-.2-5.7 9.7-5.7-15.1 1.1 1 2.2-17.5 7.7-3.2 4.4-.8 4.7 1.9 3.5 2.3 .2-.6-2.5 1.6 1.5-.4 1.9-20.8 4.7 8.2-1.2 1.6 1.2-7.8 2-3.4-.8-1.6 1.8 1.6 .3-1.2 4.7-4.1 5-3.4-3.6 2.6 7.1-4.9 7.7 1.2-4.7-2.8-2.4-.7-5.4-1 2.8 1.1 4.1-3.5-1 3.7 2.1 3.2 15-3.5 4.7-5.8 1.9-9.2 6.3-12.7 12.7 .2 8.6 6.9 19-1.8 10-4.4 0-3-4-6.3-12 1.1-4-1.5-3.3-6.5-6-5.6 2.7-7.2-4.6-15.5 .5-2.3 .9 2.1 5.3-5.2 1.1-4-.2-4.1-3.2-12.4-.2-15.2 8.5-4.3 5.5 1.2 9.1-3.1 9.4-.9 10.7 3.8 10.5 7.1 10.5 5.9 1.5 2.3 2.4 16.8-4.2 3.5-2.4 2.7-9.9 9.7-2.8 8.3-.3 1.1 4-4.3 7 1 1-2.2 6.9-2.6-1.3 1.1 .8-1.4 10.4-3.2 3.7 4.5 1.1 17.5-1.7 8.7 4.1 1.3 5.5-3.5 18.1 8.9 11.8 7 .8 7.6-4.3 15.2 5.5 6.5-4.5 1.1-6.6 3.1-2.6 8.3-.8 9.3-6.8 3.4 1.8-1.3 3.2-3.2 .7 1.7 5.5-2.4 3.2 2.1 4.5 2.4-.4 1.2-4.1-2-6.2 6.9-2.3-.7-2.6 1.9-1.8 2 4 3.9 0 3.8 5 11-.5 7.4 3.2 3.2-3.1 13.5-.5-4.7 1.7 1.9 2.7 4.4 .4 4.2 2.7 .9 4.5 2.9-.1 5.9 3.4 3.4 3.6 .1 2.9 7.3 4.8 17.7 1.2 6 1.9 6.8 7 1.9-.3 4.5 12.8 3 .9 .1 3.9-4.2 4.6 1.8 1.6 9.8 .9 .2 5.6 4.2-3.7 16.2 5.4 2.7 3.3-.9 3.1 6.5-1.8 10.8 3 8.3-.2 15.3 10.8 9 1.8 2 1.8 2.8 10.5-2.2 9.2-19.7 22.8-3.3 27.4-2.7 10-5.6 7.5-1 6-4.5 2.5-1.3 3.6-14.8 2.2-16.6 9-4.7 5.9-2.2 16.7-3.9 3.4-6.2 10.7-8.6 7.7-8.6 13.4-6.3 3.5-7.1-.6-5.1-2.7-3.8 .2-3.4-3.5-.4 3.3 7.1 5.4-.8 4.4 3.5 2.7-.3 3.1-5.3 8.3-8.3 3.4-17.2 .7 1 12.1-9 3.3-5.3-2.5-2.2 1.8 .8 6.6 3.8 2 3-2.1 1.6 3.5-9.5 6.2-2.2 10.5-5.2 .1-4.4 3.5-1.6 5.2 5.5 5.1 5.3 1.4-1.9 6.4-6.6 4-3.6 8.4-5 2.9-2.3 3.4 1.8 7.6 3.7 4.3-7.3-.4-7.7 4.5-.9 7.1-8.6-2.3-13.3-9.5-3.7-26.2 2.4-6.8 5.9-5.5-8.5-2 5.3-6.1 1.9-11.5 6.2 2.4 2.9-14-3.7-1.7-1.8 8.4-3.5-1 3.7-21.8 2.5-4.5-2-13.5 2.3-.2 9.6-29.6-1.3-9.2 1.7-5-.7-7.5 3.3-7.4 4.5-36.8-.4-9.5-1.2-8.1-5.5-3.3-.5-2.4-25.3-15.4-2.3-4.7 .9-1.7-19.4-35.6-8.3-5.9 1.8-2.5-2.7-5.3 9.1-11.5-1.2-2.5-2.1 2.6-3.3-2.4 .2-6.6 1.9-.9 2.7-9.3 6.9-3.4-.7-1.7 2-.4 1.1-4.8 2.7-.4 4.5-6.4-2-1.3 .1-14.5-4.1-4.6-1.2-3 1.3-1.5-5.2-3.8-2.4 .3-5.1 4.8 2.6 3-4.9 1.8-.9-3.3-2.6 .6-1.1-2.3-6.1-1-.2 1.2-3.6-2-.7-3.4-7.5-5.8-.7 2.9-3.1-2.1 0-4.6-1.6-.8 1.3-1.1-10.9-10.2 2-.4-1-1.8-5.5 .8-15.3-4.4-11.8-9.6-7.4-3.3-10.3 3.1-23.8-8.6-6-4.3-8.8-2.1-11.1-9.6-1.3-2.8 1.9-.6 .7-5.1-4.3-7.9-13.1-14.1-4.8-2.4-.2-5.2-6.1-4.3-1.4-4.1-3-.5-5.8-6.1-5.1-13.5-4-2.5-5.1-1.4 .6 10 17 21.1 5.3 14 2.7 .2 4.3 5.3-3.5 3.2-1.5-3.6-10.4-7.7-.7-7.5-15.3-10.2 2.7-.1 2.3-5-7.6-6-9.8-21.4-6.8-6.1-11.7-3.6-10.5-20.2-6.8-7.5-.7-5.3-3-3.6 1-11.2-1.8-5.1 3.6-18.8-1-9.3-3.4-9.3 .7-1.4 8 2.4 3 6.7 1.3-1.9-2.7-11.6-15.5-10.3-10.1-3-3.1-6.5 .8-4.6-7.1-3.2-1-6-6.7-5.6-.1-3.9-8-5.4-1.5-6.8-7.2-6.4-3-7.6-14.1-.7-6.6-2.4-11.4-8.4-15.1-4.6-7.7 .7-17.5-7.4-6.2 1.8 1.2 5.8-20.6 6.8-.8-4.8 2.5-8.2 5.9-2.6-1.5-2.1-18.9 16.1 4.1 4-5.2 5.8-11.6 5.8-1.4 3.5-8.6 4.1-1.8 3.7-35.3 12.3-.8-1.3 17.4-10.2 6.9-.9 15.8-12.4 3.7-10.9-6.4 2.5-1.8-1.4-3 3-3.6-4.2-1.5 3-2.1-4.1-5.5 3.3-3.4 0 .5-7.9-3.6-3-7.2 1.6-8.5-5.9 0-4.8-4.3-3.6 8.7-14.2 8.3 .8 4.5-4.2 4 .7 4.2-2.7-1-4.1-3.1-1.5 4.1-3.5-9.3 2-1.7 2-4.4-2-7.8 1.1-8.2-2.2-9.3-8.9 20.2-8.4 4.5 0-.7 4.7 11.7-.4-4.5-5.7-6.9-3.6-9.2-8.8-7.7-3 3.1-5 9.9-.4 7-4.4 1.3-4.8 5.7-4.7 15.9-5.7 5.2 .7 8.5-5.4 8.4 2.1 4 4.6 2.5-1.9 9.4 .6-.3 2.3 8.5 1.7 5.6-1 26.7 5.4 7.4-1.6 39.3 12.3 11.6-7.1 8.3 1.2 17.4-6.9 3.8 4.2 4.2-2.3 1.2-4.7 3.9 1 9.4 8.9 7.3-6.7 .8 7.5 6.8-1.6 2.1-2.9 6.8 .6 21.4 7.7 13.1 1 7.5 4.9-7.8 4.8 10.1 2 19.7-2.8 5.9 5.7 6-4.8-5.6-4 3.6-3.3 11.2-1.4 10 7.5 6.2-.8 9.9 4.3 16.7-1.3-.7-5.9 5-1.7 8.6 3.3 0 9 3.5-7.6 4.5 .2 2.5-9.7-12.5-10 .5-11.1 6.6-7.5 7.3 1.7 5.6 4.5 7.6 11.4-5 4.9zM365.7 229.6l-2.7 5 12.3-3.2 7.7 5.3 6.3-5.4 5.1 3.5 4.5 10.2 2.8-4.3-3.9-10.8 4.9-1.5 5.5 1.7 6.2 4.3 5.2 17.3 19.4 9.7-.6 4.4-9.1 .8 3.5 3.8-1.9 3.5-19.6-4.1-16.9 3.9-23.9 2.3-3-4.6-7.6-2.6-4.9 1.1-6.9-7.8 27.4-4.1-10.8-2.3-19.7 .6-3-3.7 12.9-4.1-8.5 .1-9.7-2.7 8.5-11.9 14.9-6.4zM419.4 226.4l-4.8 7-8.7-7.4 9.3-1.9zM575.9 229.8l.5 2.9-11.9-.5-6.1 1.4-7.7-6.2 .2-3.9 15.4 .4zM519.1 229.2l4.4 6.6 5.1-8.5 14.1-4.4 9.5 11-.8 6.9 11-3.1 5.2-4.2 20 10.3 .7 4.5 10.3-2.3 5.8 6.4 13.4 4 4.9 4.1 5.2 9.2-10.2 4.5 13.1 6.3 8.8 2.1 8 8.7 8.8 .6-1.8 6.5-9.7 10.6-6.8-3.9-8.8-8.8-7.2 1.2-.7 5.2 15.7 11.8 3.6 8.8-1.9 6.3-20.9-9.4 13.6 12.8 .9 3-15.1-3.5-11.9-5-6.7-4.3 1.9-2.4-16.4-8.9 .1 2.6-16 1.4-4.7-3.1 3.6-6.6 21.9-1.3-1.8-3.3 9.1-13.7-1.6-4.1-2.1-3.3-8.5-4.7-11.3-3.3 3.6-2.4-5.9-6.1-4.9-.6-4.4-3.4-2.9 3-10.1 1.2-41-6.6-4.6-3.5 5.8-4.7-7.9 0-1.7-10.5 4.2-9.4 5.7-4.3 14.4-2.9zM442.5 221.9l6.6 2.2 9.9-1.3 1.4 3.1-5.1 5.1 8.4 4.5-1 9.4-9.1 4-5.4-.9-17.6-11.9 .1-3.4 11.3 1.3-6.1-6.9zM1797.8 228.6l-20.8-1.6 5.3-4.3 6.9-1 7.9 4.1zM482.2 233.3l-5.9 7.8-6.4-.3-3.4-9.3 .1-5.3 2.9-4.5 5.5-3 11.6 .4 10.6 2.6-8.3 9.6zM330.8 247.6l-14.6 5-3-4.4-12.8-5.4 11-19.2-5.4-6.6 18.8-1.7 7.9 2.3 14.2 .6 11.4 7.6-20.6 10.2-6.9 7.3zM1837.4 208.3l-6.4 4.4-8.9-1-10.3-4.4 1.3-3.7zM479.9 209.4l-3 4.3-8.1-.8-6.7-2.9 3-5 7.9-3.1zM1806 202.9l-4.3 8.3-20.5-.3-9.2 2.6-11-7.2 3-7.8 7.3-2.1 14.7 .5zM452.8 189.7l4.2 5.3 .2 5.9-2.5 8.3-9.2 1.1-6-1.7 .1-6.6-9.1 .9-.3-8.8 6 .3 8.3-3.9 7.8 .7zM398.8 195.7l2.2 4 4.9-1.9 5.9 .5 .9 5.5-3.3 5.3-18.8 1.8-14.1 4.7-8.4 .3-.7-3.6 11.5-4.9-25.1 1.3-7.8-2 7.6-11 5.3-3.2 15.6 3.8 9.9 6.8 9.7 .8-8-10.9 5.1-4.2 5.7 1.4zM1319.6 254.5l-21.4-.5-1.5-4.5-10-2.7-.8-5.6 5.7-2.2-.2-5.7 11-9.1-5.1-1.3 13.3-9.6-1.5-5 30.7-13.2 18.5-2.2 9.5-4.3 10.9-1.5 3.8 4.6-3.7 3.6-36.7 11-17.2 10.5-17 20.7 1.1 8.6zM474 185.3l6.1 3.7 11 0 4.8 3.8-1.3 4.3 9.9 5.3 15.6 1.4 8.8-2.4 20.4-.2 5.9 4.2 1.3 4.6-3.5 3-8.3 2.3-7.1-1.3-27.3 1.9-23.8-4.9-2.6-11.7-5.5-5-11.5-1.4-6.5-3.6 2.1-4.8zM354.4 178.8l-.7 9.1-4.3 4-24.4 7.2-7.5-2.5 20.8-16.2zM478.7 180.3l-13-.4-1.5-3.3 11.2 .1 3.9 2.2zM387.8 178.2l-10.3 3.4-8.2-3.8 4.4-3.8 8.2-1.3 7.8 1.9zM1137.4 176.3l-12.4 4.9-9.8-2.8 3.8-3-3.4-3.9 11.5-2.4 2.2 4.5zM390.8 167.3l-6.8 2.4-9.2 0 .1-1.8 5.7-3.6zM467.6 173.9l-8.2 2.5-4.5-2.8-2.9-9.6 10.5 1.3 6.6 4.2zM444.1 170.7l2.2 5-9.1-1.3-9.1-4-12.4-.4 5.3-3.6-6.7-3-.4-4.7 26 6.2zM1583.8 170.9l-31.4 4.6 10.2-16 4.6-1.4 18.2 7.9zM1101.4 153.7l18.3 9.3-14 4.8-3.1 8.9-4.8 2.2-2.7 9.7-6.7 .5-11.9-7.2 5-4.2-8.3-3.4-10.8-10.3-4.4-9.7 15.2-4.5 3 4.4 7.9-.2 2.1-4.3 8.2-.4zM1141.4 144.7l10.9 4.5-8.3 6.8-16.1 1.5-16.4-2.1-1-3.5-7.9-.2-6.1-5.8 17.2-3.6 8 3.1 5.6-3.9zM1284.1 142.9l-12.5 2.7-.7 2.1-6.5 2.1-6-3 3.1-4-12.3-.4 19.2-2.5 1.2 3.5 8.4-5.3 8.2 2.9zM1555.2 163.9l-12.1 1.5-15.5-3.5-9.2-4.8-4.3-9-7.5-2.5 14.4-8.9 12-2.9 10.8 6.6 12.8 12.3zM516.6 154.2l6.6 4-7.6 3.7-10.2 9.2-9.9 .9-11.5-1.6-6-4.9 .1-4.5 4.4-3.3-10.1 .1-6.2-4.1-3.5-5.8 7.7-9.6 5.7-.9-2.4-3 12.9-.7 7.1 7 18.5 5.2zM619.4 108.7l26.8 2.8 10.2 3.8-.3 3.6-13.5 5.9-13.5 2.7-5 3 12.1-.1-22.1 11.6-9.6 10.5-11.4 2-3.6 2.6-16.8 1.3 7.7 1.6-3.9 2.2 4.6 6-5.2 4.2-8.6 3.4-2.7 4.6-7.7 3.6 .8 2.6 9.5-.4 .1 2.8-14.9 6.9-14.5-3.1-16.3 1.7-18.8-2-.7-5.5 10.3-2.7-2.7-8.5 3.4-.9 14.8 5.2-7.6-7.7-9-2.3 4.5-4.7 9.9-2.9 1.5-4.4-7.8-4.8-2.4-6.6 19.6 2 8.7-4.7-12.5-1.5-19.5 .8-9.8-4.3-4.6-5.3-6.5-3.9-1.2-4.6 25.6-5.1 8.2-5.1 6.9 .7 6 3.8 4.2-7.4 17.3-3.7 17-.6 2.9 1.5 16.1-2.4zM849.4 102.9l34.8 11.1-10.3 5.2-51.1 1.9 2.8 2.4 19.6-1.5 16.8 4.7 10.8-4.1 4.6 4.8-6.1 7.7 14.1-4.9 27-5.2 16.6 2.6 3.2 5.7-22.7 9.2-3.1 3-17.8 2.2 12.9 .6-11 17.2 .2 13.4 6.7 7.7-8.7 .5-9.2 3.6 10.3 6.1 1.3 9.6-5.9 1.1 7.2 9.5-12.4 .7 6.5 4.5-1.9 3.8-15.5 1.6 6.9 7.2 .1 4.7-11-4.4-2.8 2.8 7.5 2.7 7.2 6.3 2.1 8.1-9.9 2-11.1-9.8 1.9 6.9-6.5 5.3 22.3 1-30 16.3-22.3 3.3-5.8 3.7-7.7 9.9-12 6.5-19.2 4.7-4.7 5.6-.1 6.3-2.8 5.8-9.1 7 2.2 6.7-5.3 15.2-7.8 .5-8.2-6.8-11.1 0-5.4-4.7-3.7-8.3-9.7-10.9-2.8-5.7-.7-8.1-7.7-8.4 2-6.9-3.7-3.3 5.5-11.1 8.3-3.6 3.4-11.7-14.4 6.3-6.8-3.2-.4-6.7 2.2-5.3 16.5 2.5-14.5-9.9-5.6 1.4-4.6-2.6 6.2-9.6-14.5-22.9-7-4.3 0-4.7-14.9-6.6-40.2 .5-16.1-11 14.6-3.7 11.2-.6-23.8-3.1-12.5-4.9 .8-4.6 41.3-11.9 2.2-4.5-15-4.6 4.8-5.1 19.3-9 8-1.4-2.3-6 13.2-3.5 34.1-2.3 6.1 4.2 14.7-7.4 32.6 10.5-13.2-7.3 .8-5.8 18.6-8.3 19.5 .7 7.1-5.2 19.7-1.4z"/>
-	</g>
-</svg>
-<div class="erc-markers"><span class="erc-origin"><span class="erc-oping"></span><span class="erc-oring"></span><span class="erc-odot"></span></span><span class="erc-me" style="opacity:0"><span class="erc-ring"></span><span class="erc-ring erc-ring-2"></span><span class="erc-dot"></span></span><span class="erc-others"></span></div>
-<svg class="erc-shade" viewBox="0 0 2000 1466" preserveAspectRatio="xMidYMid slice"
-		 xmlns="http://www.w3.org/2000/svg" focusable="false">
-	<defs>
-		<filter id="erc-soft" x="-12%" y="-12%" width="124%" height="124%"
-						color-interpolation-filters="sRGB">
-			<!-- Softens the eight bands into a continuous gradient. -->
-			<feGaussianBlur stdDeviation="14"/>
-		</filter>
-		<radialGradient id="erc-scrim" cx="50%" cy="50%" r="62%">
-			<stop offset="0%" stop-color="#04070d" stop-opacity=".78"/>
-			<stop offset="55%" stop-color="#04070d" stop-opacity=".40"/>
-			<stop offset="100%" stop-color="#04070d" stop-opacity="0"/>
-		</radialGradient>
-		<radialGradient id="erc-sun-glow">
-			<stop offset="0%" stop-color="#ffd89c" stop-opacity=".55"/>
-			<stop offset="35%" stop-color="#ffc56e" stop-opacity=".22"/>
-			<stop offset="100%" stop-color="#ffc56e" stop-opacity="0"/>
-		</radialGradient>
-		<!-- Empty until the script draws it, and an empty clip shows nothing:
-			 without JS there are no lights, never lights in daylight. -->
-		<clipPath id="erc-night-clip"><path class="erc-nightclip" d=""/></clipPath>
-		<!-- Cities of 750k+ (Natural Earth, public domain), pre-projected.
-			 lg: 5M and more. -->
-		<path id="erc-lights-sm" vector-effect="non-scaling-stroke" d="M123 613h.1m193-178h.1m2 26h.1m2-14h.1m0 66h.1m3 3h.1m2-8h.1m23 28h.1m1 8h.1m1 2h.1m8-1h.1m2-22h.1m6-101h.1m3-19h.1m8 137h.1m1-47h.1m6 55h.1m19 44h.1m5-62h.1m0 21h.1m3 19h.1m6-70h.1m8 88h.1m1 29h.1m9-3h.1m4-6h.1m4-21h.1m10-22h.1m1 61h.1m2-19h.1m1-47h.1m1-32h.1m1 17h.1m3-1h.1m5-54h.1m0 33h.1m3 40h.1m4-59h.1m8-39h.1m15 186h.1m2-144h.1m1 23h.1m0 31h.1m2 54h.1m2 42h.1m8-179h.1m3 176h.1m3-131h.1m3-23h.1m0 165h.1m10-161h.1m0 34h.1m2 140h.1m5-195h.1m4 91h.1m0 28h.1m4-113h.1m0 70h.1m2 11h.1m8-74h.1m0 250h.1m2-63h.1m3 95h.1m1-299h.1m1 46h.1m1 209h.1m5-257h.1m1 37h.1m2-8h.1m2-3h.1m0 129h.1m1 82h.1m1-195h.1m3-57h.1m1 213h.1m0 23h.1m4-26h.1m7-211h.1m2 30h.1m1 456h.1m4-318h.1m4 44h.1m0 251h.1m1-99h.1m2-342h.1m2 141h.1m5 5h.1m6 294h.1m3-97h.1m1-150h.1m6-1h.1m5-45h.1m5 256h.1m5 28h.1m6-81h.1m14 90h.1m4-173h.1m13 127h.1m8-57h.1m0 115h.1m9-87h.1m19 57h.1m10-78h.1m0 50h.1m4 13h.1m1-149h.1m3 81h.1m4 41h.1m16-116h.1m8 15h.1m14 86h.1m10-94h.1m0 52h.1m15-19h.1m3-22h.1m2 13h.1m97-127h.1m21 29h.1m2 6h.1m14 12h.1m9-191h.1m7 44h.1m0 112h.1m2-124h.1m4-2h.1m3-132h.1m2 110h.1m5 21h.1m4-151h.1m2 319h.1m4-285h.1m2 58h.1m4-73h.1m1 7h.1m3 253h.1m5-198h.1m0 60h.1m1-24h.1m1 200h.1m8-3h.1m1-225h.1m4 15h.1m0 169h.1m2 40h.1m3-273h.1m0 94h.1m5 173h.1m2-278h.1m0 10h.1m0 264h.1m3-276h.1m0 48h.1m3 17h.1m1 221h.1m1 5h.1m2-246h.1m5 249h.1m2-31h.1m1 8h.1m1-219h.1m4-16h.1m0 218h.1m1-237h.1m3 33h.1m3 249h.1m2-308h.1m1 116h.1m3-166h.1m2 120h.1m2-30h.1m0 269h.1m5-226h.1m1-99h.1m3 157h.1m0 123h.1m1-256h.1m0 100h.1m5-18h.1m1-64h.1m4 237h.1m1 91h.1m3 47h.1m3-361h.1m10-85h.1m1 571h.1m1-220h.1m3-261h.1m4 42h.1m1-61h.1m0 119h.1m3-82h.1m3-53h.1m7 353h.1m3-272h.1m3-13h.1m1 286h.1m1-255h.1m1-81h.1m6-80h.1m3 578h.1m3-460h.1m6 40h.1m2-108h.1m0 397h.1m3 84h.1m1-62h.1m0 59h.1m4-382h.1m5 57h.1m1 190h.1m1-391h.1m2 73h.1m1 29h.1m1 378h.1m0 71h.1m8-392h.1m0 134h.1m1 0h.1m0 85h.1m0 150h.1m2-382h.1m10 50h.1m1-108h.1m2 77h.1m0 33h.1m1-13h.1m3 11h.1m1-119h.1m1 110h.1m3 200h.1m1-217h.1m4-79h.1m5 239h.1m3-266h.1m0 195h.1m0 159h.1m2-177h.1m0 162h.1m1-307h.1m0 163h.1m19-90h.1m0 146h.1m4-286h.1m1 275h.1m1-10h.1m1-208h.1m0 58h.1m2-10h.1m1 175h.1m2 60h.1m4-304h.1m1 93h.1m3 83h.1m4 246h.1m2-282h.1m1 7h.1m4-11h.1m2-168h.1m4 110h.1m2-90h.1m7 184h.1m1-45h.1m5 19h.1m15 26h.1m4-196h.1m1-25h.1m19 153h.1m6-144h.1m4 13h.1m31 169h.1m8 29h.1m2-81h.1m2 26h.1m1-44h.1m8 117h.1m4-70h.1m0 23h.1m8 54h.1m1-75h.1m0 45h.1m1 23h.1m1-215h.1m2 229h.1m0 8h.1m2-81h.1m0 92h.1m2-161h.1m2 57h.1m0 9h.1m0 6h.1m0 110h.1m1-14h.1m1-26h.1m2-68h.1m1 27h.1m0 10h.1m0 15h.1m0 65h.1m1-114h.1m0 78h.1m1 43h.1m3-13h.1m1-188h.1m0 81h.1m0 115h.1m0 14h.1m2-177h.1m1 61h.1m0 1h.1m0 31h.1m2-35h.1m1 11h.1m1-4h.1m0 10h.1m0 84h.1m0 10h.1m3-5h.1m1-105h.1m1 46h.1m5-12h.1m2-19h.1m2 58h.1m2-61h.1m2 34h.1m2-1h.1m1-24h.1m6-197h.1m0 197h.1m2 45h.1m10-46h.1m1-13h.1m0 26h.1m3 18h.1m2-15h.1m1-6h.1m3 1h.1m4-126h.1m5 122h.1m6 9h.1m12-19h.1m0 22h.1m6-223h.1m18 225h.1m0 13h.1m0 17h.1m14 74h.1m3-122h.1m6 112h.1m1 36h.1m7-219h.1m0 196h.1m5-125h.1m0 41h.1m7-108h.1m1 33h.1m4-5h.1m0 30h.1m0 168h.1m1-81h.1m1-105h.1m1 199h.1m3-230h.1m0 82h.1m2-107h.1m0 49h.1m3 25h.1m0 34h.1m1-171h.1m4 327h.1m3-129h.1m1-39h.1m3-69h.1m1 10h.1m4-51h.1m2 111h.1m1-15h.1m0 24h.1m0 158h.1m7-279h.1m5 19h.1m0 31h.1m0 37h.1m1 194h.1m0 4h.1m2-213h.1m0 7h.1m3-40h.1m1 44h.1m0 27h.1m4-92h.1m0 10h.1m8 48h.1m0 348h.1m4-316h.1m2-81h.1m0 19h.1m0 6h.1m1-10h.1m1 15h.1m1-19h.1m3-12h.1m0 76h.1m1-65h.1m2 62h.1m1-43h.1m1-66h.1m0 56h.1m2 46h.1m1 177h.1m4-238h.1m0 28h.1m0 8h.1m0 45h.1m2-52h.1m0 20h.1m0 23h.1m1-103h.1m3 21h.1m1 48h.1m1-57h.1m2 190h.1m1-221h.1m4 17h.1m3-5h.1m2 190h.1m1-227h.1m5 5h.1m1 245h.1m1-226h.1m2 221h.1m1-189h.1m4-32h.1m1-13h.1m0 55h.1m1 14h.1m3-7h.1m1 62h.1m8-54h.1m7-78h.1m0 87h.1m4-76h.1m8 71h.1m18-4h.1m7 0h.1m9 405h.1m13-425h.1m2-32h.1m20 476h.1m35-25h.1m10-39h.1m121 58h.1"/>
-		<path id="erc-lights-lg" vector-effect="non-scaling-stroke" d="M343 537h.1m106 87h.1m63-138h.1m42 101h.1m5-113h.1m13 326h.1m10-302h.1m6 210h.1m1-215h.1m18 433h.1m69 7h.1m65-67h.1m15-21h.1m4 18h.1m220-367h.1m19-77h.1m14 19h.1m6 259h.1m55 85h.1m11-25h.1m76-266h.1m13 70h.1m35-175h.1m38 155h.1m39-15h.1m86 66h.1m31 11h.1m2 23h.1m8-74h.1m16 17h.1m2 92h.1m5-25h.1m10 24h.1m1-19h.1m44-35h.1m11-7h.1m56 57h.1m19 70h.1m15-162h.1m1 109h.1m0 95h.1m37-166h.1m4 4h.1m0 1h.1m1-49h.1m12-59h.1m4 5h.1m21 147h.1m3-97h.1m0 37h.1m31-77h.1m47 18h.1m23-6h.1"/>
-	</defs>
-	<!-- Two: the second, one map-width over, covers the wrap at the dateline. -->
-	<circle class="erc-sun" r="900" cx="-9999" cy="0"/>
-	<circle class="erc-sun" r="900" cx="-9999" cy="0"/>
-	<g filter="url(#erc-soft)">
-		<path class="erc-night" data-alt="0" d=""/>
-		<path class="erc-night" data-alt="-3" d=""/>
-		<path class="erc-night" data-alt="-6" d=""/>
-		<path class="erc-night" data-alt="-9" d=""/>
-		<path class="erc-night" data-alt="-12" d=""/>
-		<path class="erc-night" data-alt="-15" d=""/>
-		<path class="erc-night" data-alt="-18" d=""/>
-		<path class="erc-night" data-alt="-21" d=""/>
-	</g>
-	<g class="erc-lights" clip-path="url(#erc-night-clip)">
-		<use href="#erc-lights-sm" class="erc-halo"/>
-		<use href="#erc-lights-lg" class="erc-halo erc-lg"/>
-		<use href="#erc-lights-sm" class="erc-core"/>
-		<use href="#erc-lights-lg" class="erc-core erc-lg"/>
-	</g>
-	<path class="erc-edge" d=""/>
-	<path class="erc-arcs" d=""/>
-	<path class="erc-arc" d=""/>
-	<path class="erc-arc-head" d=""/>
-	<rect class="erc-scrim" x="0" y="0" width="2000" height="1466"/>
-</svg>
-</div>
-<div class="erc-clock" data-pos="bottom-left" aria-hidden="true"><span class="erc-local"></span><span class="erc-sep">|</span><span class="erc-utc"></span></div>
-SVG;
-
-	if ( $clock === '' ) {
-		// clock="off" — drop the element rather than hide it.
-		$svg = preg_replace( '#<div class="erc-clock".*?</div>#s', '', $svg );
-	} else {
-		// Replace the default rather than prepend: two data-pos attributes is invalid HTML.
-		$svg = str_replace( 'data-pos="bottom-left"', 'data-pos="' . esc_attr( $clock ) . '"', $svg );
-	}
-
-	$out .= $svg;
-
-	return $out;
-} );
-
-
-/**
- * Live visitor coordinates only. Not lum_get_map_data — that ships 500 past
- * rows with page_url and user_agent, ~41 KB, for two numbers.
- * last_seen is written with current_time('mysql'), so the cutoff must be in
- * site time too: wp_date() formats in the site time zone, as that does.
- */
-function er_cover_live_points() {
-
-	global $wpdb;
-	$table = $wpdb->prefix . 'er_live_visitors';
-
-	$cutoff = wp_date( 'Y-m-d H:i:s', time() - 15 * MINUTE_IN_SECONDS );
-
-	/* One row per place, newest first. Without the grouping, thirty visitors
-	   from one city filled every slot with the same dot. 1dp ≈ 11km: within a
-	   pixel at this map scale, and all a public endpoint should reveal.
-	   0,0 is a failed lookup, not a place: skipped, as the Visitor Map does.
-	   20, not 12: the browser drops points near the visitor's own position. */
-	$rows = $wpdb->get_results( $wpdb->prepare(
-		"SELECT ROUND(latitude, 1) AS lat, ROUND(longitude, 1) AS lon
-		   FROM {$table}
-		  WHERE last_seen >= %s
-		    AND latitude IS NOT NULL AND longitude IS NOT NULL
-		    AND latitude != 0 AND longitude != 0
-		  GROUP BY lat, lon
-		  ORDER BY MAX(last_seen) DESC
-		  LIMIT 20",
-		$cutoff
-	) );
-
-	$out = array();
-	foreach ( (array) $rows as $r ) {
-		$out[] = array( (float) $r->lat, (float) $r->lon );
-	}
-
-	wp_send_json_success( $out );
 }
-add_action( 'wp_ajax_er_cover_live', 'er_cover_live_points' );
-add_action( 'wp_ajax_nopriv_er_cover_live', 'er_cover_live_points' );
 
+// Miller projection, 2000 × 1466.4. Land clipped to x 0–2000. Lights: 750k+ cities
+// (Natural Earth), each "m" offsets the preceding .1 segment. Night paths are drawn by JS.
+function er_frontpage_cover_svg() {
+	return <<<'SVG'
+<svg class="erc-map" viewBox="0 0 2000 1466" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" focusable="false">
+<rect class="erc-ocean" x="-9000" y="-9000" width="20000" height="20000"/>
+<path class="erc-graticule" d="M166.7 0L166.7 1466.4M333.3 0L333.3 1466.4M500.0 0L500.0 1466.4M666.7 0L666.7 1466.4M833.3 0L833.3 1466.4M1000.0 0L1000.0 1466.4M1166.7 0L1166.7 1466.4M1333.3 0L1333.3 1466.4M1500.0 0L1500.0 1466.4M1666.7 0L1666.7 1466.4M1833.3 0L1833.3 1466.4M0 1114.2L2000.0 1114.2M0 905.0L2000.0 905.0M0 733.2L2000.0 733.2M0 561.4L2000.0 561.4M0 352.2L2000.0 352.2"/>
+<path class="erc-land" d="M669 1317l-3.2 12.3-11.7-1.8-12.4 .8-6.9-4.3-3.1-4.3 24.5 1.8 7.1-9.7zM115.5 1310.1l-10.7 1.8-7.2-4.4-7.1-8.5 3.4-4.5 10.3 1.9 9.8 8.1zM749.1 1292.4l6.9 5.2 2.4 7.4 .9 11.8-17.7 7.3-22.1 5.6-13.1-.8-7.3-4.3 1-5.3 11.8-3.5 4.8-4.2 13-19.2 11.1-2.6zM326.6 1240.8l7.2 1.7 6.6-1.9-8.4 6.6-7.7-.9-5.5-3.8 1.2-3.6zM302.4 1240.6l8.5 4.2-18-4.4 4-2.3zM450.1 1224.3l6.1 1.4 6.1-1.2 3.2 5.9-25.4-.2-5.7-2-2.9-4.3 3.5-1.8zM619.7 1214.3l.7 4.6-2.5 7.9-12.8 3.5-7.3-.2 2.8-4.1-12.8 2.8-4.2-3-.3-4.3 6.1-4 10.2-.8 1.8-16.9 3.2-4.6 5.1-1.5 2.9 3.6zM0 1380.7l5.2-8.4 10 4.6 7.4-5.1 8.6 6.3 8.3-6.9 16.3-2.5 16.3 9.9 28.3 8.4 21.4 3.5 16-4.1 23.6 2.9 13.4 4.7 30.2-8.5 1.2-6.9-21.9-.6-18-3.4-4.7-5.6-14.9-3.1 5.2-17.2-1.1-5.6-9.3-3.6-4.2-4.7-8.6-4.1 13.5 .7 12.8-2 8.1 4.3 19-8.6 4.5-4.3-2-5.3-15.3-7.1-32.2-3.6-3.6-4.6-11.6-8.1-1.7-13.4 7.7 4.8 18-2.8 4.5 5.1 8.9-1.1 20.6-9.6 8.4-1.2-2.2-8.5 1.7-3.9 7.1-2 3.3 3.7 14.9-5 15.5-1.3 20.2-7.4 8.2 1.5 8.2-1.5 15.1 1.7 7.2-1.5 15.8 2.2 24.1 0 7.6-.5 12.4-4.9 7 2.4 12.6-5.8 9.1 10.9 5.8-3.2 6.6 4.1 13.9 4.4 15-2.7 23.5 4 2.9-4.8-6.3-7.6-7.2-.8-3.2-4.1-3.1-11.8 25.2 3.1 5.7 3.1 2.4 3.7 7.5 .7 21.6-4.8 5.7 2.5 7.4-.9 4.8-8.1 4.5 4.8 6.4 1.9 6.9-1.1 4.6 4.2 20.7 4 6.5-7.8 5.6 4.2 7.6-1 9.4 5.9 7.4-1.1 11.5-5 21.6-4.2 8.7-5.6 .7-8.7-7.2-19.4 6.2-15.2-1.7-7.8 2.7-4.3 14.9-11.7 5.2-6.4 32.3-14.5 3.3 2.3-2.1 2.9-8 4.5-4.2-1.4-4.5 .9-10.6 7.1-.4 6.9 2.6 3.1-9 2.9-9.8 10.1-.9 3.5 4.9 7 8.8 5.3 9.4 18.6 .7 9.4 3.8 12.2-.7 5.6-3.1 4.5-3.2 3.6-7.4 1.5-5.9 7.6-8.4 4.2-21.9 6.7-4.4 4.7-36.9 .9 1.7 4.6 14.7 5.3 3.5 4.2-6.2 3.8-9.6-1.2-7.9 3.1-.6 9.8 6.6 4.2 1.2 4.6 7 4.8 11.8 2 28.1 11.7 27.4 5.7 19.8 8.5 8.1 11.6 6.8-4.9 18.8-8.3 21.4-7.2 13.9-.2 24.8 5 3.6-5.8 7.7-3.9 14-.3 45.3-9.7 8.6-3.2-6.3-9 0-4.6-33.1 2.4-1.5-4.6 .7-9.1 2.5-2.6 17.3-5.6 13.5-7 5-4.5 35.7-6.6 27.4-11 10.2-6.9 1.6-4.3-5.9-2.6 2-4.4 3.7-3.3 17.5-7.9 11.1-11.8 6.6 .7 2.7 3.4 6.7 .4 .2-3.8 2.8-4 6 1 1.4 3.8 6.7 .6 14.1-3 6.3 .6 2.4 4.2 6.1-3.4 30.1-8.6 8.1-5.6 4.2 2.5 5.7-1.4 7.2 8.3 6.3-2 2.5-3.9 5.7-2.8 7.3 .6 2.1 3.7 4.6-3.7 18.4-1.3 12.2 1.7 6.2 6.3 6.1-1.8 19-.6 27.2-8 4.3-2.7 6.2-8.5 5.7 1.5 2.2 3.4 4.8 2.3 5.8-.8 8 6 5.7-2.3 1.9-4.2 10.8-5 12-3.2 13.3-6.3 5.2 1.1 8.6-5.9 5.2 .1 4.6-2.2 1.1-3.2 4.6-2.6 15.3-4 10.1 1.5 4.5 2.5 .5 4 8.3 5.7 6.6 1.1 8.3 5.2 5.3 .6 9.3-5.8 15.8 4.3 11 .7 4.4 12.5-.7 4.4-9.7 6.3 .8 3.9 6.2-.2-.8 4-5.4 8 4.2 3.2 6.5 1.1 6.4-1.9 4.9-7.8 6.5-6.2 4.4-8.4 21-4.1 8.1-11 10.1-4.3 6.2-4.9 4.1-1.4 22.1-.6 4-2.6 2.8-6.1 4.7 6.9 4.7 1.8 25-.4 8.9 2.6 16.1-2.6 5.8 1.3 17.3-15.6 7.8 3.8 10.8 8.9 10.6 .2 11.9-2.4 8.4-5.3 10.3-2.3 11.1 7.6 6.1-.4 10.5 4.8 6.9 .9 5.8-.7 8.1-5.9 5-.7 10.7 2.2 10.3-1.5 10 1.8 11-3.1 22.1-1.9 1.7-8.3 3.5 2.5 5.1 11 4.7 1.7 31.1-1.5 13.5 1.1 3.9 2.9-1.1 3.6 3.6 2.7 12.2 4.7 20.3 4.8 6.3 .2 3.6-3.3 14.1 8 13.1 2.1 2.8 3.9 10.5 5.9 31.9 2.6 17.7 5.8 3.9 3-.6 4-10 16.6-7.3 1.7-3.3 3.8-7.2 2.4-10.3 11.9-3.7 8.9-.4 9.5 6.9 13.3 10.4 1.7 2.2 5.2-18.5 4.6-10.6 .5-4.7 7.1-1 5.9-5.3 9.6 7.4 4.4 2.8 5.4 11.6 9.5 16.1 8.6 12.7 4.4 2.8 6.9 16 3.1 5.3 5.4 15.3-3.7 22.3 8.1zM623.6 1065.3l7.2 4.6 7.8 1.9-2.5 3.9-5.3 .4-2.8-2.7-1.8 3.1-4.8 2.4-6-.9-16.9-7.7-13.3-12.6 19.8 9.3 4.6-8.6 5.1-3.1 4 .9zM674.7 1044.8l4.5 3.3-1.7 2.6-7.5 2.2-2.5-2.6-4.7 3.4-2.8-3.4 6.7-4.4 4.7 1.8zM1390.5 1034.7l-8.6 .4 1.1-8.2 8.8 3.1zM1807.8 973.2l5.3 2.3 10.7-1.8 .4 7.9-1.9 2.3-.6 5.4-1.9-1.8-3.9 4.7-4.5-.6-7.4-16 .1-3zM1961.2 974l1.3 2.7 3.9-2.6 1.6 5.6-8.5 10.7 2.1 3.3-4.3 0-4.8 2.6-4.6 11.5-7.2 5.1-14.7-3-.9-2.5 2.9-5.2 7-6.7 12.4-7.4 7.9-10.1 .8-3.7 3.9-3.1zM1970.1 943.2l4 6.7 .1-4.4 2.5 1.8 .8 4.8 4.5 2.1 9.8-1.2-3.1 9.5-4.2-.1-1 4.8-5.7 9.3-4.2 2.6-3.3-2.7 3.2-5.4-1.8-3.6-6-2.6 .1-2.4 4.1-2.3 .6-9.1-2.1-5.4-9.3-12.7 2.1-.5 3 3.5 4.3 1.7zM1928.4 858.3l-2.1 1.4-7-4.2-8-9.1 5.5 2zM1991 830.5l1.9 1.6-.9 3-6.5 .1-.6-2.5 2.2-2zM0 826l0-2.6 1.1-.4zM2000 826l-7.1 2.6-.7-2.1 7.8-3.1zM1928.4 816.8l.9 4.6-3.5-2-.1-4.4zM1278.1 809l1.8 12.2-1 1.6-1.9-3.3-1 1.7 .5 6.6-14.8 46.8-9.4 4-7.6-3.7-3.9-13 .5-8.4 2.6-1 3.1-10-2.8-11.6 2.7-6.8 10.4-2.5 7.7-6.8 1.7-2.8-.8-2.4 2.4 .7 5-9.9zM1797.6 810.1l2 4.5 3.5-2.2 4.5 4.7 .7 7.4 5 15.3 13.6 8.2-.7 1.4 5.3 10 2.3-1.3 2.2 2.5 1.4-.9 .9 6.2 10.9 10.7 1.6 4.8-.3 7 2.7 5.1-2.7 17.1-3.6 10-4.1 3-7.6 16.5-1.9 11.2-3.2 2.2-6.2 .2-11 8-8-4 .8-3.4-7.9 5.9-16.5-5.1-3.6-4-2.3-8-2.7-2.6-5.4-.8 1.9-3-1.4-4.7-2.7 4.4-4.9 1.1 5.9-10.1-.5-4.6-8 7.4-2.1 5-4.3-2.6 .1-3.3-6.4-6.9 1.1-1.4-16.4-6.9-10 .6-13.5 4.2-5.3-.4-10.7 4.6-3.1 5.8-20.9 .6-10.4 6.8-7.8-.3-8.9-5.2 .2-3.5 3.7-2.3-.2-10.2-2.9-6.2-.7-6.9-9.4-20.1 2.4 2.6-1.9-5.5 4.4 4-4.6-11.3 4.2-15.4 .4 4.4 2.3-4 11.5-6.6 4.1 .3 10-4.6 8.9-1.5 7.7-8.6 .4-5.4 3.9-4.9 2.3 5 2.4-1.2-2-2.7 1.8-2.7 2.4 1.2 .7-4.3 7.3-7.6 2.4 .6 .1-1.4 5.1-1.6 7.2 6 7 .6-1.2-3.1 5.2-6.1-.9-1.4 2.5-3.2 3.3-2 7.5-.4-.1-2.9-4-1.8 2.9-.8 16.4 6.3 6.6-2.2 2.5 2.8-3.5 5.3-2 .2 .7 2.2-3.2 7.2 26.2 15.5 3.6-1.9 4.6-13.3-1-7.6 3.5-15 2.1-2.1 1.5 2.7 4 9.5zM1670.6 790.3l-9.7-3.8 5.2-1.1 4.9 3.4zM1893.6 788.2l-5.5-.4-.9-3.1zM1898.2 786.7l-.8 1-5.3-8.2 1.9 0zM1691.3 789.7l-5.4 .6 2.9-5.3 6.1-3.6 12.5-1.4-12.5 5.5zM1655 778.3l5.4 1 1.4 2.4-13.2 1.8 1.9-3.2 3-.1zM1682.8 778.3l-.8 3.1-8.4 1.6-7.4-.7 0-2.1 4.4-1.1 3.5 1.6zM1603.5 770.9l10.6 .6 1.2-2.3 10.3 2.6 2.1 3.7 8.3 1 6.8 3.3-6.3 2.1-6.1-2.2-28.9-3.3-10.1-2.3-.9-2.4-5.1-.4 3.8-5.3 6.7 .3 6.8 2.6zM1748.5 767.8l-2.9 3.8-.5-4.2 2.1-3.9zM1866 771.1l-4-1.5-3.6-7.8 8.4 7.8zM1844.4 763.7l-9.7 4.6-10.7-3.1 .5-1.8 8 .4 1.6-2.8 .6 3 3.1-.5 4.7-3.9-.6-3.2 4.4 .8zM1706.9 752.4l-2 1.9-3.9-1-1.1-2.4 5.7-.3zM1724.8 750.4l2.1 4.2-4.7-2.3-11.6-.2 1.3-3.1zM1850.8 758.2l-1.8 1.5-2.3-5.4-9.7-5.9 1.6-1.3 7.2 4.1 4.3 4.1zM1745.2 739.6l1.6 9 5.7 3.3 4.7-5.9 6.4-3.3 4.9 0 34.7 12 7 5.6 .8 3.3 9.3 3.4 1.3 3-5.1 .6 1.2 3.7 5 3.7 3.6 5.9 3.2-.2-.2 2.5 4.3 1-1.7 1 5.9 2.4-.6 1.6-15.5-2.5-7.4-6.7-2.9-4.9-7.3-2.4-8.1 3.4 .7 4.1-4.3 2-8.9-1.2-4.9-4.6-5.7-1.1-1.3 1.6-7.1 .1 2.4-4.5 3.5-1.6-4.1-10.7-15.4-5.2-8.3-5.1-3.8 3.2-1.3-4.5-4.2-2.7 9.9-1.9-.4-1.5-8.2 0-2.2-3.3-4.9-1-2.4-2.8 10.3-3.1 9 2.2zM1695.8 725.3l-4.5 5.5-4.2 1.1-19.4 0-.8 4.2 5 4.9 3-2.5 10.3-1.9-.4 2.6-2.4-.8-2.5 3.2-4.9 2.2 5.3 7.1-1 1.9 5 6.4-.1 3.7-2.9 1.6-2.2-1.9 2.7-4.6-5.5 2.2-1.4-1.6 .8-2.1-4-3.3 .4-5.4-3.7 1.7 .7 14.4-3.6 .8-2.3-1.6 1.5-5.1-.8-5.4-2.4 0-1.7-3.8 7.1-18.7 4.7-4.2 11.3 2.4 6.4-.2 5.5-4zM1714.9 726.9l-.3 4.9-2.8-.6-.9 3.4 2.3 2.9-1.5 .7-3.9-10.6 1.1-4.5 1.8-2 .4 3 3.3 .5zM1587.9 765.7l-6.2 .2-11.8-9.2-13.6-19.9-4.8-4.6-3.7-9.1-17.9-17.5-.5-2.9 12.2 1.3 17.5 17.5 5.7 .1 12.1 11-2.2 4.6 5.1 2 2.9 7 4.1 .5 2.7 3.5zM1654.9 723l6.2 5.2-6.6 .6-1.8 3.8 .2 5.1-5.3 3.8-2.3 14-.8-2-6.4 2.5-2.2-3.4-6.7-2.1-6.6 2-2-2.7-8.2-.3-.9-7.5-5.4-6.2-.2-10.1 3.3-3.6 4.1 1.9 4.3-1.1 1.1-4.7 9.1-2.2 20.7-21.3 2.2-.1 3.1 5.3 8.3 3.2-.4 2.2-3.7 .3 1 2.7-4.1 1.9-3.2 5 4.1 5.3zM1702.1 686.3l.9 6.9-1.9 5.1-2-5.7-2.6 2.8 1.7 4.1-1.5 2.7-6.6-3.3-1.5-4 1.6-2.7-3.5-2.6-8.4 5.2-1-1.6 2.2-4.7 6.5-3.7 2 2.5 4.2-1.5 .9-2.5 4-.2-.4-4.3 4.5 2.7zM1451.2 698.7l-4.8 1.3-2.7-4.4-.9-8.1 2.5-9.1 3.8 3.2 5.3 9.7-.9 5.8zM661.5 676.8l-5.7 .2 1.5-3.8 3.2-.7zM1688.8 675.9l-5.5 7-3.4-3.8 3.1-6.6 3.1-.3-.9 3.8 4.1-5.5zM1658.4 681.3l-7.4 5.3 13-16.8 .9 4.6zM1677.1 666.8l6.9 1.8-.1 2.3-6.1 4.1zM1697.2 665.3l1.6 6.3-4.3-1.5 1.5 5.3-2.7 1.3-.2-3.9-1.7-.3-.8-3.4 3.2 .4 0-2.1-3.4-4.3 5.3 .1zM1675.2 660.2l-1.5 4.9-5.2-7.2 4.7 .3zM1674 629.2l3.4 1.7 1.7-1.5-.4 3.8 1.9 4.1-1.4 4.8-3.3 1.9 .4 9.1 5.4-.1 6.9 3.2 .7 7-6.4-5.7-1.4 2-3.5-3.4-7.8-.4 2-3.8-1.7-1.3-.7 2.1-2.7-3.3-1.1-7.9 2.3 1.9 2.3-14.2zM635.6 630.8l-1.4 1.5-7.5 .1-.3-2.4 5.4-.8zM572.8 632.9l-1.7 .9-6.3-3 3-1.7 5 .7 3.9 3zM596.8 621.4l14.6 1.2 1 2.1 3-.1-.2 1.7 5.2 2.3-2 2.3-7-1.2-3.2 1.4-.8-1.4-4.1 4.7-1.7-2.5-3.7-1-8.6 1-3-1.7 .5-1.9 9.3 1.3 2-1.3-2.5-4.7-3.5-.9 1.3-1.6zM1613 628.2l-4.8 2.8-4.6-1.8-.1-4.9 2.7-2.6 9.3-1.5 1.2 2.2zM135.9 625.9l-2.2 .1 .4-6.9 5.9 4.3zM557.3 604.5l2.2 2.2 5.2-.7 10.2 7.6 5.1 1.1-.4 1.7 8.3 2.6-.7 1.3-19.2 1.1 3.7-3.2-5.8-1.9-3.2-4.9-17.3-3.5-1.9-1.1 2.1-1.5-5.5-.3-7.1 4.5-5.1 .1 6.7-5.2 8.3-2.3zM569.2 598.7l-1.3 .3-3.5-5.1 1.2-3.7 1.7 .2zM1673.2 604.4l-2.4 4.8-3.5-9.3 7.7-10.3 2.5 1.8zM567.7 582l-6.1 1-.4-2.2 6.3-.3zM1748 535.9l.7 2.1-3.1 3.8-2.3-2-2.9 1.4-1.4 3.6-3.6-1.7 0-3 3.1-3.7 3.1 .7 2.3-2.6zM1192.1 526.3l-3.8 2.7 .6 1.7-5.7 2.5-2.7-.8-1.3-2.5zM1131.7 526.1l3 2.1 11.4 .4-.7 1.9-8 .5-6.8-2.2zM1086.2 509.9l-2.3 10.4-14.8-6.4 .7-3.3zM1051.2 490.5l3.3 4.6-.8 8.7-2.5-.4-2.3 2.2-2.1-1.8-1.5-11.6 3.1 .3zM1783.2 516.9l-2.1 5.1 1 3.2-2.9 4.4-7.1 3-9.8 .4-7.9 7.1-3.7-2.4-.3-4.6-9.6 1.3-6.6 3-6.5 .1 5.6 4.6-3.7 10.5-3.6 2.5-2.7-2.3 1.4-5.6-3.5-1.8-2.3-4.2 5.3-1.9 12.6-11.5 11-1.9 6 1.3 5.8-11.3 3.7 3 11.3-8.9 3.5-7.9-1-7.4 2.4-4.1 5.9-1.3 3 9.2-.2 5.3-5.1 6.5zM1053.1 484.2l-1.8 5.1-2.5-1.3-1.3-4.5 4.7-5.1zM1799.5 470.6l3.9 1.4 3.9-2.9 1.3 7.6-8.3 1.9-4.8 6.6-8.8-4.5-3 7.3-6.2 .1-.7-6.7 2.7-5.1 5.9-.4 3.3-14.8zM646.3 454.2l9.2 .7-4.8 3.3-7.1-2.9-1.3-2.4 2.1-2.1zM656.6 436.1l-9.9-2.1-5.1-3.4 9.2 1.2zM313.8 440.4l-2.8 1-9.1-3.3-7.6-7.1-5.7-1.3-1.7-5.7 14.5 3.5 4.6 5.9 5.5 3zM688.1 424.6l-3.6 6.4 3.6-2.4 3.7 1.5-1.9 2.5 4.9 2 2.6-1.7 5.5 2.2-1.7 5.2 3.9-1.2 2.4 8.2-2.3 6.1-6.2-1 1.2-5.8-1.5-.9-6.5 6.1-3.3-.2 3.9-3.3-5.3-1.7-16.8 .2-.8-2.1 3.4-2.5-2.4-1.9 4.7-4.3 5.7-11.6 8.3-6.7 2.6 .3zM262.7 399.6l5.4-.6-1.7 8.6 4.8 6-2.2 0-8.2-9.2-.7-5.8zM1798 424.2l5.6 12.8-8.2-2.3-3.4 10.3 5.4 7.2-.1 4.9-4.3-4.2-3.6 5.3-1-20.3 1.5-15.2-3.3-7.2 .5-10.3 5.2-3.5-2.2-3.5 2.4-1.1zM962.3 413l-9.9 4.4-7.8-1.1 4.5-7.8-2.9-7.7 11.7-9.6 4.7-.3 5.9 4.8-2.9 5.2 .9 5.4zM1070.5 387.5l-3.3 6.3-5.8-4.4-.8-3.2 8.1-2.6zM150 375.7l-5.6 3-2.8-2.1-.9-3.7 8-4.1 3.7 .6 2.4 2.5zM983.3 363.5l-5.9 8.7 11.7-1.1-1.4 6.5-5 7.1 5.7 .5 5.4 9.9 3.8 1.3 5 11.6 6.8 1.5-.7 4.7-2.9 2.2 2.3 3.8-5 3.9-16.9 1.9-2.6-1.4-3.7 3.4-5.1-.8-3.9 2.7-3-1.4 8.1-7.7 5-1.6-8.7-1.2-1.6-3 5.8-2.3-3-4 1-4.9 8.3 .6 .8-4.4-3.8-4.8-6.7-1.3-1.3-2.1 2-3.5-1.9-2.1-2.9 3.6-.4-7.5-2.8-4 2-8.2 4.4-6.6zM80.1 353l-3.4 1.3-7-3.8 9.9-.7zM559.6 334l-2.1 4.5-4-3.3 2.4-3.1zM545 329.2l-6.5 4.8-3.9-.2-1.2-2.3 4.1-4 7.6 .1zM45.9 319.9l16.9 4.2-4.6 2.8-6.4-3.5-4.9 .5-1.3-.7zM526.9 303l1 4 2.9-1.4 15.6 8.3 .5 4.2 4.1-.7 4 3-5 2.7-8.6-2.1-3.1-4-13.4 9.3-1.9-5.2-7.6 .9 4.9-4.4 2.6-15.3zM919.4 295.7l-1.3 5.9 6.3 6.2-7.2 6.9-20.9 7.7-22.8-4.1 5.5-3.9-12.1-4.4 9.8-1.8-.2-2.6-11.7-2.2 3.8-5.9 8.4-1.4 8.7 6.2 8.4-5 7 2.6 9.1-4.9zM578.5 289.2l-6.2 .5-1.4-4.6 2.4-5.4 5.1-1.3 4.3 2.6-.6 5.4zM0 271.9l28.2 16.8-.5 5.8 3.7 2.3-1.2-6.8 15 1.4 10.9 8.7-5.5 4-9.1 .9-.1 8.8-2.3 1.9-5.2-.3-11.6-5.7-1.2-3.9-5.7-1.5-6.3 1.1-3-3.1 1.2-3.4-6.7 2.1 2.6 4.3-3.2 3.9zM2000 271.9l0 37.3-7.2 4-7.2-.7 5 4.8 5.9 9.6 .6 3.6-1.4 2.3-10.3-1.9-20.5 7.4-16.6 11.1-2 3.8-8-5.8-14.4 6.6-2.6-3.1-5.3 3.6-7.4-1.2-1.8 5.4-6.7 7.9 .2 3.3 6.3 1.8-.7 11.5-5.2 .3-2.4 6.5 2.4 3.4-9.8 3.9-1.9 8.7-8.3 1.8-1.6 7.6-8 6.9-7.6-33 2.7-10.9 4.7-4.7 .3-3.8 8.6-1.8 19.5-18.7 10-6.7 4.4-12.1-6.7 .8-3.3 7-14.1 9.3-4.6-10.4-14.3 2.9-13.9 14 4.6 5.1-21 3 .4-6-8.7-1.2-6.8 4-17-1.4-18.3 2.4-39.3 34.2 8.8 1 2.7 4.8 5.4 1.7 3.5-3.8 6.1 .5 8.1 8.3 .1 6.4-4.3 7.4-3 20.2-8.3 10.2-1.9 4.9-18.6 19.9-7.4 4-3.5 .1-3.5-3.3-12.9 9-1.6 2.3 .2 4.7-12.1 7.4-.8 3.6 5.4 3.9 6.1 11.7 .1 7.3-2.1 3.5-14.5 4.3 .4-8.1-2.4-6.6 4.1-1.1-3.8-5.5-2.7-1.2-2.3 1.8-3.2-2.9 2.9-3.6 .5-5.7-5.8-2.5-17.9 6.7 3-3-1.2-2.5 4.4-4.4-2.9-3.5-11.1 6.9-3.5 4.2-5.4 .3-2.8 3.1 2.9 4.3 4.5 1.1 .2 2.9 4.4 1.8 6.2-4.5 8.6 2.6 .9 3.4-7.9 1.8-10.8 11 5.9 3.4 2.2 6.2 7.2 10.4-.1 4.5-3.5 1.7 1.3 3.3 3.3 1.9-2.3 9.7-3.1 .5-13.7 21.4-15.4 10.3-6.2 .7-3.4 2.6-1.9-1.9-3.2 2.9-13.6 3.8-1.9 6.1-3.1 .4-1.5-4.2 1.4-2.3-7.5-1.8-10 5.9-4.7 5.4-1.2 4 9.5 13.6 8.4 8.1 2.5 10.5-.7 9.9-22.5 17.2-2-3.6 1.6-3.8-4.2-3.2-4.6-.8-5.1-8.7-5-2.6-4.7 .1 .8-4.5-4.9 .1-.4 6.2-4.8 13.2 .3 4 3.7 .2 3.2 10 13.9 10.6 2.3 3.7 .7 11.5 4.1 8.3-4 .4-11.8-8.5-6.6-14.2-.7-6.5-8.8-10.7-.9 3.3-1-3.1 3.4-17.3-1.9-3.4 .5-6.1-2.3-2.9-5.2-18.7-10 6.9-6.5-1.9 1.9-7-1.2-5.4-4.3-6.6 .7-2.1-3.3-.8-3.9-4.7-5.3-12.2-5.1-.2-1.3 5.7-6.9-1.3-.8 2.1-10.6 1.1 .3 4.4-2.9 3.4-8 3.9-16 14.2 0 2.6-10.3 3.7-1.7 4.4 1.4 12-2.3 5.4 0 9.6-2.9 .2-2.5 4.3 1.6 1.9-5 1.5-4.1 5.5-5.3-5.3-4.7-13.5-4.9-8.1-2.3-10.6-5.1-7.8-5-30.8-8.1 3.4-3.9-.7-7.2-7 2.6-2.1-1.6-2.3-10.6-6.5-6-8.7-27 2-22.8-3.9-2.4-7.3-2.6-1-9.9 3.9-6.8-2-5.6-4.6-5.4-1.7-7.8-13.8-3 1-3.5-2-2.1 2.4-3.3-.3 .7 4 4 9.8 7.4 6-.2 4.4 3.9 7.1-.4-4.4 3-3.7 1.7 1.9-1.1 6.9 2.3 3.6 12.3-.6 13-13.5 .2 8.7 2.5 4.1 10.5 3.9 6 7.4-7.4 10.9-3.6 1.1-.8 7.5-6 2.1-1.8 4-5.6 1.4 0 2.4-16.1 4.8-1.2 4.5-14.4 5-5 4-16.9 4-3.5 3.4-8.4 .3-4.9-14.6 1.1-.2-.8-8.7-8-10.8-1.6-4.7-6.3-4.9-3.7-5.6-.4-7.5-3.1-6.5-5.6-3.5-3.1-7.8-10-14.7-2.8 .1 1.6-8.7-5.5 11.1-4.4-4.6-4-8.7 9.4 22.3 8.8 13.1-.9 4.9 7.4 6.4 3.4 19.6 5.2 3.5 4.8 11.9 22.5 20-.2 2.4-3.2 1.3 7.8 7.3 2.8 0 36.1-8.9-.4 7.8-8.9 21.4-9.5 14.4-6.5 7.6-19 14.3-8.7 11-7.3 4.9-3.7 9.9-2.2 1.8-2.6 6.9 .4 3.1 3.5 2.1-1.4 9.2 7.2 12.7 1.6 22.2-3.8 8-3.5 3.5-11.4 5-14.5 12.6-.5 4.2 4.8 9.2-.6 11.9-16 9.5 1.9 2.9-2.5 12.5-13.4 17.2-10.2 10.1-12.8 5.5-.8 1.8-17.8-.5-16.4 5.9-7.6-5.9-1.8-7.8 1.8-1.1-.2-4.8-16.7-27.7-5.3-29.4-13.7-23.3-.1-13 4.1-12.8 6.3-8.5 .2-7.4-4.5-8.7 2-3.4-7.3-19.7-17.3-21.8 5.5-23.3-2.1-3.7-2.6-.9-2.5-4.8-14.4 2.8-8.8-11.2-13.6 .7-21.3 8-14.9-2.5-18.5 4.5-27.6-19.2-1.7-6.2-7.4-7.3-1.5-3.8-6.9-3.6-2.9-3.6-.6-8.1-5-6.4 5.1-5.1 2.4-8.8 0-16.8-4.4-5.3 .5-5.1 3.9-4.7 1.6-6.1 5-4.7 3.6-10.2 3.7-2.2 3.5-6.1 2.9-2.4 5.2-.7 11.8-10.8-1.4-7.6 2.8-8.5 3.6-4.2 9.7-5.4 5.4-10.4 4.1 0 3.4 2.7 13.4 1.1 20.3-9.1 21.4-.8 5.2-2.5 12 1.1 6-2.6 3.9 .8-.1 3.2 4.7-2.3 .4 1.2-2.8 3.1 0 2.9 1.9 1.6-.7 5.5-3.7 3.1 1.1 3.4 2.8 .1 3.5 4 20.9 5.4 2.6 5.4 18.7 6.8 5.4-4.4-1.3-4.7 1.8-3 7.8-3.7 7.5 1.3 1.9 2.7 9.4 1.8 1.3 2 7.4-.1 13.4 4.4 6.6-3.7 4.9-.5 4 .8 1.5 3 1.3-2 8.7 1.8 4.4-3.5 8-19.3 .8-7.4-2-2.8 2.1-2.4-8-1-3.9 3.7-8.4 .7-4.5-3.4-6-.2-1.3 2.6-3.8 .8-5.4-3.4-6 .1-3.3-6.3-4.1-3.6 2.7-5-3.5-3.2 6.2-6.2 8.5-.3 2.4-5 10.5 .9 13.2-6.2 9.2-.2 17.7 7.3 11.2-.4 6.6-3.5-.6-7.4-26.5-17.7 4-1.1 4.6-5.8-3.1-2.7 8.2-2.9-.2-1.5-18.3 4.3-4.8 2.6 .4 4.3 2.7 1.7 5.7-.4-1.1 2.4-13.7 5.2-3-1.4 1.2-3.2-6.1-2 6.3-3.7-1.6-1.5-8.6-1.8-.4-2.6-5.2 .9-6.2 10.7-4.4 .8-1.5 8.2-4.9 7.6 2.4 6.4 4.9 2.2-1.1 1.6-6.6 .4-7 5.5-1.6-4.4-6.3-.8-6.7 1.7 3.8 3.7-2.8 1.1-3.1 0-2.9-3.4-1.1 1.5 4 6.9-2.1 1.4 5.9 4.9 .1 3.6-5.2-1.7 1.7 3.3-3.6 .7 2.1 5.6-3.6 .1-4.6-2.8-3.1-9.4-6.4-10.4-3.1-2.2 .8-9.7-3.7-3.8-15.9-8.2-4.7-5 1.1-.5-2.6-5.2-3.6-1.1-1.7 3-1.6-2.3 1.5-3.2-4.4-1-4.5 2.5-.4 5.3 1.8 3.5 5.3 3.4 2.8 5.6 6.1 5.4 4.4 0 1.3 1.4-1.5 1.4 9 4.4 5.4 4.6-1.1 2.4-3-3.1-4.9-1.1-2.3 4.3 4 2.4-.7 3.4-2.3 .4-2.9 5.5-2.4 .5 2.4-6.8-3.9-7.1-9.9-7.5-4.1-.4-4.3-3-8.9-8.2-1.7-6.7-7.3-3-13.1 8.3-11-1.8-8.1 2.2-.3 7.9-5.3 4.5-7.1 1.4-6.1 11.1 2.2 3.8-3.2 2.8-1.2 4.2-4.2 1.3-3.9 4.9-12.4 0-5.6 4.6-2.7-.5-3.6-5.8-5.2-1-2.3 1.7-5.7-.2 .3-9-3.8-3 4.2-13.3-1.2-12.1-2.3-3 7.9-4.8 33.7 2.2 2.9-4.1 1.1-13.7-9.9-10.9-8.5-2.7-.5-5.2 7.2-1.5 9.3 1.8-1.8-8.1 5.3 3.1 12.9-5.7 1.7-6 12.2-4.9 4.9-11 7.6-3.2 4.6 .3 1.1-1.6 4.6-.5 1 1.7 3.8-3.7-3.8-11.6-.1-8 2.5-4.5 4.9-.5 6.4-4.4-1.8 6.7 .6 2.2 3 1.2-7 7.7 1.6 6.7 5.6 1.8 0 2.8 8.8-3.6 8.9 5.5 19.4-8.4 5.6 1.3 .4 1.9 5.3 .1 1.3-3.4 7.7-2.5-1-12.5 2.7-5 5.2-2.7 4.5 5.9 4.4-.1 1.7-10.9-2 1-3.5-2.9-.5-4.7 14-3.4 11.8 1.1 6.3-4.6-5.8-4-10.1 .7-18.8 4.8-3.3-4.5-5.3-2.8 1.2-8.3-2.7-7.8 2.7-5 5-5.6 16.4-11.5-.6-3.9-7.7-4.3-9.6 2.6-5.3 6.4 .8 5.4-19.5 14.7-4.1 12.1 9.3 10.6-5.1 9.2-5.8 2-2.1 13.5-3.2 7.4-6.7-.8-3.2 6.2-6.4 .3-10.6-27.7-3.8-5.1-10.9 9.5-7.4 1.9-7.7-4.2-3.8-28.2 5.2-5.5 14.6-7.4 11-9.1 23.5-30.6 24.6-19.5 12.2-4.4 9.1 .6 8.5-8.4 10.1 .5 10-2.1 17.4 7.5-7.2 2.6 6.1 6.3 5.7-3.5 9.1 6 15.3 2.3 21 10.9 4.2 4.5 .4 6.2-6.2 4.9-9.1 2.5-24.8-7.1-4 1.2 9 6.8 .7 13.4 11.5 5.1 .8-4.3-3.5-4 3.6-3.3 13.5 5.6 4.7-2.2-3.8-6.6 13-9 5.1 .5 5.2 3.2 3.2-6.3-4.6-5.6 2.7-5.7-4.1-5.9 15.6 3.1 3.1 5.3-7 1.2 0 5.2 4.4 3.2 8.6-2 1.3-6 31-12.8 4.2 .5-5.4 5.8 6.8 1 4-3.3 10.4-.2 8.3-4 6.3 5.8 6.3-6.4-5.8-5.7 2.9-3.2 16.4 3 27.8 14.1 3.7-5.1-5.6-5.1-.2-2.1-6.7-.9 1.9-4.7-3.2-11 10.3-9.3 3.6-9.5 4.2-2.1 14.7 2.8 1.1 5.8-5.2 8.4 3.4 3.2 1.8 7.1-1.3 13.5 6.2 5.9-2.4 6.4-10.9 13.3 6.4 1.4 2.2-3.3 6.1-2.4 1.5-4.7 4.8-4.5-3.3-5.4 2.6-6.4-6.1-.8-1.3-5.4 4.4-10-7.2-8.3 10-7-1.3-7.4 2.8-.3 2.9 5.9-2.2 9.9 5.9 1.9-2.5-7.4 9.3-4.1 11.5-.5 10.3 5.9-5-8.7-.5-11.3 9.7-2.2 25.4-.9-4.6-5.7 6.5-7.3 6.3-.3 10.8-5.6 14.7-1.5 1.9-3.1 14.6-1.1 4.5 2.6 12.5-6.1 10.2 .2 1.5-5 5.3-5 13.1-4.8 9.6 3.8-7.6 2.9 12.6 1.8 1.5 5.7 5.1-2.8 16.2 .2 12.5 5.6 4.5 4.3-1.4 5.8-24.9 12.7 15.1 4.3 5-2.1 2.8 6.9 2.5-2.7 8.8-1.7 17.9 1.7 1.3 5 23.3 1.6 .3-8.2 20.6 1.9 9 5.6 2.6 6.7-3.3 4.4 6.9 8.1 8.8 4.1 5.3-10.7 9 4.6 9.4-2.8 10.8 3.2 4.1-2.9 9.1 1.5-4.1-9.7 7.4-4.5 50.2 6.8 4.7 6.2 14.5 7.7 22.5-1.9 11 1.7 4.6 4.2-.6 7.2 6.8 2.8 7.5-2 20.3 1.7 10.5-1.1 9.7 8.7 6.9-3.1-4.5-6.3 2.5-4.4 17.7 2.8 11.5-.6 16 4.7zM1272.8 490l2.9 4.7 4.3 2.1-4.6 .5-1.9 7.3-2.1 1.5 1.9 8 5.3 1.3 3.9 3.2 7.9 1.2 8.6-1.7 .3-12.8-4.3-2.2 1.4-4.5-3.6-.4 1.2-5.5 5.2 1.6 4.9-2.1-5.6-7.8-4.5 1.7-.6 4.9-1.7-11.1-6.5-2.3-5.7-10 5.4 .6 .2-5 9.6-.1 0-11-10.3-1.4-11.6 4.5-2.5 4.2-5.4 1.1-5.5 7.1 5 6.5-.5 4.5zM468.6 270.5l-3.4 3.4-7.5-3-4.5 1.1-7.6-4.4 8.7-7.3 9.3 4.6zM2000 246.4l0 6.9-6.1 .6-1-3.3zM0 246.4l5.4-.4 8.1 2.9-6.2 3.8-7.3 .6zM497 266.7l-.1 9.9 7.5-7.6 6.6 6.2-1.7 7.2 5.4 6.3 5.8-6.8 4.1-8.3 .3-10.7 16.1 2.2 7.4 4.8 .4 4.9-4.2 5.1 4 5.1-.8 4.6-10.8 6.5-7.8 1.4-5.7-2.8-8.6 16.3-6.5 6-7.9 .6-4.4 3.8-.4 5.7-6.4 1.1-6.8 7-6.1 9.5-2.1 6.6-.3 9.6 8.1 1.4 5.1 13.6 7.8-1.6 10.3 3.5 9.6 6.7 12.8 5.4 15.2 1.2-.9 6.7 1.7 7.6 4.1 8.4 8.2 7 4.3-2.4 3-7.6-2.9-12-3.9-4 8.9-3.6 6.3-5.5 3.1-5.4-.5-5.3-3.8-6.8-6.7-6.1 6.5-8.6-4.2-20.9 3.8-2 15.3 3.2 4.6-2.3 12 7.9 1.7 3.3 9.9 .6 1.7 17.5 5 1.3 4.1 4.8 8-4.5 9-13 17.7 27.4-2.2 5 12.4 8.9 8.8 2 3.6 2.4 2.2 6.5 4.3 1 2.2 2.9 .4 8.4-8 5.4-9.1 2.6-7 6-9.4 1.2-26-1.1-4.6 5.2-7.1 3.2-14.4 15.9 4.7-1.2 8.9-9.2 11.7-6 8.3-.7 4.9 3.5-5.3 4.8 3.6 12.9 7.2 3.4 9.2-1 5.6-7.8 .4 5.1 3.6 2.5-6.9 4.5-17.8 6.8-6.2 4.9-4.3-.5-.2-5.7 9.7-5.7-15.1 1.1 1 2.2-17.5 7.7-3.2 4.4-.8 4.7 1.9 3.5 2.3 .2-.6-2.5 1.6 1.5-.4 1.9-20.8 4.7 8.2-1.2 1.6 1.2-7.8 2-3.4-.8-1.6 1.8 1.6 .3-1.2 4.7-4.1 5-3.4-3.6 2.6 7.1-4.9 7.7 1.2-4.7-2.8-2.4-.7-5.4-1 2.8 1.1 4.1-3.5-1 3.7 2.1 3.2 15-3.5 4.7-5.8 1.9-9.2 6.3-12.7 12.7 .2 8.6 6.9 19-1.8 10-4.4 0-3-4-6.3-12 1.1-4-1.5-3.3-6.5-6-5.6 2.7-7.2-4.6-15.5 .5-2.3 .9 2.1 5.3-5.2 1.1-4-.2-4.1-3.2-12.4-.2-15.2 8.5-4.3 5.5 1.2 9.1-3.1 9.4-.9 10.7 3.8 10.5 7.1 10.5 5.9 1.5 2.3 2.4 16.8-4.2 3.5-2.4 2.7-9.9 9.7-2.8 8.3-.3 1.1 4-4.3 7 1 1-2.2 6.9-2.6-1.3 1.1 .8-1.4 10.4-3.2 3.7 4.5 1.1 17.5-1.7 8.7 4.1 1.3 5.5-3.5 18.1 8.9 11.8 7 .8 7.6-4.3 15.2 5.5 6.5-4.5 1.1-6.6 3.1-2.6 8.3-.8 9.3-6.8 3.4 1.8-1.3 3.2-3.2 .7 1.7 5.5-2.4 3.2 2.1 4.5 2.4-.4 1.2-4.1-2-6.2 6.9-2.3-.7-2.6 1.9-1.8 2 4 3.9 0 3.8 5 11-.5 7.4 3.2 3.2-3.1 13.5-.5-4.7 1.7 1.9 2.7 4.4 .4 4.2 2.7 .9 4.5 2.9-.1 5.9 3.4 3.4 3.6 .1 2.9 7.3 4.8 17.7 1.2 6 1.9 6.8 7 1.9-.3 4.5 12.8 3 .9 .1 3.9-4.2 4.6 1.8 1.6 9.8 .9 .2 5.6 4.2-3.7 16.2 5.4 2.7 3.3-.9 3.1 6.5-1.8 10.8 3 8.3-.2 15.3 10.8 9 1.8 2 1.8 2.8 10.5-2.2 9.2-19.7 22.8-3.3 27.4-2.7 10-5.6 7.5-1 6-4.5 2.5-1.3 3.6-14.8 2.2-16.6 9-4.7 5.9-2.2 16.7-3.9 3.4-6.2 10.7-8.6 7.7-8.6 13.4-6.3 3.5-7.1-.6-5.1-2.7-3.8 .2-3.4-3.5-.4 3.3 7.1 5.4-.8 4.4 3.5 2.7-.3 3.1-5.3 8.3-8.3 3.4-17.2 .7 1 12.1-9 3.3-5.3-2.5-2.2 1.8 .8 6.6 3.8 2 3-2.1 1.6 3.5-9.5 6.2-2.2 10.5-5.2 .1-4.4 3.5-1.6 5.2 5.5 5.1 5.3 1.4-1.9 6.4-6.6 4-3.6 8.4-5 2.9-2.3 3.4 1.8 7.6 3.7 4.3-7.3-.4-7.7 4.5-.9 7.1-8.6-2.3-13.3-9.5-3.7-26.2 2.4-6.8 5.9-5.5-8.5-2 5.3-6.1 1.9-11.5 6.2 2.4 2.9-14-3.7-1.7-1.8 8.4-3.5-1 3.7-21.8 2.5-4.5-2-13.5 2.3-.2 9.6-29.6-1.3-9.2 1.7-5-.7-7.5 3.3-7.4 4.5-36.8-.4-9.5-1.2-8.1-5.5-3.3-.5-2.4-25.3-15.4-2.3-4.7 .9-1.7-19.4-35.6-8.3-5.9 1.8-2.5-2.7-5.3 9.1-11.5-1.2-2.5-2.1 2.6-3.3-2.4 .2-6.6 1.9-.9 2.7-9.3 6.9-3.4-.7-1.7 2-.4 1.1-4.8 2.7-.4 4.5-6.4-2-1.3 .1-14.5-4.1-4.6-1.2-3 1.3-1.5-5.2-3.8-2.4 .3-5.1 4.8 2.6 3-4.9 1.8-.9-3.3-2.6 .6-1.1-2.3-6.1-1-.2 1.2-3.6-2-.7-3.4-7.5-5.8-.7 2.9-3.1-2.1 0-4.6-1.6-.8 1.3-1.1-10.9-10.2 2-.4-1-1.8-5.5 .8-15.3-4.4-11.8-9.6-7.4-3.3-10.3 3.1-23.8-8.6-6-4.3-8.8-2.1-11.1-9.6-1.3-2.8 1.9-.6 .7-5.1-4.3-7.9-13.1-14.1-4.8-2.4-.2-5.2-6.1-4.3-1.4-4.1-3-.5-5.8-6.1-5.1-13.5-4-2.5-5.1-1.4 .6 10 17 21.1 5.3 14 2.7 .2 4.3 5.3-3.5 3.2-1.5-3.6-10.4-7.7-.7-7.5-15.3-10.2 2.7-.1 2.3-5-7.6-6-9.8-21.4-6.8-6.1-11.7-3.6-10.5-20.2-6.8-7.5-.7-5.3-3-3.6 1-11.2-1.8-5.1 3.6-18.8-1-9.3-3.4-9.3 .7-1.4 8 2.4 3 6.7 1.3-1.9-2.7-11.6-15.5-10.3-10.1-3-3.1-6.5 .8-4.6-7.1-3.2-1-6-6.7-5.6-.1-3.9-8-5.4-1.5-6.8-7.2-6.4-3-7.6-14.1-.7-6.6-2.4-11.4-8.4-15.1-4.6-7.7 .7-17.5-7.4-6.2 1.8 1.2 5.8-20.6 6.8-.8-4.8 2.5-8.2 5.9-2.6-1.5-2.1-18.9 16.1 4.1 4-5.2 5.8-11.6 5.8-1.4 3.5-8.6 4.1-1.8 3.7-35.3 12.3-.8-1.3 17.4-10.2 6.9-.9 15.8-12.4 3.7-10.9-6.4 2.5-1.8-1.4-3 3-3.6-4.2-1.5 3-2.1-4.1-5.5 3.3-3.4 0 .5-7.9-3.6-3-7.2 1.6-8.5-5.9 0-4.8-4.3-3.6 8.7-14.2 8.3 .8 4.5-4.2 4 .7 4.2-2.7-1-4.1-3.1-1.5 4.1-3.5-9.3 2-1.7 2-4.4-2-7.8 1.1-8.2-2.2-9.3-8.9 20.2-8.4 4.5 0-.7 4.7 11.7-.4-4.5-5.7-6.9-3.6-9.2-8.8-7.7-3 3.1-5 9.9-.4 7-4.4 1.3-4.8 5.7-4.7 15.9-5.7 5.2 .7 8.5-5.4 8.4 2.1 4 4.6 2.5-1.9 9.4 .6-.3 2.3 8.5 1.7 5.6-1 26.7 5.4 7.4-1.6 39.3 12.3 11.6-7.1 8.3 1.2 17.4-6.9 3.8 4.2 4.2-2.3 1.2-4.7 3.9 1 9.4 8.9 7.3-6.7 .8 7.5 6.8-1.6 2.1-2.9 6.8 .6 21.4 7.7 13.1 1 7.5 4.9-7.8 4.8 10.1 2 19.7-2.8 5.9 5.7 6-4.8-5.6-4 3.6-3.3 11.2-1.4 10 7.5 6.2-.8 9.9 4.3 16.7-1.3-.7-5.9 5-1.7 8.6 3.3 0 9 3.5-7.6 4.5 .2 2.5-9.7-12.5-10 .5-11.1 6.6-7.5 7.3 1.7 5.6 4.5 7.6 11.4-5 4.9zM365.7 229.6l-2.7 5 12.3-3.2 7.7 5.3 6.3-5.4 5.1 3.5 4.5 10.2 2.8-4.3-3.9-10.8 4.9-1.5 5.5 1.7 6.2 4.3 5.2 17.3 19.4 9.7-.6 4.4-9.1 .8 3.5 3.8-1.9 3.5-19.6-4.1-16.9 3.9-23.9 2.3-3-4.6-7.6-2.6-4.9 1.1-6.9-7.8 27.4-4.1-10.8-2.3-19.7 .6-3-3.7 12.9-4.1-8.5 .1-9.7-2.7 8.5-11.9 14.9-6.4zM419.4 226.4l-4.8 7-8.7-7.4 9.3-1.9zM575.9 229.8l.5 2.9-11.9-.5-6.1 1.4-7.7-6.2 .2-3.9 15.4 .4zM519.1 229.2l4.4 6.6 5.1-8.5 14.1-4.4 9.5 11-.8 6.9 11-3.1 5.2-4.2 20 10.3 .7 4.5 10.3-2.3 5.8 6.4 13.4 4 4.9 4.1 5.2 9.2-10.2 4.5 13.1 6.3 8.8 2.1 8 8.7 8.8 .6-1.8 6.5-9.7 10.6-6.8-3.9-8.8-8.8-7.2 1.2-.7 5.2 15.7 11.8 3.6 8.8-1.9 6.3-20.9-9.4 13.6 12.8 .9 3-15.1-3.5-11.9-5-6.7-4.3 1.9-2.4-16.4-8.9 .1 2.6-16 1.4-4.7-3.1 3.6-6.6 21.9-1.3-1.8-3.3 9.1-13.7-1.6-4.1-2.1-3.3-8.5-4.7-11.3-3.3 3.6-2.4-5.9-6.1-4.9-.6-4.4-3.4-2.9 3-10.1 1.2-41-6.6-4.6-3.5 5.8-4.7-7.9 0-1.7-10.5 4.2-9.4 5.7-4.3 14.4-2.9zM442.5 221.9l6.6 2.2 9.9-1.3 1.4 3.1-5.1 5.1 8.4 4.5-1 9.4-9.1 4-5.4-.9-17.6-11.9 .1-3.4 11.3 1.3-6.1-6.9zM1797.8 228.6l-20.8-1.6 5.3-4.3 6.9-1 7.9 4.1zM482.2 233.3l-5.9 7.8-6.4-.3-3.4-9.3 .1-5.3 2.9-4.5 5.5-3 11.6 .4 10.6 2.6-8.3 9.6zM330.8 247.6l-14.6 5-3-4.4-12.8-5.4 11-19.2-5.4-6.6 18.8-1.7 7.9 2.3 14.2 .6 11.4 7.6-20.6 10.2-6.9 7.3zM1837.4 208.3l-6.4 4.4-8.9-1-10.3-4.4 1.3-3.7zM479.9 209.4l-3 4.3-8.1-.8-6.7-2.9 3-5 7.9-3.1zM1806 202.9l-4.3 8.3-20.5-.3-9.2 2.6-11-7.2 3-7.8 7.3-2.1 14.7 .5zM452.8 189.7l4.2 5.3 .2 5.9-2.5 8.3-9.2 1.1-6-1.7 .1-6.6-9.1 .9-.3-8.8 6 .3 8.3-3.9 7.8 .7zM398.8 195.7l2.2 4 4.9-1.9 5.9 .5 .9 5.5-3.3 5.3-18.8 1.8-14.1 4.7-8.4 .3-.7-3.6 11.5-4.9-25.1 1.3-7.8-2 7.6-11 5.3-3.2 15.6 3.8 9.9 6.8 9.7 .8-8-10.9 5.1-4.2 5.7 1.4zM1319.6 254.5l-21.4-.5-1.5-4.5-10-2.7-.8-5.6 5.7-2.2-.2-5.7 11-9.1-5.1-1.3 13.3-9.6-1.5-5 30.7-13.2 18.5-2.2 9.5-4.3 10.9-1.5 3.8 4.6-3.7 3.6-36.7 11-17.2 10.5-17 20.7 1.1 8.6zM474 185.3l6.1 3.7 11 0 4.8 3.8-1.3 4.3 9.9 5.3 15.6 1.4 8.8-2.4 20.4-.2 5.9 4.2 1.3 4.6-3.5 3-8.3 2.3-7.1-1.3-27.3 1.9-23.8-4.9-2.6-11.7-5.5-5-11.5-1.4-6.5-3.6 2.1-4.8zM354.4 178.8l-.7 9.1-4.3 4-24.4 7.2-7.5-2.5 20.8-16.2zM478.7 180.3l-13-.4-1.5-3.3 11.2 .1 3.9 2.2zM387.8 178.2l-10.3 3.4-8.2-3.8 4.4-3.8 8.2-1.3 7.8 1.9zM1137.4 176.3l-12.4 4.9-9.8-2.8 3.8-3-3.4-3.9 11.5-2.4 2.2 4.5zM390.8 167.3l-6.8 2.4-9.2 0 .1-1.8 5.7-3.6zM467.6 173.9l-8.2 2.5-4.5-2.8-2.9-9.6 10.5 1.3 6.6 4.2zM444.1 170.7l2.2 5-9.1-1.3-9.1-4-12.4-.4 5.3-3.6-6.7-3-.4-4.7 26 6.2zM1583.8 170.9l-31.4 4.6 10.2-16 4.6-1.4 18.2 7.9zM1101.4 153.7l18.3 9.3-14 4.8-3.1 8.9-4.8 2.2-2.7 9.7-6.7 .5-11.9-7.2 5-4.2-8.3-3.4-10.8-10.3-4.4-9.7 15.2-4.5 3 4.4 7.9-.2 2.1-4.3 8.2-.4zM1141.4 144.7l10.9 4.5-8.3 6.8-16.1 1.5-16.4-2.1-1-3.5-7.9-.2-6.1-5.8 17.2-3.6 8 3.1 5.6-3.9zM1284.1 142.9l-12.5 2.7-.7 2.1-6.5 2.1-6-3 3.1-4-12.3-.4 19.2-2.5 1.2 3.5 8.4-5.3 8.2 2.9zM1555.2 163.9l-12.1 1.5-15.5-3.5-9.2-4.8-4.3-9-7.5-2.5 14.4-8.9 12-2.9 10.8 6.6 12.8 12.3zM516.6 154.2l6.6 4-7.6 3.7-10.2 9.2-9.9 .9-11.5-1.6-6-4.9 .1-4.5 4.4-3.3-10.1 .1-6.2-4.1-3.5-5.8 7.7-9.6 5.7-.9-2.4-3 12.9-.7 7.1 7 18.5 5.2zM619.4 108.7l26.8 2.8 10.2 3.8-.3 3.6-13.5 5.9-13.5 2.7-5 3 12.1-.1-22.1 11.6-9.6 10.5-11.4 2-3.6 2.6-16.8 1.3 7.7 1.6-3.9 2.2 4.6 6-5.2 4.2-8.6 3.4-2.7 4.6-7.7 3.6 .8 2.6 9.5-.4 .1 2.8-14.9 6.9-14.5-3.1-16.3 1.7-18.8-2-.7-5.5 10.3-2.7-2.7-8.5 3.4-.9 14.8 5.2-7.6-7.7-9-2.3 4.5-4.7 9.9-2.9 1.5-4.4-7.8-4.8-2.4-6.6 19.6 2 8.7-4.7-12.5-1.5-19.5 .8-9.8-4.3-4.6-5.3-6.5-3.9-1.2-4.6 25.6-5.1 8.2-5.1 6.9 .7 6 3.8 4.2-7.4 17.3-3.7 17-.6 2.9 1.5 16.1-2.4zM849.4 102.9l34.8 11.1-10.3 5.2-51.1 1.9 2.8 2.4 19.6-1.5 16.8 4.7 10.8-4.1 4.6 4.8-6.1 7.7 14.1-4.9 27-5.2 16.6 2.6 3.2 5.7-22.7 9.2-3.1 3-17.8 2.2 12.9 .6-11 17.2 .2 13.4 6.7 7.7-8.7 .5-9.2 3.6 10.3 6.1 1.3 9.6-5.9 1.1 7.2 9.5-12.4 .7 6.5 4.5-1.9 3.8-15.5 1.6 6.9 7.2 .1 4.7-11-4.4-2.8 2.8 7.5 2.7 7.2 6.3 2.1 8.1-9.9 2-11.1-9.8 1.9 6.9-6.5 5.3 22.3 1-30 16.3-22.3 3.3-5.8 3.7-7.7 9.9-12 6.5-19.2 4.7-4.7 5.6-.1 6.3-2.8 5.8-9.1 7 2.2 6.7-5.3 15.2-7.8 .5-8.2-6.8-11.1 0-5.4-4.7-3.7-8.3-9.7-10.9-2.8-5.7-.7-8.1-7.7-8.4 2-6.9-3.7-3.3 5.5-11.1 8.3-3.6 3.4-11.7-14.4 6.3-6.8-3.2-.4-6.7 2.2-5.3 16.5 2.5-14.5-9.9-5.6 1.4-4.6-2.6 6.2-9.6-14.5-22.9-7-4.3 0-4.7-14.9-6.6-40.2 .5-16.1-11 14.6-3.7 11.2-.6-23.8-3.1-12.5-4.9 .8-4.6 41.3-11.9 2.2-4.5-15-4.6 4.8-5.1 19.3-9 8-1.4-2.3-6 13.2-3.5 34.1-2.3 6.1 4.2 14.7-7.4 32.6 10.5-13.2-7.3 .8-5.8 18.6-8.3 19.5 .7 7.1-5.2 19.7-1.4z"/>
+</svg>
+<div class="erc-markers"><span class="erc-origin"><span class="erc-oping"></span><span class="erc-oring"></span><span class="erc-odot"></span></span><span class="erc-me"><span class="erc-ring"></span><span class="erc-ring erc-ring-2"></span><span class="erc-dot"></span></span><span class="erc-others"></span></div>
+<svg class="erc-shade" viewBox="0 0 2000 1466" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" focusable="false">
+<defs>
+<filter id="erc-soft" x="-12%" y="-12%" width="124%" height="124%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="14"/></filter>
+<radialGradient id="erc-scrim" cx="50%" cy="50%" r="62%"><stop offset="0%" stop-color="#04070d" stop-opacity=".78"/><stop offset="55%" stop-color="#04070d" stop-opacity=".40"/><stop offset="100%" stop-color="#04070d" stop-opacity="0"/></radialGradient>
+<radialGradient id="erc-sun-glow"><stop offset="0%" stop-color="#ffd89c" stop-opacity=".55"/><stop offset="35%" stop-color="#ffc56e" stop-opacity=".22"/><stop offset="100%" stop-color="#ffc56e" stop-opacity="0"/></radialGradient>
+<clipPath id="erc-night-clip"><path class="erc-nightclip" d=""/></clipPath>
+<path id="erc-lights-sm" vector-effect="non-scaling-stroke" d="M123 613h.1m192.9-178h.1m1.9 26h.1m1.9-14h.1m-.1 66h.1m2.9 3h.1m1.9-8h.1m22.9 28h.1m.9 8h.1m.9 2h.1m7.9-1h.1m1.9-22h.1m5.9-101h.1m2.9-19h.1m7.9 137h.1m.9-47h.1m5.9 55h.1m18.9 44h.1m4.9-62h.1m-.1 21h.1m2.9 19h.1m5.9-70h.1m7.9 88h.1m.9 29h.1m8.9-3h.1m3.9-6h.1m3.9-21h.1m9.9-22h.1m.9 61h.1m1.9-19h.1m.9-47h.1m.9-32h.1m.9 17h.1m2.9-1h.1m4.9-54h.1m-.1 33h.1m2.9 40h.1m3.9-59h.1m7.9-39h.1m14.9 186h.1m1.9-144h.1m.9 23h.1m-.1 31h.1m1.9 54h.1m1.9 42h.1m7.9-179h.1m2.9 176h.1m2.9-131h.1m2.9-23h.1m-.1 165h.1m9.9-161h.1m-.1 34h.1m1.9 140h.1m4.9-195h.1m3.9 91h.1m-.1 28h.1m3.9-113h.1m-.1 70h.1m1.9 11h.1m7.9-74h.1m-.1 250h.1m1.9-63h.1m2.9 95h.1m.9-299h.1m.9 46h.1m.9 209h.1m4.9-257h.1m.9 37h.1m1.9-8h.1m1.9-3h.1m-.1 129h.1m.9 82h.1m.9-195h.1m2.9-57h.1m.9 213h.1m-.1 23h.1m3.9-26h.1m6.9-211h.1m1.9 30h.1m.9 456h.1m3.9-318h.1m3.9 44h.1m-.1 251h.1m.9-99h.1m1.9-342h.1m1.9 141h.1m4.9 5h.1m5.9 294h.1m2.9-97h.1m.9-150h.1m5.9-1h.1m4.9-45h.1m4.9 256h.1m4.9 28h.1m5.9-81h.1m13.9 90h.1m3.9-173h.1m12.9 127h.1m7.9-57h.1m-.1 115h.1m8.9-87h.1m18.9 57h.1m9.9-78h.1m-.1 50h.1m3.9 13h.1m.9-149h.1m2.9 81h.1m3.9 41h.1m15.9-116h.1m7.9 15h.1m13.9 86h.1m9.9-94h.1m-.1 52h.1m14.9-19h.1m2.9-22h.1m1.9 13h.1m96.9-127h.1m20.9 29h.1m1.9 6h.1m13.9 12h.1m8.9-191h.1m6.9 44h.1m-.1 112h.1m1.9-124h.1m3.9-2h.1m2.9-132h.1m1.9 110h.1m4.9 21h.1m3.9-151h.1m1.9 319h.1m3.9-285h.1m1.9 58h.1m3.9-73h.1m.9 7h.1m2.9 253h.1m4.9-198h.1m-.1 60h.1m.9-24h.1m.9 200h.1m7.9-3h.1m.9-225h.1m3.9 15h.1m-.1 169h.1m1.9 40h.1m2.9-273h.1m-.1 94h.1m4.9 173h.1m1.9-278h.1m-.1 10h.1m-.1 264h.1m2.9-276h.1m-.1 48h.1m2.9 17h.1m.9 221h.1m.9 5h.1m1.9-246h.1m4.9 249h.1m1.9-31h.1m.9 8h.1m.9-219h.1m3.9-16h.1m-.1 218h.1m.9-237h.1m2.9 33h.1m2.9 249h.1m1.9-308h.1m.9 116h.1m2.9-166h.1m1.9 120h.1m1.9-30h.1m-.1 269h.1m4.9-226h.1m.9-99h.1m2.9 157h.1m-.1 123h.1m.9-256h.1m-.1 100h.1m4.9-18h.1m.9-64h.1m3.9 237h.1m.9 91h.1m2.9 47h.1m2.9-361h.1m9.9-85h.1m.9 571h.1m.9-220h.1m2.9-261h.1m3.9 42h.1m.9-61h.1m-.1 119h.1m2.9-82h.1m2.9-53h.1m6.9 353h.1m2.9-272h.1m2.9-13h.1m.9 286h.1m.9-255h.1m.9-81h.1m5.9-80h.1m2.9 578h.1m2.9-460h.1m5.9 40h.1m1.9-108h.1m-.1 397h.1m2.9 84h.1m.9-62h.1m-.1 59h.1m3.9-382h.1m4.9 57h.1m.9 190h.1m.9-391h.1m1.9 73h.1m.9 29h.1m.9 378h.1m-.1 71h.1m7.9-392h.1m-.1 134h.1m.9 0h.1m-.1 85h.1m-.1 150h.1m1.9-382h.1m9.9 50h.1m.9-108h.1m1.9 77h.1m-.1 33h.1m.9-13h.1m2.9 11h.1m.9-119h.1m.9 110h.1m2.9 200h.1m.9-217h.1m3.9-79h.1m4.9 239h.1m2.9-266h.1m-.1 195h.1m-.1 159h.1m1.9-177h.1m-.1 162h.1m.9-307h.1m-.1 163h.1m18.9-90h.1m-.1 146h.1m3.9-286h.1m.9 275h.1m.9-10h.1m.9-208h.1m-.1 58h.1m1.9-10h.1m.9 175h.1m1.9 60h.1m3.9-304h.1m.9 93h.1m2.9 83h.1m3.9 246h.1m1.9-282h.1m.9 7h.1m3.9-11h.1m1.9-168h.1m3.9 110h.1m1.9-90h.1m6.9 184h.1m.9-45h.1m4.9 19h.1m14.9 26h.1m3.9-196h.1m.9-25h.1m18.9 153h.1m5.9-144h.1m3.9 13h.1m30.9 169h.1m7.9 29h.1m1.9-81h.1m1.9 26h.1m.9-44h.1m7.9 117h.1m3.9-70h.1m-.1 23h.1m7.9 54h.1m.9-75h.1m-.1 45h.1m.9 23h.1m.9-215h.1m1.9 229h.1m-.1 8h.1m1.9-81h.1m-.1 92h.1m1.9-161h.1m1.9 57h.1m-.1 9h.1m-.1 6h.1m-.1 110h.1m.9-14h.1m.9-26h.1m1.9-68h.1m.9 27h.1m-.1 10h.1m-.1 15h.1m-.1 65h.1m.9-114h.1m-.1 78h.1m.9 43h.1m2.9-13h.1m.9-188h.1m-.1 81h.1m-.1 115h.1m-.1 14h.1m1.9-177h.1m.9 61h.1m-.1 1h.1m-.1 31h.1m1.9-35h.1m.9 11h.1m.9-4h.1m-.1 10h.1m-.1 84h.1m-.1 10h.1m2.9-5h.1m.9-105h.1m.9 46h.1m4.9-12h.1m1.9-19h.1m1.9 58h.1m1.9-61h.1m1.9 34h.1m1.9-1h.1m.9-24h.1m5.9-197h.1m-.1 197h.1m1.9 45h.1m9.9-46h.1m.9-13h.1m-.1 26h.1m2.9 18h.1m1.9-15h.1m.9-6h.1m2.9 1h.1m3.9-126h.1m4.9 122h.1m5.9 9h.1m11.9-19h.1m-.1 22h.1m5.9-223h.1m17.9 225h.1m-.1 13h.1m-.1 17h.1m13.9 74h.1m2.9-122h.1m5.9 112h.1m.9 36h.1m6.9-219h.1m-.1 196h.1m4.9-125h.1m-.1 41h.1m6.9-108h.1m.9 33h.1m3.9-5h.1m-.1 30h.1m-.1 168h.1m.9-81h.1m.9-105h.1m.9 199h.1m2.9-230h.1m-.1 82h.1m1.9-107h.1m-.1 49h.1m2.9 25h.1m-.1 34h.1m.9-171h.1m3.9 327h.1m2.9-129h.1m.9-39h.1m2.9-69h.1m.9 10h.1m3.9-51h.1m1.9 111h.1m.9-15h.1m-.1 24h.1m-.1 158h.1m6.9-279h.1m4.9 19h.1m-.1 31h.1m-.1 37h.1m.9 194h.1m-.1 4h.1m1.9-213h.1m-.1 7h.1m2.9-40h.1m.9 44h.1m-.1 27h.1m3.9-92h.1m-.1 10h.1m7.9 48h.1m-.1 348h.1m3.9-316h.1m1.9-81h.1m-.1 19h.1m-.1 6h.1m.9-10h.1m.9 15h.1m.9-19h.1m2.9-12h.1m-.1 76h.1m.9-65h.1m1.9 62h.1m.9-43h.1m.9-66h.1m-.1 56h.1m1.9 46h.1m.9 177h.1m3.9-238h.1m-.1 28h.1m-.1 8h.1m-.1 45h.1m1.9-52h.1m-.1 20h.1m-.1 23h.1m.9-103h.1m2.9 21h.1m.9 48h.1m.9-57h.1m1.9 190h.1m.9-221h.1m3.9 17h.1m2.9-5h.1m1.9 190h.1m.9-227h.1m4.9 5h.1m.9 245h.1m.9-226h.1m1.9 221h.1m.9-189h.1m3.9-32h.1m.9-13h.1m-.1 55h.1m.9 14h.1m2.9-7h.1m.9 62h.1m7.9-54h.1m6.9-78h.1m-.1 87h.1m3.9-76h.1m7.9 71h.1m17.9-4h.1m6.9 0h.1m8.9 405h.1m12.9-425h.1m1.9-32h.1m19.9 476h.1m34.9-25h.1m9.9-39h.1m120.9 58h.1"/>
+<path id="erc-lights-lg" vector-effect="non-scaling-stroke" d="M343 537h.1m105.9 87h.1m62.9-138h.1m41.9 101h.1m4.9-113h.1m12.9 326h.1m9.9-302h.1m5.9 210h.1m.9-215h.1m17.9 433h.1m68.9 7h.1m64.9-67h.1m14.9-21h.1m3.9 18h.1m219.9-367h.1m18.9-77h.1m13.9 19h.1m5.9 259h.1m54.9 85h.1m10.9-25h.1m75.9-266h.1m12.9 70h.1m34.9-175h.1m37.9 155h.1m38.9-15h.1m85.9 66h.1m30.9 11h.1m1.9 23h.1m7.9-74h.1m15.9 17h.1m1.9 92h.1m4.9-25h.1m9.9 24h.1m.9-19h.1m43.9-35h.1m10.9-7h.1m55.9 57h.1m18.9 70h.1m14.9-162h.1m.9 109h.1m-.1 95h.1m36.9-166h.1m3.9 4h.1m-.1 1h.1m.9-49h.1m11.9-59h.1m3.9 5h.1m20.9 147h.1m2.9-97h.1m-.1 37h.1m30.9-77h.1m46.9 18h.1m22.9-6h.1"/>
+</defs>
+<circle class="erc-sun" r="900" cx="-9999" cy="0"/>
+<circle class="erc-sun" r="900" cx="-9999" cy="0"/>
+<g filter="url(#erc-soft)">
+<path class="erc-night" data-alt="0" d=""/>
+<path class="erc-night" data-alt="-3" d=""/>
+<path class="erc-night" data-alt="-6" d=""/>
+<path class="erc-night" data-alt="-9" d=""/>
+<path class="erc-night" data-alt="-12" d=""/>
+<path class="erc-night" data-alt="-15" d=""/>
+<path class="erc-night" data-alt="-18" d=""/>
+<path class="erc-night" data-alt="-21" d=""/>
+</g>
+<g class="erc-lights" clip-path="url(#erc-night-clip)">
+<use href="#erc-lights-sm" class="erc-halo"/>
+<use href="#erc-lights-lg" class="erc-halo erc-lg"/>
+<use href="#erc-lights-sm" class="erc-core"/>
+<use href="#erc-lights-lg" class="erc-core erc-lg"/>
+</g>
+<path class="erc-arcs" d=""/>
+<path class="erc-arc" d=""/>
+<path class="erc-arc-head" d=""/>
+<rect class="erc-scrim" x="0" y="0" width="2000" height="1466"/>
+</svg>
+SVG;
+}
 
 function er_frontpage_cover_script() {
-	?>
-<script id="er-cover-js">
-(function(){
-	var root = document.querySelector('.er-cover');
-	if(!root) return;
-	var bandEls = root.querySelectorAll('.erc-night');
-	var edgeEl  = root.querySelector('.erc-edge');
-	var meEl = root.querySelector('.erc-me');
-	/* Two SVG layers, one framing: the map below the markers, shadow above. */
-	var svgs = root.querySelectorAll('svg');
-	/* Sun, lights, arcs, origin. Each is optional: markup without one skips it. */
-	var clipEl   = root.querySelector('.erc-nightclip');
-	var sunEls   = root.querySelectorAll('.erc-sun');
-	var arcsEl   = root.querySelector('.erc-arcs');
-	var arcEl    = root.querySelector('.erc-arc');
-	var headEl   = root.querySelector('.erc-arc-head');
-	var originEl = root.querySelector('.erc-origin');
+	wp_print_inline_script_tag( er_frontpage_cover_js(), array( 'id' => 'er-cover-js' ) );
+}
 
-	/* The browser's IANA time zone is city-named, so it locates the visitor to
-		 the zone's principal city with no permission prompt and no lookup. */
-	var TZ = {
-"Europe/Zurich":[47.37,8.54],"Europe/Berlin":[52.52,13.40],"Europe/London":[51.51,-0.13],
-"Europe/Paris":[48.86,2.35],"Europe/Madrid":[40.42,-3.70],"Europe/Rome":[41.90,12.50],
-"Europe/Vienna":[48.21,16.37],"Europe/Amsterdam":[52.37,4.90],"Europe/Brussels":[50.85,4.35],
-"Europe/Stockholm":[59.33,18.07],"Europe/Oslo":[59.91,10.75],"Europe/Copenhagen":[55.68,12.57],
-"Europe/Helsinki":[60.17,24.94],"Europe/Warsaw":[52.23,21.01],"Europe/Prague":[50.08,14.44],
-"Europe/Budapest":[47.50,19.04],"Europe/Bucharest":[44.43,26.10],"Europe/Athens":[37.98,23.73],
-"Europe/Lisbon":[38.72,-9.14],"Europe/Dublin":[53.35,-6.26],"Europe/Moscow":[55.75,37.62],
-"Europe/Kyiv":[50.45,30.52],"Europe/Kiev":[50.45,30.52],"Europe/Istanbul":[41.01,28.98],
-"Europe/Zagreb":[45.81,15.98],"Europe/Belgrade":[44.79,20.45],"Europe/Sofia":[42.70,23.32],
-"Europe/Vilnius":[54.69,25.28],"Europe/Riga":[56.95,24.11],"Europe/Tallinn":[59.44,24.75],
-"Europe/Luxembourg":[49.61,6.13],"Europe/Malta":[35.90,14.51],"Europe/Ljubljana":[46.06,14.51],
-"Europe/Bratislava":[48.15,17.11],"Atlantic/Reykjavik":[64.15,-21.94],
-"America/New_York":[40.71,-74.01],"America/Chicago":[41.88,-87.63],"America/Denver":[39.74,-104.99],
-"America/Los_Angeles":[34.05,-118.24],"America/Phoenix":[33.45,-112.07],"America/Anchorage":[61.22,-149.90],
-"America/Toronto":[43.65,-79.38],"America/Vancouver":[49.28,-123.12],"America/Edmonton":[53.55,-113.49],
-"America/Winnipeg":[49.90,-97.14],"America/Halifax":[44.65,-63.58],"America/Montreal":[45.50,-73.57],
-"America/Mexico_City":[19.43,-99.13],"America/Bogota":[4.71,-74.07],"America/Lima":[-12.05,-77.04],
-"America/Santiago":[-33.45,-70.67],"America/Argentina/Buenos_Aires":[-34.60,-58.38],
-"America/Sao_Paulo":[-23.55,-46.63],"America/Caracas":[10.49,-66.88],"America/Panama":[8.98,-79.52],
-"America/Havana":[23.11,-82.37],"America/Costa_Rica":[9.93,-84.08],"Pacific/Honolulu":[21.31,-157.86],
-"Asia/Tokyo":[35.68,139.65],"Asia/Seoul":[37.57,126.98],"Asia/Shanghai":[31.23,121.47],
-"Asia/Hong_Kong":[22.32,114.17],"Asia/Singapore":[1.35,103.82],"Asia/Bangkok":[13.76,100.50],
-"Asia/Jakarta":[-6.21,106.85],"Asia/Manila":[14.60,120.98],"Asia/Kolkata":[22.57,88.36],
-"Asia/Calcutta":[22.57,88.36],"Asia/Karachi":[24.86,67.01],"Asia/Dhaka":[23.81,90.41],
-"Asia/Dubai":[25.20,55.27],"Asia/Riyadh":[24.71,46.68],"Asia/Tehran":[35.69,51.39],
-"Asia/Jerusalem":[31.77,35.21],"Asia/Baghdad":[33.31,44.37],"Asia/Kathmandu":[27.72,85.32],
-"Asia/Colombo":[6.93,79.86],"Asia/Taipei":[25.03,121.57],"Asia/Kuala_Lumpur":[3.14,101.69],
-"Asia/Ho_Chi_Minh":[10.82,106.63],"Asia/Almaty":[43.24,76.89],"Asia/Tashkent":[41.30,69.24],
-"Asia/Yekaterinburg":[56.84,60.65],"Asia/Novosibirsk":[55.01,82.93],"Asia/Vladivostok":[43.12,131.89],
-"Africa/Cairo":[30.04,31.24],"Africa/Lagos":[6.52,3.38],"Africa/Nairobi":[-1.29,36.82],
-"Africa/Johannesburg":[-26.20,28.05],"Africa/Casablanca":[33.57,-7.59],"Africa/Accra":[5.60,-0.19],
-"Africa/Algiers":[36.75,3.06],"Africa/Tunis":[36.81,10.18],"Africa/Addis_Ababa":[9.03,38.74],
-"Africa/Kinshasa":[-4.32,15.31],
-"Australia/Sydney":[-33.87,151.21],"Australia/Melbourne":[-37.81,144.96],
-"Australia/Brisbane":[-27.47,153.03],"Australia/Perth":[-31.95,115.86],
-"Australia/Adelaide":[-34.93,138.60],"Australia/Darwin":[-12.46,130.84],
-"Australia/Hobart":[-42.88,147.32],"Pacific/Auckland":[-36.85,174.76],"Pacific/Fiji":[-18.14,178.44]
-};
+function er_frontpage_cover_js() {
+	return <<<'JS'
+(() => {
+	const root = document.querySelector('.er-cover');
+	if (!root) return;
 
-	function whereAmI(){
-		var tz = null;
-		try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch(e){}
-		if(tz && TZ[tz]) return {lat: TZ[tz][0], lon: TZ[tz][1]};
-		/* Unlisted zone: the offset fixes longitude; latitude is a guess. */
-		var off = new Date().getTimezoneOffset();     // minutes behind UTC
-		return {lat: 30, lon: Math.max(-180, Math.min(180, -off / 4))};
+	const $ = (sel) => root.querySelector(sel);
+	const bands = root.querySelectorAll('.erc-night');
+	const svgs = root.querySelectorAll('svg');
+	const suns = root.querySelectorAll('.erc-sun');
+	const nightClip = $('.erc-nightclip');
+	const scrim = $('.erc-scrim');
+	const meEl = $('.erc-markers > .erc-me');
+	const othersEl = $('.erc-others');
+	const originEl = $('.erc-origin');
+	const arcsEl = $('.erc-arcs');
+	const arcEl = $('.erc-arc');
+	const headEl = $('.erc-arc-head');
+	const clockEl = root.parentElement.querySelector(':scope > .erc-clock');
+
+	let config = {};
+	try { config = JSON.parse(root.dataset.config || '{}'); } catch (e) {}
+
+	const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	const RAD = Math.PI / 180;
+	const W = 2000;
+	const K = W / (2 * Math.PI);
+	const miller = (lat) => 1.25 * Math.log(Math.tan(Math.PI / 4 + 0.4 * lat * RAD)) * K;
+	const H = 2 * miller(90);
+	const INTRO_MS = 1400;
+	const POLL_MS = 90000;
+	const OTHERS_MAX = 12;
+	const SAME_PLACE = 1.5;
+	const ARC_MS = 1500;
+	const MY_ARC_MS = 1700;
+
+	const TZ = {
+		"Europe/Zurich":[47.37,8.54],"Europe/Berlin":[52.52,13.40],"Europe/London":[51.51,-0.13],
+		"Europe/Paris":[48.86,2.35],"Europe/Madrid":[40.42,-3.70],"Europe/Rome":[41.90,12.50],
+		"Europe/Vienna":[48.21,16.37],"Europe/Amsterdam":[52.37,4.90],"Europe/Brussels":[50.85,4.35],
+		"Europe/Stockholm":[59.33,18.07],"Europe/Oslo":[59.91,10.75],"Europe/Copenhagen":[55.68,12.57],
+		"Europe/Helsinki":[60.17,24.94],"Europe/Warsaw":[52.23,21.01],"Europe/Prague":[50.08,14.44],
+		"Europe/Budapest":[47.50,19.04],"Europe/Bucharest":[44.43,26.10],"Europe/Athens":[37.98,23.73],
+		"Europe/Lisbon":[38.72,-9.14],"Europe/Dublin":[53.35,-6.26],"Europe/Moscow":[55.75,37.62],
+		"Europe/Kyiv":[50.45,30.52],"Europe/Kiev":[50.45,30.52],"Europe/Istanbul":[41.01,28.98],
+		"Europe/Zagreb":[45.81,15.98],"Europe/Belgrade":[44.79,20.45],"Europe/Sofia":[42.70,23.32],
+		"Europe/Vilnius":[54.69,25.28],"Europe/Riga":[56.95,24.11],"Europe/Tallinn":[59.44,24.75],
+		"Europe/Luxembourg":[49.61,6.13],"Europe/Malta":[35.90,14.51],"Europe/Ljubljana":[46.06,14.51],
+		"Europe/Bratislava":[48.15,17.11],"Atlantic/Reykjavik":[64.15,-21.94],
+		"America/New_York":[40.71,-74.01],"America/Chicago":[41.88,-87.63],"America/Denver":[39.74,-104.99],
+		"America/Los_Angeles":[34.05,-118.24],"America/Phoenix":[33.45,-112.07],"America/Anchorage":[61.22,-149.90],
+		"America/Toronto":[43.65,-79.38],"America/Vancouver":[49.28,-123.12],"America/Edmonton":[53.55,-113.49],
+		"America/Winnipeg":[49.90,-97.14],"America/Halifax":[44.65,-63.58],"America/Montreal":[45.50,-73.57],
+		"America/Mexico_City":[19.43,-99.13],"America/Bogota":[4.71,-74.07],"America/Lima":[-12.05,-77.04],
+		"America/Santiago":[-33.45,-70.67],"America/Argentina/Buenos_Aires":[-34.60,-58.38],
+		"America/Sao_Paulo":[-23.55,-46.63],"America/Caracas":[10.49,-66.88],"America/Panama":[8.98,-79.52],
+		"America/Havana":[23.11,-82.37],"America/Costa_Rica":[9.93,-84.08],"Pacific/Honolulu":[21.31,-157.86],
+		"Asia/Tokyo":[35.68,139.65],"Asia/Seoul":[37.57,126.98],"Asia/Shanghai":[31.23,121.47],
+		"Asia/Hong_Kong":[22.32,114.17],"Asia/Singapore":[1.35,103.82],"Asia/Bangkok":[13.76,100.50],
+		"Asia/Jakarta":[-6.21,106.85],"Asia/Manila":[14.60,120.98],"Asia/Kolkata":[22.57,88.36],
+		"Asia/Calcutta":[22.57,88.36],"Asia/Karachi":[24.86,67.01],"Asia/Dhaka":[23.81,90.41],
+		"Asia/Dubai":[25.20,55.27],"Asia/Riyadh":[24.71,46.68],"Asia/Tehran":[35.69,51.39],
+		"Asia/Jerusalem":[31.77,35.21],"Asia/Baghdad":[33.31,44.37],"Asia/Kathmandu":[27.72,85.32],
+		"Asia/Colombo":[6.93,79.86],"Asia/Taipei":[25.03,121.57],"Asia/Kuala_Lumpur":[3.14,101.69],
+		"Asia/Ho_Chi_Minh":[10.82,106.63],"Asia/Almaty":[43.24,76.89],"Asia/Tashkent":[41.30,69.24],
+		"Asia/Yekaterinburg":[56.84,60.65],"Asia/Novosibirsk":[55.01,82.93],"Asia/Vladivostok":[43.12,131.89],
+		"Africa/Cairo":[30.04,31.24],"Africa/Lagos":[6.52,3.38],"Africa/Nairobi":[-1.29,36.82],
+		"Africa/Johannesburg":[-26.20,28.05],"Africa/Casablanca":[33.57,-7.59],"Africa/Accra":[5.60,-0.19],
+		"Africa/Algiers":[36.75,3.06],"Africa/Tunis":[36.81,10.18],"Africa/Addis_Ababa":[9.03,38.74],
+		"Africa/Kinshasa":[-4.32,15.31],
+		"Australia/Sydney":[-33.87,151.21],"Australia/Melbourne":[-37.81,144.96],
+		"Australia/Brisbane":[-27.47,153.03],"Australia/Perth":[-31.95,115.86],
+		"Australia/Adelaide":[-34.93,138.60],"Australia/Darwin":[-12.46,130.84],
+		"Australia/Hobart":[-42.88,147.32],"Pacific/Auckland":[-36.85,174.76],"Pacific/Fiji":[-18.14,178.44]
+	};
+
+	const f1 = (n) => n.toFixed(1);
+	const x = (lon) => (lon + 180) / 360 * W;
+	const y = (lat) => H / 2 - miller(Math.max(-89.99, Math.min(89.99, lat)));
+	const near = (a, b) => Math.abs(a.lat - b.lat) < SAME_PLACE && Math.abs(a.lon - b.lon) < SAME_PLACE;
+	const ease = (p) => {
+		p = Math.max(0, Math.min(1, p));
+		return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+	};
+	const toLatLon = (o) => Array.isArray(o) && Number.isFinite(+o[0]) && Number.isFinite(+o[1])
+		&& Math.abs(o[0]) <= 90 && Math.abs(o[1]) <= 180 ? { lat: +o[0], lon: +o[1] } : null;
+
+	const origin = toLatLon(config.origin);
+	const me = (() => {
+		let tz;
+		try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) {}
+		if (tz && TZ[tz]) return { lat: TZ[tz][0], lon: TZ[tz][1] };
+		return { lat: 30, lon: Math.max(-180, Math.min(180, -new Date().getTimezoneOffset() / 4)) };
+	})();
+
+	/* ---- Sun and night ---- */
+
+	function subsolar(date) {
+		const n = date.getTime() / 86400000 + 2440587.5 - 2451545.0;
+		const L = (280.460 + 0.9856474 * n) % 360;
+		const g = ((357.528 + 0.9856003 * n) % 360) * RAD;
+		const lam = (L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * RAD;
+		const eps = (23.439 - 0.0000004 * n) * RAD;
+		const dec = Math.asin(Math.sin(eps) * Math.sin(lam));
+		const ra = Math.atan2(Math.cos(eps) * Math.sin(lam), Math.cos(lam));
+		let gmst = (18.697374558 + 24.06570982441908 * n) % 24;
+		if (gmst < 0) gmst += 24;
+		const lon = ((-(gmst * 15 - ra / RAD) + 180) % 360 + 360) % 360 - 180;
+		return { lat: dec / RAD, lon, dec };
 	}
 
-	var me = whereAmI();
-	var W = 2000, RAD = Math.PI/180;
-	var KK = W / (2*Math.PI);
-	var H  = 2 * 1.25 * Math.log(Math.tan(Math.PI/4 + 2*(90*RAD)/5)) * KK;
+	const norm180 = (a) => ((a / RAD + 180) % 360 + 360) % 360 - 180;
 
-	/* Subsolar point. Low-precision, good to a fraction of a degree. */
-	function subsolar(date){
-		var n = date.getTime()/86400000 + 2440587.5 - 2451545.0;
-		var L = (280.460 + 0.9856474*n) % 360;
-		var g = ((357.528 + 0.9856003*n) % 360) * RAD;
-		var lam = (L + 1.915*Math.sin(g) + 0.020*Math.sin(2*g)) * RAD;
-		var eps = (23.439 - 0.0000004*n) * RAD;
-		var dec = Math.asin(Math.sin(eps)*Math.sin(lam));
-		var ra  = Math.atan2(Math.cos(eps)*Math.sin(lam), Math.cos(lam));
-		var gmst = (18.697374558 + 24.06570982441908*n) % 24;
-		if(gmst < 0) gmst += 24;
-		var lon = -((gmst*15) - ra/RAD);
-		lon = ((lon + 180) % 360 + 360) % 360 - 180;
-		return { lat: dec/RAD, lon: lon, dec: dec };
-	}
+	/* Night below altitude h0. If the dark pole is inside the band (|dec| > |h0|)
+	   there is one root per meridian, closed over the pole; otherwise the band is
+	   a loop around the antisolar point with two roots per meridian. Do not
+	   replace with root-picking by continuity: it collapses the deeper bands. */
+	function bandShape(h0, s) {
+		const sinH0 = Math.sin(h0 * RAD);
+		const MIN_DEC = 0.35 * RAD;
+		const dec = Math.abs(s.dec) < MIN_DEC ? (s.dec < 0 ? -MIN_DEC : MIN_DEC) : s.dec;
+		const poleIn = Math.abs(dec) > -h0 * RAD;
+		const line = [];
+		const loops = [];
+		let run = null;
 
-	function x(lon){ return (lon + 180)/360 * W; }
-	function y(lat){
-		if(lat >  89.99) lat =  89.99;
-		if(lat < -89.99) lat = -89.99;
-		return H/2 - 1.25 * Math.log(Math.tan(Math.PI/4 + 2*(lat*RAD)/5)) * KK;
-	}
-
-	/* Night below altitude h0, as SVG path data. Along a meridian,
-		 sin(h0) = sin(lat)sin(dec) + cos(lat)cos(dec)cos(H) collapses to
-		 R*sin(lat+phi) = sin(h0): zero, one or two roots inside +/-90.
-		 Which case applies is fixed per band, by whether the dark pole itself is
-		 below h0, i.e. |dec| > |h0|:
-		 - yes: the band reaches that pole; one root per meridian, drawn as a
-		   curve closed over the pole;
-		 - no: the band is a loop round the antisolar point; two roots on each
-		   meridian it crosses, drawn as its outline.
-		 Choosing between two roots by continuity, as before, landed on the
-		 wrong one after a stretch of pole clamps: every band deeper than |dec|
-		 collapsed to a sliver at the pole. Near the equinoxes that was seven of
-		 the eight, and the night side got .34 of its veil instead of .81. */
-	function norm180(a){                       // radians -> (-180, 180] degrees
-		var d = a / RAD;
-		d = ((d + 180) % 360 + 360) % 360 - 180;
-		return d;
-	}
-	function bandShape(h0, s, step){
-		step = step || 1;
-		var sinH0 = Math.sin(h0*RAD);
-		/* At dec = 0 the terminator is two meridians and both roots are equally
-			 valid everywhere. Holding dec off zero keeps the cases apart.
-			 Worst case is under 20 minutes of daylight at the poles. */
-		var dec = s.dec;
-		var MIN_DEC = 0.35 * RAD;
-		if(Math.abs(dec) < MIN_DEC) dec = (dec < 0 ? -MIN_DEC : MIN_DEC);
-		var poleIn = Math.abs(dec) > -h0*RAD;
-		var line = [], loops = [], run = null;
-
-		for(var lon = -195; lon <= 195; lon += step){
-			var Hh = (lon - s.lon) * RAD;
-			var A = Math.sin(dec);
-			var B = Math.cos(dec) * Math.cos(Hh);
-			var R = Math.hypot(A, B);
-			var phi = Math.atan2(B, A);
-			var q = R < 1e-9 ? 0 : sinH0 / R;
-			var cands = [];
-			if(q >= -1 && q <= 1){
-				var a = Math.asin(q);
-				var c1 = norm180(a - phi), c2 = norm180(Math.PI - a - phi);
-				if(c1 >= -90 && c1 <= 90) cands.push(c1);
-				if(c2 >= -90 && c2 <= 90) cands.push(c2);
-			}
-			var hi = Math.max.apply(null, cands), lo = Math.min.apply(null, cands);
-
-			if(poleIn){
-				var lat;
-				if(cands.length){
-					/* The root on the lit pole's side is the edge of the night. */
-					lat = dec > 0 ? hi : lo;
-				} else {
-					/* No crossing: the whole meridian is night or day. The equator
-						 says which. */
-					var night = Math.cos(dec) * Math.cos(Hh) < sinH0;
-					lat = (night === (dec > 0)) ? 90 : -90;
+		for (let lon = -195; lon <= 195; lon++) {
+			const ha = (lon - s.lon) * RAD;
+			const A = Math.sin(dec);
+			const B = Math.cos(dec) * Math.cos(ha);
+			const R = Math.hypot(A, B);
+			const phi = Math.atan2(B, A);
+			const q = R < 1e-9 ? 0 : sinH0 / R;
+			const roots = [];
+			if (q >= -1 && q <= 1) {
+				const a = Math.asin(q);
+				for (const c of [norm180(a - phi), norm180(Math.PI - a - phi)]) {
+					if (c >= -90 && c <= 90) roots.push(c);
 				}
+			}
+
+			if (poleIn) {
+				const lat = roots.length
+					? (dec > 0 ? Math.max(...roots) : Math.min(...roots))
+					: ((B < sinH0) === (dec > 0) ? 90 : -90);
 				line.push([lon, lat]);
-			} else if(cands.length === 2){
-				if(!run){ run = []; loops.push(run); }
-				run.push([lon, hi, lo]);
+			} else if (roots.length === 2) {
+				if (!run) loops.push(run = []);
+				run.push([lon, Math.max(...roots), Math.min(...roots)]);
 			} else {
 				run = null;
 			}
 		}
-		return poleIn ? { line: line } : { loops: loops };
+		return poleIn ? { line } : { loops };
 	}
 
-	function toD(pts){
-		return pts.map(function(p, i){
-			return (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1);
-		}).join('');
-	}
+	const toD = (pts) => pts.map((p, i) => (i ? 'L' : 'M') + f1(x(p[0])) + ' ' + f1(y(p[1]))).join('');
 
-	function draw(date, step){
-		var s = subsolar(date);
-		/* Northern summer lights the north pole, so night closes south. Beyond
-			 the artwork, so the blur cannot feather against the edge. Same sign
-			 rule as bandShape, including at dec = 0. */
-		var closeY = s.dec < 0 ? -400 : H + 400;
+	function draw() {
+		const s = subsolar(new Date());
+		const closeY = f1(s.dec < 0 ? -400 : H + 400);
 
-		for(var b = 0; b < bandEls.length; b++){
-			var sh = bandShape(parseFloat(bandEls[b].getAttribute('data-alt')), s, step), full;
-			if(sh.line){
-				var d = toD(sh.line);
-				full = d + 'L' + (W + 200) + ' ' + closeY + 'L-200 ' + closeY + 'Z';
-				if(b === 0) edgeEl.setAttribute('d', d);
-			} else {
-				/* Top edge west to east, bottom edge back. A loop across the
-					 dateline comes as two runs, each closed beyond the map edge. */
-				full = sh.loops.map(function(r){
-					return toD(r.map(function(p){ return [p[0], p[1]]; })
-						.concat(r.slice().reverse().map(function(p){ return [p[0], p[2]]; }))) + 'Z';
-				}).join('');
-			}
-			bandEls[b].setAttribute('d', full);
-			/* Lights come on at civil dusk: the -6 band is their clip. */
-			if(clipEl && bandEls[b].getAttribute('data-alt') === '-6') clipEl.setAttribute('d', full);
+		bands.forEach((band) => {
+			const alt = band.getAttribute('data-alt');
+			const shape = bandShape(parseFloat(alt), s);
+			const d = shape.line
+				? toD(shape.line) + 'L' + (W + 200) + ' ' + closeY + 'L-200 ' + closeY + 'Z'
+				: shape.loops.map((r) => toD(
+					r.map((p) => [p[0], p[1]]).concat(r.slice().reverse().map((p) => [p[0], p[2]]))
+				) + 'Z').join('');
+			band.setAttribute('d', d);
+			if (nightClip && alt === '-6') nightClip.setAttribute('d', d);
+		});
+
+		if (originEl && origin) {
+			const sinAlt = Math.sin(origin.lat * RAD) * Math.sin(s.dec)
+				+ Math.cos(origin.lat * RAD) * Math.cos(s.dec) * Math.cos((origin.lon - s.lon) * RAD);
+			originEl.classList.toggle('is-night', sinAlt < Math.sin(-6 * RAD));
 		}
 
-		if(sunEls.length === 2){
-			var sx = x(s.lon), sy = y(s.lat).toFixed(1);
-			sunEls[0].setAttribute('cx', sx.toFixed(1));
-			sunEls[1].setAttribute('cx', (sx + (sx < W/2 ? W : -W)).toFixed(1));
-			sunEls[0].setAttribute('cy', sy);
-			sunEls[1].setAttribute('cy', sy);
+		if (suns.length === 2) {
+			const sx = x(s.lon);
+			const sy = f1(y(s.lat));
+			suns[0].setAttribute('cx', f1(sx));
+			suns[1].setAttribute('cx', f1(sx + (sx < W / 2 ? W : -W)));
+			suns.forEach((el) => el.setAttribute('cy', sy));
 		}
 	}
 
-	/* Framing, recomputed on resize and orientation change. */
-	var view = { x0: 0, y0: 0, upp: 1 };
-	/* Fill against the land, not the map extent: Miller runs to +/-90 but
-		 there is no land above ~83N, and the gap reads as letterboxing. */
-	var art = (function(){
+	/* ---- Framing and markers ---- */
+
+	let view = { x0: 0, y0: 0, upp: 1 };
+	let land = null;
+	const anchors = new Map();
+
+	function landBand() {
+		if (land) return land;
 		try {
-			var bb = root.querySelector('.erc-land').getBBox();
-			return { top: bb.y, bot: bb.y + bb.height };
-		} catch(e){ return { top: 0, bot: H }; }
-	})();
-	var ART_H = art.bot - art.top;
-
-	/* HTML markers take map coordinates to pixels by the framing the viewBox
-		 gets, and so stay 7px at any size. */
-	function place(el){
-		el.style.transform = 'translate(' + ((el.erX - view.x0) / view.upp).toFixed(1) + 'px,' +
-		                                    ((el.erY - view.y0) / view.upp).toFixed(1) + 'px)';
+			const b = $('.erc-land').getBBox();
+			if (b.height > 0) return (land = { top: b.y, bot: b.y + b.height });
+		} catch (e) {}
+		return { top: 0, bot: H };
 	}
 
-	function fit(){
-		var r = root.getBoundingClientRect();
-		if(!r.width || !r.height) return;
-		var A = r.width / r.height, vw, vh;
-		/* Landscape crops latitude, portrait crops longitude; always fills. */
-		if(A >= W/ART_H){ vw = W;     vh = W / A; }
-		else            { vh = ART_H; vw = ART_H * A; }
-		/* North of the equator, where the land is. Clamped to the land band so
-			 no empty polar strip can appear. */
-		var cy = y(12);
-		if(cy < art.top + vh/2) cy = art.top + vh/2;
-		if(cy > art.bot - vh/2) cy = art.bot - vh/2;
-		var x0 = 1000 - vw / 2, y0 = cy - vh / 2;
-		view = { x0: x0, y0: y0, upp: vw / r.width };
-		var box = x0.toFixed(1)+' '+y0.toFixed(1)+' '+vw.toFixed(1)+' '+vh.toFixed(1);
-		svgs.forEach(function(s){ s.setAttribute('viewBox', box); });
-		var scrim = root.querySelector('.erc-scrim');
-		if(scrim){
-			scrim.setAttribute('x', x0.toFixed(1));   scrim.setAttribute('y', y0.toFixed(1));
-			scrim.setAttribute('width', vw.toFixed(1)); scrim.setAttribute('height', vh.toFixed(1));
+	const place = (el, p) => {
+		el.style.transform = 'translate(' + f1((p.x - view.x0) / view.upp) + 'px,' + f1((p.y - view.y0) / view.upp) + 'px)';
+	};
+
+	const pin = (el, pt) => {
+		const p = { x: x(pt.lon), y: y(pt.lat) };
+		anchors.set(el, p);
+		place(el, p);
+	};
+
+	/* Cover the box with land: landscape crops latitude, portrait crops longitude. */
+	function fit() {
+		const r = root.getBoundingClientRect();
+		if (!r.width || !r.height) return;
+		const band = landBand();
+		const artH = band.bot - band.top;
+		const aspect = r.width / r.height;
+		const wide = aspect >= W / artH;
+		const vw = wide ? W : artH * aspect;
+		const vh = wide ? W / aspect : artH;
+		const cy = Math.min(Math.max(y(12), band.top + vh / 2), band.bot - vh / 2);
+		const x0 = (W - vw) / 2;
+		const y0 = cy - vh / 2;
+
+		view = { x0, y0, upp: vw / r.width };
+		const box = [x0, y0, vw, vh].map(f1).join(' ');
+		svgs.forEach((svg) => svg.setAttribute('viewBox', box));
+		if (scrim) {
+			scrim.setAttribute('x', f1(x0));
+			scrim.setAttribute('y', f1(y0));
+			scrim.setAttribute('width', f1(vw));
+			scrim.setAttribute('height', f1(vh));
 		}
-		root.querySelectorAll('.erc-me, .erc-origin').forEach(place);
-	}
-	meEl.erX = x(me.lon);
-	meEl.erY = y(me.lat);
-	/* The origin comes from PHP. Missing or malformed: no marker, no arcs;
-		 everything else carries on. */
-	function latLon(o){
-		return (o && isFinite(o[0]) && isFinite(o[1]) && Math.abs(o[0]) <= 90 && Math.abs(o[1]) <= 180)
-			? { lat: +o[0], lon: +o[1] } : null;
-	}
-	var ORIGIN = latLon(window.erCoverOrigin);
-	if(ORIGIN && originEl){ originEl.erX = x(ORIGIN.lon); originEl.erY = y(ORIGIN.lat); }
-	fit();
-	var rt;
-	function onResize(){ clearTimeout(rt); rt = setTimeout(fit, 120); }
-	window.addEventListener('resize', onResize, {passive:true});
-	window.addEventListener('orientationchange', onResize, {passive:true});
-	if(window.ResizeObserver){ new ResizeObserver(onResize).observe(root); }
-
-	/* Other people. Layered on top: the own marker is already placed and
-		 survives this failing, returning nothing, or never being wired up. */
-	var OTHERS_MAX  = 12;
-	var POLL_MS     = 90000;
-	var SAME_PLACE  = 1.5;                 // degrees; closer than this is probably you
-	var othersG     = root.querySelector('.erc-others');
-	var pollTimer   = null;
-
-	var lastSig     = '';
-
-	var othersBy = {};                     // "lat,lon" -> marker on the map
-	var firstPoll = true;
-
-	function drawOthers(list){
-		/* Same visitors as last poll: nothing to do. */
-		var sig = JSON.stringify(list);
-		if(sig === lastSig) return;
-		lastSig = sig;
-		/* Only the difference changes. Markers already there are left alone, so
-			 their pulse runs on; rebuilding all of them restarted every pulse
-			 whenever one visitor came or went. New ones are added, gone ones removed. */
-		var next = {}, targets = [];
-		for(var i = 0; i < list.length && targets.length < OTHERS_MAX; i++){
-			var la = +list[i][0], lo = +list[i][1];
-			if(!isFinite(la) || !isFinite(lo)) continue;
-			if(Math.abs(la - me.lat) < SAME_PLACE && Math.abs(lo - me.lon) < SAME_PLACE) continue;
-			var k = la + ',' + lo;
-			if(next[k]) continue;
-			next[k] = othersBy[k] || addOther(la, lo, !firstPoll);
-			targets.push({ lat: la, lon: lo });
-		}
-		for(var gone in othersBy){
-			if(!next[gone] && othersBy[gone].parentNode) othersG.removeChild(othersBy[gone]);
-		}
-		othersBy = next;
-		firstPoll = false;
-		/* Arcs follow exactly the markers drawn. */
-		arcsTo(targets);
+		anchors.forEach((p, el) => place(el, p));
 	}
 
-	function addOther(la, lo, arriving){
-		var g = document.createElement('span');
-		g.className = 'erc-me';
-		g.innerHTML = '<span class="erc-ring"></span><span class="erc-ring erc-ring-2"></span><span class="erc-dot"></span>';
-		g.erX = x(lo);
-		g.erY = y(la);
-		place(g);
-		/* The animation is on the rings, not the marker. Negative delays start
-			 each marker mid-cycle; the second ring keeps its half-cycle gap. */
-		var d = Math.random() * 2.4, rings = g.querySelectorAll('.erc-ring');
-		rings[0].style.animationDelay = (-d).toFixed(2) + 's';
-		rings[1].style.animationDelay = (1.2 - d).toFixed(2) + 's';
-		if(arriving && !reduce){
-			var hello = document.createElement('span');
-			hello.className = 'erc-hello';
-			hello.addEventListener('animationend', function(){ hello.remove(); });
-			g.appendChild(hello);
-		}
-		othersG.appendChild(g);
-		return g;
-	}
+	/* ---- Arcs ---- */
 
-	function fetchOthers(){
-		var url = window.erCoverAjax;
-		if(!url) return;                                  // not wired up: stay local
-		var body = new FormData();
-		body.append('action', 'er_cover_live');
-		fetch(url, { method: 'POST', body: body, credentials: 'same-origin' })
-			.then(function(r){ return r.ok ? r.json() : null; })
-			.then(function(j){
-				if(j && Array.isArray(j.data)) drawOthers(j.data);
-			})
-			.catch(function(){ /* your own marker is already there */ });
-	}
-
-	function startPolling(){
-		if(pollTimer) return;
-		fetchOthers();
-		pollTimer = setInterval(fetchOthers, POLL_MS);
-	}
-	function stopPolling(){
-		if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
-	}
-
-	document.addEventListener('visibilitychange', function(){
-		document.hidden ? stopPolling() : startPolling();
-	});
-
-	setTimeout(function(){ meEl.style.opacity = '1'; }, 1500);
-	/* Held until the hero has settled: the entrance should not wait on a request. */
-	setTimeout(function(){ if(!document.hidden) startPolling(); }, 2600);
-
-	/* Clock. Two readings of the same instant: the visitor's own wall time and
-		 UTC, which is the number the shadow is actually drawn from. */
-	var clock = document.querySelector('.erc-clock');
-	if(clock){
-		var elLocal = clock.querySelector('.erc-local');
-		var elUtc   = clock.querySelector('.erc-utc');
-		var pad = function(n){ return n < 10 ? '0' + n : '' + n; };
-		var clockTimer = null;
-		/* Each tick is set for just past the next whole second. A plain 1s
-			 interval keeps the offset of whenever the page loaded, drifts, and
-			 skips or repeats a second when it crosses a boundary. clearTimeout
-			 keeps it to one timer however tick() is called. */
-		var tick = function(){
-			var d = new Date();
-			elLocal.textContent = 'Local ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
-			elUtc.textContent   = 'UTC '   + d.toISOString().slice(11, 19);
-			clearTimeout(clockTimer);
-			clockTimer = setTimeout(tick, 1005 - d.getMilliseconds());
-		};
-		tick();
-		document.addEventListener('visibilitychange', function(){
-			if(!document.hidden) tick();
+	function gcPoints(a, b, n) {
+		const [p, q] = [a, b].map((v) => {
+			const la = v.lat * RAD, lo = v.lon * RAD;
+			return [Math.cos(la) * Math.cos(lo), Math.cos(la) * Math.sin(lo), Math.sin(la)];
 		});
-	}
-
-	var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-	/* Great circle from a to b, n+1 samples as [lat, lon]. null when the two
-		 points coincide or are antipodal, where no single arc is defined. */
-	function gcPoints(a, b, n){
-		var p = [a, b].map(function(q){
-			var la = q.lat*RAD, lo = q.lon*RAD;
-			return [Math.cos(la)*Math.cos(lo), Math.cos(la)*Math.sin(lo), Math.sin(la)];
-		});
-		var dot = p[0][0]*p[1][0] + p[0][1]*p[1][1] + p[0][2]*p[1][2];
-		var om = Math.acos(Math.max(-1, Math.min(1, dot))), so = Math.sin(om);
-		if(so < 1e-6) return null;
-		var out = [];
-		for(var i = 0; i <= n; i++){
-			var k1 = Math.sin((1 - i/n)*om)/so, k2 = Math.sin(i/n*om)/so;
-			var X = k1*p[0][0] + k2*p[1][0], Y = k1*p[0][1] + k2*p[1][1], Z = k1*p[0][2] + k2*p[1][2];
-			out.push([Math.atan2(Z, Math.hypot(X, Y))/RAD, Math.atan2(Y, X)/RAD]);
+		const om = Math.acos(Math.max(-1, Math.min(1, p[0] * q[0] + p[1] * q[1] + p[2] * q[2])));
+		const so = Math.sin(om);
+		if (so < 1e-6) return null;
+		const out = [];
+		for (let i = 0; i <= n; i++) {
+			const k1 = Math.sin((1 - i / n) * om) / so;
+			const k2 = Math.sin(i / n * om) / so;
+			const X = k1 * p[0] + k2 * q[0], Y = k1 * p[1] + k2 * q[1], Z = k1 * p[2] + k2 * q[2];
+			out.push([Math.atan2(Z, Math.hypot(X, Y)) / RAD, Math.atan2(Y, X) / RAD]);
 		}
 		return out;
 	}
-	/* Path through samples from..to. A longitude step over 180 is the dateline:
-		 run to that edge, resume at the other. */
-	function gcPath(pts, from, to){
-		var d = '', prev = null;
-		for(var i = from; i <= to; i++){
-			var la = pts[i][0], lo = pts[i][1];
-			if(prev && Math.abs(lo - prev[1]) > 180){
-				var edge = lo > prev[1] ? -180 : 180;
-				var lo2  = lo > prev[1] ? lo - 360 : lo + 360;
-				var lc   = prev[0] + (la - prev[0]) * (edge - prev[1]) / (lo2 - prev[1]);
-				d += 'L' + x(edge).toFixed(1) + ' ' + y(lc).toFixed(1) +
-				     'M' + x(-edge).toFixed(1) + ' ' + y(lc).toFixed(1);
+
+	function gcPath(pts, from, to) {
+		let d = '';
+		let prev = null;
+		for (let i = from; i <= to; i++) {
+			const [la, lo] = pts[i];
+			if (prev && Math.abs(lo - prev[1]) > 180) {
+				const edge = lo > prev[1] ? -180 : 180;
+				const lo2 = lo > prev[1] ? lo - 360 : lo + 360;
+				const lc = f1(y(prev[0] + (la - prev[0]) * (edge - prev[1]) / (lo2 - prev[1])));
+				d += 'L' + f1(x(edge)) + ' ' + lc + 'M' + f1(x(-edge)) + ' ' + lc;
 			}
-			d += (prev ? 'L' : 'M') + x(lo).toFixed(1) + ' ' + y(la).toFixed(1);
+			d += (prev ? 'L' : 'M') + f1(x(lo)) + ' ' + f1(y(la));
 			prev = pts[i];
 		}
 		return d;
 	}
-	function near(a, b){
-		return Math.abs(a.lat - b.lat) < SAME_PLACE && Math.abs(a.lon - b.lon) < SAME_PLACE;
+
+	let arcRuns = new Map();
+	let arcFrame = 0;
+
+	function showOrigin() {
+		if (!originEl || !origin || near(me, origin)) return false;
+		originEl.classList.add('is-on');
+		return true;
 	}
 
-	/* Arcs out of the origin to the live markers. Each grows once, when its
-		 marker first appears; a marker that leaves takes its arc along. Between
-		 polls nothing moves. Others at the origin keep their marker, no arc. */
-	var arcRuns = {}, arcFrame = null, ARC_DUR = 1500;
-	function ease(p){
-		p = p < 0 ? 0 : (p > 1 ? 1 : p);
-		return p < .5 ? 4*p*p*p : 1 - Math.pow(-2*p + 2, 3)/2;
+	function paintArcs() {
+		const now = performance.now();
+		let growing = false;
+		let d = '';
+		arcRuns.forEach((run) => {
+			const p = (now - run.t0) / ARC_MS;
+			if (p < 1) growing = true;
+			if (p > 0) d += gcPath(run.pts, 0, Math.max(1, Math.round((run.pts.length - 1) * ease(p))));
+		});
+		arcsEl.setAttribute('d', d);
+		if (growing && !arcFrame) {
+			arcFrame = requestAnimationFrame(() => { arcFrame = 0; paintArcs(); });
+		}
 	}
-	function arcsTo(targets){
-		if(!ORIGIN || !arcsEl) return;
-		var next = {}, now = performance.now(), fresh = 0;
-		targets.forEach(function(p){
-			if(near(p, ORIGIN)) return;
-			var k = p.lat + ',' + p.lon;
-			if(arcRuns[k]){ next[k] = arcRuns[k]; return; }
-			var pts = gcPoints(ORIGIN, p, 64);
-			if(pts) next[k] = { pts: pts, t0: reduce ? -Infinity : now + 80 * fresh++ };
+
+	function arcsTo(targets) {
+		if (!origin || !arcsEl) return;
+		const next = new Map();
+		const now = performance.now();
+		let fresh = 0;
+		targets.forEach((pt) => {
+			if (near(pt, origin)) return;
+			const key = pt.lat + ',' + pt.lon;
+			if (arcRuns.has(key)) {
+				next.set(key, arcRuns.get(key));
+				return;
+			}
+			const pts = gcPoints(origin, pt, 64);
+			if (pts) next.set(key, { pts, t0: reduce ? -Infinity : now + 80 * fresh++ });
 		});
 		arcRuns = next;
 		showOrigin();
 		paintArcs();
 	}
-	function paintArcs(){
-		var now = performance.now(), growing = false, d = '';
-		for(var k in arcRuns){
-			var r = arcRuns[k], p = (now - r.t0) / ARC_DUR;
-			if(p < 1) growing = true;
-			if(p > 0) d += gcPath(r.pts, 0, Math.max(1, Math.round((r.pts.length - 1) * ease(p))));
-		}
-		arcsEl.setAttribute('d', d);
-		if(growing && !arcFrame) arcFrame = requestAnimationFrame(function(){ arcFrame = null; paintArcs(); });
-	}
 
-	/* A visitor at the origin already has a marker there: their own, green.
-		 The amber one underneath would mix into its pulse, so theirs stands in
-		 for it. Returns whether the origin marker is shown. */
-	function showOrigin(){
-		if(!originEl || near(me, ORIGIN)) return false;
-		originEl.style.opacity = '1';
-		return true;
-	}
+	function drawMine() {
+		if (!showOrigin()) return;
+		if (!reduce) originEl.classList.add('is-out');
+		const pts = arcEl && gcPoints(origin, me, 120);
+		if (!pts) return;
+		const n = pts.length - 1;
 
-	/* When the intro lands: the origin appears, ripples once, and a brighter
-		 arc runs out to this visitor. At the origin: none of the three. */
-	function drawMine(){
-		if(!ORIGIN || !showOrigin()) return;
-		if(!reduce) originEl.classList.add('is-out');
-		if(!arcEl) return;
-		var pts = gcPoints(ORIGIN, me, 120);
-		if(!pts) return;
-		var N = pts.length - 1, DUR = 1700, TAIL = 10, t0 = null;
-		function done(){
+		if (reduce) {
+			arcEl.setAttribute('d', gcPath(pts, 0, n));
 			arcEl.classList.add('is-done');
-			if(headEl) headEl.style.opacity = '0';
+			return;
 		}
-		if(reduce){ arcEl.setAttribute('d', gcPath(pts, 0, N)); done(); return; }
-		function grow(ts){
-			if(t0 === null) t0 = ts;
-			var p = (ts - t0) / DUR, k = Math.max(1, Math.round(N * ease(p)));
+
+		let t0 = null;
+		const grow = (ts) => {
+			if (t0 === null) t0 = ts;
+			const p = (ts - t0) / MY_ARC_MS;
+			const k = Math.max(1, Math.round(n * ease(p)));
 			arcEl.setAttribute('d', gcPath(pts, 0, k));
-			if(headEl) headEl.setAttribute('d', gcPath(pts, Math.max(0, k - TAIL), k));
-			if(p < 1) requestAnimationFrame(grow); else done();
-		}
+			if (headEl) headEl.setAttribute('d', gcPath(pts, Math.max(0, k - 10), k));
+			if (p < 1) requestAnimationFrame(grow);
+			else arcEl.classList.add('is-done');
+		};
 		requestAnimationFrame(grow);
 	}
 
-	function live(){
-		draw(new Date(), 1);
-		drawMine();
-		setInterval(function(){ draw(new Date(), 1); }, 60000);
-		/* Background tabs throttle the interval: catch up the moment the tab is
-			 back. Registered here, not earlier, so it cannot cut into the intro. */
-		document.addEventListener('visibilitychange', function(){
-			if(!document.hidden) draw(new Date(), 1);
+	/* ---- Other live visitors ---- */
+
+	let others = new Map();
+	let lastSig = '';
+	let firstPoll = true;
+	let pollTimer = 0;
+	const canPoll = Boolean(config.ajax && othersEl);
+
+	function addOther(pt, arriving) {
+		const el = document.createElement('span');
+		el.className = 'erc-me';
+		el.innerHTML = '<span class="erc-ring"></span><span class="erc-ring erc-ring-2"></span><span class="erc-dot"></span>';
+		const offset = Math.random() * 2.4;
+		const rings = el.querySelectorAll('.erc-ring');
+		rings[0].style.animationDelay = (-offset).toFixed(2) + 's';
+		rings[1].style.animationDelay = (1.2 - offset).toFixed(2) + 's';
+		if (arriving && !reduce) {
+			const hello = document.createElement('span');
+			hello.className = 'erc-hello';
+			hello.addEventListener('animationend', () => hello.remove(), { once: true });
+			el.append(hello);
+		}
+		pin(el, pt);
+		othersEl.append(el);
+		return el;
+	}
+
+	function drawOthers(list) {
+		const sig = JSON.stringify(list);
+		if (sig === lastSig) return;
+		lastSig = sig;
+
+		const next = new Map();
+		const targets = [];
+		for (const item of list) {
+			if (targets.length >= OTHERS_MAX) break;
+			if (!Array.isArray(item)) continue;
+			const pt = { lat: +item[0], lon: +item[1] };
+			if (!Number.isFinite(pt.lat) || !Number.isFinite(pt.lon) || near(pt, me)) continue;
+			const key = pt.lat + ',' + pt.lon;
+			if (next.has(key)) continue;
+			next.set(key, others.get(key) || addOther(pt, !firstPoll));
+			targets.push(pt);
+		}
+		others.forEach((el, key) => {
+			if (next.has(key)) return;
+			el.remove();
+			anchors.delete(el);
 		});
+		others = next;
+		firstPoll = false;
+		arcsTo(targets);
 	}
 
-	if(reduce){ live(); return; }
-
-	/* Wind forward from nine hours ago to now, then hand over to real time. */
-	var now = Date.now(), span = 9*3600*1000, dur = 2600, t0 = null;
-	function step(ts){
-		if(t0 === null) t0 = ts;
-		var p = Math.min((ts - t0)/dur, 1);
-		var e = 1 - Math.pow(1 - p, 3);
-		draw(new Date(now - span + span*e), 1);
-		if(p < 1) requestAnimationFrame(step); else live();
+	function fetchOthers() {
+		const body = new FormData();
+		body.append('action', 'er_cover_live');
+		fetch(config.ajax, { method: 'POST', body, credentials: 'same-origin' })
+			.then((r) => (r.ok ? r.json() : null))
+			.then((j) => { if (j && Array.isArray(j.data)) drawOthers(j.data); })
+			.catch(() => {});
 	}
-	requestAnimationFrame(step);
+
+	function startPolling() {
+		if (!canPoll || pollTimer) return;
+		fetchOthers();
+		pollTimer = setInterval(fetchOthers, POLL_MS);
+	}
+
+	function stopPolling() {
+		clearInterval(pollTimer);
+		pollTimer = 0;
+	}
+
+	/* ---- Clock ---- */
+
+	const localEl = clockEl && clockEl.querySelector('.erc-local');
+	const utcEl = clockEl && clockEl.querySelector('.erc-utc');
+	const pad = (n) => String(n).padStart(2, '0');
+	let clockTimer = 0;
+
+	function tick() {
+		if (!localEl || !utcEl) return;
+		const d = new Date();
+		localEl.textContent = 'Local ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+		utcEl.textContent = 'UTC ' + d.toISOString().slice(11, 19);
+		clearTimeout(clockTimer);
+		clockTimer = setTimeout(tick, 1005 - d.getMilliseconds());
+	}
+
+	/* ---- Start ---- */
+
+	let live = false;
+
+	if (meEl) pin(meEl, me);
+	if (originEl && origin) pin(originEl, origin);
+
+	try {
+		fit();
+		draw();
+	} finally {
+		root.classList.add('is-ready');
+	}
+
+	let resizeTimer = 0;
+	const onResize = () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fit, 120); };
+	if ('ResizeObserver' in window) new ResizeObserver(onResize).observe(root);
+	else window.addEventListener('resize', onResize, { passive: true });
+
+	document.addEventListener('visibilitychange', () => {
+		if (document.hidden) {
+			stopPolling();
+			return;
+		}
+		tick();
+		if (live) draw();
+		startPolling();
+	});
+
+	tick();
+	setTimeout(() => { if (meEl) meEl.classList.add('is-on'); }, 1500);
+	setTimeout(() => { if (!document.hidden) startPolling(); }, 2600);
+	setTimeout(() => {
+		live = true;
+		drawMine();
+		setInterval(draw, 60000);
+	}, reduce ? 0 : INTRO_MS);
 })();
-</script>
-	<?php
+JS;
 }
