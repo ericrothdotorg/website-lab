@@ -77,6 +77,9 @@ add_shortcode( 'er_frontpage_cover', function ( $atts ) {
 		 visitor, amber is light and the origin. */
 	--er-c-light: #ffc56e;
 	--er-c-light-hi: #fff1d2;
+	/* Clock text. Not --er-c-day: that is the land's colour, and on pale land
+		 the clock measured 1.1:1 at worst, i.e. gone. */
+	--er-c-clock: #e1e8ed;
 	position: relative;
 	/* Column flex centres the content and stops the first child's
 		 margin-block-start collapsing through and pushing the cover down.
@@ -229,15 +232,28 @@ div.er-cover{
 	position: absolute; z-index: 1; pointer-events: none;
 	font-family: ui-monospace,"SF Mono",Menlo,Consolas,monospace;
 	font-size: clamp(10px,1.05vw,14px); letter-spacing: .04em;
-	color: var(--er-c-day); opacity: 0; white-space: nowrap;
+	color: var(--er-c-clock); opacity: 0; white-space: nowrap;
 	animation: erc-clock-in 1.2s ease-out 1.8s forwards;
 }
-.erc-clock .erc-sep{opacity: 0.65; margin: 0 .6em}
-@keyframes erc-clock-in{to{opacity: 0.62}}
+.erc-clock .erc-sep{opacity: 0.5; margin: 0.6em}
+@keyframes erc-clock-in{to{opacity: 1}}
 .erc-clock[data-pos="bottom-left"] {left: clamp(14px,3vw,34px); bottom: clamp(12px,2.4vh,26px)}
 .erc-clock[data-pos="bottom-right"]{right: clamp(14px,3vw,34px); bottom: clamp(12px,2.4vh,26px)}
 .erc-clock[data-pos="top-left"]    {left: clamp(14px,3vw,34px); top: clamp(12px,2.4vh,26px)}
 .erc-clock[data-pos="top-right"]   {right: clamp(14px,3vw,34px); top: clamp(12px,2.4vh,26px)}
+/* Shade under the clock: a soft dark ellipse in its corner, part of the map
+	 like a vignette rather than a panel, so the times stay legible over pale
+	 day-side land. Measured over a full day, desktop and phone: never below
+	 4.5:1. Sized in the clock's em, so it scales with the text; follows the
+	 clock's corner; clock="off" removes the clock and with it the shade. */
+:has(> .erc-clock) > .er-cover::after{
+	content: ""; position: absolute; font-size: clamp(10px,1.05vw,14px);
+	width: 46em; height: 16em;
+	left: calc(clamp(14px,3vw,34px) - 13.5em); bottom: calc(clamp(12px,2.4vh,26px) - 7.4em);
+	background: radial-gradient(closest-side, rgba(7,12,18,.62), rgba(7,12,18,.5) 50%, rgba(7,12,18,.22) 78%, rgba(7,12,18,0));
+}
+:has(> .erc-clock[data-pos$="right"]) > .er-cover::after{left: auto; right: calc(clamp(14px,3vw,34px) - 13.5em)}
+:has(> .erc-clock[data-pos^="top"]) > .er-cover::after{bottom: auto; top: calc(clamp(12px,2.4vh,26px) - 7.4em)}
 
 @media (prefers-reduced-motion: reduce){
 	.er-cover{animation: none; opacity: 1}
@@ -247,7 +263,7 @@ div.er-cover{
 		left: -18.05px; top: -18.05px; width: 36.1px; height: 36.1px;
 		box-shadow: inset 0 0 0 2.5px #28a745;
 	}
-	.erc-clock{animation: none; opacity: 0.62}
+	.erc-clock{animation: none; opacity: 1}
 	.er-cover .erc-origin,
 	.er-cover .erc-arc{transition: none}
 	.er-cover .erc-others .erc-me{animation: none}
@@ -828,7 +844,7 @@ function er_frontpage_cover_script() {
 			if(pts) next[k] = { pts: pts, t0: reduce ? -Infinity : now + 80 * fresh++ };
 		});
 		arcRuns = next;
-		if(originEl) originEl.style.opacity = '1';
+		showOrigin();
 		paintArcs();
 	}
 	function paintArcs(){
@@ -842,13 +858,21 @@ function er_frontpage_cover_script() {
 		if(growing && !arcFrame) arcFrame = requestAnimationFrame(function(){ arcFrame = null; paintArcs(); });
 	}
 
-	/* When the intro lands: the origin appears, ripples once, and a brighter
-		 arc runs out to this visitor, unless they are at the origin. */
-	function drawMine(){
-		if(!ORIGIN || !originEl) return;
+	/* A visitor at the origin already has a marker there: their own, green.
+		 The amber one underneath would mix into its pulse, so theirs stands in
+		 for it. Returns whether the origin marker is shown. */
+	function showOrigin(){
+		if(!originEl || near(me, ORIGIN)) return false;
 		originEl.style.opacity = '1';
+		return true;
+	}
+
+	/* When the intro lands: the origin appears, ripples once, and a brighter
+		 arc runs out to this visitor. At the origin: none of the three. */
+	function drawMine(){
+		if(!ORIGIN || !showOrigin()) return;
 		if(!reduce) originEl.classList.add('is-out');
-		if(!arcEl || near(me, ORIGIN)) return;
+		if(!arcEl) return;
 		var pts = gcPoints(ORIGIN, me, 120);
 		if(!pts) return;
 		var N = pts.length - 1, DUR = 1700, TAIL = 10, t0 = null;
