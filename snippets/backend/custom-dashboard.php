@@ -404,11 +404,14 @@ function custom_check_broken_yt_links() {
 // Layout of this section:
 //   1. Widget assembly      — what the dashboard box prints, top to bottom
 //   2. 👆 Manual trigger    — the "🧵 InnoDB Cleanup" button
-//   3. ⏰ Automatic trigger — the weekly scheduled run
-//   4. ⚙️ Cleanup engine    — the actual work; both triggers above call this
-//   5. Buttons & links      — includes two external tools unrelated to the engine
-//   6. Stats & health       — the row counts and their green / orange / red labels
-//   7. History readout      — the "Last cleanup" line, written by either trigger
+//   3. Buttons & links      — includes two external tools unrelated to the engine
+//   4. Stats & health       — the row counts and their green / orange / red labels
+//   5. History readout      — the "Last cleanup" line
+//
+// The cleanup engine and the weekly schedule live in the "Stats Engine"
+// snippet (scope: everywhere). They must stay there: wp-cron.php runs with
+// is_admin() === false, so a callback registered from this admin-only snippet
+// is invisible to the scheduler.
 
 // --------------------------------------
 // 1. WIDGET ASSEMBLY
@@ -440,131 +443,7 @@ function custom_handle_cleanup_submission() {
 }
 
 // --------------------------------------
-// 3. ⏰ AUTOMATIC TRIGGER (WEEKLY)
-// --------------------------------------
-
-// Same engine, same three options written, no click needed. The button in
-// section 2 keeps working alongside this and can be used any time.
-
-add_action('init', function () {
-	if (!wp_next_scheduled('er_weekly_cleanup')) {
-		wp_schedule_event(time() + HOUR_IN_SECONDS, 'weekly', 'er_weekly_cleanup');
-	}
-});
-
-add_action('er_weekly_cleanup', function () {
-	if (!function_exists('custom_run_innodb_cleanup')) return;
-	$result = custom_run_innodb_cleanup();
-	update_option('custom_last_cleanup', time());
-	update_option('custom_last_cleanup_result', $result['message']);
-	update_option('custom_last_cleanup_success', $result['success']);
-});
-
-// --------------------------------------
-// 4. ⚙️ CLEANUP ENGINE
-// --------------------------------------
-
-// The only place rows are actually deleted. Reached from section 2 and 3.
-function custom_run_innodb_cleanup() {
-	global $wpdb;
-	$deleted_total = 0;
-	$errors = [];
-
-	$safe_delete = function($query, $operation_name) use ($wpdb, &$errors) {
-		$result = $wpdb->query($query);
-		if ($result === false) {
-			$errors[] = $operation_name . ' failed: ' . $wpdb->last_error;
-			return 0;
-		}
-		return (int) $result;
-	};
-
-	$deleted_total += custom_cleanup_orphaned_data($wpdb, $safe_delete);
-	$deleted_total += custom_cleanup_postmeta($wpdb, $safe_delete);
-	$deleted_total += custom_cleanup_usermeta($wpdb, $safe_delete);
-	$deleted_total += custom_cleanup_transients($wpdb, $safe_delete);
-	$deleted_total += custom_cleanup_old_data($wpdb, $safe_delete);
-	$optimized_count = custom_optimize_tables($wpdb, $errors);
-
-	if (!empty($errors)) {
-		return [
-			'success' => false,
-			'message' => "⚠️ Partial cleanup: {$deleted_total} rows deleted → {$optimized_count} tables optimized. Errors: " . implode(' | ', $errors),
-		];
-	}
-	return [
-		'success' => true,
-		'message' => "✅ Total rows deleted: {$deleted_total} → {$optimized_count} tables optimized.",
-	];
-}
-
-function custom_cleanup_orphaned_data($wpdb, $safe_delete) {
-	$deleted = 0;
-	$deleted += $safe_delete("DELETE pm FROM {$wpdb->postmeta} pm LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id WHERE p.ID IS NULL", 'Orphaned postmeta cleanup');
-	$deleted += $safe_delete("DELETE tr FROM {$wpdb->term_relationships} tr LEFT JOIN {$wpdb->posts} p ON p.ID = tr.object_id WHERE p.ID IS NULL", 'Orphaned term relationships cleanup');
-	$deleted += $safe_delete("DELETE um FROM {$wpdb->usermeta} um LEFT JOIN {$wpdb->users} u ON u.ID = um.user_id WHERE u.ID IS NULL", 'Orphaned usermeta cleanup');
-	$deleted += $safe_delete("DELETE tm FROM {$wpdb->termmeta} tm LEFT JOIN {$wpdb->terms} t ON t.term_id = tm.term_id WHERE t.term_id IS NULL", 'Orphaned termmeta cleanup');
-	return $deleted;
-}
-
-function custom_cleanup_postmeta($wpdb, $safe_delete) {
-	$deleted = 0;
-	$safe_keys = ['_edit_lock', '_edit_last', '_wp_old_slug', '_wp_old_date', '_last_viewed_timestamp', 'litespeed-optimize-set', 'litespeed-optimize-size'];
-	foreach ($safe_keys as $key) {
-		$deleted += $safe_delete($wpdb->prepare("DELETE FROM {$wpdb->postmeta} WHERE meta_key = %s", $key), "Postmeta cleanup ({$key})");
-	}
-	$deleted += $safe_delete("DELETE FROM {$wpdb->postmeta} WHERE meta_key = '_menu_item_target' AND (meta_value IS NULL OR meta_value = '')", 'Empty menu item targets cleanup');
-	$deleted += $safe_delete("DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE '_oembed_%' OR meta_key LIKE '_oembed_time_%'", 'oEmbed cache cleanup');
-	return $deleted;
-}
-
-function custom_cleanup_usermeta($wpdb, $safe_delete) {
-	$deleted = 0;
-	$safe_keys = ['_session_tokens', '_last_activity', '_woocommerce_persistent_cart'];
-	foreach ($safe_keys as $key) {
-		$deleted += $safe_delete($wpdb->prepare("DELETE FROM {$wpdb->usermeta} WHERE meta_key = %s", $key), "Usermeta cleanup ({$key})");
-	}
-	return $deleted;
-}
-
-function custom_cleanup_transients($wpdb, $safe_delete) {
-	$deleted = 0;
-	$deleted += $safe_delete("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_%' AND option_name NOT LIKE '_transient_timeout_%'", 'Transient cleanup');
-	$deleted += $safe_delete("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_%' AND option_value < UNIX_TIMESTAMP()", 'Expired transient timeout cleanup');
-	return $deleted;
-}
-
-// Retention rules live here. They are NOT background jobs: Nothing expires on
-// its own, the "90 days" and "7 days" limits only apply the moment this runs.
-function custom_cleanup_old_data($wpdb, $safe_delete) {
-	$deleted = 0;
-	if ($wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}actionscheduler_actions'") === "{$wpdb->prefix}actionscheduler_actions") {
-		$deleted += $safe_delete("DELETE FROM {$wpdb->prefix}actionscheduler_actions WHERE status = 'complete' AND scheduled_date_gmt < NOW() - INTERVAL 30 DAY", 'ActionScheduler cleanup');
-	}
-	$deleted += $safe_delete("DELETE FROM {$wpdb->posts} WHERE post_status = 'auto-draft' AND post_content = ''", 'Auto-draft cleanup');
-	$deleted += $safe_delete($wpdb->prepare("DELETE FROM {$wpdb->prefix}er_post_stats WHERE row_type = 'event' AND created_at < %s", er_today_start()), 'Old vote/view event log cleanup');
-	$deleted += $safe_delete("DELETE FROM {$wpdb->prefix}er_map_views WHERE viewed_at < NOW() - INTERVAL 90 DAY", 'Old map view log cleanup (90-day retention)');
-	$deleted += $safe_delete("DELETE FROM {$wpdb->posts} WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 1 DAY", 'Trash posts cleanup');
-	$deleted += $safe_delete("DELETE FROM {$wpdb->prefix}er_subscribers WHERE status = 'pending' AND created_at < NOW() - INTERVAL 7 DAY", 'Stale pending subscriber cleanup');
-	return $deleted;
-}
-
-function custom_optimize_tables($wpdb, &$errors) {
-	$tables = ['postmeta', 'usermeta', 'termmeta', 'er_post_stats', 'er_map_views'];
-	$optimized_count = 0;
-	foreach ($tables as $table) {
-		$wpdb->query("OPTIMIZE TABLE {$wpdb->prefix}{$table}");
-		if ($wpdb->last_error === '') {
-			$optimized_count++;
-		} else {
-			$errors[] = "Failed to optimize {$table}: " . $wpdb->last_error;
-		}
-	}
-	return $optimized_count;
-}
-
-// --------------------------------------
-// 5. BUTTONS & EXTERNAL TOOLS
+// 3. BUTTONS & EXTERNAL TOOLS
 // --------------------------------------
 
 // Only the first button runs the engine above. The other two are plain links
@@ -582,7 +461,7 @@ function custom_render_action_buttons() {
 }
 
 // --------------------------------------
-// 6. STATS & HEALTH
+// 4. STATS & HEALTH
 // --------------------------------------
 
 function custom_render_database_stats() {
@@ -620,7 +499,7 @@ function custom_get_health_status($count, $profile = 'meta') {
 }
 
 // --------------------------------------
-// 7. HISTORY READOUT
+// 5. HISTORY READOUT
 // --------------------------------------
 
 // Written by both triggers, so this line cannot tell you which one ran.
