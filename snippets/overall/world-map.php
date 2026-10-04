@@ -54,7 +54,6 @@ defined( 'ER_MAP_CACHE_FULL' ) || define( 'ER_MAP_CACHE_FULL', 60 );   // second
 defined( 'ER_MAP_BOX_COVER' ) || define( 'ER_MAP_BOX_COVER', '0 101.1 2000 1292.9' ); // all land, 84°N – Antarctica
 defined( 'ER_MAP_BOX_REACH' ) || define( 'ER_MAP_BOX_REACH', '0 101.1 2000 1013.1' ); // 84°N – 60°S
 
-
 /* Shortcodes are registered on init (after every snippet has loaded), so these
    always win, even if an old snippet with the same shortcode names still runs. */
 add_action( 'init', static function () {
@@ -869,7 +868,6 @@ window.ERMap = window.ERMap || (() => {
 
 	const toD = (pts) => pts.map((p, i) => (i ? 'L' : 'M') + f1(x(p[0])) + ' ' + f1(y(p[1]))).join('');
 
-
 	function nightD(h0, s, closeY) {
 		const shape = bandShape(h0, s);
 		return shape.line
@@ -915,7 +913,6 @@ window.ERMap = window.ERMap || (() => {
 		}
 		return d;
 	}
-
 
 	/* ---- Stage: one map instance ---- */
 
@@ -986,7 +983,6 @@ JS;
  *    visitors, clock. Place it first, as a direct child of a Group block.
  *    Everything cover-specific lives here; it can be redesigned freely.
  * ========================================================================== */
-
 
 function er_map_cover_shortcode( $atts ) {
 	static $assets_done = false;
@@ -1429,7 +1425,6 @@ JS;
  *    three; polling pauses while the tab is hidden.
  *    Shortcode names are the old ones, so the page content stays as it is.
  * ========================================================================== */
-
 
 // CSS once per page, JS once in the footer. Shared by all three shortcodes.
 function er_reach_assets() {
