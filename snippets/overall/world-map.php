@@ -388,6 +388,16 @@ function er_trk_cleanup_old_visitors() {
     } else {
         error_log("Live User Map: Cleaned up $deleted_views old view-log records");
     }
+    // Prune the file-based geo cache: entries older than 30 days are never read again.
+    $geo_files = glob(WP_CONTENT_DIR . '/cache/lum-geo/*.json');
+    if ($geo_files) {
+        $geo_cut = time() - 30 * DAY_IN_SECONDS;
+        foreach ($geo_files as $geo_file) {
+            if (filemtime($geo_file) < $geo_cut) {
+                @unlink($geo_file);
+            }
+        }
+    }
 }
 add_action('lum_daily_cleanup', 'er_trk_cleanup_old_visitors');
 
@@ -687,9 +697,47 @@ function er_map_layers( $mode ) {
 		. '" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" focusable="false">';
 
 	$land = sprintf( $open, 'erc-map' )
+		. '<defs>'
+		. '<linearGradient id="erc-land-tint" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="1466.4">'
+		. '<stop offset="0.001" class="erc-t-ice"/><stop offset="0.178" class="erc-t-ice"/>'
+		. '<stop offset="0.229" class="erc-t-tundra"/><stop offset="0.267" class="erc-t-boreal"/>'
+		. '<stop offset="0.326" class="erc-t-temperate"/><stop offset="0.399" class="erc-t-dry"/>'
+		. '<stop offset="0.477" class="erc-t-tropic"/><stop offset="0.523" class="erc-t-tropic"/>'
+		. '<stop offset="0.585" class="erc-t-dry"/><stop offset="0.651" class="erc-t-temperate"/>'
+		. '<stop offset="0.717" class="erc-t-tundra"/><stop offset="0.76" class="erc-t-ice"/>'
+		. '<stop offset="0.999" class="erc-t-ice"/>'
+		. '</linearGradient>'
+		. '<linearGradient id="erc-ocean-tint" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="1466.4">'
+		. '<stop offset="0.178" class="erc-o-deep"/><stop offset="0.5" class="erc-o-mid"/><stop offset="0.76" class="erc-o-deep"/>'
+		. '</linearGradient>'
+		. '<radialGradient id="erc-arid"><stop offset="0" class="erc-t-arid" stop-opacity=".9"/><stop offset=".55" class="erc-t-arid" stop-opacity=".5"/><stop offset="1" class="erc-t-arid" stop-opacity="0"/></radialGradient>'
+		. '<radialGradient id="erc-lush"><stop offset="0" class="erc-t-lush" stop-opacity=".9"/><stop offset=".55" class="erc-t-lush" stop-opacity=".5"/><stop offset="1" class="erc-t-lush" stop-opacity="0"/></radialGradient>'
+		. '<radialGradient id="erc-icecap"><stop offset="0" class="erc-t-ice" stop-opacity="1"/><stop offset=".55" class="erc-t-ice" stop-opacity=".85"/><stop offset="1" class="erc-t-ice" stop-opacity="0"/></radialGradient>'
+		. '<path id="erc-land-shape" d="' . er_map_land_d() . '"/>'
+		. '<clipPath id="erc-land-clip"><use href="#erc-land-shape"/></clipPath>'
+		. '</defs>'
 		. '<rect class="erc-ocean" x="-9000" y="-9000" width="20000" height="20000"/>'
 		. '<path class="erc-graticule" d="M166.7 0L166.7 1466.4M333.3 0L333.3 1466.4M500.0 0L500.0 1466.4M666.7 0L666.7 1466.4M833.3 0L833.3 1466.4M1000.0 0L1000.0 1466.4M1166.7 0L1166.7 1466.4M1333.3 0L1333.3 1466.4M1500.0 0L1500.0 1466.4M1666.7 0L1666.7 1466.4M1833.3 0L1833.3 1466.4M0 1114.2L2000.0 1114.2M0 905.0L2000.0 905.0M0 733.2L2000.0 733.2M0 561.4L2000.0 561.4M0 352.2L2000.0 352.2"/>'
-		. '<path class="erc-land" d="' . er_map_land_d() . '"/>'
+		. '<use href="#erc-land-shape" class="erc-shelf"/>'
+		. '<use href="#erc-land-shape" class="erc-shelf erc-shelf-in"/>'
+		. '<use href="#erc-land-shape" class="erc-land"/>'
+		. '<g class="erc-tint" clip-path="url(#erc-land-clip)">'
+		. '<ellipse cx="1053" cy="602" rx="147" ry="59" fill="url(#erc-arid)" opacity="1"/>'
+		. '<ellipse cx="1261" cy="608" rx="67" ry="53" fill="url(#erc-arid)" opacity="0.95"/>'
+		. '<ellipse cx="1344" cy="561" rx="78" ry="43" fill="url(#erc-arid)" opacity="0.6"/>'
+		. '<ellipse cx="1342" cy="484" rx="64" ry="33" fill="url(#erc-arid)" opacity="0.45"/>'
+		. '<ellipse cx="1522" cy="491" rx="111" ry="40" fill="url(#erc-arid)" opacity="0.7"/>'
+		. '<ellipse cx="383" cy="548" rx="56" ry="49" fill="url(#erc-arid)" opacity="0.6"/>'
+		. '<ellipse cx="614" cy="861" rx="19" ry="44" fill="url(#erc-arid)" opacity="0.55"/>'
+		. '<ellipse cx="622" cy="996" rx="28" ry="48" fill="url(#erc-arid)" opacity="0.45"/>'
+		. '<ellipse cx="1108" cy="870" rx="47" ry="41" fill="url(#erc-arid)" opacity="0.7"/>'
+		. '<ellipse cx="1725" cy="882" rx="92" ry="48" fill="url(#erc-arid)" opacity="0.9"/>'
+		. '<ellipse cx="1253" cy="697" rx="36" ry="31" fill="url(#erc-arid)" opacity="0.45"/>'
+		. '<ellipse cx="658" cy="758" rx="86" ry="53" fill="url(#erc-lush)" opacity="0.8"/>'
+		. '<ellipse cx="1108" cy="736" rx="64" ry="36" fill="url(#erc-lush)" opacity="0.7"/>'
+		. '<ellipse cx="1683" cy="728" rx="161" ry="56" fill="url(#erc-lush)" opacity="0.55"/>'
+		. '<ellipse cx="794" cy="228" rx="106" ry="132" fill="url(#erc-icecap)" opacity="1"/>'
+		. '</g>'
 		. '</svg>';
 
 	$bands = '';
@@ -699,7 +747,7 @@ function er_map_layers( $mode ) {
 	$shade = sprintf( $open, 'erc-shade' )
 		. '<defs>'
 		. '<filter id="erc-soft" x="-12%" y="-12%" width="124%" height="124%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="14"/></filter>'
-		. '<radialGradient id="erc-sun-glow"><stop offset="0%" stop-color="#ffd89c" stop-opacity=".55"/><stop offset="35%" stop-color="#ffc56e" stop-opacity=".22"/><stop offset="100%" stop-color="#ffc56e" stop-opacity="0"/></radialGradient>'
+		. '<radialGradient id="erc-sun-glow"><stop offset="0%" stop-color="#fff4e0" stop-opacity=".22"/><stop offset="35%" stop-color="#ffe6bf" stop-opacity=".08"/><stop offset="100%" stop-color="#ffe6bf" stop-opacity="0"/></radialGradient>'
 		. '<clipPath id="erc-night-clip"><path class="erc-nightclip" d=""/></clipPath>'
 		. '<path id="erc-lights-sm" vector-effect="non-scaling-stroke" d="' . er_map_lights_d( 'sm' ) . '"/>'
 		. '<path id="erc-lights-lg" vector-effect="non-scaling-stroke" d="' . er_map_lights_d( 'lg' ) . '"/>'
@@ -746,14 +794,29 @@ function er_map_base_css() {
 .erm > .erc-scrim,
 .erm > .erc-markers{position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; margin: 0}
 .erm > .erc-markers{z-index: 1}
+
 /* The static map paints with the page; only the JS-drawn layer (night, lights, arcs) fades in. */
 .erm > .erc-shade{opacity: 0; transition: opacity .9s ease-out}
 .erm.is-ready > .erc-shade{opacity: 1}
-
-.erm .erc-ocean{fill: var(--er-c-ocean)}
+.erm .erc-ocean{fill: url(#erc-ocean-tint)}
 .erm .erc-graticule{fill: none; stroke: var(--er-c-accent); stroke-width: 1; vector-effect: non-scaling-stroke; opacity: 0.05}
-.erm .erc-land{fill: var(--er-c-day); opacity: 0.85}
-.erm .erc-night{fill: var(--er-c-veil); opacity: var(--er-c-band)}
+.erm .erc-shelf{fill: none; stroke: var(--er-c-shelf, #3d7f96); stroke-width: 14; stroke-linejoin: round; stroke-opacity: 0.16}
+.erm .erc-shelf-in{stroke-width: 6; stroke-opacity: 0.22}
+.erm .erc-land{fill: url(#erc-land-tint)}
+.erm .erc-tint{pointer-events: none}
+
+/* Land colours: latitude bands plus soft regional patches. Stylised, not terrain data. */
+.erm .erc-t-ice{stop-color: var(--er-c-ice, #eef3f5)}
+.erm .erc-t-tundra{stop-color: var(--er-c-tundra, #a2a895)}
+.erm .erc-t-boreal{stop-color: var(--er-c-boreal, #7d9783)}
+.erm .erc-t-temperate{stop-color: var(--er-c-temperate, #8fa27c)}
+.erm .erc-t-dry{stop-color: var(--er-c-dry, #a5a681)}
+.erm .erc-t-tropic{stop-color: var(--er-c-tropic, #6e9172)}
+.erm .erc-t-arid{stop-color: var(--er-c-arid, #c4b08a)}
+.erm .erc-t-lush{stop-color: var(--er-c-lush, #5d8566)}
+.erm .erc-o-deep{stop-color: var(--er-c-ocean-deep, #143c5c)}
+.erm .erc-o-mid{stop-color: var(--er-c-ocean, #1a5272)}
+.erm .erc-night{fill: var(--er-c-night, #0a1f3a); opacity: var(--er-c-band)}
 .erm .erc-sun{fill: url(#erc-sun-glow)}
 .erm .erc-lights{fill: none; stroke-linecap: round}
 .erm .erc-halo{stroke: var(--er-c-light); stroke-width: 7; opacity: 0.20}
@@ -772,6 +835,7 @@ function er_map_base_css() {
 .erm .erc-hello{left: -7.42px; top: -7.42px; width: 14.83px; height: 14.83px; opacity: 0}
 .erm .erc-ring{box-shadow: inset 0 0 0 0.83px #28a745; animation: erc-pulse 2.4s cubic-bezier(.2,.7,.3,1) infinite}
 .erm .erc-ring-2{animation-delay: 1.2s}
+
 /* Only the most recent places pulse; the rest stay as still dots. */
 .erm .erc-me.is-still .erc-ring{display: none}
 .erm .erc-hello{box-shadow: inset 0 0 0 0.4px #28a745; animation: erc-hello 1.8s cubic-bezier(.2,.7,.3,1)}
@@ -1029,7 +1093,7 @@ function er_map_cover_css() {
 	--er-c-day: var(--color-9);
 	--er-c-accent: var(--color-1);
 	--er-c-veil: var(--color-6);
-	--er-c-ocean: #22405e;
+	--er-c-ocean: #1a5272;
 	--er-c-light: #ffc56e;
 	--er-c-light-hi: #fff1d2;
 	--er-c-clock: #e1e8ed;
@@ -1064,7 +1128,7 @@ div.er-cover{
 }
 @keyframes erc-in{to{opacity: 1}}
 
-.er-cover > .erc-scrim{background: radial-gradient(62% 62% at 50% 50%, rgba(4,7,13,.429), rgba(4,7,13,.22) 55%, rgba(4,7,13,0))}
+.er-cover > .erc-scrim{background: radial-gradient(62% 62% at 50% 50%, rgba(6,19,42,.429), rgba(6,19,42,.22) 55%, rgba(6,19,42,0))}
 /* Arcs are drawn complete in one go: no per-frame redraws. */
 .er-cover .erc-arcs,
 .er-cover .erc-arc{fill: none; stroke-linecap: round; vector-effect: non-scaling-stroke}
@@ -1107,7 +1171,7 @@ div.er-cover{
 .er-cover[data-clock]::after{
 	content: ""; position: absolute; font-size: var(--erc-fs); width: 46em; height: 16em;
 	left: calc(var(--erc-gx) - 13.5em); bottom: calc(var(--erc-gy) - 7.4em);
-	background: radial-gradient(closest-side, rgba(7,12,18,.62), rgba(7,12,18,.5) 50%, rgba(7,12,18,.22) 78%, rgba(7,12,18,0));
+	background: none;
 }
 .er-cover[data-clock$="right"]::after{left: auto; right: calc(var(--erc-gx) - 13.5em)}
 .er-cover[data-clock^="top"]::after{bottom: auto; top: calc(var(--erc-gy) - 7.4em)}
@@ -1470,7 +1534,7 @@ function er_reach_css() {
 	--er-c-day: var(--color-9, #8da6b9);
 	--er-c-accent: var(--color-1, #1e73be);
 	--er-c-veil: var(--color-6, #070c12);
-	--er-c-ocean: #22405e;
+	--er-c-ocean: #1a5272;
 	--er-c-light: #ffc56e;
 	--er-c-light-hi: #fff1d2;
 	--er-c-band: 0.1875;
