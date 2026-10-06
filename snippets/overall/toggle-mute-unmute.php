@@ -11,6 +11,7 @@
 // =================================
 
 add_action('wp_head', function () {
+	if (is_front_page()) return;
 	?>
 	<style>
 	/* TTS Toggle Switch */
@@ -92,6 +93,7 @@ add_action('wp_head', function () {
 // =================================
 
 add_action('wp_footer', function () {
+	if (is_front_page()) return;
 	?>
 
 <div id="tts-controls" role="group" aria-label="Text-to-speech controls">
