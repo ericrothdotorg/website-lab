@@ -96,19 +96,19 @@ function er_get_ip() {
     return sanitize_text_field( $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0' );
 }
 
-function er_log_nonce_failure( $ip ) {
-    global $wpdb;
-    $wpdb->insert(
-        $wpdb->prefix . 'er_contact_nonce_log',
-        [ 'ip' => $ip, 'failed_at' => current_time( 'mysql' ) ]
-    );
-}
+// No nonce: the form sits on full-page cached pages, so a nonce printed into
+// them would be stale long before the page is (12-24 h) and every sign-up
+// would fail with "Security check failed". For a public form it adds no
+// protection anyway (every logged-out visitor gets the same one). Spam is
+// kept out by the honeypot, the silent math check and the per-IP rate limit.
 
 /* =============================================================================
    4. SUBSCRIPTION FORM  [er_subscribe_form]
 ============================================================================= */
 
 add_shortcode( 'er_subscribe_form', function () {
+    // Styles and script are printed in the footer only on pages that show the form.
+    $GLOBALS['er_subscribe_form_used'] = true;
     ob_start(); ?>
     <div class="er-subscribe-wrapper">
         <form id="er-subscribe-form" novalidate>
@@ -139,7 +139,7 @@ add_shortcode( 'er_subscribe_form', function () {
 } );
 
 add_action( 'wp_footer', function () {
-    $nonce    = wp_create_nonce( 'er_subscribe_nonce' );
+    if ( empty( $GLOBALS['er_subscribe_form_used'] ) ) return;
     $ajax_url = esc_url( admin_url( 'admin-ajax.php' ) );
     ?>
     <style>
@@ -186,7 +186,6 @@ add_action( 'wp_footer', function () {
             submitBtn.textContent = 'Sending\u2026';
             const formData = new FormData( form );
             formData.append( 'action',   'er_subscribe_ajax' );
-            formData.append( '_wpnonce', '<?php echo esc_js( $nonce ); ?>' );
             fetch( '<?php echo esc_js( $ajax_url ); ?>', { method: 'POST', body: formData } )
                 .then( r => r.json() )
                 .then( data => {
@@ -224,9 +223,8 @@ add_action( 'wp_ajax_nopriv_er_subscribe_ajax', 'er_handle_subscribe_ajax' );
 function er_handle_subscribe_ajax() {
     $ip = er_get_ip();
 
-    if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'er_subscribe_nonce' ) ) {
-        er_log_nonce_failure( $ip );
-        wp_send_json_error( [ 'message' => 'Security check failed.' ] );
+    if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+        wp_send_json_error();
     }
     if ( get_transient( 'er_subscribe_ip_' . md5( $ip ) ) ) {
         wp_send_json_error( [ 'message' => 'Please wait before submitting again.' ] );
@@ -493,7 +491,8 @@ function er_render_admin_page() {
                                 <td><input type="checkbox" name="subscriber_ids[]" value="<?php echo esc_attr( $sub->id ); ?>" aria-label="Select <?php echo esc_attr( $sub->email ); ?>"></td>
                                 <td><?php echo esc_html( $sub->email ); ?></td>
                                 <td><?php echo esc_html( ucfirst( $sub->status ) ); ?></td>
-                                <td><?php echo esc_html( date( 'F j, Y H:i', strtotime( $sub->created_at ) ) ); ?></td>
+                                <!-- created_at is stored by MySQL in UTC, shown in site time -->
+                                <td><?php echo esc_html( wp_date( 'F j, Y H:i', strtotime( $sub->created_at . ' UTC' ) ) ); ?></td>
                                 <td>
                                     <?php if ( ! empty( $sub->last_send_at ) ) : ?>
                                         <?php if ( $sub->last_send_status === 'sent' ) : ?>
