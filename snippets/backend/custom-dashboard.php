@@ -1,15 +1,6 @@
 <?php
 // NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
-// Day boundary in WP local time. wp_er_post_stats.created_at is written with
-// current_time('mysql'), but MySQL runs on UTC — CURDATE() would be off by the
-// timezone offset.
-if (!function_exists('er_today_start')) {
-	function er_today_start() {
-		return current_time('Y-m-d') . ' 00:00:00';
-	}
-}
-
 // ============================================================
 // THEME-COUPLING MARKERS (search these before/after a theme switch):
 //   THEME RELATED = hard coupling; breaks/orphans on switch — must fix.
@@ -142,7 +133,11 @@ function custom_render_quick_links_widget() {
 function custom_render_activity_widget() {
 	global $wpdb;
 	$table = $wpdb->prefix . 'er_post_stats';
-	$today = er_today_start();
+	// Start of today in site time. er_post_stats stores site time; contact
+	// messages and subscribers are stamped by MySQL in UTC, so they are
+	// compared with the same moment in UTC. (CURDATE() would be the UTC day.)
+	$today     = current_time('Y-m-d') . ' 00:00:00';
+	$today_utc = get_gmt_from_date($today);
 
 	$cached = get_transient('custom_activity_stats');
 	if ($cached === false) {
@@ -150,14 +145,14 @@ function custom_render_activity_widget() {
 		// source the frontend shortcodes read. If the engine is ever switched off,
 		// this shows zeros instead of crashing.
 		$stats = function_exists('er_stats_snapshot') ? er_stats_snapshot() : [
-			'views_today'    => 0, 'views_total'    => 0,
-			'likes_today'    => 0, 'likes_total'    => 0,
-			'dislikes_today' => 0, 'dislikes_total' => 0,
+			'views_today'    => 0, 'views_total'    => 0, 'real_views_today'    => 0,
+			'likes_today'    => 0, 'likes_total'    => 0, 'real_likes_today'    => 0,
+			'dislikes_today' => 0, 'dislikes_total' => 0, 'real_dislikes_today' => 0,
 		];
 		$cached = array_merge($stats, [
-			'contact_today'     => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_contact_messages WHERE DATE(submitted_at) = CURDATE()"),
+			'contact_today'     => $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}er_contact_messages WHERE submitted_at >= %s", $today_utc)),
 			'contact_total'     => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_contact_messages"),
-			'subscribers_today' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_subscribers WHERE status = 'active' AND DATE(created_at) = CURDATE()"),
+			'subscribers_today' => $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}er_subscribers WHERE status = 'active' AND created_at >= %s", $today_utc)),
 			'subscribers_total' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}er_subscribers WHERE status = 'active'"),
 		]);
 		set_transient('custom_activity_stats', $cached, 5 * MINUTE_IN_SECONDS);
@@ -180,6 +175,8 @@ function custom_render_activity_widget() {
 	$disliked_today = $posts_reacted('dislike');
 
 	$format = fn($num) => number_format_i18n((int) $num, 0);
+	// Control line: how many of today's figures were recorded from real visitors.
+	$real = fn($num) => ' <span class="cd-muted" style="font-size: 12px;">(' . number_format_i18n((int) $num, 0) . ' real)</span>';
 	// Rows open themselves when there is something real to see, so a real vote
 	// never hides behind a click.
 	$fold = fn($posts) => empty($posts) ? 'none' : 'block';
@@ -201,10 +198,10 @@ function custom_render_activity_widget() {
 		}
 	};
 
-	$reaction_row = function($icon, $label, $slug, $today_val, $total_val, $posts)
-	                use ($format, $fold, $signature, $render_today_list) {
+	$reaction_row = function($icon, $label, $slug, $today_val, $real_val, $total_val, $posts)
+	                use ($format, $real, $fold, $signature, $render_today_list) {
 		echo '<li>' . $icon . ' ' . $label . ': ';
-		echo '<span class="cd-toggle cd-summary" data-target="' . esc_attr($slug) . '-today">' . $format($today_val) . ' today</span>';
+		echo '<span class="cd-toggle cd-summary" data-target="' . esc_attr($slug) . '-today">' . $format($today_val) . ' today</span>' . $real($real_val);
 		echo ' / <strong>' . $format($total_val) . '</strong> total';
 		echo '<ul id="' . esc_attr($slug) . '-today" data-signature="' . esc_attr($signature($posts)) . '" style="display:' . $fold($posts) . '; margin: 8px 0 4px 16px; font-size: 13px; line-height: 1.8;">';
 		$render_today_list($posts);
@@ -214,9 +211,9 @@ function custom_render_activity_widget() {
 	echo '<ul style="line-height: 1.5;">';
 	echo '<li>📬 Contact Messages: <strong class="cd-alert">' . $format($cached['contact_today']) . '</strong> today / <strong>' . $format($cached['contact_total']) . '</strong> total</li>';
 	echo '<li>📩 Subscribers: <strong class="cd-alert">' . $format($cached['subscribers_today']) . '</strong> new today / <strong>' . $format($cached['subscribers_total']) . '</strong> total</li>';
-	echo '<li>👁️ Views: <strong class="cd-alert">' . $format($cached['views_today']) . '</strong> today / <strong>' . $format($cached['views_total']) . '</strong> total</li>';
-	$reaction_row('👍', 'Likes',    'likes',    $cached['likes_today'],    $cached['likes_total'],    $liked_today);
-	$reaction_row('👎', 'Dislikes', 'dislikes', $cached['dislikes_today'], $cached['dislikes_total'], $disliked_today);
+	echo '<li>👁️ Views: <strong class="cd-alert">' . $format($cached['views_today']) . '</strong> today' . $real($cached['real_views_today'] ?? 0) . ' / <strong>' . $format($cached['views_total']) . '</strong> total</li>';
+	$reaction_row('👍', 'Likes',    'likes',    $cached['likes_today'],    $cached['real_likes_today'] ?? 0,    $cached['likes_total'],    $liked_today);
+	$reaction_row('👎', 'Dislikes', 'dislikes', $cached['dislikes_today'], $cached['real_dislikes_today'] ?? 0, $cached['dislikes_total'], $disliked_today);
 	echo '</ul>';
 }
 
@@ -276,24 +273,29 @@ function custom_render_site_metrics() {
 	if ($visitor_ip !== '') {
 		$cd_display = '🧊 Your IP: <strong>' . esc_html($visitor_ip) . '</strong>';
 	} else {
+		// Cached per IP for a day: without it every dashboard load waited for
+		// ip-api.com (up to 5 s) whenever you are on IPv6.
 		$raw = $_SERVER['REMOTE_ADDR'] ?? '';
-		$loc = 'Unknown';
-		if (filter_var($raw, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-			$resp = wp_remote_get("http://ip-api.com/json/{$raw}?fields=status,city,country", ['timeout' => 5]);
-			if (!is_wp_error($resp)) {
-				$data = json_decode(wp_remote_retrieve_body($resp), true);
-				if (isset($data['status']) && $data['status'] === 'success') {
-					$loc = trim(($data['city'] ?? '') . ', ' . ($data['country'] ?? ''), ', ');
+		$loc = get_transient('cd_place_' . md5($raw));
+		if ($loc === false) {
+			$loc = 'Unknown';
+			if (filter_var($raw, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+				$resp = wp_remote_get("http://ip-api.com/json/{$raw}?fields=status,city,country", ['timeout' => 5]);
+				if (!is_wp_error($resp)) {
+					$data = json_decode(wp_remote_retrieve_body($resp), true);
+					if (isset($data['status']) && $data['status'] === 'success') {
+						$loc = trim(($data['city'] ?? '') . ', ' . ($data['country'] ?? ''), ', ');
+					}
 				}
 			}
+			set_transient('cd_place_' . md5($raw), $loc, DAY_IN_SECONDS);
 		}
 		$cd_display = '📍 Place: <strong>' . esc_html($loc) . '</strong>';
 	}
 
-	if (!function_exists('get_plugins')) {
-		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-	}
-	$plugin_count = count(get_plugins());
+	// Active plugins straight from the option: correct for the label, and no
+	// scan of every plugin file on each dashboard load.
+	$plugin_count = count((array) get_option('active_plugins', []));
 
 	echo '<div class="cd-widget cd-flex" style="margin-top: 15px;">';
 	echo '<div style="width: calc(50% - 5px);">';
@@ -302,7 +304,7 @@ function custom_render_site_metrics() {
 	echo '</div>';
 	echo '<div style="width: calc(50% - 5px);">';
 	echo '<p style="margin: 0 0 5px;">' . $cd_display . '</p>';
-	echo '<p style="margin: 0;">🔌 Active Plugins Installed: <strong>' . number_format_i18n($plugin_count) . '</strong></p>';
+	echo '<p style="margin: 0;">🔌 Active Plugins: <strong>' . number_format_i18n($plugin_count) . '</strong></p>';
 	echo '</div>';
 	echo '</div>';
 }
@@ -408,10 +410,10 @@ function custom_check_broken_yt_links() {
 //   4. Stats & health       — the row counts and their green / orange / red labels
 //   5. History readout      — the "Last cleanup" line
 //
-// The cleanup engine and the weekly schedule live in the "Stats Engine"
-// snippet (scope: everywhere). They must stay there: wp-cron.php runs with
-// is_admin() === false, so a callback registered from this admin-only snippet
-// is invisible to the scheduler.
+// The cleanup engine and the weekly schedule live in the "Database
+// Maintenance" snippet (scope: everywhere). They must stay there: wp-cron.php
+// runs with is_admin() === false, so a callback registered from this
+// admin-only snippet is invisible to the scheduler.
 
 // --------------------------------------
 // 1. WIDGET ASSEMBLY
@@ -446,8 +448,10 @@ function custom_handle_cleanup_submission() {
 // 3. BUTTONS & EXTERNAL TOOLS
 // --------------------------------------
 
-// Only the first button runs the engine above. The other two are plain links
-// to LiteSpeed's own pages and have nothing to do with this cleanup.
+// Only the first button runs the engine above. The others are plain links and
+// have nothing to do with this cleanup. "Purge All" empties LiteSpeed only;
+// the Hostinger CDN in front of it keeps its copy until flushed in hPanel
+// (Performance → CDN, via the "Login" link under "Hosting & Code Repos").
 function custom_render_action_buttons() {
 	echo '<div class="cd-widget cd-flex" style="align-items: center;">';
 	echo '<form method="post" class="cd-form">';
