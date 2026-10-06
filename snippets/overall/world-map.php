@@ -2,31 +2,36 @@
 // NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
 /* ============================================================================
- * WORLD MAP — visitor tracking, map data, front-page cover, Site Reach map
+ * WORLD MAP — map data, front-page cover, Site Reach map
  * ----------------------------------------------------------------------------
- * Replaces the snippets "Visitor Map" and "Frontpage Cover".
- * Scope: "Run snippet everywhere" (mandatory). The tracking beacon and the map
- * data are answered via admin-ajax and the cleanup runs via wp-cron; in both
- * contexts a front-end-only snippet would never register its hooks.
+ * Display only. The data comes from the snippet "Visitor Tracking", which
+ * owns er_live_visitors and er_map_views; this snippet only reads them.
+ * Scope: "Run snippet everywhere" (mandatory). The map data is answered via
+ * admin-ajax, where a front-end-only snippet would never register its hooks.
  *
  * MODULES
  *   0  Config ........ the few numbers you may want to change
- *   1  Tracking ...... PRODUCER. Beacon, geo lookup, er_live_visitors,
- *                      er_map_views, post views (er_track_post_views), daily
- *                      cleanup. Unchanged code from "Visitor Map". Everything
- *                      else on the site that counts visitors depends on it.
- *   2  Data API ...... one public, cached endpoint: er_map_data (scope live|full)
- *   3  Map base ...... SVG world, shared CSS, shared JS engine (window.ERMap)
- *   4  Cover ......... [er_frontpage_cover]            (front page)
- *   5  Site Reach .... [live_user_map]                 (map)
+ *   1  Data API ...... one public, cached endpoint: er_map_data (scope live|full)
+ *   2  Map base ...... SVG world, shared CSS, shared JS engine (window.ERMap)
+ *   3  Cover ......... [er_frontpage_cover]            (front page)
+ *   4  Site Reach .... [live_user_map]                 (map)
  *                      [currently_visited_pages]       (table)
  *                      [past_visited_pages]            (table)
  *
+ * THE VIEWER
+ *   Both maps draw the viewer at once from the answer of their own tracking
+ *   request (event "er:visitor", see Visitor Tracking), instead of waiting
+ *   until the cached live data contains them. Site Reach recognises the
+ *   viewer's row in the live data by visitor id, server-side; no visitor id
+ *   is ever sent to the browser.
+ *
  * DEPENDENCIES
- *   4 and 5 use 2 + 3. 2 reads what 1 writes. 4 and 5 never use each other:
- *   module 4 can be changed or deleted and Site Reach keeps working, and the
- *   other way round. Changing module 3 affects both maps.
- *   Only one map per page (SVG ids in module 3 are fixed).
+ *   1 reads the tables of Visitor Tracking and uses er_trk_visitor_id() and
+ *   er_trk_browser(); without that snippet no new data arrives, nothing
+ *   breaks. 3 and 4 use 1 + 2. 3 and 4 never use each other:
+ *   module 3 can be changed or deleted and Site Reach keeps working, and the
+ *   other way round. Changing module 2 affects both maps.
+ *   Only one map per page (SVG ids in module 2 are fixed).
  * ========================================================================== */
 
 /* ============================================================================
@@ -34,11 +39,12 @@
  * ========================================================================== */
 
 defined( 'ER_MAP_LIVE_MIN' ) || define( 'ER_MAP_LIVE_MIN',   15 );   // "live" = seen within this many minutes
-defined( 'ER_MAP_DAYS' ) || define( 'ER_MAP_DAYS',       90 );   // history window (cleanup in module 1 uses 90 as well)
+defined( 'ER_MAP_DAYS' ) || define( 'ER_MAP_DAYS',       90 );   // history window (Visitor Tracking keeps 90 days)
 defined( 'ER_MAP_PAST_MAX' ) || define( 'ER_MAP_PAST_MAX',   2000 ); // max. past places (~11 km cells) on the Site Reach map
 defined( 'ER_MAP_PAGES_MAX' ) || define( 'ER_MAP_PAGES_MAX',  100 );  // rows in [past_visited_pages]
-defined( 'ER_MAP_CACHE_LIVE' ) || define( 'ER_MAP_CACHE_LIVE', 30 );   // seconds the live answer is cached (cover)
-defined( 'ER_MAP_CACHE_FULL' ) || define( 'ER_MAP_CACHE_FULL', 60 );   // seconds the full answer is cached (Site Reach)
+defined( 'ER_MAP_POLL' ) || define( 'ER_MAP_POLL',       30 );   // seconds between two updates of an open map (both maps)
+defined( 'ER_MAP_CACHE_LIVE' ) || define( 'ER_MAP_CACHE_LIVE', 15 );   // seconds the live visitors are cached (both maps)
+defined( 'ER_MAP_CACHE_HISTORY' ) || define( 'ER_MAP_CACHE_HISTORY', 120 ); // seconds past places and top pages are cached (Site Reach)
 
 /* The two framings. Map units: Miller projection, 2000 × 1466.4.
    Must match LAND (cover JS) and B (Site Reach JS). */
@@ -48,442 +54,20 @@ defined( 'ER_MAP_BOX_REACH' ) || define( 'ER_MAP_BOX_REACH', '0 101.1 2000 1013.
 /* Shortcodes are registered on init (after every snippet has loaded), so these
    always win, even if an old snippet with the same shortcode names still runs. */
 add_action( 'init', static function () {
-	add_shortcode( 'er_frontpage_cover', 'er_map_cover_shortcode' );       // module 4
-	add_shortcode( 'live_user_map', 'er_reach_map_shortcode' );             // module 5
+	add_shortcode( 'er_frontpage_cover', 'er_map_cover_shortcode' );       // module 3
+	add_shortcode( 'live_user_map', 'er_reach_map_shortcode' );             // module 4
 	add_shortcode( 'currently_visited_pages', 'er_reach_current_shortcode' );
 	add_shortcode( 'past_visited_pages', 'er_reach_past_shortcode' );
 }, 20 );
 
-/* Self-check (admins only): warns if the replaced snippets "Visitor Map" or
-   "Frontpage Cover" are still being executed. Function names in this snippet
-   differ from theirs, so that can never cause a fatal error, but their old
-   tracking beacon and endpoints would still run alongside. */
-add_action( 'admin_notices', static function () {
-	if ( ! current_user_can( 'manage_options' ) ) {
-		return;
-	}
-	foreach ( array( 'lum_track_visitor' => 'Visitor Map', 'er_cover_live_points' => 'Frontpage Cover' ) as $fn => $name ) {
-		if ( function_exists( $fn ) ) {
-			$file = ( new ReflectionFunction( $fn ) )->getFileName();
-			printf(
-				'<div class="notice notice-warning"><p><strong>World Map:</strong> the old snippet &bdquo;%s&ldquo; is still being executed (%s), although it should be inactive. Fix: Snippets &rarr; Settings &rarr; switch &bdquo;direct file-based execution&ldquo; off, save, switch it on again, save.</p></div>',
-				esc_html( $name ),
-				esc_html( $file )
-			);
-		}
-	}
-} );
-
 /* ============================================================================
- * 1  TRACKING (producer) — logic unchanged from "Visitor Map"
- *    Only the PHP function names are new (er_trk_*), so this snippet can never
- *    collide with the old one. Kept on purpose: the AJAX action
- *    lum_background_track (cached pages carry the beacon with it), the cron
- *    hook lum_daily_cleanup (already scheduled in the database), the cookie
- *    lum_visitor_id and all transient keys (geo cache, rate limit, dedup).
- * ========================================================================== */
-
-// ======================================
-// CORE TRACKING FUNCTIONS
-// ======================================
-
-// Track current visitor with filtering
-function er_trk_track_visitor() {
-    if (is_admin() || wp_doing_ajax()) {
-        return;
-    }
-	if (is_404()) {
-        return;
-    }
-    // Don't track if it's a REST API request
-    if (defined('REST_REQUEST') && REST_REQUEST) {
-        return;
-    }
-    $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-    // Filter out unwanted requests
-    if (er_trk_should_skip_tracking($request_uri)) {
-        return;
-    }
-    // Instead of processing immediately, queue it for background execution
-    er_trk_schedule_background_tracking();
-}
-add_action('template_redirect', 'er_trk_track_visitor');
-
-// ======================================
-// BACKGROUND PROCESSING
-// ======================================
-
-// Schedule background tracking via AJAX
-function er_trk_schedule_background_tracking() {
-    // Use a small inline script to fire off an async request
-    add_action('wp_footer', function() {
-        ?>
-        <script>
-        (function() {
-            // Don't track if user is a bot (client-side check)
-            if (/(bot|crawl|spider|slurp)/i.test(navigator.userAgent)) {
-                return;
-            }
-			// Fire tracking as a non-blocking beacon, after load
-            function fireTracking() {
-				// Set a persistent Visitor ID Cookie if not already set
-				if (!document.cookie.split(';').some(c => c.trim().startsWith('lum_visitor_id='))) {
-					const vid = 'v_' + Math.random().toString(36).substr(2, 12) + Date.now().toString(36);
-					document.cookie = 'lum_visitor_id=' + vid + '; path=/; max-age=' + (365*24*60*60) + '; SameSite=Lax';
-				}
-				// Send as form-encoded so PHP populates $_POST and admin-ajax
-				// routes the action. A raw sendBeacon string would go out as
-				// text/plain, which PHP does NOT parse into $_POST -> admin-ajax
-				// sees no action and returns HTTP 400.
-                var params = new URLSearchParams();
-                params.set('action', 'lum_background_track');
-                params.set('page_url', window.location.href);
-				params.set('post_id', '<?php echo (int) ((is_singular() && empty($GLOBALS['er_synthetic_page'])) ? get_the_ID() : 0); ?>');
-                var ajaxUrl = '<?php echo admin_url('admin-ajax.php'); ?>';
-                if (navigator.sendBeacon) {
-                    var blob = new Blob([params.toString()], { type: 'application/x-www-form-urlencoded' });
-                    navigator.sendBeacon(ajaxUrl, blob);
-                } else {
-                    fetch(ajaxUrl, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString(), keepalive: true });
-                }
-            }
-            if (document.readyState === 'complete') {
-                ('requestIdleCallback' in window) ? requestIdleCallback(fireTracking) : setTimeout(fireTracking, 0);
-            } else {
-                window.addEventListener('load', function() {
-                    ('requestIdleCallback' in window) ? requestIdleCallback(fireTracking) : setTimeout(fireTracking, 0);
-                });
-            }
-        })();
-        </script>
-        <?php
-    }, 99); // Low priority to execute last
-}
-
-// Background tracking handler
-function er_trk_background_track() {
-    // Runs for logged-out visitors on full-page-cached pages, so a nonce baked
-    // into the cached footer is unreliable. This endpoint only writes an
-    // anonymized, geo-only visitor row (no auth state), so it is guarded by:
-    // a POST-only check, a per-IP rate limit, and the server-side bot filter
-    // already applied further below — no nonce, no host-string matching.
-    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-        wp_die('Invalid request');
-    }
-    // Per-IP rate limit: cap writes from one IP to protect against flooding.
-    $rl_key = 'lum_track_rl_' . md5(er_trk_anonymize_ip(er_trk_get_client_ip()));
-    $rl_hits = (int) get_transient($rl_key);
-    if ($rl_hits >= 30) { // max ~30 tracking writes per IP per minute
-        wp_die('Rate limited');
-    }
-    set_transient($rl_key, $rl_hits + 1, MINUTE_IN_SECONDS);
-    // Get or create a persistent visitor ID via Cookie
-    $visitor_id = isset($_COOKIE['lum_visitor_id']) ? sanitize_text_field($_COOKIE['lum_visitor_id']) : '';
-    if (empty($visitor_id)) {
-        // Can't set cookies in AJAX response usefully, so fall back to an ID derived from the anonymized IP (keeps privacy consistent)
-        $visitor_id = 'v_' . md5(er_trk_anonymize_ip(er_trk_get_client_ip()) . $_SERVER['HTTP_USER_AGENT']);
-    }
-    // Now do the actual Tracking
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'er_live_visitors';
-    $ip_address = er_trk_get_client_ip();
-    $ip_address = er_trk_anonymize_ip($ip_address);
-    $raw_url = isset($_POST['page_url']) ? esc_url_raw($_POST['page_url']) : get_site_url() . '/';
-	$page_url = er_trk_clean_page_url(parse_url($raw_url, PHP_URL_PATH));
-    $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field($_SERVER['HTTP_USER_AGENT']) : '';
-    // Skip known bots (double-check server-side)
-    if (er_trk_is_bot($user_agent)) {
-        wp_die('Bot detected');
-    }
-	$geo_data = er_trk_get_geolocation($ip_address);
-    if ($geo_data) {
-        $current_time = current_time('mysql');
-        // Single atomic Query - Insert new Visitor or update existing on duplicate IP
-		$wpdb->query($wpdb->prepare(
-			"INSERT INTO $table_name
-				(visitor_id, ip_address, latitude, longitude, city, country, country_code, page_url, user_agent, last_seen, visit_time)
-			VALUES
-				(%s, %s, %f, %f, %s, %s, %s, %s, %s, %s, %s)
-			ON DUPLICATE KEY UPDATE
-				last_seen = VALUES(last_seen),
-				page_url = VALUES(page_url),
-				user_agent = VALUES(user_agent)",
-			$visitor_id,
-			$ip_address,
-			$geo_data['lat'],
-			$geo_data['lon'],
-			$geo_data['city'],
-			$geo_data['country'],
-			$geo_data['countryCode'],
-			$page_url,
-			$user_agent,
-			$current_time,
-			$current_time
-		));
-		// Map's own per-view log (for the past table's reconcilable "X views from Y locations"). Independent of er_post_stats and the Views snippet.
-		// DEDUP: one row per visitor per page per 24h. The Past-list "views" column therefore reads as unique daily visitors, not raw page loads. Keyed on visitor_id + page_url, mirroring the geo-cache transient pattern used above. Does NOT affect the map dots (those read from er_live_visitors).
-		$dedup_key = 'lum_view_' . md5($visitor_id . '|' . $page_url);
-		if (get_transient($dedup_key) === false) {
-			$wpdb->insert(
-				$wpdb->prefix . 'er_map_views',
-				array(
-					'page_url'  => $page_url,
-					'city'      => !empty($geo_data['city']) ? $geo_data['city'] : null,
-					'viewed_at' => $current_time,
-				),
-				array('%s', '%s', '%s')
-			);
-			set_transient($dedup_key, 1, DAY_IN_SECONDS);
-		}
-    }
-    // View-Zaehlung: Gleiche Regel wie die Map (1 Besucher / 1 Seite / 24h).
-    // Eigener Dedup-Key und bewusst ausserhalb des Geo-Blocks, damit ein Ausfall der Geo-API die Zaehlung nicht blockiert.
-    $post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
-    if ($post_id && !is_user_logged_in() && function_exists('er_track_post_views')) {
-        $view_key = 'er_view_' . md5($visitor_id . '|' . $post_id);
-        if (get_transient($view_key) === false) {
-            er_track_post_views($post_id);
-            set_transient($view_key, 1, DAY_IN_SECONDS);
-        }
-    }
-    wp_die('OK'); // Important for AJAX
-}
-add_action('wp_ajax_lum_background_track', 'er_trk_background_track');
-add_action('wp_ajax_nopriv_lum_background_track', 'er_trk_background_track');
-
-// ======================================
-// FILTERING & UTILITIES
-// ======================================
-
-// Check if request should be skipped
-function er_trk_should_skip_tracking($uri) {
-    // File extensions to ignore (assets)
-    $skip_extensions = array(
-        'css', 'js', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico',
-        'woff', 'woff2', 'ttf', 'eot', 'otf', // fonts
-        'mp4', 'webm', 'ogg', 'mp3', 'wav', // media
-        'pdf', 'zip', 'tar', 'gz', // documents / archives
-        'xml', 'json', 'txt' // data files
-    );
-    // Check file extension
-    $path = parse_url($uri, PHP_URL_PATH);
-    $extension = pathinfo($path, PATHINFO_EXTENSION);
-    if (in_array(strtolower($extension), $skip_extensions)) {
-        return true;
-    }
-    // Skip common WP technical URLs and old stuff
-    $skip_patterns = array(
-        // WordPress Core
-        '/wp-admin/',
-        '/wp-content/',
-        '/wp-includes/',
-        '/wp-json/',
-        '/wp-login',
-        '/wp-cron.php',
-        '/xmlrpc.php',
-        '/embed/',
-        '/trackback/',
-        // Cache & Performance
-        '/litespeed/',
-        '/cache/',
-        '/amp/',
-        // SEO & Standards
-        '/.well-known/',
-        'robots.txt',
-        'sitemap',
-        'feed',
-        // Assets & Technical
-        '/favicon.ico',
-        '.map',
-        // Query Parameters
-        '?replytocom=',
-        'preview=true',
-        // Site-Specific Legacy
-        '/site-forum/',
-        '/jAlbums/',
-    );
-    foreach ($skip_patterns as $pattern) {
-        if (strpos($uri, $pattern) !== false) {
-            return true;
-        }
-    }
-    return false;
-}
-
-// Clean and normalize page URLs
-function er_trk_clean_page_url($uri) {
-    // Remove query parameters for cleaner display (optional)
-    $clean_uri = strtok($uri, '?');
-    // Get the site URL to create full URLs
-    $site_url = get_site_url();
-    // If it's just root, return full URL
-    if ($clean_uri === '/' || $clean_uri === '') {
-        return $site_url . '/';
-    }
-    // Return full URL for display
-    return $site_url . $clean_uri;
-}
-
-// Detect if user agent is a bot
-function er_trk_is_bot($user_agent) {
-    if (empty($user_agent)) {
-        return true;
-    }
-    $bot_patterns = array(
-        'bot', 'crawl', 'spider', 'slurp', 'mediapartners',
-        'googlebot', 'bingbot', 'yahoo', 'baiduspider',
-        'facebookexternalhit', 'twitterbot', 'rogerbot',
-        'linkedinbot', 'embedly', 'showyoubot', 'outbrain',
-        'pinterest', 'slackbot', 'vkshare', 'w3c_validator',
-        'redditbot', 'applebot', 'whatsapp', 'flipboard',
-        'tumblr', 'bitlybot', 'skypeuripreview', 'nuzzel',
-        'discordbot', 'qwantify', 'pinterestbot', 'bitrix',
-        'semrushbot', 'ahrefsbot', 'dotbot', 'mj12bot'
-    );
-    $user_agent_lower = strtolower($user_agent);
-    foreach ($bot_patterns as $pattern) {
-        if (strpos($user_agent_lower, $pattern) !== false) {
-            return true;
-        }
-    }
-    return false;
-}
-
-// ======================================
-// DATABASE MAINTENANCE
-// ======================================
-
-// Cleanup old visitor records daily
-function er_trk_cleanup_old_visitors() {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'er_live_visitors';
-    $threshold = date('Y-m-d H:i:s', strtotime('-90 days'));
-    $deleted = $wpdb->query($wpdb->prepare(
-        "DELETE FROM $table_name WHERE last_seen < %s",
-        $threshold
-    ));
-    if ($deleted === false) {
-        error_log('Live User Map: Cleanup failed - database error');
-    } else {
-        error_log("Live User Map: Cleaned up $deleted old visitor records");
-    }
-    // Prune the map's own view log on the same 90-day cutoff, so both tables
-    // age in lockstep and er_map_views stays bounded.
-    $views_table = $wpdb->prefix . 'er_map_views';
-    $deleted_views = $wpdb->query($wpdb->prepare(
-        "DELETE FROM $views_table WHERE viewed_at < %s",
-        $threshold
-    ));
-    if ($deleted_views === false) {
-        error_log('Live User Map: View-log cleanup failed - database error');
-    } else {
-        error_log("Live User Map: Cleaned up $deleted_views old view-log records");
-    }
-    // Prune the file-based geo cache: entries older than 30 days are never read again.
-    $geo_files = glob(WP_CONTENT_DIR . '/cache/lum-geo/*.json');
-    if ($geo_files) {
-        $geo_cut = time() - 30 * DAY_IN_SECONDS;
-        foreach ($geo_files as $geo_file) {
-            if (filemtime($geo_file) < $geo_cut) {
-                @unlink($geo_file);
-            }
-        }
-    }
-}
-add_action('lum_daily_cleanup', 'er_trk_cleanup_old_visitors');
-
-// Schedule daily cleanup
-function er_trk_schedule_cleanup() {
-    if (!wp_next_scheduled('lum_daily_cleanup')) {
-        wp_schedule_event(time(), 'daily', 'lum_daily_cleanup');
-    }
-}
-add_action('init', 'er_trk_schedule_cleanup');
-
-// ======================================
-// IP & GEOLOCATION HANDLING
-// ======================================
-
-// Get client IP address
-// Uses REMOTE_ADDR only. The site is not behind a trusted reverse proxy that
-// sets a real-IP header, so forwarded headers (X-Forwarded-For, Client-IP,
-// etc.) are visitor-controlled and spoofable — trusting them would let anyone
-// place themselves anywhere on the map and poison the IP-based visitor ID.
-// This also matches how every other snippet on the site reads the client IP.
-function er_trk_get_client_ip() {
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-    return filter_var($ip, FILTER_VALIDATE_IP) !== false ? $ip : '0.0.0.0';
-}
-
-// Anonymize IP address (IPv4 and IPv6)
-function er_trk_anonymize_ip($ip) {
-    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-        return preg_replace('/\.\d+$/', '.0', $ip);
-    }
-    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-        $ip = inet_pton($ip);
-        if ($ip !== false) {
-            $ip = substr($ip, 0, 8) . str_repeat("\0", 8);
-            return inet_ntop($ip);
-        }
-    }
-    return $ip;
-}
-
-// Get geolocation from IP - OPTIMIZED VERSION
-function er_trk_get_geolocation($ip) {
-    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
-        return false;
-    }
-    $transient_key = 'lum_geo_' . md5($ip);
-    $cached = get_transient($transient_key);
-    if ($cached !== false) {
-        return $cached;
-    }
-    // Use a local file-based cache for even faster subsequent lookups
-    $cache_dir = WP_CONTENT_DIR . '/cache/lum-geo/';
-    if (!file_exists($cache_dir)) {
-        wp_mkdir_p($cache_dir);
-    }
-    $cache_file = $cache_dir . md5($ip) . '.json';
-    if (file_exists($cache_file) && (time() - filemtime($cache_file)) < 30 * DAY_IN_SECONDS) {
-        $cached_data = json_decode(file_get_contents($cache_file), true);
-        if ($cached_data) {
-            set_transient($transient_key, $cached_data, 30 * DAY_IN_SECONDS);
-            return $cached_data;
-        }
-    }
-    // Add a lock to prevent duplicate requests
-    $lock_key = $transient_key . '_lock';
-    if (get_transient($lock_key)) {
-        return false; // Another request is processing
-    }
-    set_transient($lock_key, true, 30); // 30 second lock
-	$response = wp_remote_get("http://ip-api.com/json/{$ip}?fields=status,country,countryCode,city,lat,lon", array(
-        'timeout' => 5, // Reduced timeout for background processing
-        // NB: ip-api.com's free tier is HTTP-only (HTTPS requires their paid Pro plan), so there is no TLS handshake on this request. No sslverify flag is needed or meaningful here.
-    ));
-    delete_transient($lock_key);
-    if (is_wp_error($response)) {
-        error_log('LUM Geo Error: ' . $response->get_error_message());
-        return false;
-    }
-    $body = wp_remote_retrieve_body($response);
-    $data = json_decode($body, true);
-    if (isset($data['status']) && $data['status'] === 'success') {
-        // Cache to file for persistence
-        file_put_contents($cache_file, json_encode($data));
-        set_transient($transient_key, $data, 30 * DAY_IN_SECONDS);
-        return $data;
-    }
-    return false;
-}
-
-/* ============================================================================
- * 2  DATA API — admin-ajax.php?action=er_map_data&scope=live|full
+ * 1  DATA API — admin-ajax.php?action=er_map_data&scope=live|full
  *    Public, read-only, no nonce (pages are full-page cached).
  *    Every visitor gets the same answer, so it is built at most once per
- *    cache period, no matter how many people are watching.
+ *    cache period, no matter how many people are watching. The only
+ *    per-request step is marking the viewer's own live row (scope full).
+ *    Live visitors are cached for ER_MAP_CACHE_LIVE on both maps; the slow
+ *    history of Site Reach for ER_MAP_CACHE_HISTORY.
  *
  *    Time zone: last_seen / viewed_at are stored in site time
  *    (current_time('mysql')), the database clock (NOW()) runs on UTC.
@@ -496,13 +80,33 @@ add_action( 'wp_ajax_nopriv_er_map_data', 'er_map_data' );
 
 function er_map_data() {
 	$scope = ( isset( $_REQUEST['scope'] ) && 'full' === $_REQUEST['scope'] ) ? 'full' : 'live';
-	$key   = 'er_map_' . $scope;
-	$data  = get_transient( $key );
-	if ( false === $data ) {
-		$data = 'full' === $scope ? er_map_build_full() : er_map_build_live();
-		set_transient( $key, $data, 'full' === $scope ? ER_MAP_CACHE_FULL : ER_MAP_CACHE_LIVE );
+	if ( 'live' === $scope ) {
+		wp_send_json_success( er_map_cached( 'er_map_live', 'er_map_build_live', ER_MAP_CACHE_LIVE ) );
 	}
+
+	$data = er_map_cached( 'er_map_history', 'er_map_build_history', ER_MAP_CACHE_HISTORY );
+	$live = er_map_cached( 'er_map_live_rows', 'er_map_build_live_rows', ER_MAP_CACHE_LIVE );
+
+	// Mark the viewer's own row, then drop every visitor id.
+	$me = function_exists( 'er_trk_visitor_id' ) ? er_trk_visitor_id() : '';
+	$data['live'] = array_map( static function ( $r ) use ( $me ) {
+		if ( '' !== $me && $r['vid'] === $me ) {
+			$r['me'] = true;
+		}
+		unset( $r['vid'] );
+		return $r;
+	}, $live );
 	wp_send_json_success( $data );
+}
+
+// Transient cache: built by $build at most once per $ttl seconds.
+function er_map_cached( $key, $build, $ttl ) {
+	$data = get_transient( $key );
+	if ( false === $data ) {
+		$data = $build();
+		set_transient( $key, $data, $ttl );
+	}
+	return $data;
 }
 
 // Site-time timestamp string, $seconds ago.
@@ -530,20 +134,24 @@ function er_map_build_live() {
 	);
 }
 
-// Site Reach: live visitors, past places, most-visited pages.
-function er_map_build_full() {
+// Path only of a stored page URL.
+function er_map_path( $url ) {
+	$p = wp_parse_url( (string) $url, PHP_URL_PATH );
+	return $p ? $p : '/';
+}
+
+// Site Reach, live: one entry per visitor. Coordinates ~1 km, path only,
+// browser name only. Country names are not sent: the browser derives them
+// from the code. vid stays on the server (see er_map_data).
+function er_map_build_live_rows() {
 	global $wpdb;
-	$lv       = $wpdb->prefix . 'er_live_visitors';
 	$now      = er_map_site_time( 0 );
 	$live_cut = er_map_site_time( ER_MAP_LIVE_MIN * MINUTE_IN_SECONDS );
-	$since    = er_map_site_time( ER_MAP_DAYS * DAY_IN_SECONDS );
 
-	// Live: one entry per visitor. Coordinates ~1 km, path only, browser name only.
-	// Country names are not sent: the browser derives them from the code.
 	$live = $wpdb->get_results( $wpdb->prepare(
-		"SELECT latitude, longitude, city, country_code, page_url, user_agent,
+		"SELECT visitor_id, latitude, longitude, city, country_code, page_url, user_agent,
 		        TIMESTAMPDIFF(SECOND, last_seen, %s) AS ago
-		   FROM $lv
+		   FROM {$wpdb->prefix}er_live_visitors
 		  WHERE last_seen >= %s
 		    AND latitude IS NOT NULL AND longitude IS NOT NULL
 		    AND NOT (latitude = 0 AND longitude = 0)
@@ -551,6 +159,26 @@ function er_map_build_full() {
 		  LIMIT 200",
 		$now, $live_cut
 	) );
+
+	return array_map( static fn( $r ) => array(
+		'vid'     => (string) $r->visitor_id,
+		'lat'     => round( (float) $r->latitude, 2 ),
+		'lon'     => round( (float) $r->longitude, 2 ),
+		'city'    => (string) $r->city,
+		'cc'      => (string) $r->country_code,
+		'page'    => er_map_path( $r->page_url ),
+		'browser' => function_exists( 'er_trk_browser' ) ? er_trk_browser( $r->user_agent ) : '',
+		'ago'     => max( 0, (int) $r->ago ),
+	), (array) $live );
+}
+
+// Site Reach, history: past places and most-visited pages.
+function er_map_build_history() {
+	global $wpdb;
+	$lv       = $wpdb->prefix . 'er_live_visitors';
+	$now      = er_map_site_time( 0 );
+	$live_cut = er_map_site_time( ER_MAP_LIVE_MIN * MINUTE_IN_SECONDS );
+	$since    = er_map_site_time( ER_MAP_DAYS * DAY_IN_SECONDS );
 
 	// Past: grouped per ~11 km cell; n = visitors there, ago = most recent one.
 	$past = $wpdb->get_results( $wpdb->prepare(
@@ -567,21 +195,7 @@ function er_map_build_full() {
 		$now, $since, $live_cut, ER_MAP_PAST_MAX
 	) );
 
-	$path = static function ( $url ) {
-		$p = wp_parse_url( (string) $url, PHP_URL_PATH );
-		return $p ? $p : '/';
-	};
-
 	return array(
-		'live'  => array_map( static fn( $r ) => array(
-			'lat'     => round( (float) $r->latitude, 2 ),
-			'lon'     => round( (float) $r->longitude, 2 ),
-			'city'    => (string) $r->city,
-			'cc'      => (string) $r->country_code,
-			'page'    => $path( $r->page_url ),
-			'browser' => er_map_browser( $r->user_agent ),
-			'ago'     => max( 0, (int) $r->ago ),
-		), (array) $live ),
 		// Compact rows: [lat, lon, visitors, seconds ago, city, country code]
 		'past'  => array_map( static fn( $r ) => array(
 			(float) $r->lat,
@@ -591,7 +205,7 @@ function er_map_build_full() {
 			(string) $r->city,
 			(string) $r->cc,
 		), (array) $past ),
-		'pages' => er_map_top_pages( $since, $path ),
+		'pages' => er_map_top_pages( $since, 'er_map_path' ),
 	);
 }
 
@@ -648,20 +262,8 @@ function er_map_top_pages( $since, $path ) {
 	return $out;
 }
 
-// Browser name only; the full user agent never leaves the server.
-function er_map_browser( $ua ) {
-	$ua = (string) $ua;
-	if ( '' === $ua ) return 'Unknown';
-	if ( false !== strpos( $ua, 'Edg' ) ) return 'Edge';
-	if ( false !== strpos( $ua, 'OPR' ) ) return 'Opera';
-	if ( false !== strpos( $ua, 'Firefox' ) || false !== strpos( $ua, 'FxiOS' ) ) return 'Firefox';
-	if ( false !== strpos( $ua, 'Chrome' ) || false !== strpos( $ua, 'CriOS' ) ) return 'Chrome';
-	if ( false !== strpos( $ua, 'Safari' ) ) return 'Safari';
-	return 'Other';
-}
-
 /* ============================================================================
- * 3  MAP BASE — shared by modules 4 and 5
+ * 2  MAP BASE — shared by modules 3 and 4
  *    er_map_layers( 'cover' | 'reach' ) returns the map markup.
  *    er_map_base_assets() prints the shared CSS once and queues the engine JS.
  * ========================================================================== */
@@ -787,7 +389,7 @@ function er_map_lights_d( $size ) {
 
 function er_map_base_css() {
 	return <<<'CSS'
-/* ---- Layers (module 3, both maps) ---- */
+/* ---- Layers (module 2, both maps) ---- */
 .erm > svg,
 .erm > .erc-scrim,
 .erm > .erc-markers{position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; margin: 0}
@@ -856,7 +458,7 @@ CSS;
 
 function er_map_engine_js() {
 	return <<<'JS'
-/* ER Map engine (module 3) — geometry shared by the cover and Site Reach.
+/* ER Map engine (module 2) — geometry shared by the cover and Site Reach.
    ERMap.stage(root) binds it to one map: viewBox, pinned HTML markers, night. */
 window.ERMap = window.ERMap || (() => {
 	const RAD = Math.PI / 180;
@@ -1004,9 +606,9 @@ JS;
 }
 
 /* ============================================================================
- * 4  COVER — [er_frontpage_cover]
+ * 3  COVER — [er_frontpage_cover]
  *    World map behind the front-page hero: day / night, city lights, the
- *    live visitors (the viewer included, once their beacon is in), clock.
+ *    live visitors (the viewer at once, see header), clock.
  *    Place it first, as a direct child of a Group block.
  *    Everything cover-specific lives here; it can be redesigned freely.
  * ========================================================================== */
@@ -1029,6 +631,7 @@ function er_map_cover_shortcode( $atts ) {
 
 	$config = wp_json_encode( array(
 		'ajax' => admin_url( 'admin-ajax.php' ),
+		'poll' => ER_MAP_POLL,
 	) );
 
 	$html .= sprintf(
@@ -1136,7 +739,7 @@ function er_map_cover_js() {
 	try { config = JSON.parse(root.dataset.config || '{}'); } catch (e) {}
 
 	const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-	const POLL_MS = 90000;
+	const POLL_MS = (config.poll || 30) * 1000;
 	const HIGHLIGHT_MAX = 12;
 
 	/* ---- Night (engine) ---- */
@@ -1175,9 +778,25 @@ function er_map_cover_js() {
 
 	let others = new Map();
 	let lastSig = '';
+	let lastList = [];
 	let firstPoll = true;
 	let pollTimer = 0;
 	const canPoll = Boolean(config.ajax && othersEl);
+
+	/* The viewer: from this page view's tracking answer (event "er:visitor"),
+	   or from the previous page view of this tab. Rounded to the server's
+	   ~11 km cell (half away from zero, like MySQL ROUND) so the same place
+	   is never drawn twice. */
+	let me = window.ERVisitor || null;
+	if (!me) { try { me = JSON.parse(sessionStorage.getItem('er_visitor') || 'null'); } catch (e) {} }
+	const cell = (v) => Math.sign(v) * Math.round(Math.abs(v) * 10 + 1e-9) / 10;
+
+	function withMe(list) {
+		if (!me || !Number.isFinite(+me.lat) || !Number.isFinite(+me.lon)) return list;
+		const c = [cell(+me.lat), cell(+me.lon)];
+		const has = list.some((i) => Array.isArray(i) && +i[0] === c[0] && +i[1] === c[1]);
+		return has ? list : [c].concat(list);
+	}
 
 	function addOther(pt, arriving) {
 		const el = document.createElement('span');
@@ -1198,7 +817,9 @@ function er_map_cover_js() {
 		return el;
 	}
 
-	function drawOthers(list) {
+	function drawOthers(list, polled) {
+		if (polled) lastList = list;
+		list = withMe(list);
 		const sig = JSON.stringify(list);
 		if (sig === lastSig) return;
 		lastSig = sig;
@@ -1222,13 +843,13 @@ function er_map_cover_js() {
 			st.unpin(el);
 		});
 		others = next;
-		firstPoll = false;
+		if (polled) firstPoll = false;
 	}
 
 	function fetchOthers() {
 		fetch(config.ajax + '?action=er_map_data&scope=live', { credentials: 'same-origin' })
 			.then((r) => (r.ok ? r.json() : null))
-			.then((j) => { if (j && Array.isArray(j.data)) drawOthers(j.data); })
+			.then((j) => { if (j && Array.isArray(j.data)) drawOthers(j.data, true); })
 			.catch(() => {});
 	}
 
@@ -1305,20 +926,23 @@ function er_map_cover_js() {
 		startPolling();
 	});
 
+	document.addEventListener('er:visitor', (e) => {
+		me = e.detail;
+		if (othersEl) drawOthers(lastList);
+	});
+
 	tick();
+	if (me && othersEl) drawOthers([]);
 	setTimeout(() => { if (!document.hidden) startPolling(); }, 2600);
-	/* The viewer is on the map only once their own beacon is in the (30 s cached)
-	   live answer, so ask once more after the cache has turned over. */
-	setTimeout(() => { if (!document.hidden) fetchOthers(); }, 35000);
 })();
 JS;
 }
 
 /* ============================================================================
- * 5  SITE REACH — [live_user_map], [currently_visited_pages], [past_visited_pages]
+ * 4  SITE REACH — [live_user_map], [currently_visited_pages], [past_visited_pages]
  *    Interactive map (drag, pinch, ctrl+wheel, +/− and double-click to zoom;
- *    tap a dot for details) plus two tables. One request per minute feeds all
- *    three; polling pauses while the tab is hidden.
+ *    tap a dot for details) plus two tables. One request every ER_MAP_POLL
+ *    seconds feeds all three; polling pauses while the tab is hidden.
  *    Shortcode names are the old ones, so the page content stays as it is.
  * ========================================================================== */
 
@@ -1334,7 +958,11 @@ function er_reach_assets() {
 }
 
 function er_reach_script() {
-	$js = str_replace( '__ER_AJAX__', wp_json_encode( admin_url( 'admin-ajax.php' ) ), er_reach_js() );
+	$js = str_replace(
+		array( '__ER_AJAX__', '__ER_POLL__' ),
+		array( wp_json_encode( admin_url( 'admin-ajax.php' ) ), (string) ( ER_MAP_POLL * 1000 ) ),
+		er_reach_js()
+	);
 	wp_print_inline_script_tag( $js, array( 'id' => 'er-reach-js' ) );
 }
 
@@ -1447,7 +1075,7 @@ function er_reach_js() {
 	return <<<'JS'
 (() => {
 	const AJAX = __ER_AJAX__;
-	const POLL_MS = 60000;
+	const POLL_MS = __ER_POLL__;
 
 	const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 	const pretty = (s) => { try { return decodeURIComponent(String(s)); } catch (e) { return String(s); } };
@@ -1770,7 +1398,31 @@ function er_reach_js() {
 	const timeEl = document.getElementById('last-update');
 	if (!map && !curEl && !pastEl) return;
 
+	/* The viewer: from this page view's tracking answer (event "er:visitor"),
+	   or from the previous page view of this tab. Replaces the viewer's row
+	   in the live data (marked by the server), which may be up to one cache
+	   period old, or stands in for it until the data contains them. */
+	let me = window.ERVisitor || null;
+	if (!me) { try { me = JSON.parse(sessionStorage.getItem('er_visitor') || 'null'); } catch (e) {} }
+
+	function withMe(d) {
+		if (!me || !Number.isFinite(+me.lat) || !Number.isFinite(+me.lon)) return d;
+		const self = {
+			lat: Math.round(me.lat * 100) / 100,
+			lon: Math.round(me.lon * 100) / 100,
+			city: me.city || '',
+			cc: me.cc || '',
+			page: me.page || '/',
+			browser: me.browser || '',
+			ago: Math.max(0, Math.round((Date.now() - (me.seen || Date.now())) / 1000)),
+		};
+		return Object.assign({}, d, { live: [self].concat((d.live || []).filter((p) => !p.me)) });
+	}
+
+	let lastData = null;
 	function render(d) {
+		lastData = d;
+		d = withMe(d);
 		if (map) map.update(d);
 		if (curEl) renderCurrent(curEl, d.live);
 		if (pastEl) renderPast(pastEl, d.pages);
@@ -1785,6 +1437,10 @@ function er_reach_js() {
 			.then((j) => { if (j && j.success && j.data) render(j.data); })
 			.catch(() => {});
 	}
+	document.addEventListener('er:visitor', (e) => {
+		me = e.detail;
+		if (lastData) render(lastData);
+	});
 	function start() { if (!timer) { load(); timer = setInterval(load, POLL_MS); } }
 	function stop() { clearInterval(timer); timer = 0; }
 	document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
