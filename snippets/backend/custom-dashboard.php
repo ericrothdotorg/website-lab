@@ -218,10 +218,10 @@ function custom_render_activity_widget() {
 }
 
 // ======================================
-// 📊 ANALYTICS TOOLKIT
+// 📊 ANALYSIS TOOLKIT
 // ======================================
 
-function custom_render_analytics_toolkit() {
+function custom_render_analysis_toolkit() {
 	custom_handle_youtube_check_submission();
 	custom_render_external_tools_buttons();
 	custom_render_site_metrics();
@@ -241,14 +241,10 @@ function custom_handle_youtube_check_submission() {
 function custom_render_external_tools_buttons() {
 	$site = urlencode(home_url('/'));
 	custom_render_button_row([
-		'🧩 Google Rich' => 'https://search.google.com/test/rich-results?url=' . $site,
-		'🧩 schema.org'  => 'https://validator.schema.org/?url=' . $site,
-	]);
-	custom_render_button_row([
-		'🚀 PageSpeed'     => 'https://pagespeed.web.dev/report?url=' . $site . '&hl=en',
-		'🚀 WebPageTest'   => 'https://www.webpagetest.org/?url=' . $site,
+		'🧩 Google Rich'   => 'https://search.google.com/test/rich-results?url=' . $site,
+		'🧩 schema.org'    => 'https://validator.schema.org/?url=' . $site,
 		'♿ Accessibility' => 'https://wave.webaim.org/report#/' . $site,
-	], 'margin-top: 10px;');
+	]);
 }
 
 function custom_render_site_metrics() {
@@ -397,6 +393,361 @@ function custom_check_broken_yt_links() {
 	wp_reset_postdata();
 
 	return ['broken_count' => $broken_links, 'broken_posts' => $broken_posts];
+}
+
+// ======================================
+// 🚀 PERFORMANCE
+// ======================================
+
+// Google PageSpeed results of the home page (mobile + desktop), tested on
+// demand via "Run Speed Test".
+//
+// The browser calls Google directly and only sends the numbers to admin-ajax
+// (custom_perf_save). Do not move the call to PHP: a test takes 30-60 s and
+// Hostinger cuts such requests off.
+//
+// Owner of custom_perf_mobile and custom_perf_desktop (wp_options).
+// API key: ER_PSI_KEY in wp-config.php.
+
+function custom_perf_categories() {
+	return [
+		'performance'    => 'Performance',
+		'accessibility'  => 'Accessibility',
+		'best-practices' => 'Best Practices',
+		'seo'            => 'SEO',
+	];
+}
+
+// Lighthouse audit id => [short label, full name for the tooltip]
+function custom_perf_metrics() {
+	return [
+		'first-contentful-paint'   => ['FCP',         'First Contentful Paint'],
+		'largest-contentful-paint' => ['LCP',         'Largest Contentful Paint'],
+		'total-blocking-time'      => ['TBT',         'Total Blocking Time'],
+		'cumulative-layout-shift'  => ['CLS',         'Cumulative Layout Shift'],
+		'speed-index'              => ['Speed Index', 'Speed Index'],
+	];
+}
+
+// Stores one result sent by the browser. Only known keys are kept, scores
+// are clamped to 0-100 and the metric values are plain text.
+add_action('wp_ajax_custom_perf_save', function () {
+	if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized', 403);
+	check_ajax_referer('custom_perf_run');
+
+	$strategy = (isset($_POST['strategy']) && $_POST['strategy'] === 'desktop') ? 'desktop' : 'mobile';
+	$in = json_decode(wp_unslash($_POST['result'] ?? ''), true);
+	if (!is_array($in) || !isset($in['scores']['performance'])) {
+		wp_send_json_error('Invalid result');
+	}
+
+	$score = function ($v) {
+		return is_numeric($v) ? max(0, min(100, (int) $v)) : null;
+	};
+	$scores = [];
+	foreach (array_keys(custom_perf_categories()) as $cat) {
+		$scores[$cat] = $score($in['scores'][$cat] ?? null);
+	}
+	$metrics = [];
+	foreach (array_keys(custom_perf_metrics()) as $id) {
+		$m = $in['metrics'][$id] ?? [];
+		$metrics[$id] = [
+			'value' => isset($m['value']) ? substr(sanitize_text_field($m['value']), 0, 20) : '–',
+			'score' => $score($m['score'] ?? null),
+		];
+	}
+
+	// Audits that are not green. Plain text only; the link must be http(s).
+	$issues = [];
+	foreach (array_slice((array) ($in['issues'] ?? []), 0, 40) as $i) {
+		if (!is_array($i) || !isset($i['cat'], $i['title']) || !isset(custom_perf_categories()[$i['cat']])) continue;
+		$issues[] = [
+			'cat'   => $i['cat'],
+			'title' => substr(sanitize_text_field($i['title']), 0, 200),
+			'value' => substr(sanitize_text_field($i['value'] ?? ''), 0, 60),
+			'score' => $score($i['score'] ?? null),
+			'desc'  => substr(sanitize_textarea_field($i['desc'] ?? ''), 0, 600),
+			'link'  => esc_url_raw($i['link'] ?? '', ['https', 'http']),
+		];
+	}
+
+	update_option('custom_perf_' . $strategy, [
+		'scores'  => $scores,
+		'metrics' => $metrics,
+		'issues'  => $issues,
+		'time'    => time(),
+	], false);
+
+	ob_start();
+	custom_perf_render_item_inner($strategy);
+	wp_send_json_success(['html' => ob_get_clean()]);
+});
+
+// Colour after Google's thresholds (90+ good, 50+ needs work, below poor).
+function custom_perf_class($score) {
+	if ($score === null) return 'cd-perf-none';
+	if ($score >= 90)    return 'cd-perf-good';
+	if ($score >= 50)    return 'cd-perf-avg';
+	return 'cd-perf-bad';
+}
+
+function custom_perf_label($strategy) {
+	return $strategy === 'desktop' ? 'Desktop' : 'Mobile';
+}
+
+function custom_perf_render_item_inner($strategy) {
+	$d = get_option('custom_perf_' . $strategy);
+	$d = is_array($d) ? $d : [];
+	$scores  = $d['scores']  ?? [];
+	$metrics = $d['metrics'] ?? [];
+	$perf    = $scores['performance'] ?? null;
+	$time    = isset($d['time']) ? wp_date('Y-m-d H:i', $d['time']) : '—';
+	?>
+	<div class="cd-perf-head">
+		<div class="cd-perf-ring <?php echo esc_attr(custom_perf_class($perf)); ?>">
+			<svg viewBox="0 0 36 36" aria-hidden="true">
+				<circle class="cd-perf-track" cx="18" cy="18" r="15.9155"></circle>
+				<circle class="cd-perf-bar" cx="18" cy="18" r="15.9155"
+					stroke-dasharray="<?php echo (int) $perf; ?> 100"></circle>
+			</svg>
+			<span class="cd-perf-score"><?php echo $perf === null ? '–' : (int) $perf; ?></span>
+		</div>
+		<div>
+			<strong><?php echo esc_html(custom_perf_label($strategy)); ?></strong><br>
+			<span class="cd-perf-muted">Last scanned:</span><br>
+			<span class="cd-perf-time"><?php echo esc_html($time); ?></span>
+		</div>
+	</div>
+	<div class="cd-perf-error"></div>
+
+	<dl class="cd-perf-list">
+		<?php foreach (custom_perf_categories() as $cat => $name) :
+			if ($cat === 'performance') continue;
+			$s = $scores[$cat] ?? null; ?>
+			<dt><?php echo esc_html($name); ?></dt>
+			<dd class="<?php echo esc_attr(custom_perf_class($s)); ?>"><?php echo $s === null ? '–' : (int) $s; ?></dd>
+		<?php endforeach; ?>
+	</dl>
+
+	<dl class="cd-perf-list">
+		<?php foreach (custom_perf_metrics() as $id => [$short, $full]) :
+			$m = $metrics[$id] ?? ['value' => '–', 'score' => null]; ?>
+			<dt title="<?php echo esc_attr($full); ?>"><?php echo esc_html($short); ?></dt>
+			<dd class="<?php echo esc_attr(custom_perf_class($m['score'])); ?>"><?php echo esc_html($m['value']); ?></dd>
+		<?php endforeach; ?>
+	</dl>
+
+	<?php
+	if (isset($d['issues']) && is_array($d['issues'])) :
+		$issues = $d['issues'];
+		usort($issues, function ($a, $b) { return (int) $a['score'] <=> (int) $b['score']; });
+		?>
+		<details class="cd-perf-issues">
+			<summary>Analysis (<?php echo count($issues); ?>)</summary>
+			<?php if (!$issues) : ?>
+				<p class="cd-perf-muted">Nothing to improve.</p>
+			<?php endif; ?>
+			<?php foreach (custom_perf_categories() as $cat => $name) :
+				$list = array_filter($issues, function ($i) use ($cat) { return $i['cat'] === $cat; });
+				if (!$list) continue; ?>
+				<div class="cd-perf-cat"><?php echo esc_html($name); ?></div>
+				<?php foreach ($list as $i) : ?>
+					<details class="cd-perf-issue">
+						<summary>
+							<span class="cd-perf-dot <?php echo esc_attr(custom_perf_class($i['score'])); ?>"></span>
+							<span><?php echo esc_html($i['title']); ?><?php if ($i['value'] !== '') : ?>
+								<span class="cd-perf-muted"> – <?php echo esc_html($i['value']); ?></span><?php endif; ?></span>
+						</summary>
+						<p><?php echo esc_html($i['desc']); ?>
+							<?php if ($i['link']) : ?><a href="<?php echo esc_url($i['link']); ?>" target="_blank" rel="noopener">Learn more</a><?php endif; ?></p>
+					</details>
+				<?php endforeach; ?>
+			<?php endforeach; ?>
+		</details>
+	<?php endif; ?>
+	<?php
+}
+
+function custom_perf_render_widget() {
+	?>
+	<div class="cd-widget cd-perf">
+		<div class="cd-perf-row">
+			<div class="cd-perf-item" data-strategy="desktop"><?php custom_perf_render_item_inner('desktop'); ?></div>
+			<div class="cd-perf-divider"></div>
+			<div class="cd-perf-item" data-strategy="mobile"><?php custom_perf_render_item_inner('mobile'); ?></div>
+		</div>
+		<?php $site = urlencode(home_url('/')); ?>
+		<div class="cd-perf-foot">
+			<button type="button" class="button cd-perf-btn">🚀 Run Speed Test</button>
+			<a class="button" target="_blank" rel="noopener"
+				href="<?php echo esc_url('https://pagespeed.web.dev/report?url=' . $site . '&hl=en'); ?>">🔎 Full Report</a>
+			<a class="button" target="_blank" rel="noopener"
+				href="<?php echo esc_url('https://www.webpagetest.org/?url=' . $site); ?>">🚀 WebPageTest</a>
+		</div>
+		<p class="cd-perf-muted cd-perf-status"></p>
+	</div>
+	<style>
+		.cd-perf-row { display: flex; gap: 14px; }
+		.cd-perf-item { flex: 1; min-width: 0; }
+		.cd-perf-divider { width: 1px; background: #dcdcde; }
+		.cd-perf-head { display: flex; align-items: center; gap: 10px; }
+		.cd-perf-ring { position: relative; width: 56px; height: 56px; flex: none; }
+		.cd-perf-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+		.cd-perf-ring circle { fill: none; stroke-width: 3.2; }
+		.cd-perf-track { stroke: #e8e8e8; }
+		.cd-perf-bar { stroke-linecap: round; transition: stroke-dasharray .6s ease; }
+		.cd-perf-score { position: absolute; inset: 0; display: flex; align-items: center;
+			justify-content: center; font-size: 17px; font-weight: 600; }
+		.cd-perf-good .cd-perf-bar { stroke: #0c9d58; }
+		.cd-perf-avg  .cd-perf-bar { stroke: #e67700; }
+		.cd-perf-bad  .cd-perf-bar { stroke: #d93025; }
+		.cd-perf-good .cd-perf-score, dd.cd-perf-good { color: #0c9d58; }
+		.cd-perf-avg  .cd-perf-score, dd.cd-perf-avg  { color: #e67700; }
+		.cd-perf-bad  .cd-perf-score, dd.cd-perf-bad  { color: #d93025; }
+		.cd-perf-none .cd-perf-score, dd.cd-perf-none { color: #808080; }
+		.cd-perf-busy svg { animation: cd-perf-spin 1s linear infinite; }
+		.cd-perf-busy .cd-perf-bar { stroke: #8da6b9; stroke-dasharray: 25 100; }
+		@keyframes cd-perf-spin { to { transform: rotate(270deg); } }
+		.cd-perf-muted { color: #808080; }
+		.cd-perf-time { white-space: nowrap; font-size: 13px; }
+		.cd-perf-error { color: #c53030; font-size: 12px; }
+		.cd-perf-list { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px;
+			margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f0f1; font-size: 13px; }
+		.cd-perf-list dt { color: #50575e; }
+		.cd-perf-list dt[title] { cursor: help; }
+		.cd-perf-list dd { margin: 0; text-align: right; font-weight: 600; white-space: nowrap; }
+		.cd-perf-issues { margin-top: 10px; padding-top: 8px; border-top: 1px solid #f0f0f1; font-size: 13px; }
+		.cd-perf-issues > summary { cursor: pointer; font-weight: 600; }
+		.cd-perf-cat { margin: 8px 0 2px; color: #808080; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+		.cd-perf-issue > summary { display: flex; gap: 6px; align-items: baseline; cursor: pointer; list-style: none; padding: 2px 0; }
+		.cd-perf-issue > summary::-webkit-details-marker { display: none; }
+		.cd-perf-issue p { margin: 2px 0 6px 14px; color: #50575e; font-size: 12px; }
+		.cd-perf-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; position: relative; top: -1px; }
+		.cd-perf-dot.cd-perf-avg { background: #e67700; }
+		.cd-perf-dot.cd-perf-bad { background: #d93025; }
+		.cd-perf-dot.cd-perf-none { background: #808080; }
+		.cd-perf-foot { display: flex; gap: 6px; margin-top: 16px; }
+		/* Three buttons in one row: a little less side padding than the
+		   Custom Dashboard default (12px), whose rule loads later. */
+		.cd-perf .cd-perf-foot .button { white-space: nowrap; padding: 0 9px; }
+		.cd-perf-status { margin: 6px 0 0; }
+		.cd-perf-status:empty { display: none; }
+	</style>
+	<script>
+	(function () {
+		var root  = document.currentScript.parentNode;
+		var btn   = root.querySelector('.cd-perf-btn');
+		var stat  = root.querySelector('.cd-perf-status');
+		var cfg   = <?php echo wp_json_encode([
+			'nonce'      => wp_create_nonce('custom_perf_run'),
+			'key'        => defined('ER_PSI_KEY') ? ER_PSI_KEY : '',
+			'url'        => home_url('/'),
+			'categories' => array_keys(custom_perf_categories()),
+			'metrics'    => array_keys(custom_perf_metrics()),
+		]); ?>;
+		var TIMEOUT = 120000; // ms; Google itself needs 30-60 s
+
+		// Calls Google directly from the browser - the server never waits.
+		function psi(strategy) {
+			var q = new URLSearchParams({ url: cfg.url, strategy: strategy, key: cfg.key });
+			cfg.categories.forEach(function (c) { q.append('category', c); });
+			var ctrl = new AbortController();
+			var t = setTimeout(function () { ctrl.abort(); }, TIMEOUT);
+			return fetch('https://www.googleapis.com/pagespeedonline/v5/runPagespeed?' + q, { signal: ctrl.signal })
+				.then(function (r) { return r.json(); })
+				.then(function (j) {
+					clearTimeout(t);
+					if (j.error) throw new Error('Google: ' + j.error.message);
+					var lh = j.lighthouseResult;
+					if (!lh || !lh.categories || !lh.categories.performance) throw new Error('Google: no score in the response');
+					var pct = function (v) { return typeof v === 'number' ? Math.round(v * 100) : null; };
+					var res = { scores: {}, metrics: {} };
+					cfg.categories.forEach(function (c) { res.scores[c] = lh.categories[c] ? pct(lh.categories[c].score) : null; });
+					cfg.metrics.forEach(function (id) {
+						var a = lh.audits[id] || {};
+						res.metrics[id] = { value: (a.displayValue || '–').replace(/\u00a0/g, ' '), score: pct(a.score) };
+					});
+					// Not-green audits per category, as the PageSpeed website lists them.
+					// Metric audits are left out (shown above); text loses its markdown.
+					var skipMode = ['notApplicable', 'informative', 'manual', 'error'];
+					var seen = {};
+					res.issues = [];
+					cfg.categories.forEach(function (c) {
+						var cat = lh.categories[c];
+						if (!cat) return;
+						cat.auditRefs.forEach(function (ref) {
+							var a = lh.audits[ref.id];
+							if (!a || seen[ref.id] || ref.group === 'metrics' || ref.group === 'hidden') return;
+							if (a.score === null || a.score >= 0.9 || skipMode.indexOf(a.scoreDisplayMode) >= 0) return;
+							seen[ref.id] = true;
+							var desc = a.description || '';
+							// "Learn more" links become the link below the text; any other
+							// inline link keeps its text.
+							var learn = /\[Learn[^\]]*\]\((https?:[^)\s]+)\)/.exec(desc);
+							var link  = learn ? learn[1] : ((/\]\((https?:[^)\s]+)\)/.exec(desc) || [])[1] || '');
+							res.issues.push({
+								cat:   c,
+								title: (a.title || '').replace(/`/g, ''),
+								value: (a.displayValue || '').replace(/\u00a0/g, ' '),
+								score: pct(a.score),
+								desc:  desc.replace(/\s*\[Learn[^\]]*\]\([^)]*\)\.?/g, '')
+								           .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+								           .replace(/`/g, '').trim(),
+								link:  link
+							});
+						});
+					});
+					return res;
+				}, function (e) {
+					clearTimeout(t);
+					throw new Error(e.name === 'AbortError' ? 'Google did not answer within 2 minutes' : 'Google not reachable');
+				});
+		}
+
+		// Stores the numbers on the server and returns the re-rendered column.
+		function save(strategy, res) {
+			var body = new FormData();
+			body.append('action', 'custom_perf_save');
+			body.append('strategy', strategy);
+			body.append('result', JSON.stringify(res));
+			body.append('_ajax_nonce', cfg.nonce);
+			return fetch(ajaxurl, { method: 'POST', body: body, credentials: 'same-origin' })
+				.then(function (r) {
+					if (!r.ok) throw new Error('Saving failed (HTTP ' + r.status + ')');
+					return r.json();
+				})
+				.then(function (j) {
+					if (!j.success) throw new Error('Saving failed: ' + (j.data || 'unknown error'));
+					return j.data.html;
+				});
+		}
+
+		function run(item) {
+			var strategy = item.dataset.strategy;
+			var ring = item.querySelector('.cd-perf-ring');
+			var err  = item.querySelector('.cd-perf-error');
+			var old  = ring.className;
+			ring.className = 'cd-perf-ring cd-perf-busy';
+			err.textContent = '';
+			return psi(strategy)
+				.then(function (res) { return save(strategy, res); })
+				.then(function (html) { item.innerHTML = html; })
+				.catch(function (e) {
+					ring.className = old;
+					err.textContent = e.message;
+				});
+		}
+
+		btn.addEventListener('click', function () {
+			if (!cfg.key) { stat.textContent = 'ER_PSI_KEY is missing in wp-config.php'; return; }
+			btn.disabled = true;
+			stat.textContent = 'Testing… (about 40 s)';
+			Promise.all([].map.call(root.querySelectorAll('.cd-perf-item'), run))
+				.then(function () { btn.disabled = false; stat.textContent = ''; });
+		});
+	})();
+	</script>
+	<?php
 }
 
 // ======================================
@@ -781,7 +1132,8 @@ add_action('wp_dashboard_setup', function () {
 	wp_add_dashboard_widget('hosting_code_repo',           '🌀 Hosting & Code Repos',  'custom_render_hosting_repo_widget');
 	wp_add_dashboard_widget('quick_links',                 '🔗 Quick Links',           'custom_render_quick_links_widget');
 	wp_add_dashboard_widget('custom_activity_alerts',      '🗓️ Recent Site Activity',  'custom_render_activity_widget');
-	wp_add_dashboard_widget('custom_analytics_toolkit',    '📊 Analytics Toolkit',     'custom_render_analytics_toolkit');
+	wp_add_dashboard_widget('custom_analysis_toolkit',     '📊 Analysis Toolkit',      'custom_render_analysis_toolkit');
+	wp_add_dashboard_widget('custom_performance',          '🚀 Performance',           'custom_perf_render_widget');
 	wp_add_dashboard_widget('custom_optimize_and_cleanup', '🧹 Optimize & Clean-Up',   'custom_render_innodb_cleanup');
 	wp_add_dashboard_widget('custom_blog_rss_widget',      '📰 RSS Feed: My Blog',     'custom_render_blog_rss_widget');
 	wp_add_dashboard_widget('custom_interests_rss_widget', '📰 RSS Feed: My Interests','custom_render_interests_rss_widget');
