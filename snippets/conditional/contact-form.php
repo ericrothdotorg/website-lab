@@ -3,8 +3,9 @@
 
 /* =============================================================================
    1. DATABASE SETUP
-   Creates wp_er_contact_messages and wp_er_contact_nonce_log on first Run.
-   Safe to re-run. Existing installs: Adds Status Column if missing.
+   Creates wp_er_contact_messages on first Run.
+   Safe to re-run. Existing installs: Adds Status Column if missing, and drops
+   the old wp_er_contact_nonce_log once (see 2: no nonce anymore).
 ============================================================================= */
 
 if ( is_admin() ) {
@@ -35,17 +36,10 @@ if ( is_admin() ) {
                 $wpdb->query( "ALTER TABLE {$table} ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'ok' AFTER message" );
             }
         }
-        // Nonce Failure Log Table
-        if ( ! get_option( 'er_contact_nonce_log_table_created' ) ) {
-            $log_table = $wpdb->prefix . 'er_contact_nonce_log';
-            $sql       = "CREATE TABLE {$log_table} (
-                id        MEDIUMINT(9) NOT NULL AUTO_INCREMENT,
-                ip        VARCHAR(45)  NOT NULL,
-                failed_at DATETIME     DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id)
-            ) {$charset};";
-            dbDelta( $sql );
-            update_option( 'er_contact_nonce_log_table_created', true );
+        // Old Nonce Failure Log Table: no longer written by anything
+        if ( get_option( 'er_contact_nonce_log_table_created' ) ) {
+            $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}er_contact_nonce_log" );
+            delete_option( 'er_contact_nonce_log_table_created' );
         }
     } );
 }
@@ -53,12 +47,15 @@ if ( is_admin() ) {
 /* =============================================================================
    2. CONTACT FORM (Conditional: Only on designated Page IDs)
    Scripts and Styles load only on Pages where the Form is present.
-   Nonce is injected inline via wp_footer so it's always fresh.
+   No nonce: the page and its footer are full-page cached for days, so any
+   nonce printed here would be stale long before the page is (12-24 h), and the
+   form would fail with "Security check failed". For a public form it adds no
+   protection anyway (every logged-out visitor gets the same one). Spam is
+   kept out by the honeypot, the silent math check and the per-IP rate limit.
 ============================================================================= */
 
 add_action( 'wp_footer', function () {
     if ( ! is_page( [ '59078', '150449' ] ) ) return;
-    $nonce = wp_create_nonce( 'contact_form_nonce' );
     ?>
     <style>
         .formsubmit-wrapper {max-width: 700px; margin: 0 auto; padding: 2em; background: var(--color-3); border-radius: 25px;}
@@ -94,7 +91,6 @@ add_action( 'wp_footer', function () {
     document.addEventListener( 'DOMContentLoaded', function () {
         const form = document.getElementById( 'contact-form' );
         if ( ! form ) return; // Form not on this Page — Do nothing
-        document.getElementById( 'contact-nonce' ).value = '<?php echo esc_js( $nonce ); ?>';
         const confirmation  = document.getElementById( 'form-confirmation' );
         const submitBtn     = document.getElementById( 'submit-btn' );
         const formLoadTime  = Date.now();
@@ -147,16 +143,13 @@ add_action( 'wp_footer', function () {
    Sets Status to 'mail_failed' if the Notification E-mail cannot be sent.
 ============================================================================= */
 
-add_action( 'wp_ajax_submit_contact_form_ajax',        'handle_contact_form_ajax' );
-add_action( 'wp_ajax_nopriv_submit_contact_form_ajax', 'handle_contact_form_ajax' );
+add_action( 'wp_ajax_submit_contact_form_ajax',        'er_contact_handle_ajax' );
+add_action( 'wp_ajax_nopriv_submit_contact_form_ajax', 'er_contact_handle_ajax' );
 
-function handle_contact_form_ajax() {
+function er_contact_handle_ajax() {
     global $wpdb;
-    // Nonce
-    if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'contact_form_nonce' ) ) {
-        $ip = sanitize_text_field( $_SERVER['REMOTE_ADDR'] ?? 'unknown' );
-        $wpdb->insert( $wpdb->prefix . 'er_contact_nonce_log', [ 'ip' => $ip ], [ '%s' ] );
-        wp_send_json_error( [ 'message' => 'Security check failed.' ] );
+    if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+        wp_send_json_error();
     }
     // Transient Rate Limit
     $ip = sanitize_text_field( $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0' );
@@ -221,7 +214,7 @@ function handle_contact_form_ajax() {
 /* =============================================================================
    4. ADMIN PAGE
    Top-level Menu → View, search, filter by Status Dot, bulk delete,
-   full-message Thickbox Preview, Pagination, Nonce failure Warning Banner.
+   full-message Thickbox Preview, Pagination.
    Thickbox is enqueued only when this Admin Page is active.
 ============================================================================= */
 
@@ -232,7 +225,7 @@ if ( is_admin() ) {
             'Contact Form',
             'manage_options',
             'contact-form',
-            'display_contact_messages',
+            'er_contact_admin_page',
             'dashicons-email',
             21
         );
@@ -243,12 +236,9 @@ if ( is_admin() ) {
         if ( $hook === 'toplevel_page_contact-form' ) add_thickbox();
     } );
 
-    function display_contact_messages() {
+    function er_contact_admin_page() {
         global $wpdb;
         $table     = $wpdb->prefix . 'er_contact_messages';
-        $log_table = $wpdb->prefix . 'er_contact_nonce_log';
-        // Purge Nonce Log Entries older than 24 Hours to keep the Table lean
-        $wpdb->query( "DELETE FROM {$log_table} WHERE failed_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)" );
         // Handle Bulk Delete
         if (
             isset( $_POST['bulk_delete'], $_POST['message_ids'], $_POST['_wpnonce'] ) &&
@@ -258,12 +248,6 @@ if ( is_admin() ) {
             $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
             $wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE id IN ({$placeholders})", ...$ids ) );
             echo '<div class="updated"><p>Selected messages have been deleted.</p></div>';
-        }
-        // Nonce Failure Warning Banner (Threshold: 5+ Failures in 1 Hour may indicate a broken or attacked Form)
-        $one_hour_ago   = date( 'Y-m-d H:i:s', strtotime( '-1 hour' ) );
-        $nonce_failures = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$log_table} WHERE failed_at >= %s", $one_hour_ago ) );
-        if ( $nonce_failures >= 5 ) {
-            echo '<div class="notice notice-warning"><p><strong>⚠ Contact Form Warning:</strong> ' . $nonce_failures . ' nonce verification failures in the last hour — your form may be broken.</p></div>';
         }
         // Search (POST — Submitted from the same Page)
         $search   = isset( $_POST['search_term'] ) ? sanitize_text_field( $_POST['search_term'] ) : '';
@@ -339,7 +323,8 @@ if ( is_admin() ) {
                                             <p><?php echo nl2br( esc_html( $msg->message ) ); ?></p>
                                         </div>
                                     </td>
-                                    <td><?php echo esc_html( date( 'F j, Y H:i', strtotime( $msg->submitted_at ) ) ); ?></td>
+                                    <!-- Stored by MySQL in UTC, shown in site time -->
+                                    <td><?php echo esc_html( wp_date( 'F j, Y H:i', strtotime( $msg->submitted_at . ' UTC' ) ) ); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
