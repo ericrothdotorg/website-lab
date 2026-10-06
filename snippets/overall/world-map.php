@@ -781,7 +781,8 @@ function er_map_cover_js() {
 	let lastList = [];
 	let firstPoll = true;
 	let pollTimer = 0;
-	const canPoll = Boolean(config.ajax && othersEl);
+	const canPoll = Boolean(config.ajax && othersEl)
+		&& !(navigator.webdriver || /lighthouse|headlesschrome/i.test(navigator.userAgent));
 
 	/* The viewer: from this page view's tracking answer (event "er:visitor"),
 	   or from the previous page view of this tab. Rounded to the server's
@@ -1441,7 +1442,8 @@ function er_reach_js() {
 		me = e.detail;
 		if (lastData) render(lastData);
 	});
-	function start() { if (!timer) { load(); timer = setInterval(load, POLL_MS); } }
+	const isBot = navigator.webdriver || /lighthouse|headlesschrome/i.test(navigator.userAgent);
+	function start() { if (isBot || timer) return; load(); timer = setInterval(load, POLL_MS); }
 	function stop() { clearInterval(timer); timer = 0; }
 	document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
 	if (!document.hidden) start();
