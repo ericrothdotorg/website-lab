@@ -3,7 +3,19 @@
 
 // ============================================================================
 // STATS ENGINE - single source for all counters
-// Must load before the voting snippet and the dashboard -> low priority
+// ----------------------------------------------------------------------------
+// Owns wp_er_post_stats: creates it, is the only snippet that writes to it,
+// and cleans it. Everything else reads through the functions below.
+// Scope "Run snippet everywhere" (votes arrive via admin-ajax, the jobs run
+// via wp-cron). Must load before the voting snippet and the dashboard -> low
+// priority.
+//
+// PROVIDES
+//   er_track_post_views( $post_id )  counts a real page view (Visitor Tracking)
+//   er_stats_counts( $post_id )      view / like / dislike totals of one post (Voting)
+//   er_stats_snapshot()              site-wide figures (Voting, Custom Dashboard)
+//   er_today_start()                 start of today in site time
+//   AJAX action er_vote              like / dislike buttons (Voting)
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -20,6 +32,142 @@ function er_stats_base_rates() {
 function er_stats_tracked_types() {
     return ['post', 'page', 'my-interests', 'my-quotes', 'my-traits'];
 }
+
+function er_stats_is_tracked($post_id) {
+    return $post_id
+        && get_post_status($post_id) === 'publish'
+        && in_array(get_post_type($post_id), er_stats_tracked_types(), true);
+}
+
+// Day boundary in site time. created_at is written with current_time('mysql'),
+// but MySQL runs on UTC, so CURDATE() would be off by the time zone offset.
+if (!function_exists('er_today_start')) {
+    function er_today_start() {
+        return current_time('Y-m-d') . ' 00:00:00';
+    }
+}
+
+// ----------------------------------------------------------------------------
+// TABLE
+// ----------------------------------------------------------------------------
+// One table for everything: one 'total' row per post and type holds the
+// number shown; 'event' rows log today's real views and votes.
+// CREATE TABLE IF NOT EXISTS never touches an existing table. Runs once per
+// schema version on init, and daily from the cleanup as a safety net.
+
+function er_stats_install_table() {
+    global $wpdb;
+    $wpdb->query("CREATE TABLE IF NOT EXISTS {$wpdb->prefix}er_post_stats (
+        `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        `post_id` bigint(20) unsigned NOT NULL,
+        `type` enum('view','like','dislike') NOT NULL,
+        `row_type` enum('total','event') NOT NULL,
+        `count` bigint(20) unsigned DEFAULT 0,
+        `created_at` datetime DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        KEY `idx_counter` (`post_id`,`type`,`row_type`),
+        KEY `idx_events` (`type`,`row_type`,`created_at`)
+    ) " . $wpdb->get_charset_collate());
+}
+add_action('init', function() {
+    if (get_option('er_stats_schema') !== '1') {
+        er_stats_install_table();
+        update_option('er_stats_schema', '1');
+    }
+});
+
+// ----------------------------------------------------------------------------
+// RECORDING
+// ----------------------------------------------------------------------------
+// Real views and votes: +1 on the total row, plus one event row for today's
+// figures. Only for published content of the tracked types.
+
+function er_stats_record($post_id, $type) {
+    global $wpdb;
+    $table = $wpdb->prefix . 'er_post_stats';
+    $sql   = $wpdb->prepare(
+        "UPDATE {$table} SET count = count + 1
+         WHERE post_id = %d AND type = %s AND row_type = 'total'",
+        $post_id, $type
+    );
+    // No counter row yet (content published before the counters existed):
+    // create it with its initial values first, so the count is not lost.
+    if (!$wpdb->query($sql)) {
+        er_stats_seed_post($post_id);
+        $wpdb->query($sql);
+    }
+    $wpdb->insert($table, [
+        'post_id'    => $post_id,
+        'type'       => $type,
+        'row_type'   => 'event',
+        'count'      => null,
+        'created_at' => current_time('mysql'),
+    ]);
+}
+
+// Called by Visitor Tracking once per visitor, post and 24 hours.
+function er_track_post_views($post_id) {
+    $post_id = (int) $post_id;
+    if (er_stats_is_tracked($post_id)) {
+        er_stats_record($post_id, 'view');
+    }
+}
+
+// Totals of one post in a single query: ['view' => n, 'like' => n, 'dislike' => n].
+// Kept per request, so several shortcodes on one page cost one query.
+function er_stats_counts($post_id, $fresh = false) {
+    static $cache = [];
+    $post_id = (int) $post_id;
+    if ($fresh || !isset($cache[$post_id])) {
+        global $wpdb;
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT type, SUM(count) AS n FROM {$wpdb->prefix}er_post_stats
+             WHERE post_id = %d AND row_type = 'total' GROUP BY type",
+            $post_id
+        ));
+        $out = ['view' => 0, 'like' => 0, 'dislike' => 0];
+        foreach ((array) $rows as $r) {
+            $out[$r->type] = (int) $r->n;
+        }
+        $cache[$post_id] = $out;
+    }
+    return $cache[$post_id];
+}
+
+// ----------------------------------------------------------------------------
+// LIKES AND DISLIKES (AJAX action er_vote)
+// ----------------------------------------------------------------------------
+// Pages are full-page cached for days, so a nonce baked into them would expire
+// long before the page does. Like the tracking beacon, this endpoint is guarded
+// without one: POST only, published tracked content only, one vote per IP and
+// post within 5 minutes (the same lock the buttons apply in the browser), and
+// at most 20 votes per IP and minute. Answers with the new total.
+
+function er_stats_vote() {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        wp_send_json_error(null, 405);
+    }
+    $post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
+    $type    = isset($_POST['type']) ? sanitize_key($_POST['type']) : '';
+    if (!in_array($type, ['like', 'dislike'], true) || !er_stats_is_tracked($post_id)) {
+        wp_send_json_error(null, 400);
+    }
+    $ip   = md5($_SERVER['REMOTE_ADDR'] ?? '');
+    $rl   = 'er_vote_rl_' . $ip;
+    $hits = (int) get_transient($rl);
+    if ($hits >= 20) {
+        wp_send_json_error(null, 429);
+    }
+    set_transient($rl, $hits + 1, MINUTE_IN_SECONDS);
+    $lock = 'er_vote_' . md5($ip . '|' . $post_id);
+    if (get_transient($lock) === false) {
+        er_stats_record($post_id, $type);
+        set_transient($lock, 1, 5 * MINUTE_IN_SECONDS);
+    }
+    wp_send_json_success(['count' => er_stats_counts($post_id, true)[$type]]);
+}
+add_action('wp_ajax_er_vote', 'er_stats_vote');
+add_action('wp_ajax_nopriv_er_vote', 'er_stats_vote');
 
 // ----------------------------------------------------------------------------
 // DAILY VALUE
@@ -139,7 +287,12 @@ function er_stats_apply_daily() {
 }
 add_action('er_stats_daily_increment', 'er_stats_apply_daily');
 
-// Schedule the job and clear out the old weekly ones.
+// Next occurrence of a time of day in site time (not UTC).
+function er_stats_next_local($time) {
+    return (new DateTime('tomorrow ' . $time, wp_timezone()))->getTimestamp();
+}
+
+// Schedule the jobs and clear out the old weekly ones.
 // Unscheduling the legacy weekly events on every load is cheap and idempotent,
 // so an older database restore gets cleaned up too.
 add_action('init', function() {
@@ -147,11 +300,20 @@ add_action('init', function() {
         $ts = wp_next_scheduled($old);
         if ($ts) wp_unschedule_event($ts, $old);
     }
+    // One-time reset: both jobs used to be scheduled in UTC, and the voting
+    // snippet scheduled the cleanup at a random time of day. If today's
+    // amount has not been applied yet, it is applied now instead of skipped.
+    if (get_option('er_stats_cron') !== '2') {
+        wp_clear_scheduled_hook('er_stats_daily_increment');
+        wp_clear_scheduled_hook('er_stats_daily_cleanup');
+        update_option('er_stats_cron', '2');
+        er_stats_apply_daily();
+    }
     if (!wp_next_scheduled('er_stats_daily_increment')) {
-        wp_schedule_event(strtotime('tomorrow 00:05'), 'daily', 'er_stats_daily_increment');
+        wp_schedule_event(er_stats_next_local('00:05'), 'daily', 'er_stats_daily_increment');
     }
     if (!wp_next_scheduled('er_stats_daily_cleanup')) {
-        wp_schedule_event(strtotime('tomorrow 00:15'), 'daily', 'er_stats_daily_cleanup');
+        wp_schedule_event(er_stats_next_local('00:15'), 'daily', 'er_stats_daily_cleanup');
     }
 });
 
@@ -167,25 +329,29 @@ function er_stats_snapshot() {
 
     global $wpdb;
     $table    = $wpdb->prefix . 'er_post_stats';
-    $today    = current_time('Y-m-d') . ' 00:00:00';
     $progress = er_stats_day_progress();
     $out      = [];
 
+    // Two queries for all three types: today's recorded events, and the totals.
+    $real = $wpdb->get_results($wpdb->prepare(
+        "SELECT type, COUNT(*) AS n FROM {$table}
+         WHERE type IN ('view','like','dislike') AND row_type = 'event' AND created_at >= %s
+         GROUP BY type", er_today_start()
+    ), OBJECT_K);
+    $total = $wpdb->get_results(
+        "SELECT type, COALESCE(SUM(count),0) AS n FROM {$table}
+         WHERE row_type = 'total' GROUP BY type", OBJECT_K
+    );
+
     foreach (['view', 'like', 'dislike'] as $type) {
-        // Recorded events from today.
-        $real = (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$table}
-             WHERE type = %s AND row_type = 'event' AND created_at >= %s", $type, $today
-        ));
+        $r = isset($real[$type]) ? (int) $real[$type]->n : 0;
         // The share of the daily amount accrued so far.
         $synth = (int) round(er_stats_today_target($type) * $progress);
 
-        $out[$type . 's_today'] = $synth + $real;
+        $out[$type . 's_today'] = $synth + $r;
         // Recorded events kept separately for the dashboard control line.
-        $out['real_' . $type . 's_today'] = $real;
-        $out[$type . 's_total'] = (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COALESCE(SUM(count),0) FROM {$table} WHERE type = %s AND row_type = 'total'", $type
-        ));
+        $out['real_' . $type . 's_today'] = $r;
+        $out[$type . 's_total'] = isset($total[$type]) ? (int) $total[$type]->n : 0;
     }
 
     set_transient('er_stats_snapshot', $out, 5 * MINUTE_IN_SECONDS);
@@ -237,149 +403,25 @@ add_action('transition_post_status', function($new_status, $old_status, $post) {
 }, 10, 3);
 
 // ----------------------------------------------------------------------------
-// STATS TABLE CLEANUP (wp_er_post_stats only)
+// STATS TABLE CLEANUP (daily, 00:15 site time)
 // ----------------------------------------------------------------------------
-// Removes counters for deleted posts and for untracked types. Runs daily
-// because WordPress recreates oembed_cache entries continuously.
+// Removes counters for deleted posts and for untracked types (WordPress
+// recreates oembed_cache entries continuously), and event rows from before
+// today: only today's are ever read. Total rows are never touched otherwise.
 
 add_action('er_stats_daily_cleanup', function() {
     global $wpdb;
     $table = $wpdb->prefix . 'er_post_stats';
     $in    = "'" . implode("','", array_map('esc_sql', er_stats_tracked_types())) . "'";
+    er_stats_install_table();
     $wpdb->query(
         "DELETE ps FROM {$table} ps
          LEFT JOIN {$wpdb->posts} p ON p.ID = ps.post_id
          WHERE ps.row_type = 'total'
            AND (p.ID IS NULL OR p.post_status <> 'publish' OR p.post_type NOT IN ({$in}))"
     );
-}, 20);
-
-// ============================================================================
-// SITE-WIDE DATABASE CLEANUP (meta, transients, logs, OPTIMIZE TABLE)
-// ============================================================================
-// Lives here because this snippet is scope "everywhere". wp-cron.php runs with
-// is_admin() === false, so a callback registered from the admin-only Custom
-// Dashboard snippet is invisible to the scheduler: the event fires, finds no
-// callback, reschedules itself and deletes nothing. That was the bug.
-// The dashboard widget keeps the button and calls custom_run_innodb_cleanup()
-// from here. Do not move this back into Custom Dashboard — it would be a
-// duplicate declaration and fatal in wp-admin.
-
-if (!function_exists('er_today_start')) {
-	function er_today_start() {
-		return current_time('Y-m-d') . ' 00:00:00';
-	}
-}
-
-add_action('init', function () {
-	if (!wp_next_scheduled('er_weekly_cleanup')) {
-		wp_schedule_event(time() + HOUR_IN_SECONDS, 'weekly', 'er_weekly_cleanup');
-	}
+    $wpdb->query($wpdb->prepare(
+        "DELETE FROM {$table} WHERE row_type = 'event' AND created_at < %s",
+        er_today_start()
+    ));
 });
-
-add_action('er_weekly_cleanup', function () {
-	$result = custom_run_innodb_cleanup();
-	update_option('custom_last_cleanup', time());
-	update_option('custom_last_cleanup_result', $result['message']);
-	update_option('custom_last_cleanup_success', $result['success']);
-});
-
-if (!function_exists('custom_run_innodb_cleanup')) {
-function custom_run_innodb_cleanup() {
-	global $wpdb;
-	$deleted_total = 0;
-	$errors = [];
-
-	$safe_delete = function($query, $operation_name) use ($wpdb, &$errors) {
-		$result = $wpdb->query($query);
-		if ($result === false) {
-			$errors[] = $operation_name . ' failed: ' . $wpdb->last_error;
-			return 0;
-		}
-		return (int) $result;
-	};
-
-	$deleted_total += custom_cleanup_orphaned_data($wpdb, $safe_delete);
-	$deleted_total += custom_cleanup_postmeta($wpdb, $safe_delete);
-	$deleted_total += custom_cleanup_usermeta($wpdb, $safe_delete);
-	$deleted_total += custom_cleanup_transients($wpdb, $safe_delete);
-	$deleted_total += custom_cleanup_old_data($wpdb, $safe_delete);
-	$optimized_count = custom_optimize_tables($wpdb, $errors);
-
-	if (!empty($errors)) {
-		return [
-			'success' => false,
-			'message' => "⚠️ Partial cleanup: {$deleted_total} rows deleted → {$optimized_count} tables optimized. Errors: " . implode(' | ', $errors),
-		];
-	}
-	return [
-		'success' => true,
-		'message' => "✅ Total rows deleted: {$deleted_total} → {$optimized_count} tables optimized.",
-	];
-}
-
-function custom_cleanup_orphaned_data($wpdb, $safe_delete) {
-	$deleted = 0;
-	$deleted += $safe_delete("DELETE pm FROM {$wpdb->postmeta} pm LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id WHERE p.ID IS NULL", 'Orphaned postmeta cleanup');
-	$deleted += $safe_delete("DELETE tr FROM {$wpdb->term_relationships} tr LEFT JOIN {$wpdb->posts} p ON p.ID = tr.object_id WHERE p.ID IS NULL", 'Orphaned term relationships cleanup');
-	$deleted += $safe_delete("DELETE um FROM {$wpdb->usermeta} um LEFT JOIN {$wpdb->users} u ON u.ID = um.user_id WHERE u.ID IS NULL", 'Orphaned usermeta cleanup');
-	$deleted += $safe_delete("DELETE tm FROM {$wpdb->termmeta} tm LEFT JOIN {$wpdb->terms} t ON t.term_id = tm.term_id WHERE t.term_id IS NULL", 'Orphaned termmeta cleanup');
-	return $deleted;
-}
-
-function custom_cleanup_postmeta($wpdb, $safe_delete) {
-	$deleted = 0;
-	$safe_keys = ['_edit_lock', '_edit_last', '_wp_old_slug', '_wp_old_date', '_last_viewed_timestamp', 'litespeed-optimize-set', 'litespeed-optimize-size'];
-	foreach ($safe_keys as $key) {
-		$deleted += $safe_delete($wpdb->prepare("DELETE FROM {$wpdb->postmeta} WHERE meta_key = %s", $key), "Postmeta cleanup ({$key})");
-	}
-	$deleted += $safe_delete("DELETE FROM {$wpdb->postmeta} WHERE meta_key = '_menu_item_target' AND (meta_value IS NULL OR meta_value = '')", 'Empty menu item targets cleanup');
-	$deleted += $safe_delete("DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE '_oembed_%' OR meta_key LIKE '_oembed_time_%'", 'oEmbed cache cleanup');
-	return $deleted;
-}
-
-function custom_cleanup_usermeta($wpdb, $safe_delete) {
-	$deleted = 0;
-	$safe_keys = ['_session_tokens', '_last_activity', '_woocommerce_persistent_cart'];
-	foreach ($safe_keys as $key) {
-		$deleted += $safe_delete($wpdb->prepare("DELETE FROM {$wpdb->usermeta} WHERE meta_key = %s", $key), "Usermeta cleanup ({$key})");
-	}
-	return $deleted;
-}
-
-function custom_cleanup_transients($wpdb, $safe_delete) {
-	$deleted = 0;
-	$deleted += $safe_delete("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_%' AND option_name NOT LIKE '_transient_timeout_%'", 'Transient cleanup');
-	$deleted += $safe_delete("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_%' AND option_value < UNIX_TIMESTAMP()", 'Expired transient timeout cleanup');
-	return $deleted;
-}
-
-// Retention rules live here. They are NOT background jobs: Nothing expires on
-// its own, the "90 days" and "7 days" limits only apply the moment this runs.
-function custom_cleanup_old_data($wpdb, $safe_delete) {
-	$deleted = 0;
-	if ($wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}actionscheduler_actions'") === "{$wpdb->prefix}actionscheduler_actions") {
-		$deleted += $safe_delete("DELETE FROM {$wpdb->prefix}actionscheduler_actions WHERE status = 'complete' AND scheduled_date_gmt < NOW() - INTERVAL 30 DAY", 'ActionScheduler cleanup');
-	}
-	$deleted += $safe_delete("DELETE FROM {$wpdb->posts} WHERE post_status = 'auto-draft' AND post_content = ''", 'Auto-draft cleanup');
-	$deleted += $safe_delete($wpdb->prepare("DELETE FROM {$wpdb->prefix}er_post_stats WHERE row_type = 'event' AND created_at < %s", er_today_start()), 'Old vote/view event log cleanup');
-	$deleted += $safe_delete("DELETE FROM {$wpdb->prefix}er_map_views WHERE viewed_at < NOW() - INTERVAL 90 DAY", 'Old map view log cleanup (90-day retention)');
-	$deleted += $safe_delete("DELETE FROM {$wpdb->posts} WHERE post_status = 'trash' AND post_modified < NOW() - INTERVAL 1 DAY", 'Trash posts cleanup');
-	$deleted += $safe_delete("DELETE FROM {$wpdb->prefix}er_subscribers WHERE status = 'pending' AND created_at < NOW() - INTERVAL 7 DAY", 'Stale pending subscriber cleanup');
-	return $deleted;
-}
-
-function custom_optimize_tables($wpdb, &$errors) {
-	$tables = ['postmeta', 'usermeta', 'termmeta', 'er_post_stats', 'er_map_views'];
-	$optimized_count = 0;
-	foreach ($tables as $table) {
-		$wpdb->query("OPTIMIZE TABLE {$wpdb->prefix}{$table}");
-		if ($wpdb->last_error === '') {
-			$optimized_count++;
-		} else {
-			$errors[] = "Failed to optimize {$table}: " . $wpdb->last_error;
-		}
-	}
-	return $optimized_count;
-}
-}
