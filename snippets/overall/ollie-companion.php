@@ -506,7 +506,7 @@ add_action( 'wp_head', function() {
 			<?php else : ?>
 	<style>
 		/* Term Image Meta — override background on the cover span */
-		.er-hero-section .er-hero-bg {background-image: url('<?php echo esc_url($er_img_url); ?>') !important;}
+		.er-hero-section[data-type] .er-hero-bg {background-image: url('<?php echo esc_url($er_img_url); ?>') !important;}
 	</style>
 			<?php endif;
 		endif;
@@ -543,10 +543,10 @@ function er_hero_shortcode() {
 		$full = wp_get_attachment_image_url( $img_id, 'full' );
 		if ( ! $full ) return '';
 		$mobile = wp_get_attachment_image_url( $img_id, 'large' );
-		// Phones preload 'large' but the hero painted 'full' — a miss. Pages skipped:
-		// Term Image Meta writes a competing rule there.
+		// Phones get 'large' (matches the preload). Term Image Meta overrides this
+		// on filter pages via the more specific [data-type] selector.
 		$css = ( $mobile && $mobile !== $full )
-			? '<style>@media (max-width:768px){.er-hero-section:not([data-type="page"]) .er-hero-bg{background-image:url(' . esc_url( $mobile ) . ') !important;}}</style>'
+			? '<style>@media (max-width:768px){.er-hero-section .er-hero-bg{background-image:url(' . esc_url( $mobile ) . ') !important;}}</style>'
 			: '';
 		return $css . '<span'
 			. ' aria-hidden="true"'
