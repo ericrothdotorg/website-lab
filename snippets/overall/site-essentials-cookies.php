@@ -22,7 +22,6 @@ define('CACHE_POST_COUNT', 3600);            // 1 hour - Post Count Cache
 
 // Cookie & Analytics
 define('COOKIE_MAX_AGE', 31536000);          // 1 year in Seconds
-define('CLARITY_TIMEOUT', 2000);             // Clarity load Timeout (MS)
 define('CLARITY_ID', 'eic7b2e9o1');          // Microsoft Clarity ID
 
 // Regex Patterns (compiled once for Performance)
@@ -981,6 +980,9 @@ add_action('wp_footer', function () {
 	<?php } ?>
 
 	<!-- MS Clarity Analytics -->
+	<?php /* Starts on the first interaction (scroll, pointer, key, touch), not on load:
+	         page speed tests never interact, so Clarity stays out of their measurement,
+	         and real visitors get the first seconds of the page without it. */ ?>
 
 	<?php if (!current_user_can('administrator')) : ?>
 
@@ -994,11 +996,12 @@ add_action('wp_footer', function () {
 					y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
 				})(window, document, "clarity", "script", "<?php echo CLARITY_ID; ?>");
 			}
-			if('requestIdleCallback'in window){
-				requestIdleCallback(loadClarity,{timeout:<?php echo CLARITY_TIMEOUT;?>});
-			}else{
-				setTimeout(loadClarity,1500);
+			var events=['scroll','pointerdown','pointermove','keydown','touchstart'];
+			function start(){
+				events.forEach(function(e){window.removeEventListener(e,start,true);});
+				loadClarity();
 			}
+			events.forEach(function(e){window.addEventListener(e,start,{passive:true,capture:true});});
 		})();
 	</script>
 
