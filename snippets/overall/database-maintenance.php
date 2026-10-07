@@ -56,12 +56,12 @@ function custom_run_innodb_cleanup() {
 	if (!empty($errors)) {
 		return [
 			'success' => false,
-			'message' => "⚠️ Partial cleanup: {$deleted_total} rows deleted → {$optimized_count} tables optimized. Errors: " . implode(' | ', $errors),
+			'message' => "Partial cleanup: {$deleted_total} rows deleted → {$optimized_count} tables optimized. Errors: " . implode(' | ', $errors),
 		];
 	}
 	return [
 		'success' => true,
-		'message' => "✅ Total rows deleted: {$deleted_total} → {$optimized_count} tables optimized.",
+		'message' => "Total rows deleted: {$deleted_total} → {$optimized_count} tables optimized.",
 	];
 }
 
