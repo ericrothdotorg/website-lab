@@ -404,7 +404,7 @@ function custom_check_broken_yt_links() {
 // ======================================
 
 // Google PageSpeed results of the home page (mobile + desktop), tested on
-// demand via "Run Speed Test".
+// demand via "Run PageSpeed".
 //
 // The browser calls Google directly and only sends the numbers to admin-ajax
 // (custom_perf_save). Do not move the call to PHP: a test takes 30-60 s and
@@ -582,7 +582,7 @@ function custom_perf_render_widget() {
 		</div>
 		<?php $site = urlencode(home_url('/')); ?>
 		<div class="cd-perf-foot">
-			<button type="button" class="button cd-perf-btn">Run Speed Test</button>
+			<button type="button" class="button cd-perf-btn">Run PageSpeed</button>
 			<a class="button" target="_blank" rel="noopener"
 				href="<?php echo esc_url('https://pagespeed.web.dev/report?url=' . $site . '&hl=en'); ?>">Full Report</a>
 			<a class="button" target="_blank" rel="noopener"
