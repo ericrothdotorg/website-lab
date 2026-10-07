@@ -13,31 +13,40 @@
 // ======================================
 
 // Renders a row of link buttons. Used by every widget that shows a button row,
-// so spacing and markup stay identical everywhere.
-function custom_render_button_row(array $links, $style = '') {
+// so spacing and markup stay identical everywhere. Optional label in front.
+function custom_render_button_row(array $links, $style = '', $row_label = '') {
 	echo '<div class="cd-widget cd-flex"' . ($style ? ' style="' . esc_attr($style) . '"' : '') . '>';
+	if ($row_label) echo '<span class="cd-subhead cd-row-label">' . esc_html($row_label) . '</span>';
 	foreach ($links as $label => $url) {
 		echo '<a href="' . esc_url($url) . '" target="_blank" class="button">' . esc_html($label) . '</a>';
 	}
 	echo '</div>';
 }
 
+// One date style everywhere: "July 20, 2026", with time "October 5, 2026 - 07:43".
+function custom_format_date($timestamp, $with_time = false) {
+	return '<em class="cd-date">' . esc_html(wp_date($with_time ? 'F j, Y - H:i' : 'F j, Y', $timestamp)) . '</em>';
+}
+
 // ======================================
 // 📇 AT A GLANCE
 // ======================================
 
-// Add CPTs
+// Add CPTs, styled like the core rows: normal weight and the post type's own
+// menu icon instead of the default circle.
 add_filter('dashboard_glance_items', 'custom_filter_dashboard_glance_items');
 function custom_filter_dashboard_glance_items($items) {
 	$post_types = get_post_types(['public' => true, '_builtin' => false], 'objects');
 	foreach ($post_types as $pt) {
 		$count = wp_count_posts($pt->name)->publish;
 		if ($count) {
+			$icon = (is_string($pt->menu_icon) && strpos($pt->menu_icon, 'dashicons-') === 0) ? $pt->menu_icon : 'dashicons-admin-post';
 			$items[] = sprintf(
-				'<a href="edit.php?post_type=%1$s" target="_blank" class="cd-link">%2$s %3$s</a>',
+				'<a href="edit.php?post_type=%1$s" target="_blank" class="cd-glance"><i class="dashicons %4$s" aria-hidden="true"></i>%2$s %3$s</a>',
 				esc_attr($pt->name),
 				number_format_i18n($count),
-				esc_html($pt->labels->name)
+				esc_html($pt->labels->name),
+				esc_attr($icon)
 			);
 		}
 	}
@@ -51,12 +60,12 @@ function custom_filter_dashboard_glance_items($items) {
 function custom_render_theme_snapshot_widget() {
 	$theme     = wp_get_theme();
 	$theme_dir = get_theme_root() . '/' . $theme->get_stylesheet();
-	$updated   = wp_date('F j, Y', filemtime($theme_dir . '/style.css'));
+	$updated   = custom_format_date(filemtime($theme_dir . '/style.css'));
 
-	printf('<p>Theme is <strong>%s</strong> (v%s). Last updated: <strong>%s</strong></p>',
+	printf('<p>Theme is <strong>%s</strong> (v%s). Last updated: %s</p>',
 		esc_html($theme->get('Name')),
 		esc_html($theme->get('Version')),
-		esc_html($updated)
+		$updated
 	);
 	// THEME RELATED — hardcoded parent-theme changelog URL (olliewp.com).
 	// Points to the current theme's docs; update or remove on a theme switch.
@@ -88,15 +97,15 @@ function custom_render_editing_rules_widget() {
 
 function custom_render_hosting_repo_widget() {
 	custom_render_button_row([
-		'🔐 Login'   => 'https://auth.hostinger.com/login',
-		'📬 Webmail' => 'https://mail.hostinger.com/',
-		'🧠 AI'      => admin_url('admin.php?page=hostinger-ai-assistant'),
-	]);
+		'Login'   => 'https://auth.hostinger.com/login',
+		'Webmail' => 'https://mail.hostinger.com/',
+		'AI'      => admin_url('admin.php?page=hostinger-ai-assistant'),
+	], '', 'Hostinger');
 	custom_render_button_row([
-		'💾 GitHub'        => 'https://github.com/ericrothdotorg',
-		'🎨 Design Blocks' => admin_url('themes.php?page=design-block-tracker'),
-		'✂️ Snippets'      => admin_url('admin.php?page=snippets'),
-	], 'margin-top: 6px;');
+		'GitHub'        => 'https://github.com/ericrothdotorg',
+		'Design Blocks' => admin_url('themes.php?page=design-block-tracker'),
+		'Snippets'      => admin_url('admin.php?page=snippets'),
+	], 'margin-top: 6px;', 'Codes');
 }
 
 // ======================================
@@ -105,23 +114,22 @@ function custom_render_hosting_repo_widget() {
 
 function custom_render_quick_links_widget() {
 	$groups = [
-		'🤖 AI Chatbots' => [
-			'✨ Copilot'  => 'https://m365.cloud.microsoft/chat',
-			'✨ Frontier' => 'https://stride.microsoft.com/',
-			'✨ Claude'   => 'https://claude.ai/',
-			'✨ DS'       => 'https://chat.deepseek.com/',
+		'Chatbots' => [
+			'Copilot'  => 'https://m365.cloud.microsoft/chat',
+			'Frontier' => 'https://stride.microsoft.com/',
+			'Claude'   => 'https://claude.ai/',
+			'DS'       => 'https://chat.deepseek.com/',
 		],
-		'🎁 Sponsor Channels' => [
-			'💰 GitHub'  => 'https://github.com/ericrothdotorg',
-			'💰 Patreon' => 'https://www.patreon.com/cw/ericrothdotorg',
-			'💰 PayPal'  => 'https://www.paypal.com/paypalme/ericrothdotorg',
-			'💰 BMC'     => 'https://buymeacoffee.com/ericrothdotorg',
+		'Sponsors' => [
+			'GitHub'  => 'https://github.com/ericrothdotorg',
+			'Patreon' => 'https://www.patreon.com/cw/ericrothdotorg',
+			'PayPal'  => 'https://www.paypal.com/paypalme/ericrothdotorg',
+			'BMC'     => 'https://buymeacoffee.com/ericrothdotorg',
 		],
 	];
 	$first = true;
-	foreach ($groups as $heading => $links) {
-		echo '<p class="cd-muted cd-bold" style="margin: ' . ($first ? '0' : '15px') . ' 0 8px;">' . esc_html($heading) . '</p>';
-		custom_render_button_row($links);
+	foreach ($groups as $row_label => $links) {
+		custom_render_button_row($links, $first ? '' : 'margin-top: 6px;', $row_label);
 		$first = false;
 	}
 }
@@ -198,9 +206,9 @@ function custom_render_activity_widget() {
 		}
 	};
 
-	$reaction_row = function($icon, $label, $slug, $today_val, $real_val, $total_val, $posts)
+	$reaction_row = function($label, $slug, $today_val, $real_val, $total_val, $posts)
 	                use ($format, $real, $fold, $signature, $render_today_list) {
-		echo '<li>' . $icon . ' ' . $label . ': ';
+		echo '<li>' . $label . ': ';
 		echo '<span class="cd-toggle cd-summary" data-target="' . esc_attr($slug) . '-today">' . $format($today_val) . ' today</span>' . $real($real_val);
 		echo ' / <strong>' . $format($total_val) . '</strong> total';
 		echo '<ul id="' . esc_attr($slug) . '-today" data-signature="' . esc_attr($signature($posts)) . '" style="display:' . $fold($posts) . '; margin: 8px 0 4px 16px; font-size: 13px; line-height: 1.8;">';
@@ -209,11 +217,11 @@ function custom_render_activity_widget() {
 	};
 
 	echo '<ul style="line-height: 1.5;">';
-	echo '<li>📬 Contact Messages: <strong class="cd-alert">' . $format($cached['contact_today']) . '</strong> today / <strong>' . $format($cached['contact_total']) . '</strong> total</li>';
-	echo '<li>📩 Subscribers: <strong class="cd-alert">' . $format($cached['subscribers_today']) . '</strong> new today / <strong>' . $format($cached['subscribers_total']) . '</strong> total</li>';
-	echo '<li>👁️ Views: <strong class="cd-alert">' . $format($cached['views_today']) . '</strong> today' . $real($cached['real_views_today'] ?? 0) . ' / <strong>' . $format($cached['views_total']) . '</strong> total</li>';
-	$reaction_row('👍', 'Likes',    'likes',    $cached['likes_today'],    $cached['real_likes_today'] ?? 0,    $cached['likes_total'],    $liked_today);
-	$reaction_row('👎', 'Dislikes', 'dislikes', $cached['dislikes_today'], $cached['real_dislikes_today'] ?? 0, $cached['dislikes_total'], $disliked_today);
+	echo '<li>Contact Messages: <strong class="cd-alert">' . $format($cached['contact_today']) . '</strong> today / <strong>' . $format($cached['contact_total']) . '</strong> total</li>';
+	echo '<li>Subscribers: <strong class="cd-alert">' . $format($cached['subscribers_today']) . '</strong> new today / <strong>' . $format($cached['subscribers_total']) . '</strong> total</li>';
+	echo '<li>Views: <strong class="cd-alert">' . $format($cached['views_today']) . '</strong> today' . $real($cached['real_views_today'] ?? 0) . ' / <strong>' . $format($cached['views_total']) . '</strong> total</li>';
+	$reaction_row('Likes',    'likes',    $cached['likes_today'],    $cached['real_likes_today'] ?? 0,    $cached['likes_total'],    $liked_today);
+	$reaction_row('Dislikes', 'dislikes', $cached['dislikes_today'], $cached['real_dislikes_today'] ?? 0, $cached['dislikes_total'], $disliked_today);
 	echo '</ul>';
 }
 
@@ -241,9 +249,9 @@ function custom_handle_youtube_check_submission() {
 function custom_render_external_tools_buttons() {
 	$site = urlencode(home_url('/'));
 	custom_render_button_row([
-		'🧩 Google Rich'   => 'https://search.google.com/test/rich-results?url=' . $site,
-		'🧩 schema.org'    => 'https://validator.schema.org/?url=' . $site,
-		'♿ Accessibility' => 'https://wave.webaim.org/report#/' . $site,
+		'Google Rich'   => 'https://search.google.com/test/rich-results?url=' . $site,
+		'schema.org'    => 'https://validator.schema.org/?url=' . $site,
+		'Accessibility' => 'https://wave.webaim.org/report#/' . $site,
 	]);
 }
 
@@ -267,7 +275,7 @@ function custom_render_site_metrics() {
 
 	// Shows the IPv4 when there is one, otherwise falls back to a city lookup.
 	if ($visitor_ip !== '') {
-		$cd_display = '🧊 Your IP: <strong>' . esc_html($visitor_ip) . '</strong>';
+		$cd_display = 'Your IP: <strong>' . esc_html($visitor_ip) . '</strong>';
 	} else {
 		// Cached per IP for a day: without it every dashboard load waited for
 		// ip-api.com (up to 5 s) whenever you are on IPv6.
@@ -286,36 +294,36 @@ function custom_render_site_metrics() {
 			}
 			set_transient('cd_place_' . md5($raw), $loc, DAY_IN_SECONDS);
 		}
-		$cd_display = '📍 Place: <strong>' . esc_html($loc) . '</strong>';
+		$cd_display = 'Place: <strong>' . esc_html($loc) . '</strong>';
 	}
 
 	// Active plugins straight from the option: correct for the label, and no
 	// scan of every plugin file on each dashboard load.
 	$plugin_count = count((array) get_option('active_plugins', []));
 
-	echo '<div class="cd-widget cd-flex" style="margin-top: 15px;">';
+	echo '<div class="cd-widget cd-flex cd-gap">';
 	echo '<div style="width: calc(50% - 5px);">';
-	echo '<p style="margin: 0 0 5px;">🖼️ Media Files: <strong>' . number_format_i18n($total_media) . '</strong></p>';
-	echo '<p style="margin: 0;">🧵 InnoDB Tables: <strong>' . number_format_i18n($db_table_count) . '</strong></p>';
+	echo '<p style="margin: 0 0 5px;">Media Files: <strong>' . number_format_i18n($total_media) . '</strong></p>';
+	echo '<p style="margin: 0;">InnoDB Tables: <strong>' . number_format_i18n($db_table_count) . '</strong></p>';
 	echo '</div>';
 	echo '<div style="width: calc(50% - 5px);">';
 	echo '<p style="margin: 0 0 5px;">' . $cd_display . '</p>';
-	echo '<p style="margin: 0;">🔌 Active Plugins: <strong>' . number_format_i18n($plugin_count) . '</strong></p>';
+	echo '<p style="margin: 0;">Active Plugins: <strong>' . number_format_i18n($plugin_count) . '</strong></p>';
 	echo '</div>';
 	echo '</div>';
 }
 
 function custom_render_tools_and_actions() {
-	echo '<div style="margin-top: 15px;">';
+	echo '<div class="cd-gap">';
 	custom_render_button_row([
-		'🛠️ W3.org Dev Tools' => 'https://www.w3.org/developers/tools/',
-		'📈 MS Clarity'        => 'https://clarity.microsoft.com/projects/view/eic7b2e9o1/dashboard',
+		'W3.org Dev Tools' => 'https://www.w3.org/developers/tools/',
+		'MS Clarity'       => 'https://clarity.microsoft.com/projects/view/eic7b2e9o1/dashboard',
 	], 'margin-bottom: 10px;');
 
 	echo '<div class="cd-widget cd-flex" style="align-items: center; gap: 15px;">';
 	echo '<form method="post" class="cd-form">';
 	wp_nonce_field('check_broken_yt_action', 'check_broken_yt_nonce');
-	echo '<button type="submit" name="check_broken_yt" class="button">🔍 Broken YT Links</button>';
+	echo '<button type="submit" name="check_broken_yt" class="button">Broken YT Links</button>';
 	echo '</form>';
 
 	$results      = get_option('custom_broken_yt_results', []);
@@ -323,17 +331,13 @@ function custom_render_tools_and_actions() {
 	$broken_count = !empty($results['broken_count']) ? (int) $results['broken_count'] : 0;
 
 	echo '<div style="display: flex; flex-direction: column; line-height: 1.4;">';
-	echo '<span>🔴 Broken YT Links: <strong class="cd-alert">' . $broken_count . '</strong></span>';
-	echo '<em class="cd-date">Last checked: ';
-	echo $last_check
-		? esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $last_check))
-		: 'Never';
-	echo '</em>';
+	echo '<span>Broken YT Links: <strong class="cd-alert">' . $broken_count . '</strong></span>';
+	echo '<span>Last checked: ' . ($last_check ? custom_format_date($last_check, true) : '<em class="cd-date">Never</em>') . '</span>';
 	echo '</div>';
 	echo '</div>';
 
 	if (!empty($results['broken_posts'])) {
-		echo '<details style="margin-top: 10px;">';
+		echo '<details class="cd-details" style="margin-top: 10px;">';
 		echo '<summary class="cd-summary" style="margin-bottom: 15px;">Broken Links Locations</summary>';
 		echo '<ul>';
 		foreach ($results['broken_posts'] as $post_id => $video_ids) {
@@ -501,7 +505,7 @@ function custom_perf_render_item_inner($strategy) {
 	$scores  = $d['scores']  ?? [];
 	$metrics = $d['metrics'] ?? [];
 	$perf    = $scores['performance'] ?? null;
-	$time    = isset($d['time']) ? wp_date('Y-m-d H:i', $d['time']) : '—';
+	$time    = isset($d['time']) ? custom_format_date($d['time'], true) : '—';
 	?>
 	<div class="cd-perf-head">
 		<div class="cd-perf-ring <?php echo esc_attr(custom_perf_class($perf)); ?>">
@@ -514,10 +518,10 @@ function custom_perf_render_item_inner($strategy) {
 		</div>
 		<div>
 			<strong><?php echo esc_html(custom_perf_label($strategy)); ?></strong><br>
-			<span class="cd-perf-muted">Last scanned:</span><br>
-			<span class="cd-perf-time"><?php echo esc_html($time); ?></span>
+			<span class="cd-muted">Last scanned:</span>
 		</div>
 	</div>
+	<div class="cd-perf-stamp"><?php echo $time; ?></div>
 	<div class="cd-perf-error"></div>
 
 	<dl class="cd-perf-list">
@@ -542,21 +546,21 @@ function custom_perf_render_item_inner($strategy) {
 		$issues = $d['issues'];
 		usort($issues, function ($a, $b) { return (int) $a['score'] <=> (int) $b['score']; });
 		?>
-		<details class="cd-perf-issues">
+		<details class="cd-perf-issues cd-details">
 			<summary>Analysis (<?php echo count($issues); ?>)</summary>
 			<?php if (!$issues) : ?>
-				<p class="cd-perf-muted">Nothing to improve.</p>
+				<p class="cd-muted">Nothing cost points in this run.</p>
 			<?php endif; ?>
 			<?php foreach (custom_perf_categories() as $cat => $name) :
 				$list = array_filter($issues, function ($i) use ($cat) { return $i['cat'] === $cat; });
 				if (!$list) continue; ?>
-				<div class="cd-perf-cat"><?php echo esc_html($name); ?></div>
+				<div class="cd-perf-cat cd-subhead"><?php echo esc_html($name); ?></div>
 				<?php foreach ($list as $i) : ?>
 					<details class="cd-perf-issue">
 						<summary>
 							<span class="cd-perf-dot <?php echo esc_attr(custom_perf_class($i['score'])); ?>"></span>
 							<span><?php echo esc_html($i['title']); ?><?php if ($i['value'] !== '') : ?>
-								<span class="cd-perf-muted"> – <?php echo esc_html($i['value']); ?></span><?php endif; ?></span>
+								<span class="cd-muted"> – <?php echo esc_html($i['value']); ?></span><?php endif; ?></span>
 						</summary>
 						<p><?php echo esc_html($i['desc']); ?>
 							<?php if ($i['link']) : ?><a href="<?php echo esc_url($i['link']); ?>" target="_blank" rel="noopener">Learn more</a><?php endif; ?></p>
@@ -578,58 +582,54 @@ function custom_perf_render_widget() {
 		</div>
 		<?php $site = urlencode(home_url('/')); ?>
 		<div class="cd-perf-foot">
-			<button type="button" class="button cd-perf-btn">🚀 Run Speed Test</button>
+			<button type="button" class="button cd-perf-btn">Run Speed Test</button>
 			<a class="button" target="_blank" rel="noopener"
-				href="<?php echo esc_url('https://pagespeed.web.dev/report?url=' . $site . '&hl=en'); ?>">🔎 Full Report</a>
+				href="<?php echo esc_url('https://pagespeed.web.dev/report?url=' . $site . '&hl=en'); ?>">Full Report</a>
 			<a class="button" target="_blank" rel="noopener"
-				href="<?php echo esc_url('https://www.webpagetest.org/?url=' . $site); ?>">🚀 WebPageTest</a>
+				href="<?php echo esc_url('https://www.webpagetest.org/?url=' . $site); ?>">WebPageTest</a>
 		</div>
-		<p class="cd-perf-muted cd-perf-status"></p>
+		<p class="cd-muted cd-perf-status"></p>
 	</div>
 	<style>
 		.cd-perf-row { display: flex; gap: 14px; }
 		.cd-perf-item { flex: 1; min-width: 0; }
 		.cd-perf-divider { width: 1px; background: #dcdcde; }
 		.cd-perf-head { display: flex; align-items: center; gap: 10px; }
+		.cd-perf-stamp { margin-top: 6px; white-space: nowrap; }
 		.cd-perf-ring { position: relative; width: 56px; height: 56px; flex: none; }
 		.cd-perf-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 		.cd-perf-ring circle { fill: none; stroke-width: 3.2; }
 		.cd-perf-track { stroke: #e8e8e8; }
 		.cd-perf-bar { stroke-linecap: round; transition: stroke-dasharray .6s ease; }
 		.cd-perf-score { position: absolute; inset: 0; display: flex; align-items: center;
-			justify-content: center; font-size: 17px; font-weight: 600; }
-		.cd-perf-good .cd-perf-bar { stroke: #0c9d58; }
-		.cd-perf-avg  .cd-perf-bar { stroke: #e67700; }
-		.cd-perf-bad  .cd-perf-bar { stroke: #d93025; }
-		.cd-perf-good .cd-perf-score, dd.cd-perf-good { color: #0c9d58; }
-		.cd-perf-avg  .cd-perf-score, dd.cd-perf-avg  { color: #e67700; }
-		.cd-perf-bad  .cd-perf-score, dd.cd-perf-bad  { color: #d93025; }
-		.cd-perf-none .cd-perf-score, dd.cd-perf-none { color: #808080; }
+			justify-content: center; font-size: 17px; font-weight: bold; }
+		.cd-perf-good .cd-perf-bar { stroke: var(--cd-green); }
+		.cd-perf-avg  .cd-perf-bar { stroke: var(--cd-orange); }
+		.cd-perf-bad  .cd-perf-bar { stroke: var(--cd-red); }
+		.cd-perf-good .cd-perf-score, dd.cd-perf-good { color: var(--cd-green); }
+		.cd-perf-avg  .cd-perf-score, dd.cd-perf-avg  { color: var(--cd-orange); }
+		.cd-perf-bad  .cd-perf-score, dd.cd-perf-bad  { color: var(--cd-red); }
+		.cd-perf-none .cd-perf-score, dd.cd-perf-none { color: var(--cd-muted); }
 		.cd-perf-busy svg { animation: cd-perf-spin 1s linear infinite; }
 		.cd-perf-busy .cd-perf-bar { stroke: #8da6b9; stroke-dasharray: 25 100; }
 		@keyframes cd-perf-spin { to { transform: rotate(270deg); } }
-		.cd-perf-muted { color: #808080; }
-		.cd-perf-time { white-space: nowrap; font-size: 13px; }
-		.cd-perf-error { color: #c53030; font-size: 12px; }
+		.cd-perf-error { color: var(--cd-red); font-size: 12px; }
 		.cd-perf-list { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px;
-			margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f0f1; font-size: 13px; }
-		.cd-perf-list dt { color: #50575e; }
+			margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--cd-line); }
+		.cd-perf-list dt { color: var(--cd-muted); }
 		.cd-perf-list dt[title] { cursor: help; }
-		.cd-perf-list dd { margin: 0; text-align: right; font-weight: 600; white-space: nowrap; }
-		.cd-perf-issues { margin-top: 10px; padding-top: 8px; border-top: 1px solid #f0f0f1; font-size: 13px; }
-		.cd-perf-issues > summary { cursor: pointer; font-weight: 600; }
-		.cd-perf-cat { margin: 8px 0 2px; color: #808080; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+		.cd-perf-list dd { margin: 0; text-align: right; font-weight: bold; white-space: nowrap; }
+		.cd-perf-issues { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--cd-line); }
+		.cd-perf-issues > summary { font-weight: bold; }
+		.cd-perf-cat { margin: 8px 0 2px; }
 		.cd-perf-issue > summary { display: flex; gap: 6px; align-items: baseline; cursor: pointer; list-style: none; padding: 2px 0; }
 		.cd-perf-issue > summary::-webkit-details-marker { display: none; }
-		.cd-perf-issue p { margin: 2px 0 6px 14px; color: #50575e; font-size: 12px; }
+		.cd-perf-issue p { margin: 2px 0 6px 14px; color: var(--cd-muted); font-size: 12px; }
 		.cd-perf-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; position: relative; top: -1px; }
-		.cd-perf-dot.cd-perf-avg { background: #e67700; }
-		.cd-perf-dot.cd-perf-bad { background: #d93025; }
-		.cd-perf-dot.cd-perf-none { background: #808080; }
-		.cd-perf-foot { display: flex; gap: 6px; margin-top: 16px; }
-		/* Three buttons in one row: a little less side padding than the
-		   Custom Dashboard default (12px), whose rule loads later. */
-		.cd-perf .cd-perf-foot .button { white-space: nowrap; padding: 0 9px; }
+		.cd-perf-dot.cd-perf-avg { background: var(--cd-orange); }
+		.cd-perf-dot.cd-perf-bad { background: var(--cd-red); }
+		.cd-perf-dot.cd-perf-none { background: var(--cd-muted); }
+		.cd-perf-foot { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
 		.cd-perf-status { margin: 6px 0 0; }
 		.cd-perf-status:empty { display: none; }
 	</style>
@@ -667,9 +667,18 @@ function custom_perf_render_widget() {
 						var a = lh.audits[id] || {};
 						res.metrics[id] = { value: (a.displayValue || '–').replace(/\u00a0/g, ' '), score: pct(a.score) };
 					});
-					// Not-green audits per category, as the PageSpeed website lists them.
-					// Metric audits are left out (shown above); text loses its markdown.
+					// Only what cost points in this run: performance points that slow a non-green
+					// metric, other categories only points that count in their score.
 					var skipMode = ['notApplicable', 'informative', 'manual', 'error'];
+					var metricOf = {
+						FCP: 'first-contentful-paint', LCP: 'largest-contentful-paint',
+						TBT: 'total-blocking-time',    CLS: 'cumulative-layout-shift'
+					};
+					var weak = {};
+					Object.keys(metricOf).forEach(function (k) {
+						var m = lh.audits[metricOf[k]];
+						if (m && typeof m.score === 'number' && m.score < 0.9) weak[k] = true;
+					});
 					var seen = {};
 					res.issues = [];
 					cfg.categories.forEach(function (c) {
@@ -679,6 +688,12 @@ function custom_perf_render_widget() {
 							var a = lh.audits[ref.id];
 							if (!a || seen[ref.id] || ref.group === 'metrics' || ref.group === 'hidden') return;
 							if (a.score === null || a.score >= 0.9 || skipMode.indexOf(a.scoreDisplayMode) >= 0) return;
+							if (c === 'performance') {
+								var sv = a.metricSavings || {};
+								if (!Object.keys(sv).some(function (k) { return weak[k] && sv[k] > 0; })) return;
+							} else if (!ref.weight) {
+								return;
+							}
 							seen[ref.id] = true;
 							var desc = a.description || '';
 							// "Learn more" links become the link below the text; any other
@@ -756,7 +771,7 @@ function custom_perf_render_widget() {
 
 // Layout of this section:
 //   1. Widget assembly      — what the dashboard box prints, top to bottom
-//   2. 👆 Manual trigger    — the "🧵 InnoDB Cleanup" button
+//   2. 👆 Manual trigger    — the "InnoDB Cleanup" button
 //   3. Buttons & links      — includes two external tools unrelated to the engine
 //   4. Stats & health       — the row counts and their green / orange / red labels
 //   5. History readout      — the "Last cleanup" line
@@ -781,7 +796,7 @@ function custom_render_innodb_cleanup() {
 // 2. 👆 MANUAL TRIGGER
 // --------------------------------------
 
-// Fires only when the "🧵 InnoDB Cleanup" button was actually submitted.
+// Fires only when the "InnoDB Cleanup" button was actually submitted.
 // Without a click this returns immediately and nothing is deleted.
 function custom_handle_cleanup_submission() {
 	if (!isset($_POST['er_run_full_cleanup'])) return;
@@ -807,11 +822,11 @@ function custom_render_action_buttons() {
 	echo '<div class="cd-widget cd-flex" style="align-items: center;">';
 	echo '<form method="post" class="cd-form">';
 	wp_nonce_field('custom_cleanup_action', 'custom_cleanup_nonce');
-	echo '<button type="submit" name="er_run_full_cleanup" class="button">🧵 InnoDB Cleanup</button>';
+	echo '<button type="submit" name="er_run_full_cleanup" class="button">InnoDB Cleanup</button>';
 	echo '</form>';
-	echo '<a href="' . esc_url(admin_url('admin.php?page=litespeed-db_optm')) . '" class="button" target="_blank">🛢️ LiteSpeed DB</a>';
+	echo '<a href="' . esc_url(admin_url('admin.php?page=litespeed-db_optm')) . '" class="button" target="_blank">LiteSpeed DB</a>';
 	$purge = admin_url('index.php?LSCWP_CTRL=purge&LSCWP_NONCE=' . wp_create_nonce('purge') . '&litespeed_type=purge_all');
-	echo '<a href="' . esc_url($purge) . '" class="button">⚡ Purge All</a>';
+	echo '<a href="' . esc_url($purge) . '" class="button">Purge All</a>';
 	echo '</div>';
 }
 
@@ -830,7 +845,7 @@ function custom_render_database_stats() {
 	];
 	$total = 0;
 
-	echo '<div style="margin-top: 15px;">';
+	echo '<div class="cd-gap">';
 	foreach ($rows as [$label, $count, $profile]) {
 		$total += $count;
 		$status = custom_get_health_status($count, $profile);
@@ -864,35 +879,36 @@ function custom_render_cleanup_history() {
 
 	$last_result  = get_option('custom_last_cleanup_result');
 	$last_success = get_option('custom_last_cleanup_success', true);
+	echo '<div class="cd-section">';
 	if ($last_result) {
-		$result_class = $last_success ? 'cd-success' : 'cd-alert';
-		echo '<p style="margin: 10px 0;" class="' . esc_attr($result_class) . '"><strong>' . esc_html($last_result) . '</strong></p>';
+		$result_class = $last_success ? 'cd-success' : 'cd-warning';
+		echo '<p style="margin: 0 0 5px;" class="' . esc_attr($result_class) . '"><strong>' . esc_html($last_result) . '</strong></p>';
 	}
-	echo '<p style="margin: 5px 0;"><em>Last cleanup: ' .
-		esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $last_cleanup)) . '</em></p>';
+	echo '<p style="margin: 0;">Last cleanup: ' . custom_format_date($last_cleanup, true) . '</p>';
+	echo '</div>';
 }
 
 // ======================================
-// 📰 RSS FEEDS
+// 📰 RSS FEED
 // ======================================
 
-function custom_render_blog_rss_widget() {
-	custom_render_rss_widget(home_url('/feed/'));
-}
-
-function custom_render_interests_rss_widget() {
-	custom_render_rss_widget(home_url('/my-interests/feed/'));
+// One box, two feeds. Each section pages on its own.
+function custom_render_rss_feeds_widget() {
+	custom_render_rss_widget('My Blog', home_url('/feed/'));
+	custom_render_rss_widget('My Interests', home_url('/my-interests/feed/'), 'cd-gap');
 }
 
 // Shared renderer. Prints every item; the JavaScript pages through them.
-function custom_render_rss_widget($feed_url) {
-	echo '<div class="rss-widget">';
-	echo '<div class="rss-nav" style="display: flex; align-items: center; margin: 0 0 10px;"><span class="rss-counter"></span></div>';
+function custom_render_rss_widget($heading, $feed_url, $class = '') {
+	echo '<div class="rss-widget' . ($class ? ' ' . esc_attr($class) : '') . '">';
+	echo '<div class="rss-nav" style="display: flex; align-items: center; margin: 0 0 10px;">';
+	echo '<span class="cd-subhead" style="margin-right: 8px;">' . esc_html($heading) . '</span><span class="rss-counter cd-muted"></span>';
+	echo '</div>';
 	echo '<div class="rss-items" style="display: none;">';
 
-	$items = custom_get_rss_items($feed_url, 15);
+	$items = custom_get_rss_items($feed_url, 10);
 	if (is_wp_error($items)) {
-		echo '<p>🚫 Error fetching feed: ' . esc_html($items->get_error_message()) . '</p>';
+		echo '<p>Error fetching feed: ' . esc_html($items->get_error_message()) . '</p>';
 	} else {
 		foreach ($items as $item) {
 			$desc = wp_strip_all_tags($item->get_description());
@@ -900,21 +916,21 @@ function custom_render_rss_widget($feed_url) {
 			$desc      = preg_replace('/\s+\b\w{1,10}\b$/u', '', $desc);
 			$excerpt   = $desc ? wp_trim_words($desc, 30) : 'No description available';
 			$timestamp = $item->get_date('U');
-			$date      = $timestamp ? wp_date('F j, Y', $timestamp) : 'Unknown date';
+			$date      = $timestamp ? custom_format_date($timestamp) : '<em class="cd-date">Unknown date</em>';
 
 			$edit_link = '';
 			if (preg_match('/p=(\d+)/', $item->get_id(), $matches)) {
 				$edit_link = get_edit_post_link((int) $matches[1]);
 			}
 
-			echo '<div class="rss-item" style="display: none; margin-bottom: 15px;">';
+			echo '<div class="rss-item" style="display: none;">';
 			echo '<div><a href="' . esc_url($item->get_link()) . '" target="_blank" class="cd-link">' . esc_html($item->get_title()) . '</a> – ';
-			echo '<span class="cd-muted cd-date">🗓️ Published: <strong>' . esc_html($date) . '</strong></span>';
+			echo '<span class="cd-muted">Published:</span> ' . $date;
 			if ($edit_link) {
 				echo ' – <a href="' . esc_url($edit_link) . '" target="_blank" class="cd-link">Edit</a>';
 			}
 			echo '</div>';
-			echo '<p style="margin: 5px 0;">' . esc_html($excerpt) . '</p>';
+			echo '<p style="margin: 5px 0 0;">' . esc_html($excerpt) . '</p>';
 			echo '</div>';
 		}
 	}
@@ -948,8 +964,9 @@ function custom_dashboard_inline_assets() {
 			--cd-blue:   #1e73be;
 			--cd-red:    #c53030;
 			--cd-muted:  #808080;
-			--cd-green:  green;
-			--cd-orange: orange;
+			--cd-green:  #0c9d58;
+			--cd-orange: #e67700;
+			--cd-line:   #f0f0f1;
 		}
 		/* One text size for every widget body, so the boxes match each other. */
 		#dashboard-widgets .inside { font-size: 14px; }
@@ -961,16 +978,15 @@ function custom_dashboard_inline_assets() {
 			--cd-btn-bg-top:    #fafbfc;
 			--cd-btn-bg-bottom: #e1e8ed;
 			--cd-btn-border:    #8da6b9;
-			--cd-btn-text:      #3a4f66;
 			--cd-btn-hover:     #fafbfc;
 			--cd-btn-shadow:    rgba(0,0,0,.08);
 		}
-		.cd-widget .button,
-		.cd-widget button.button {
+		#dashboard-widgets .cd-widget .button,
+		#dashboard-widgets .cd-widget button.button {
 			background: linear-gradient(to bottom, var(--cd-btn-bg-top), var(--cd-btn-bg-bottom));
 			border: 1px solid var(--cd-btn-border);
 			border-radius: 4px;
-			color: var(--cd-btn-text);
+			color: var(--cd-blue);
 			min-height: 30px;
 			padding: 0 12px;
 			font-weight: normal;
@@ -983,15 +999,15 @@ function custom_dashboard_inline_assets() {
 			gap: 5px;
 			cursor: pointer;
 		}
-		.cd-widget .button:hover,
-		.cd-widget button.button:hover {
-			color: var(--cd-btn-text);
+		#dashboard-widgets .cd-widget .button:hover,
+		#dashboard-widgets .cd-widget button.button:hover {
+			color: var(--cd-red);
 			background: var(--cd-btn-hover);
 			border-color: var(--cd-btn-border);
 			box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 1px 3px rgba(0,0,0,.12);
 		}
-		.cd-widget .button:focus:not(:focus-visible),
-		.cd-widget button.button:focus:not(:focus-visible) {
+		#dashboard-widgets .cd-widget .button:focus:not(:focus-visible),
+		#dashboard-widgets .cd-widget button.button:focus:not(:focus-visible) {
 			border-color: var(--cd-btn-border);
 			box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 1px 2px var(--cd-btn-shadow);
 			outline: none;
@@ -1006,9 +1022,28 @@ function custom_dashboard_inline_assets() {
 		.cd-warning       { color: var(--cd-orange); }
 		.cd-muted         { color: var(--cd-muted); }
 		.cd-bold          { font-weight: bold; }
-		.cd-date          { font-size: 12px; }
+		.cd-date          { font-size: 12px; font-style: italic; font-weight: 600; }
+		.cd-subhead       { color: var(--cd-muted); font-size: 13px; font-weight: bold; }
+		.cd-row-label     { min-width: 85px; align-self: center; }
+		.cd-gap           { margin-top: 15px; }
+		.cd-section       { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--cd-line); }
+		/* Same space above and below every line: no extra margins at its edges. */
+		.cd-section > :first-child { margin-top: 0 !important; }
+		.cd-section > :last-child  { margin-bottom: 0 !important; }
+		.rss-items        { flex-direction: column; gap: 15px; }
+		/* Fold toggles and RSS buttons use the Dashicons arrows of the box headers. */
+		.cd-details > summary { display: flex; align-items: center; gap: 2px; list-style: none; cursor: pointer; }
+		.cd-details > summary::-webkit-details-marker { display: none; }
+		.cd-details > summary::before { font: 16px/1 dashicons; content: "\f345"; }
+		.cd-details[open] > summary::before { content: "\f347"; }
+		.cd-arrow-prev::before, .cd-arrow-next::before { font: 16px/1 dashicons; }
+		.cd-arrow-prev::before { content: "\f341"; }
+		.cd-arrow-next::before { content: "\f345"; }
 		.cd-flex          { display: flex; gap: 6px; flex-wrap: wrap; }
 		.cd-form          { margin: 0; }
+		/* === At a Glance === */
+		#dashboard_right_now li a.cd-glance:before { content: none; }
+		#dashboard_right_now .cd-glance .dashicons { color: #646970; margin-right: 5px; }
 		/* === Widget Header === */
 		#dashboard-widgets .postbox-header .hndle {
 			display: flex;
@@ -1022,7 +1057,7 @@ function custom_dashboard_inline_assets() {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-	// RSS Feed Widgets: paged navigation, 3 items at a time, wrapping at both ends.
+	// RSS Feed sections: paged navigation, 2 items at a time, wrapping at both ends.
 	document.querySelectorAll('.rss-widget').forEach(widget => {
 		const nav     = widget.querySelector('.rss-nav');
 		const list    = widget.querySelector('.rss-items');
@@ -1038,23 +1073,22 @@ document.addEventListener('DOMContentLoaded', function () {
 		// Build the back / forward Buttons and put them in the nav Bar.
 		// Both stay visible on every Page, so neither can shift under the cursor.
 		const group = document.createElement('div');
+		group.className = 'cd-widget cd-flex';
 		group.style.marginLeft = 'auto';
-		group.style.display = 'flex';
-		group.style.gap = '6px';
-		const makeBtn = (glyph, title) => {
+		const makeBtn = (dir, title) => {
 			const btn = document.createElement('button');
-			btn.innerHTML = glyph;
+			btn.type = 'button';
+			btn.className = 'button cd-arrow-' + dir;
 			btn.title = title;
-			btn.style.padding = '6px';
-			btn.style.cursor = 'pointer';
+			btn.setAttribute('aria-label', title);
 			group.appendChild(btn);
 			return btn;
 		};
-		const prevBtn = makeBtn('⬅️', 'Previous');
-		const nextBtn = makeBtn('➡️', 'Next');
+		const prevBtn = makeBtn('prev', 'Previous');
+		const nextBtn = makeBtn('next', 'Next');
 		nav.appendChild(group);
 
-		const batchSize = 3;
+		const batchSize = 2;
 		const lastStart = Math.floor((items.length - 1) / batchSize) * batchSize;
 		let currentStart = 0;
 
@@ -1079,7 +1113,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 
 		renderBatch(0);
-		list.style.display = 'block';
+		list.style.display = 'flex';
 	});
 
 });
@@ -1135,6 +1169,5 @@ add_action('wp_dashboard_setup', function () {
 	wp_add_dashboard_widget('custom_analysis_toolkit',     '📊 Analysis Toolkit',      'custom_render_analysis_toolkit');
 	wp_add_dashboard_widget('custom_performance',          '🚀 Performance',           'custom_perf_render_widget');
 	wp_add_dashboard_widget('custom_optimize_and_cleanup', '🧹 Optimize & Clean-Up',   'custom_render_innodb_cleanup');
-	wp_add_dashboard_widget('custom_blog_rss_widget',      '📰 RSS Feed: My Blog',     'custom_render_blog_rss_widget');
-	wp_add_dashboard_widget('custom_interests_rss_widget', '📰 RSS Feed: My Interests','custom_render_interests_rss_widget');
+	wp_add_dashboard_widget('custom_rss_feeds_widget',     '📰 RSS Feed',              'custom_render_rss_feeds_widget');
 });
