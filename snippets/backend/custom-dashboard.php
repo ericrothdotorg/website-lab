@@ -534,7 +534,7 @@ function custom_perf_render_item_inner($strategy) {
 			</div>
 		<?php endforeach; ?>
 		<div class="cd-perf-metric cd-perf-stampcell">
-			<span class="cd-perf-mname">Last scanned</span>
+			<span class="cd-perf-mname">Last scanned:</span>
 			<span class="cd-perf-stamp"><?php echo $time; ?></span>
 		</div>
 	</div>
