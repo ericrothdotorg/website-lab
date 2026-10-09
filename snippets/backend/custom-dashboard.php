@@ -585,9 +585,7 @@ function custom_perf_render_widget() {
 		<div class="cd-perf-foot">
 			<button type="button" class="button cd-perf-btn">Run PageSpeed</button>
 			<a class="button" target="_blank" rel="noopener"
-				href="<?php echo esc_url('https://pagespeed.web.dev/report?url=' . $site . '&hl=en'); ?>">Full Report</a>
-			<a class="button" target="_blank" rel="noopener"
-				href="<?php echo esc_url('https://www.webpagetest.org/?url=' . $site); ?>">WebPageTest</a>
+				href="<?php echo esc_url('https://pagespeed.web.dev/report?url=' . $site . '&hl=en'); ?>">PageSpeed Full</a>
 		</div>
 		<p class="cd-muted cd-perf-status"></p>
 	</div>
