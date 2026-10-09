@@ -287,7 +287,7 @@ function er_map_engine_script() {
 function er_map_layers( $mode ) {
 	$cover = 'cover' === $mode;
 	$open  = '<svg class="%s" viewBox="' . ( $cover ? ER_MAP_BOX_COVER : ER_MAP_BOX_REACH )
-		. '" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" focusable="false">';
+		. '" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true">';
 
 	$land = sprintf( $open, 'erc-map' )
 		. '<defs>'
