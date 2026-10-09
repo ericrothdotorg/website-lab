@@ -522,7 +522,6 @@ function custom_perf_render_item_inner($strategy) {
 			</div>
 		<?php endforeach; ?>
 	</div>
-	<div class="cd-perf-stamp cd-muted">Last scanned: <?php echo $time; ?></div>
 	<div class="cd-perf-error"></div>
 
 	<div class="cd-perf-mhead">Metrics</div>
@@ -534,6 +533,10 @@ function custom_perf_render_item_inner($strategy) {
 				<span class="cd-perf-mval"><?php echo esc_html($m['value']); ?></span>
 			</div>
 		<?php endforeach; ?>
+		<div class="cd-perf-metric cd-perf-stampcell">
+			<span class="cd-perf-mname">Last scanned</span>
+			<span class="cd-perf-stamp"><?php echo $time; ?></span>
+		</div>
 	</div>
 
 	<?php
@@ -612,11 +615,13 @@ function custom_perf_render_widget() {
 		.cd-perf-busy svg { animation: cd-perf-spin 1s linear infinite; }
 		.cd-perf-busy .cd-perf-bar { stroke: #8da6b9; stroke-dasharray: 25 100; }
 		@keyframes cd-perf-spin { to { transform: rotate(270deg); } }
-		.cd-perf-stamp { text-align: center; margin-top: 10px; font-size: 12px; }
+		.cd-perf-metric:nth-last-child(-n+2) { border-bottom: 0; } /* last row: no line above Analysis */
+		.cd-perf-metric.cd-perf-stampcell::before { display: none; }
+		.cd-perf-stamp { display: block; margin-top: 6px; font-size: 12px; color: var(--cd-muted); }
 		.cd-perf-error { color: var(--cd-red); font-size: 12px; text-align: center; }
 
 		/* Metrics */
-		.cd-perf-mhead { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e0e0e0;
+		.cd-perf-mhead { margin-top: 20px;
 			font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #5f6368; }
 		.cd-perf-metrics { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; }
 		.cd-perf-metric { position: relative; padding: 8px 0 8px 18px; border-bottom: 1px solid #ebebeb; }
