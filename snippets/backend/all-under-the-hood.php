@@ -152,14 +152,13 @@ add_action('admin_menu', 'er_remove_comments_menu');
 // Remove "Edit" Link in Frontend (only ever shown to the logged-in owner)
 add_filter('edit_post_link', '__return_false', 10, 1);
 
-// Hide Hostinger Kodee "Ask AI" floating Badge (frontend; login-guarded so Visitors get no Markup)
-add_action('wp_head', function () {
-    if (is_user_logged_in()) {
-        echo '<style>#vue-app .kodee-fab{display:none !important;}</style>';
+// Hostinger Agent (Kodee Chatbot): not needed — only the AI Content Generation in the Editor stays.
+// dequeue only (no deregister): should the Generator depend on these Handles, WordPress still loads them for it.
+function er_dequeue_hostinger_chatbot() {
+    foreach (['hostinger_chatbot', 'hostinger_chatbot_vendor'] as $handle) {
+        wp_dequeue_script($handle);
+        wp_dequeue_style($handle);
     }
-});
-
-// Hide Hostinger Kodee "Ask AI" floating Badge (wp-admin)
-add_action('admin_head', function () {
-    echo '<style>#vue-app .kodee-fab{display:none !important;}</style>';
-});
+}
+add_action('wp_enqueue_scripts', 'er_dequeue_hostinger_chatbot', 100);
+add_action('admin_enqueue_scripts', 'er_dequeue_hostinger_chatbot', 100);
