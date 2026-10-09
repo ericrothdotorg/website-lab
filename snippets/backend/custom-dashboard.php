@@ -504,42 +504,37 @@ function custom_perf_render_item_inner($strategy) {
 	$d = is_array($d) ? $d : [];
 	$scores  = $d['scores']  ?? [];
 	$metrics = $d['metrics'] ?? [];
-	$perf    = $scores['performance'] ?? null;
 	$time    = isset($d['time']) ? custom_format_date($d['time'], true) : '—';
 	?>
-	<div class="cd-perf-head">
-		<div class="cd-perf-ring <?php echo esc_attr(custom_perf_class($perf)); ?>">
-			<svg viewBox="0 0 36 36" aria-hidden="true">
-				<circle class="cd-perf-track" cx="18" cy="18" r="15.9155"></circle>
-				<circle class="cd-perf-bar" cx="18" cy="18" r="15.9155"
-					stroke-dasharray="<?php echo (int) $perf; ?> 100"></circle>
-			</svg>
-			<span class="cd-perf-score"><?php echo $perf === null ? '–' : (int) $perf; ?></span>
-		</div>
-		<div>
-			<strong><?php echo esc_html(custom_perf_label($strategy)); ?></strong><br>
-			<span class="cd-muted">Last scanned:</span>
-		</div>
+	<div class="cd-perf-gauges">
+		<?php foreach (custom_perf_categories() as $cat => $name) :
+			$s = $scores[$cat] ?? null; ?>
+			<div class="cd-perf-gauge">
+				<div class="cd-perf-ring <?php echo esc_attr(custom_perf_class($s)); ?>">
+					<svg viewBox="0 0 36 36" aria-hidden="true">
+						<circle class="cd-perf-fill" cx="18" cy="18" r="16.5"></circle>
+						<circle class="cd-perf-bar" cx="18" cy="18" r="15.9155"
+							stroke-dasharray="<?php echo (int) $s; ?> 100"></circle>
+					</svg>
+					<span class="cd-perf-score"><?php echo $s === null ? '–' : (int) $s; ?></span>
+				</div>
+				<span class="cd-perf-name"><?php echo esc_html($name); ?></span>
+			</div>
+		<?php endforeach; ?>
 	</div>
-	<div class="cd-perf-stamp"><?php echo $time; ?></div>
+	<div class="cd-perf-stamp cd-muted">Last scanned: <?php echo $time; ?></div>
 	<div class="cd-perf-error"></div>
 
-	<dl class="cd-perf-list">
-		<?php foreach (custom_perf_categories() as $cat => $name) :
-			if ($cat === 'performance') continue;
-			$s = $scores[$cat] ?? null; ?>
-			<dt><?php echo esc_html($name); ?></dt>
-			<dd class="<?php echo esc_attr(custom_perf_class($s)); ?>"><?php echo $s === null ? '–' : (int) $s; ?></dd>
-		<?php endforeach; ?>
-	</dl>
-
-	<dl class="cd-perf-list">
+	<div class="cd-perf-mhead">Metrics</div>
+	<div class="cd-perf-metrics">
 		<?php foreach (custom_perf_metrics() as $id => [$short, $full]) :
 			$m = $metrics[$id] ?? ['value' => '–', 'score' => null]; ?>
-			<dt title="<?php echo esc_attr($full); ?>"><?php echo esc_html($short); ?></dt>
-			<dd class="<?php echo esc_attr(custom_perf_class($m['score'])); ?>"><?php echo esc_html($m['value']); ?></dd>
+			<div class="cd-perf-metric <?php echo esc_attr(custom_perf_class($m['score'])); ?>">
+				<span class="cd-perf-mname"><?php echo esc_html($full); ?></span>
+				<span class="cd-perf-mval"><?php echo esc_html($m['value']); ?></span>
+			</div>
 		<?php endforeach; ?>
-	</dl>
+	</div>
 
 	<?php
 	if (isset($d['issues']) && is_array($d['issues'])) :
@@ -572,14 +567,17 @@ function custom_perf_render_item_inner($strategy) {
 	<?php
 }
 
+// Layout after PageSpeed itself: tabs Mobile | Desktop, four gauges, metrics
+// in two columns. "Run PageSpeed" still tests both; the hidden tab is updated too.
 function custom_perf_render_widget() {
 	?>
 	<div class="cd-widget cd-perf">
-		<div class="cd-perf-row">
-			<div class="cd-perf-item" data-strategy="desktop"><?php custom_perf_render_item_inner('desktop'); ?></div>
-			<div class="cd-perf-divider"></div>
-			<div class="cd-perf-item" data-strategy="mobile"><?php custom_perf_render_item_inner('mobile'); ?></div>
+		<div class="cd-perf-tabs" role="tablist">
+			<button type="button" class="cd-perf-tab" role="tab" data-tab="mobile">📱 Mobile</button>
+			<button type="button" class="cd-perf-tab" role="tab" data-tab="desktop">💻 Desktop</button>
 		</div>
+		<div class="cd-perf-item" data-strategy="mobile"><?php custom_perf_render_item_inner('mobile'); ?></div>
+		<div class="cd-perf-item" data-strategy="desktop"><?php custom_perf_render_item_inner('desktop'); ?></div>
 		<?php $site = urlencode(home_url('/')); ?>
 		<div class="cd-perf-foot">
 			<button type="button" class="button cd-perf-btn">Run PageSpeed</button>
@@ -591,35 +589,50 @@ function custom_perf_render_widget() {
 		<p class="cd-muted cd-perf-status"></p>
 	</div>
 	<style>
-		.cd-perf-row { display: flex; gap: 14px; }
-		.cd-perf-item { flex: 1; min-width: 0; }
-		.cd-perf-divider { width: 1px; background: #dcdcde; }
-		.cd-perf-head { display: flex; align-items: center; gap: 10px; }
-		.cd-perf-stamp { margin-top: 6px; white-space: nowrap; }
-		.cd-perf-ring { position: relative; width: 56px; height: 56px; flex: none; }
+		/* Tabs */
+		.cd-perf-tabs { display: flex; justify-content: center; gap: 4px; margin-bottom: 12px; }
+		.cd-perf-tab { padding: 6px 14px; border: 0; border-bottom: 3px solid transparent; border-radius: 4px 4px 0 0;
+			background: none; color: #5f6368; font-weight: 600; cursor: pointer; }
+		.cd-perf-tab[aria-selected="true"] { color: #1a73e8; border-bottom-color: #1a73e8; background: #e8f0fe; }
+		.cd-perf-item:not(.is-on) { display: none; }
+
+		/* Gauges */
+		.cd-perf-gauges { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; text-align: center; }
+		.cd-perf-gauge { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11.5px; line-height: 1.2; }
+		.cd-perf-ring { position: relative; width: 52px; height: 52px; flex: none; }
 		.cd-perf-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-		.cd-perf-ring circle { fill: none; stroke-width: 3.2; }
-		.cd-perf-track { stroke: #e8e8e8; }
-		.cd-perf-bar { stroke-linecap: round; transition: stroke-dasharray .6s ease; }
-		.cd-perf-score { position: absolute; inset: 0; display: flex; align-items: center;
-			justify-content: center; font-size: 17px; font-weight: bold; }
-		.cd-perf-good .cd-perf-bar { stroke: var(--cd-green); }
-		.cd-perf-avg  .cd-perf-bar { stroke: var(--cd-orange); }
-		.cd-perf-bad  .cd-perf-bar { stroke: var(--cd-red); }
-		.cd-perf-good .cd-perf-score, dd.cd-perf-good { color: var(--cd-green); }
-		.cd-perf-avg  .cd-perf-score, dd.cd-perf-avg  { color: var(--cd-orange); }
-		.cd-perf-bad  .cd-perf-score, dd.cd-perf-bad  { color: var(--cd-red); }
-		.cd-perf-none .cd-perf-score, dd.cd-perf-none { color: var(--cd-muted); }
+		.cd-perf-fill { fill: #f1f3f4; }
+		.cd-perf-bar { fill: none; stroke-width: 3; stroke: transparent; transition: stroke-dasharray .6s ease; }
+		.cd-perf-score { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+			font: 600 16px/1 "Roboto Mono", ui-monospace, Menlo, Consolas, monospace; }
+		.cd-perf-good .cd-perf-fill { fill: #e5faef; } .cd-perf-good .cd-perf-bar { stroke: #0c6; } .cd-perf-good .cd-perf-score { color: #080; }
+		.cd-perf-avg  .cd-perf-fill { fill: #fff3e0; } .cd-perf-avg  .cd-perf-bar { stroke: #fa3; } .cd-perf-avg  .cd-perf-score { color: #c33300; }
+		.cd-perf-bad  .cd-perf-fill { fill: #fdecea; } .cd-perf-bad  .cd-perf-bar { stroke: #f33; } .cd-perf-bad  .cd-perf-score { color: #c00; }
+		.cd-perf-none .cd-perf-score { color: var(--cd-muted); }
 		.cd-perf-busy svg { animation: cd-perf-spin 1s linear infinite; }
 		.cd-perf-busy .cd-perf-bar { stroke: #8da6b9; stroke-dasharray: 25 100; }
 		@keyframes cd-perf-spin { to { transform: rotate(270deg); } }
-		.cd-perf-error { color: var(--cd-red); font-size: 12px; }
-		.cd-perf-list { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px;
-			margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--cd-line); }
-		.cd-perf-list dt { color: var(--cd-muted); }
-		.cd-perf-list dt[title] { cursor: help; }
-		.cd-perf-list dd { margin: 0; text-align: right; font-weight: bold; white-space: nowrap; }
-		.cd-perf-issues { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--cd-line); }
+		.cd-perf-stamp { text-align: center; margin-top: 10px; font-size: 12px; }
+		.cd-perf-error { color: var(--cd-red); font-size: 12px; text-align: center; }
+
+		/* Metrics */
+		.cd-perf-mhead { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e0e0e0;
+			font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #5f6368; }
+		.cd-perf-metrics { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; }
+		.cd-perf-metric { position: relative; padding: 8px 0 8px 18px; border-bottom: 1px solid #ebebeb; }
+		.cd-perf-metric::before { content: ""; position: absolute; left: 2px; top: 13px; width: 8px; height: 8px; background: var(--cd-muted); border-radius: 50%; }
+		.cd-perf-mname { display: block; color: #202124; }
+		.cd-perf-mval { display: block; font-size: 22px; line-height: 1.3; margin-top: 2px; color: var(--cd-muted); }
+		.cd-perf-metric.cd-perf-good::before { background: #0c6; }
+		.cd-perf-metric.cd-perf-good .cd-perf-mval { color: #080; }
+		.cd-perf-metric.cd-perf-avg::before { background: #fa3; border-radius: 0; }
+		.cd-perf-metric.cd-perf-avg .cd-perf-mval { color: #c33300; }
+		.cd-perf-metric.cd-perf-bad::before { width: 0; height: 0; left: 1px; background: none; border-radius: 0;
+			border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 9px solid #f33; }
+		.cd-perf-metric.cd-perf-bad .cd-perf-mval { color: #c00; }
+
+		/* Analysis */
+		.cd-perf-issues { margin-top: 10px; padding-top: 4px; }
 		.cd-perf-issues > summary { font-weight: bold; }
 		.cd-perf-cat { margin: 8px 0 2px; }
 		.cd-perf-issue > summary { display: flex; gap: 6px; align-items: baseline; cursor: pointer; list-style: none; padding: 2px 0; }
@@ -646,6 +659,23 @@ function custom_perf_render_widget() {
 			'metrics'    => array_keys(custom_perf_metrics()),
 		]); ?>;
 		var TIMEOUT = 120000; // ms; Google itself needs 30-60 s
+
+		// Tabs: the last choice is remembered in this browser (convenience only).
+		function show(tab) {
+			root.querySelectorAll('.cd-perf-tab').forEach(function (b) {
+				b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false');
+			});
+			root.querySelectorAll('.cd-perf-item').forEach(function (i) {
+				i.classList.toggle('is-on', i.dataset.strategy === tab);
+			});
+			try { localStorage.setItem('cd_perf_tab', tab); } catch (e) {}
+		}
+		root.querySelectorAll('.cd-perf-tab').forEach(function (b) {
+			b.addEventListener('click', function () { show(b.dataset.tab); });
+		});
+		var start = 'mobile';
+		try { start = localStorage.getItem('cd_perf_tab') === 'desktop' ? 'desktop' : 'mobile'; } catch (e) {}
+		show(start);
 
 		// Calls Google directly from the browser - the server never waits.
 		function psi(strategy) {
