@@ -504,7 +504,7 @@ function custom_perf_render_item_inner($strategy) {
 	$d = is_array($d) ? $d : [];
 	$scores  = $d['scores']  ?? [];
 	$metrics = $d['metrics'] ?? [];
-	$time    = isset($d['time']) ? custom_format_date($d['time'], true) : '—';
+	$time    = isset($d['time']) ? custom_format_date($d['time'], true) : '<em class="cd-date">Never</em>';
 	?>
 	<div class="cd-perf-gauges">
 		<?php foreach (custom_perf_categories() as $cat => $name) :
@@ -617,7 +617,7 @@ function custom_perf_render_widget() {
 		@keyframes cd-perf-spin { to { transform: rotate(270deg); } }
 		.cd-perf-metric:nth-last-child(-n+2) { border-bottom: 0; } /* last row: no line above Analysis */
 		.cd-perf-metric.cd-perf-stampcell::before { display: none; }
-		.cd-perf-stamp { display: block; margin-top: 6px; font-size: 12px; color: var(--cd-muted); }
+		.cd-perf-stamp { display: block; margin-top: 6px; }
 		.cd-perf-error { color: var(--cd-red); font-size: 12px; text-align: center; }
 
 		/* Metrics */
