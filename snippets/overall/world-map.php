@@ -641,6 +641,17 @@ function er_map_cover_shortcode( $atts ) {
 		er_map_layers( 'cover' )
 	);
 
+	/* Night at first paint (PageSpeed Speed Index): the engine runs right behind the
+	   cover instead of in the footer and draws the night bands at once, sharp and
+	   without lights. The deferred draw() in er_map_cover_js() adds blur and lights. */
+	static $pre_done = false;
+	if ( ! $pre_done ) {
+		$pre_done = true;
+		remove_action( 'wp_footer', 'er_map_engine_script', 19 );
+		$html .= wp_get_inline_script_tag( er_map_engine_js(), array( 'id' => 'er-map-js' ) );
+		$html .= wp_get_inline_script_tag( er_map_cover_pre_js(), array( 'id' => 'er-cover-pre-js' ) );
+	}
+
 	if ( $clock ) {
 		$html .= '<div class="erc-clock" aria-hidden="true"><span class="erc-local"></span><span class="erc-sep">|</span><span class="erc-utc"></span></div>';
 	}
@@ -650,6 +661,24 @@ function er_map_cover_shortcode( $atts ) {
 
 function er_map_cover_script() {
 	wp_print_inline_script_tag( er_map_cover_js(), array( 'id' => 'er-cover-js' ) );
+}
+
+function er_map_cover_pre_js() {
+	return <<<'JS'
+(() => {
+	const root = document.querySelector('.er-cover');
+	if (!root || !window.ERMap) return;
+	const blur = root.querySelector('.erc-shade g[filter]');
+	if (blur) {
+		blur.setAttribute('data-filter', blur.getAttribute('filter'));
+		blur.removeAttribute('filter');
+	}
+	ERMap.stage(root).drawNight();
+	const clip = root.querySelector('.erc-nightclip');
+	if (clip) clip.setAttribute('d', '');
+	root.classList.add('is-pre');
+})();
+JS;
 }
 
 function er_map_cover_css() {
@@ -719,6 +748,9 @@ div.er-cover{
 @media (prefers-reduced-motion: reduce){
 	.erc-clock, .er-cover.is-ready ~ .erc-clock{animation: none; opacity: 1}
 }
+
+/* Night drawn at first paint (er_map_cover_pre_js): shown at once, no fade. */
+.er-cover.is-pre > .erc-shade{opacity: 1; transition: none}
 CSS;
 }
 
@@ -905,10 +937,12 @@ function er_map_cover_js() {
 		window.addEventListener('resize', () => onResize(), { passive: true });
 	}
 
-	/* Night and lights are computed after the first frame (not inside the
-	   parse task) and fade in together. */
+	/* The night bands are already drawn at first paint, sharp (er_map_cover_pre_js);
+	   after the first frame the blur comes back and the lights are added. */
 	requestAnimationFrame(() => setTimeout(() => {
 		try {
+			const blur = root.querySelector('.erc-shade g[data-filter]');
+			if (blur) blur.setAttribute('filter', blur.getAttribute('data-filter'));
 			draw();
 		} finally {
 			root.classList.add('is-ready');
