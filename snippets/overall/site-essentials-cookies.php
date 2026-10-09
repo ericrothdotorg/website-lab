@@ -544,6 +544,17 @@ add_filter('wp_content_img_tag', function ($html) {
     return $html;
 });
 
+// Site Logo is the only Content of the Home Link → needs the Site Name as ALT
+// (REGEX_LOGO_PATTERNS above empties it as decorative)
+add_filter('get_custom_logo', function ($html) {
+    return preg_replace('/\salt=""/', ' alt="' . esc_attr(get_bloginfo('name', 'display')) . '"', $html, 1);
+});
+
+// Navigation Icons (Hamburger, Close, Chevrons) sit in labelled Buttons → hide the SVGs themselves
+add_filter('render_block_core/navigation', function ($html) {
+    return preg_replace('/<svg(?![^>]*aria-hidden)/', '<svg aria-hidden="true" focusable="false"', $html);
+});
+
 // ======================================
 // REDIRECTS
 // ======================================
