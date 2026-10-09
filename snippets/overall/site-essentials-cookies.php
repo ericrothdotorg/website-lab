@@ -535,6 +535,15 @@ add_filter('the_content', function ($content) {
     );
 }, 15);
 
+// Empty ALT for Content Images without any ALT (manual Slideshows in Custom HTML Blocks)
+// Every <img> in the Content passes wp_content_img_tag; an existing ALT is never touched.
+add_filter('wp_content_img_tag', function ($html) {
+    if (!preg_match('/\salt\s*=/i', $html)) {
+        $html = preg_replace('/^<img\b/i', '<img alt=""', $html, 1);
+    }
+    return $html;
+});
+
 // ======================================
 // REDIRECTS
 // ======================================
