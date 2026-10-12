@@ -654,6 +654,15 @@ add_action('wp_footer', function () {
 		@media (max-width: 480px) {#cookie-notice {max-width: 100%; bottom: 0; left: 0; border-radius: 0;} #cookie-notice button:not(#cookie-close) {width: 48%; font-size: 14px; padding: 8px 5px;}}
 	</style>
 
+	<script>
+		// Show the banner with the first paint (not only after all scripts have loaded).
+		if (document.cookie.indexOf("cookieaccepted=") < 0) {
+			var n = document.getElementById("cookie-notice");
+			n.style.visibility = "visible";
+			n.setAttribute("aria-hidden", "false");
+		}
+	</script>
+
 	<!-- Cookie Consent Logic -->
 
 	<script>
