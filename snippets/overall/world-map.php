@@ -683,7 +683,7 @@ JS;
 
 function er_map_cover_css() {
 	return <<<'CSS'
-.wp-block-group:has(> .er-cover){
+.wp-block-group.er-cover-host{
 	--er-c-day: var(--color-9);
 	--er-c-accent: var(--color-1);
 	--er-c-veil: var(--color-6);
@@ -708,13 +708,14 @@ function er_map_cover_css() {
 	overflow: clip;
 	background-color: var(--er-c-veil);
 }
-:has(> .wp-block-group > .er-cover),
-:has(> * > .wp-block-group > .er-cover){margin-top: 0}
-:empty:has(+ .wp-block-group > .er-cover){display: none}
+/* Parent and grandparent of the host Group (classes from er_map_cover_mark_block()).
+   Doubled class keeps the specificity of the previous selectors. */
+.er-cover-anc.er-cover-anc{margin-top: 0}
+:empty:has(+ .wp-block-group.er-cover-host){display: none}
 
 /* width: constrained layout's auto margins cancel flex stretch. */
-.wp-block-group:has(> .er-cover) > :not(.er-cover, .erc-clock){position: relative; z-index: 1; width: 100%}
-.wp-block-group:has(> .er-cover) > :is(.er-cover, .erc-clock) + :not(.erc-clock){margin-top: 0}
+.wp-block-group.er-cover-host > :not(.er-cover, .erc-clock){position: relative; z-index: 1; width: 100%}
+.wp-block-group.er-cover-host > :is(.er-cover, .erc-clock) + :not(.erc-clock){margin-top: 0}
 
 div.er-cover{
 	position: absolute; inset: 0; z-index: 0;
@@ -753,6 +754,74 @@ div.er-cover{
 .er-cover.is-pre > .erc-shade{opacity: 1; transition: none}
 CSS;
 }
+
+/* Cover surroundings as classes, set in the server HTML (used by er_map_cover_css()).
+   Replaces the former :has() selectors: with :has(), every DOM change inside the
+   Group (e.g. each counter tick) restyled the whole cover, and on slow machines
+   that kept the main thread busy (PageSpeed desktop "Other").
+     er-cover-host  the Group that holds [er_frontpage_cover] directly
+     er-cover-anc   its parent and grandparent block (e.g. post content, <main>) */
+add_filter( 'render_block', 'er_map_cover_mark_block', 10, 3 );
+
+function er_map_cover_mark_block( $html, $block, $instance = null ) {
+	$depth = er_map_cover_depth( $block, $instance, 2 );
+	if ( $depth < 0 ) {
+		return $html;
+	}
+	$p = new WP_HTML_Tag_Processor( $html );
+	if ( $p->next_tag() ) {
+		$p->add_class( 0 === $depth ? 'er-cover-host' : 'er-cover-anc' );
+	}
+	return $p->get_updated_html();
+}
+
+// 0 = this block is the host Group, 1 = its parent, 2 = its grandparent, -1 = none.
+function er_map_cover_depth( $block, $instance, $max ) {
+	if ( er_map_cover_is_host( $block ) ) {
+		return 0;
+	}
+	if ( $max <= 0 ) {
+		return -1;
+	}
+	foreach ( er_map_cover_children( $block, $instance ) as $child ) {
+		$d = er_map_cover_depth( $child, null, $max - 1 );
+		if ( $d >= 0 ) {
+			return $d + 1;
+		}
+	}
+	return -1;
+}
+
+// A Group with the shortcode as a direct child (Shortcode or Custom HTML block).
+function er_map_cover_is_host( $block ) {
+	if ( 'core/group' !== ( $block['blockName'] ?? '' ) ) {
+		return false;
+	}
+	foreach ( $block['innerBlocks'] ?? array() as $inner ) {
+		if ( in_array( $inner['blockName'] ?? '', array( 'core/shortcode', 'core/html' ), true )
+			&& false !== strpos( (string) ( $inner['innerHTML'] ?? '' ), '[er_frontpage_cover' ) ) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Child blocks; for Post Content these are the blocks of the post it shows.
+function er_map_cover_children( $block, $instance ) {
+	if ( 'core/post-content' !== ( $block['blockName'] ?? '' ) ) {
+		return $block['innerBlocks'] ?? array();
+	}
+	$id = ( $instance instanceof WP_Block && ! empty( $instance->context['postId'] ) )
+		? (int) $instance->context['postId']
+		: (int) get_the_ID();
+	static $cache = array();
+	if ( ! isset( $cache[ $id ] ) ) {
+		$content       = $id ? (string) get_post_field( 'post_content', $id ) : '';
+		$cache[ $id ] = false !== strpos( $content, '[er_frontpage_cover' ) ? parse_blocks( $content ) : array();
+	}
+	return $cache[ $id ];
+}
+
 
 function er_map_cover_js() {
 	return <<<'JS'
