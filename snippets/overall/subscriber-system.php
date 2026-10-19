@@ -229,14 +229,14 @@ function er_handle_subscribe_ajax() {
     if ( get_transient( 'er_subscribe_ip_' . md5( $ip ) ) ) {
         wp_send_json_error( [ 'message' => 'Please wait before submitting again.' ] );
     }
-    if ( trim( $_POST['middle_name'] ?? '' ) !== '' ) {
+    if ( sanitize_text_field( wp_unslash( $_POST['middle_name'] ?? '' ) ) !== '' ) {
         wp_send_json_error();
     }
-    if ( trim( $_POST['math_check'] ?? '' ) !== '7' ) {
+    if ( sanitize_text_field( wp_unslash( $_POST['math_check'] ?? '' ) ) !== '7' ) {
         wp_send_json_error();
     }
 
-    $email = sanitize_email( $_POST['er_email'] ?? '' );
+    $email = sanitize_email( wp_unslash( $_POST['er_email'] ?? '' ) );
     if ( ! is_email( $email ) ) {
         wp_send_json_error( [ 'message' => 'Please enter a valid email address.' ] );
     }
@@ -270,7 +270,7 @@ function er_handle_subscribe_ajax() {
 add_action( 'init', function () {
     if ( empty( $_GET['er_unsub'] ) ) return;
     $email = sanitize_email( wp_unslash( $_GET['email'] ?? '' ) );
-    $token = sanitize_text_field( $_GET['token'] ?? '' );
+    $token = sanitize_text_field( wp_unslash( $_GET['token'] ?? '' ) );
     $home  = esc_url( home_url() );
 
     if ( er_remove_subscriber( $email, $token ) ) {
@@ -441,7 +441,7 @@ function er_render_admin_page() {
         isset( $_POST['bulk_delete'], $_POST['subscriber_ids'], $_POST['_wpnonce'] ) &&
         check_admin_referer( 'er_subscribers_action', '_wpnonce' )
     ) {
-        $ids          = array_map( 'intval', $_POST['subscriber_ids'] );
+        $ids          = array_map( 'intval', (array) $_POST['subscriber_ids'] );
         $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
         $wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE id IN ({$placeholders})", ...$ids ) );
         echo '<div class="notice notice-success is-dismissible"><p>Selected subscribers deleted.</p></div>';
