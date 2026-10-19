@@ -1037,7 +1037,7 @@ function er_map_cover_js() {
 
 	tick();
 	if (me && othersEl) drawOthers([]);
-	setTimeout(() => { if (!document.hidden) startPolling(); }, 2600);
+	setTimeout(() => { if (!document.hidden) startPolling(); }, 2500);
 })();
 JS;
 }
