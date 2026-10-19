@@ -269,7 +269,7 @@ function er_handle_subscribe_ajax() {
 
 add_action( 'init', function () {
     if ( empty( $_GET['er_unsub'] ) ) return;
-    $email = sanitize_email( urldecode( $_GET['email'] ?? '' ) );
+    $email = sanitize_email( wp_unslash( $_GET['email'] ?? '' ) );
     $token = sanitize_text_field( $_GET['token'] ?? '' );
     $home  = esc_url( home_url() );
 
