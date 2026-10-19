@@ -428,7 +428,7 @@ function er_trk_cleanup_old_visitors() {
         $geo_cut = time() - 30 * DAY_IN_SECONDS;
         foreach ($geo_files as $geo_file) {
             if (filemtime($geo_file) < $geo_cut) {
-                @unlink($geo_file);
+                wp_delete_file($geo_file);
             }
         }
     }
