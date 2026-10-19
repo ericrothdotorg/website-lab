@@ -884,8 +884,8 @@ function er_load_more_handler() {
 	// Search mode: mixed post types, no taxonomy/term filter.
 	$search = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '';
 	if ( $search !== '' ) {
-		$limit  = intval( $_POST['limit'] );
-		$offset = intval( $_POST['offset'] );
+		$limit  = max( 1, min( 48, absint( $_POST['limit'] ?? 12 ) ) );
+		$offset = absint( $_POST['offset'] ?? 0 );
 
 		$loop = new WP_Query( array(
 			's'              => $search,
@@ -914,15 +914,14 @@ function er_load_more_handler() {
 		wp_die();
 	}
 
-	$post_type       = sanitize_key( $_POST['post_type'] );
-	$limit           = intval( $_POST['limit'] );
+	$post_type       = sanitize_key( wp_unslash( $_POST['post_type'] ?? '' ) );
+	$limit           = max( 1, min( 48, absint( $_POST['limit'] ?? 12 ) ) );
 	$allowed_orderby = [ 'date', 'title', 'rand', 'menu_order' ];
-	$orderby         = in_array( sanitize_key( $_POST['orderby'] ), $allowed_orderby, true )
-					   ? sanitize_key( $_POST['orderby'] )
-					   : 'date';
-	$order           = in_array( strtoupper( $_POST['order'] ), [ 'ASC', 'DESC' ] ) ? strtoupper( $_POST['order'] ) : 'DESC';
-	$offset          = intval( $_POST['offset'] );
-	$active_slug     = sanitize_key( $_POST['active_slug'] );
+	$orderby         = sanitize_key( wp_unslash( $_POST['orderby'] ?? '' ) );
+	$orderby         = in_array( $orderby, $allowed_orderby, true ) ? $orderby : 'date';
+	$order           = strtoupper( sanitize_key( wp_unslash( $_POST['order'] ?? '' ) ) ) === 'ASC' ? 'ASC' : 'DESC';
+	$offset          = absint( $_POST['offset'] ?? 0 );
+	$active_slug     = sanitize_key( wp_unslash( $_POST['active_slug'] ?? '' ) );
 
 	$taxonomy_map = er_taxonomy_map();
 
