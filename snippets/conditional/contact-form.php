@@ -157,16 +157,16 @@ function er_contact_handle_ajax() {
         wp_send_json_error( [ 'message' => 'Please wait before submitting again.' ] );
     }
     // Honeypot + Silent Math Check
-    $honeypot   = trim( $_POST['middle_name'] ?? '' );
-    $math_check = trim( $_POST['math_check']  ?? '' );
+    $honeypot   = sanitize_text_field( wp_unslash( $_POST['middle_name'] ?? '' ) );
+    $math_check = sanitize_text_field( wp_unslash( $_POST['math_check']  ?? '' ) );
     if ( $honeypot !== '' || $math_check !== '7' ) {
         wp_send_json_error();
     }
     // Sanitize Fields
-    $name    = sanitize_text_field(     $_POST['name']    ?? '' );
-    $email   = sanitize_email(          $_POST['email']   ?? '' );
-    $subject = sanitize_text_field(     $_POST['subject'] ?? '' );
-    $message = sanitize_textarea_field( $_POST['message'] ?? '' );
+    $name    = sanitize_text_field(     wp_unslash( $_POST['name']    ?? '' ) );
+    $email   = sanitize_email(          wp_unslash( $_POST['email']   ?? '' ) );
+    $subject = sanitize_text_field(     wp_unslash( $_POST['subject'] ?? '' ) );
+    $message = sanitize_textarea_field( wp_unslash( $_POST['message'] ?? '' ) );
     if ( ! is_email( $email ) ) {
         wp_send_json_error( [ 'message' => 'Invalid email address.' ] );
     }
@@ -244,18 +244,18 @@ if ( is_admin() ) {
             isset( $_POST['bulk_delete'], $_POST['message_ids'], $_POST['_wpnonce'] ) &&
             check_admin_referer( 'er_contact_messages_action', '_wpnonce' )
         ) {
-            $ids          = array_map( 'intval', $_POST['message_ids'] );
+            $ids          = array_map( 'intval', (array) $_POST['message_ids'] );
             $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
             $wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE id IN ({$placeholders})", ...$ids ) );
             echo '<div class="updated"><p>Selected messages have been deleted.</p></div>';
         }
         // Search (POST — Submitted from the same Page)
-        $search   = isset( $_POST['search_term'] ) ? sanitize_text_field( $_POST['search_term'] ) : '';
+        $search   = isset( $_POST['search_term'] ) ? sanitize_text_field( wp_unslash( $_POST['search_term'] ) ) : '';
         $per_page = 20;
         $page     = isset( $_GET['paged'] ) ? max( 1, intval( $_GET['paged'] ) ) : 1;
         $offset   = ( $page - 1 ) * $per_page;
         if ( $search ) {
-            $like     = "%{$search}%";
+            $like     = '%' . $wpdb->esc_like( $search ) . '%';
             $messages = $wpdb->get_results( $wpdb->prepare(
                 "SELECT * FROM {$table} WHERE name LIKE %s OR email LIKE %s OR subject LIKE %s OR message LIKE %s ORDER BY submitted_at DESC LIMIT %d OFFSET %d",
                 $like, $like, $like, $like, $per_page, $offset
