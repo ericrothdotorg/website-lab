@@ -24,7 +24,7 @@
  * 0  CONFIG
  * ========================================================================== */
 
-defined( 'ER_FP_RING' ) || define( 'ER_FP_RING', 7 );   // seconds per ring of the dive (smaller = faster)
+defined( 'ER_FP_RING' ) || define( 'ER_FP_RING', 10 );  // seconds per ring of the dive (smaller = faster)
 
 add_action( 'init', static function () {
 	add_shortcode( 'er_frontpage_cover', 'er_fp_cover_shortcode' );
@@ -40,6 +40,10 @@ add_action( 'init', static function () {
  *    flaps continues into a copy half the size, turned by one fold, forever.
  *    Every ring is an exact copy of the one before: seamless and endless.
  *    No ray marching: eight plane tests per pixel, light on any GPU.
+ *    Toned down ("B - dezent"): colours pulled 40 % towards a cool navy
+ *    grey, exposure .85, stronger vignette, slower dive, no centre veil.
+ *    The deep end fades softly into darkness instead of a grey dot, and the
+ *    camera always aims at the tip, so the centre stays put on screen.
  *
  *    PAGE SPEED
  *      First paint: a static CSS poster only, no script work, no request.
@@ -68,7 +72,7 @@ function er_fp_cover_script() {
 	wp_print_inline_script_tag( er_fp_cover_js(), array( 'id' => 'er-cover-js' ) );
 }
 
-/* Host layout (classes from module 2), poster, canvas fade-in, text veil. */
+/* Host layout (classes from module 2), poster, canvas fade-in. */
 function er_fp_cover_css() {
 	return <<<'CSS'
 .wp-block-group.er-cover-host{position:relative;display:flex;flex-direction:column;justify-content:center;justify-content:safe center;min-height:100svh;width:auto;max-width:none;margin:0;overflow:clip;background-color:var(--color-6,#070c12)}
@@ -77,10 +81,9 @@ function er_fp_cover_css() {
 .wp-block-group.er-cover-host>:not(.er-cover){position:relative;z-index:1;width:100%}
 .wp-block-group.er-cover-host>.er-cover+*{margin-top:0}
 div.er-cover{position:absolute;inset:0;z-index:0;display:block;width:100%;height:100%;max-width:none;margin:0;overflow:hidden;pointer-events:none;
-background:radial-gradient(closest-side at 50% 50%,rgba(7,12,18,.55) 10%,rgba(7,12,18,.35) 50%,var(--color-6,#070c12) 100%),conic-gradient(from 0deg at 50% 50%,#009831,#8fc22a,#fcc900,#f59028,#c62a2a,#902a90,#005cc2,#008888,#009831)}
+background:radial-gradient(closest-side at 50% 50%,rgba(7,12,18,.68) 10%,rgba(7,12,18,.55) 50%,var(--color-6,#070c12) 100%),conic-gradient(from 0deg at 50% 50%,#009831,#8fc22a,#fcc900,#f59028,#c62a2a,#902a90,#005cc2,#008888,#009831)}
 .er-cover canvas{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity 1.8s ease}
 .er-cover canvas.is-on{opacity:1}
-.er-cover::after{content:"";position:absolute;inset:0;background:radial-gradient(62% 62% at 50% 50%,rgba(6,19,42,.3),rgba(6,19,42,.14) 55%,rgba(6,19,42,0))}
 CSS;
 }
 
@@ -126,9 +129,10 @@ float dl=max(dot(ni,L),0.),lam=max(dot(ni,-d),0.);
 float lit=1./(1.+rho*rho*6.);
 float sp=pow(max(dot(ni,normalize(L-d)),0.),30.);
 vec3 col=c*sh*(lit*(.35+1.4*dl)+.22*lam+.12)+g*sp*lit*.5*sh;
-col*=1.15;
+col=mix(col,vec3(.002,.003,.006),max(smoothstep(3.5,6.5,l),fz));
+col=mix(dot(col,vec3(.2126,.7152,.0722))*vec3(.78,.96,1.32),col,.6);col*=.85;
 col=clamp((col*(2.51*col+.03))/(col*(2.43*col+.59)+.14),0.,1.);
-vec2 w=gl_FragCoord.xy/R-.5;col*=1.-dot(w,w)*.7;
+vec2 w=gl_FragCoord.xy/R-.5;col*=clamp(1.-dot(w,w)*.95,0.,1.);
 gl_FragColor=vec4(pow(col,vec3(.4545))+(fract(sin(dot(gl_FragCoord.xy+N,vec2(12.99,78.23)))*43758.5)-.5)*.015,1.);}`;
 
 function start() {
@@ -169,11 +173,12 @@ function start() {
 	const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 	let seen = true, run = false, dead = false, raf = 0, s = 0.35, last = 0, shown = false, clock = 0;
 
-	/* The camera drifts gently around the axis; it repeats with every ring, so the dive stays seamless. */
+	/* The camera drifts gently around the axis; it repeats with every ring, so the dive stays seamless.
+	   It always aims straight at the tip, so the centre of the funnel stays fixed on screen. */
 	const draw = (now) => {
 		const a = TAU * s, w = clock / 1000;
 		const c = [0.12 * Math.sin(a) + 0.05 * Math.sin(w * 0.37), 0.09 * Math.cos(a) + 0.05 * Math.cos(w * 0.29), 1.0];
-		const f = nrm([-c[0] * 0.8, -c[1] * 0.8, -1]);
+		const f = nrm([-c[0], -c[1], -1]);
 		const roll = 0.35 * Math.sin(w * 0.11);
 		const r0 = nrm(crs(f, [Math.sin(roll), Math.cos(roll), 0])), u0 = crs(r0, f);
 		size();
@@ -334,6 +339,7 @@ function er_fp_styles_css() {
 .page-id-179 .counter-card {background: rgba(0, 0, 0, 0.65) !important; border: none !important;}
 .page-id-179 .counter-card:hover {background: var(--color-6) !important;}
 .page-id-179 .counter-body {color: var(--color-5);}
+.page-id-179 .counter-value {color: #990033;}
 .page-id-179 .counter-body img {filter: brightness(0) invert(1) brightness(0.95) !important;}
 CSS;
 }
