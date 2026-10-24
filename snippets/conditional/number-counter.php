@@ -39,14 +39,8 @@ add_action('wp_head', function() use ($counter_pages) {
         body.dark-mode .counter-card:hover {background: var(--color-6);}
         body.dark-mode .counter-body {color: var(--color-5);}
 
-        /* Page Specific */
-        .page-id-179 .counter-card {background: rgba(0, 0, 0, 0.65) !important; border: none !important;}
-        .page-id-179 .counter-card:hover {background: var(--color-6) !important;}
-        .page-id-179 .counter-body {color: var(--color-5);}
-
-        /* White Icons: Dark Mode + Frontpage */
-        body.dark-mode .counter-body img,
-        .page-id-179 .counter-body img {filter: brightness(0) invert(1) brightness(0.95) !important;}
+        /* White Icons: Dark Mode (front page: see Frontpage Stuff) */
+        body.dark-mode .counter-body img {filter: brightness(0) invert(1) brightness(0.95) !important;}
     </style>
     <?php
 }, 5);
@@ -66,7 +60,7 @@ add_action('wp_footer', function() use ($counter_pages) {
 			counters.forEach(function (c) { c.textContent = c.getAttribute('data-count'); });
 			return;
 		}
-
+		
 		var observer = new IntersectionObserver(function(entries, obs) {
 			entries.forEach(function(entry) {
 				if (!entry.isIntersecting) return;
