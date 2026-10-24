@@ -2,7 +2,7 @@
 // NOTE: When in mu-plugins, add: defined('ABSPATH') || exit;
 
 /* ============================================================================
- * WORLD MAP — map data, front-page cover, Site Reach map
+ * WORLD MAP — map data, Site Reach map
  * ----------------------------------------------------------------------------
  * Display only. The data comes from the snippet "Visitor Tracking", which
  * owns er_live_visitors and er_map_views; this snippet only reads them.
@@ -11,15 +11,16 @@
  *
  * MODULES
  *   0  Config ........ the few numbers you may want to change
- *   1  Data API ...... one public, cached endpoint: er_map_data (scope live|full)
+ *   1  Data API ...... one public, cached endpoint: er_map_data
  *   2  Map base ...... SVG world, shared CSS, shared JS engine (window.ERMap)
- *   3  Cover ......... [er_frontpage_cover]            (front page)
- *   4  Site Reach .... [live_user_map]                 (map)
+ *   3  Site Reach .... [live_user_map]                 (map)
  *                      [currently_visited_pages]       (table)
  *                      [past_visited_pages]            (table)
  *
+ *   The front-page cover [er_frontpage_cover] lives in "Frontpage Stuff".
+ *
  * THE VIEWER
- *   Both maps draw the viewer at once from the answer of their own tracking
+ *   The map draws the viewer at once from the answer of its own tracking
  *   request (event "er:visitor", see Visitor Tracking), instead of waiting
  *   until the cached live data contains them. Site Reach recognises the
  *   viewer's row in the live data by visitor id, server-side; no visitor id
@@ -28,9 +29,7 @@
  * DEPENDENCIES
  *   1 reads the tables of Visitor Tracking and uses er_trk_visitor_id() and
  *   er_trk_browser(); without that snippet no new data arrives, nothing
- *   breaks. 3 and 4 use 1 + 2. 3 and 4 never use each other:
- *   module 3 can be changed or deleted and Site Reach keeps working, and the
- *   other way round. Changing module 2 affects both maps.
+ *   breaks. 3 uses 1 + 2. Frontpage Stuff uses none of them.
  *   Only one map per page (SVG ids in module 2 are fixed).
  * ========================================================================== */
 
@@ -42,32 +41,30 @@ defined( 'ER_MAP_LIVE_MIN' ) || define( 'ER_MAP_LIVE_MIN',   15 );   // "live" =
 defined( 'ER_MAP_DAYS' ) || define( 'ER_MAP_DAYS',       90 );   // history window (Visitor Tracking keeps 90 days)
 defined( 'ER_MAP_PAST_MAX' ) || define( 'ER_MAP_PAST_MAX',   2000 ); // max. past places (~11 km cells) on the Site Reach map
 defined( 'ER_MAP_PAGES_MAX' ) || define( 'ER_MAP_PAGES_MAX',  100 );  // rows in [past_visited_pages]
-defined( 'ER_MAP_POLL' ) || define( 'ER_MAP_POLL',       30 );   // seconds between two updates of an open map (both maps)
-defined( 'ER_MAP_CACHE_LIVE' ) || define( 'ER_MAP_CACHE_LIVE', 15 );   // seconds the live visitors are cached (both maps)
+defined( 'ER_MAP_POLL' ) || define( 'ER_MAP_POLL',       30 );   // seconds between two updates of an open map
+defined( 'ER_MAP_CACHE_LIVE' ) || define( 'ER_MAP_CACHE_LIVE', 15 );   // seconds the live visitors are cached
 defined( 'ER_MAP_CACHE_HISTORY' ) || define( 'ER_MAP_CACHE_HISTORY', 120 ); // seconds past places and top pages are cached (Site Reach)
 
-/* The two framings. Map units: Miller projection, 2000 × 1466.4.
-   Must match LAND (cover JS) and B (Site Reach JS). */
-defined( 'ER_MAP_BOX_COVER' ) || define( 'ER_MAP_BOX_COVER', '0 101.1 2000 1292.9' ); // all land, 84°N – Antarctica
+/* The framing. Map units: Miller projection, 2000 × 1466.4.
+   Must match B (Site Reach JS). */
 defined( 'ER_MAP_BOX_REACH' ) || define( 'ER_MAP_BOX_REACH', '0 101.1 2000 1013.1' ); // 84°N – 60°S
 
 /* Shortcodes are registered on init (after every snippet has loaded), so these
    always win, even if an old snippet with the same shortcode names still runs. */
 add_action( 'init', static function () {
-	add_shortcode( 'er_frontpage_cover', 'er_map_cover_shortcode' );       // module 3
-	add_shortcode( 'live_user_map', 'er_reach_map_shortcode' );             // module 4
+	add_shortcode( 'live_user_map', 'er_reach_map_shortcode' );             // module 3
 	add_shortcode( 'currently_visited_pages', 'er_reach_current_shortcode' );
 	add_shortcode( 'past_visited_pages', 'er_reach_past_shortcode' );
 }, 20 );
 
 /* ============================================================================
- * 1  DATA API — admin-ajax.php?action=er_map_data&scope=live|full
+ * 1  DATA API — admin-ajax.php?action=er_map_data (Site Reach sends scope=full)
  *    Public, read-only, no nonce (pages are full-page cached).
  *    Every visitor gets the same answer, so it is built at most once per
  *    cache period, no matter how many people are watching. The only
- *    per-request step is marking the viewer's own live row (scope full).
- *    Live visitors are cached for ER_MAP_CACHE_LIVE on both maps; the slow
- *    history of Site Reach for ER_MAP_CACHE_HISTORY.
+ *    per-request step is marking the viewer's own live row.
+ *    Live visitors are cached for ER_MAP_CACHE_LIVE; the slow
+ *    history for ER_MAP_CACHE_HISTORY.
  *
  *    Time zone: last_seen / viewed_at are stored in site time
  *    (current_time('mysql')), the database clock (NOW()) runs on UTC.
@@ -79,11 +76,6 @@ add_action( 'wp_ajax_er_map_data', 'er_map_data' );
 add_action( 'wp_ajax_nopriv_er_map_data', 'er_map_data' );
 
 function er_map_data() {
-	$scope = ( isset( $_REQUEST['scope'] ) && 'full' === $_REQUEST['scope'] ) ? 'full' : 'live';
-	if ( 'live' === $scope ) {
-		wp_send_json_success( er_map_cached( 'er_map_live', 'er_map_build_live', ER_MAP_CACHE_LIVE ) );
-	}
-
 	$data = er_map_cached( 'er_map_history', 'er_map_build_history', ER_MAP_CACHE_HISTORY );
 	$live = er_map_cached( 'er_map_live_rows', 'er_map_build_live_rows', ER_MAP_CACHE_LIVE );
 
@@ -112,26 +104,6 @@ function er_map_cached( $key, $build, $ttl ) {
 // Site-time timestamp string, $seconds ago.
 function er_map_site_time( $seconds = 0 ) {
 	return wp_date( 'Y-m-d H:i:s', time() - (int) $seconds );
-}
-
-// Cover: live places only, one per ~11 km cell, newest first. [[lat, lon], …]
-function er_map_build_live() {
-	global $wpdb;
-	$rows = $wpdb->get_results( $wpdb->prepare(
-		"SELECT ROUND(latitude, 1) AS lat, ROUND(longitude, 1) AS lon
-		   FROM {$wpdb->prefix}er_live_visitors
-		  WHERE last_seen >= %s
-		    AND latitude IS NOT NULL AND longitude IS NOT NULL
-		    AND NOT (latitude = 0 AND longitude = 0)
-		  GROUP BY lat, lon
-		  ORDER BY MAX(last_seen) DESC
-		  LIMIT 100",
-		er_map_site_time( ER_MAP_LIVE_MIN * MINUTE_IN_SECONDS )
-	) );
-	return array_map(
-		static fn( $r ) => array( (float) $r->lat, (float) $r->lon ),
-		(array) $rows
-	);
 }
 
 // Path only of a stored page URL.
@@ -263,8 +235,8 @@ function er_map_top_pages( $since, $path ) {
 }
 
 /* ============================================================================
- * 2  MAP BASE — shared by modules 3 and 4
- *    er_map_layers( 'cover' | 'reach' ) returns the map markup.
+ * 2  MAP BASE — used by module 3
+ *    er_map_layers() returns the map markup.
  *    er_map_base_assets() prints the shared CSS once and queues the engine JS.
  * ========================================================================== */
 
@@ -282,11 +254,9 @@ function er_map_engine_script() {
 	wp_print_inline_script_tag( er_map_engine_js(), array( 'id' => 'er-map-js' ) );
 }
 
-/* Layer order — cover: land, markers, shade, scrim.
-                 reach: land, shade, past dots, markers, zoom buttons. */
-function er_map_layers( $mode ) {
-	$cover = 'cover' === $mode;
-	$open  = '<svg class="%s" viewBox="' . ( $cover ? ER_MAP_BOX_COVER : ER_MAP_BOX_REACH )
+/* Layer order: land, shade, past dots, markers, zoom buttons. */
+function er_map_layers() {
+	$open  = '<svg class="%s" viewBox="' . ER_MAP_BOX_REACH
 		. '" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true">';
 
 	$land = sprintf( $open, 'erc-map' )
@@ -356,13 +326,6 @@ function er_map_layers( $mode ) {
 		. '</g>'
 		. '</svg>';
 
-	if ( $cover ) {
-		return $land
-			. '<div class="erc-markers"><span class="erc-others"></span></div>'
-			. $shade
-			. '<div class="erc-scrim"></div>';
-	}
-
 	return $land
 		. $shade
 		. sprintf( $open, 'erc-dots' ) . '<path class="erc-past" d=""/><path class="erc-past erc-lg" d=""/></svg>'
@@ -389,9 +352,8 @@ function er_map_lights_d( $size ) {
 
 function er_map_base_css() {
 	return <<<'CSS'
-/* ---- Layers (module 2, both maps) ---- */
+/* ---- Layers (module 2) ---- */
 .erm > svg,
-.erm > .erc-scrim,
 .erm > .erc-markers{position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; margin: 0}
 .erm > .erc-markers{z-index: 1}
 
@@ -458,7 +420,7 @@ CSS;
 
 function er_map_engine_js() {
 	return <<<'JS'
-/* ER Map engine (module 2) — geometry shared by the cover and Site Reach.
+/* ER Map engine (module 2) — geometry for Site Reach.
    ERMap.stage(root) binds it to one map: viewBox, pinned HTML markers, night. */
 window.ERMap = window.ERMap || (() => {
 	const RAD = Math.PI / 180;
@@ -606,444 +568,7 @@ JS;
 }
 
 /* ============================================================================
- * 3  COVER — [er_frontpage_cover]
- *    World map behind the front-page hero: day / night, city lights, the
- *    live visitors (the viewer at once, see header), clock.
- *    Place it first, as a direct child of a Group block.
- *    Everything cover-specific lives here; it can be redesigned freely.
- * ========================================================================== */
-
-function er_map_cover_shortcode( $atts ) {
-	static $assets_done = false;
-
-	$atts  = shortcode_atts( array( 'clock' => 'bottom-left' ), $atts, 'er_frontpage_cover' );
-	$clock = in_array( $atts['clock'], array( 'bottom-left', 'bottom-right', 'top-left', 'top-right' ), true )
-		? $atts['clock']
-		: '';
-
-	$html = '';
-	if ( ! $assets_done ) {
-		$assets_done = true;
-		$html       .= er_map_base_assets();
-		$html       .= '<style id="er-cover-css">' . er_map_cover_css() . '</style>';
-		add_action( 'wp_footer', 'er_map_cover_script', 20 );
-	}
-
-	$config = wp_json_encode( array(
-		'ajax' => admin_url( 'admin-ajax.php' ),
-		'poll' => ER_MAP_POLL,
-	) );
-
-	$html .= sprintf(
-		'<div class="er-cover erm" aria-hidden="true" data-config="%s"%s>%s</div>',
-		esc_attr( $config ),
-		$clock ? ' data-clock="' . esc_attr( $clock ) . '"' : '',
-		er_map_layers( 'cover' )
-	);
-
-	/* Night at first paint (PageSpeed Speed Index): the engine runs right behind the
-	   cover instead of in the footer and draws the night bands at once, sharp and
-	   without lights. The deferred draw() in er_map_cover_js() adds blur and lights. */
-	static $pre_done = false;
-	if ( ! $pre_done ) {
-		$pre_done = true;
-		remove_action( 'wp_footer', 'er_map_engine_script', 19 );
-		$html .= wp_get_inline_script_tag( er_map_engine_js(), array( 'id' => 'er-map-js' ) );
-		$html .= wp_get_inline_script_tag( er_map_cover_pre_js(), array( 'id' => 'er-cover-pre-js' ) );
-	}
-
-	if ( $clock ) {
-		$html .= '<div class="erc-clock" aria-hidden="true"><span class="erc-local"></span><span class="erc-sep">|</span><span class="erc-utc"></span></div>';
-	}
-
-	return $html;
-}
-
-function er_map_cover_script() {
-	wp_print_inline_script_tag( er_map_cover_js(), array( 'id' => 'er-cover-js' ) );
-}
-
-function er_map_cover_pre_js() {
-	return <<<'JS'
-(() => {
-	const root = document.querySelector('.er-cover');
-	if (!root || !window.ERMap) return;
-	const blur = root.querySelector('.erc-shade g[filter]');
-	if (blur) {
-		blur.setAttribute('data-filter', blur.getAttribute('filter'));
-		blur.removeAttribute('filter');
-	}
-	ERMap.stage(root).drawNight();
-	const clip = root.querySelector('.erc-nightclip');
-	if (clip) clip.setAttribute('d', '');
-	root.classList.add('is-pre');
-})();
-JS;
-}
-
-function er_map_cover_css() {
-	return <<<'CSS'
-.wp-block-group.er-cover-host{
-	--er-c-day: var(--color-9);
-	--er-c-accent: var(--color-1);
-	--er-c-veil: var(--color-6);
-	--er-c-ocean: #1a5272;
-	--er-c-light: #ffc56e;
-	--er-c-light-hi: #fff1d2;
-	--er-c-clock: #e1e8ed;
-	--er-c-band: 0.1875;
-	--erc-fs: clamp(10px, 1.05vw, 14px);
-	--erc-gx: clamp(14px, 3vw, 34px);
-	--erc-gy: clamp(12px, 2.4vh, 26px);
-	position: relative;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	justify-content: safe center;
-	min-height: 100svh;
-	width: auto;
-	max-width: none;
-	margin: 0;
-	/* Hero blocks animate in with transforms; the cover owns its box and clips them. */
-	overflow: clip;
-	background-color: var(--er-c-veil);
-}
-/* Parent and grandparent of the host Group (classes from er_map_cover_mark_block()).
-   Doubled class keeps the specificity of the previous selectors. */
-.er-cover-anc.er-cover-anc{margin-top: 0}
-:empty:has(+ .wp-block-group.er-cover-host){display: none}
-
-/* width: constrained layout's auto margins cancel flex stretch. */
-.wp-block-group.er-cover-host > :not(.er-cover, .erc-clock){position: relative; z-index: 1; width: 100%}
-.wp-block-group.er-cover-host > :is(.er-cover, .erc-clock) + :not(.erc-clock){margin-top: 0}
-
-div.er-cover{
-	position: absolute; inset: 0; z-index: 0;
-	display: block; width: 100%; height: 100%; max-width: none; margin: 0;
-	overflow: hidden; pointer-events: none;
-}
-@keyframes erc-in{to{opacity: 1}}
-
-.er-cover > .erc-scrim{background: radial-gradient(62% 62% at 50% 50%, rgba(6,19,42,.429), rgba(6,19,42,.22) 55%, rgba(6,19,42,0))}
-
-.erc-clock{
-	position: absolute; z-index: 1; left: var(--erc-gx); bottom: var(--erc-gy);
-	font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-	font-size: var(--erc-fs); letter-spacing: .04em; white-space: nowrap;
-	color: var(--er-c-clock); opacity: 0; pointer-events: none;
-}
-.erc-clock .erc-sep{margin: 0 .6em; opacity: 0.5}
-.er-cover.is-ready ~ .erc-clock{animation: erc-in 1.2s ease-out 1.65s forwards}
-.er-cover[data-clock$="right"] ~ .erc-clock{left: auto; right: var(--erc-gx)}
-.er-cover[data-clock^="top"] ~ .erc-clock{bottom: auto; top: var(--erc-gy)}
-
-/* Vignette behind the clock; keeps it above 4.5:1 over pale land. */
-.er-cover[data-clock]::after{
-	content: ""; position: absolute; font-size: var(--erc-fs); width: 46em; height: 16em;
-	left: calc(var(--erc-gx) - 13.5em); bottom: calc(var(--erc-gy) - 7.4em);
-	background: none;
-}
-.er-cover[data-clock$="right"]::after{left: auto; right: calc(var(--erc-gx) - 13.5em)}
-.er-cover[data-clock^="top"]::after{bottom: auto; top: calc(var(--erc-gy) - 7.4em)}
-
-@media (prefers-reduced-motion: reduce){
-	.erc-clock, .er-cover.is-ready ~ .erc-clock{animation: none; opacity: 1}
-}
-
-/* Night drawn at first paint (er_map_cover_pre_js): shown at once, no fade. */
-.er-cover.is-pre > .erc-shade{opacity: 1; transition: none}
-CSS;
-}
-
-/* Cover surroundings as classes, set in the server HTML (used by er_map_cover_css()).
-   Replaces the former :has() selectors: with :has(), every DOM change inside the
-   Group (e.g. each counter tick) restyled the whole cover, and on slow machines
-   that kept the main thread busy (PageSpeed desktop "Other").
-     er-cover-host  the Group that holds [er_frontpage_cover] directly
-     er-cover-anc   its parent and grandparent block (e.g. post content, <main>) */
-add_filter( 'render_block', 'er_map_cover_mark_block', 10, 3 );
-
-function er_map_cover_mark_block( $html, $block, $instance = null ) {
-	$depth = er_map_cover_depth( $block, $instance, 2 );
-	if ( $depth < 0 ) {
-		return $html;
-	}
-	$p = new WP_HTML_Tag_Processor( $html );
-	if ( $p->next_tag() ) {
-		$p->add_class( 0 === $depth ? 'er-cover-host' : 'er-cover-anc' );
-	}
-	return $p->get_updated_html();
-}
-
-// 0 = this block is the host Group, 1 = its parent, 2 = its grandparent, -1 = none.
-function er_map_cover_depth( $block, $instance, $max ) {
-	if ( er_map_cover_is_host( $block ) ) {
-		return 0;
-	}
-	if ( $max <= 0 ) {
-		return -1;
-	}
-	foreach ( er_map_cover_children( $block, $instance ) as $child ) {
-		$d = er_map_cover_depth( $child, null, $max - 1 );
-		if ( $d >= 0 ) {
-			return $d + 1;
-		}
-	}
-	return -1;
-}
-
-// A Group with the shortcode as a direct child (Shortcode or Custom HTML block).
-function er_map_cover_is_host( $block ) {
-	if ( 'core/group' !== ( $block['blockName'] ?? '' ) ) {
-		return false;
-	}
-	foreach ( $block['innerBlocks'] ?? array() as $inner ) {
-		if ( in_array( $inner['blockName'] ?? '', array( 'core/shortcode', 'core/html' ), true )
-			&& false !== strpos( (string) ( $inner['innerHTML'] ?? '' ), '[er_frontpage_cover' ) ) {
-			return true;
-		}
-	}
-	return false;
-}
-
-// Child blocks; for Post Content these are the blocks of the post it shows.
-function er_map_cover_children( $block, $instance ) {
-	if ( 'core/post-content' !== ( $block['blockName'] ?? '' ) ) {
-		return $block['innerBlocks'] ?? array();
-	}
-	$id = ( $instance instanceof WP_Block && ! empty( $instance->context['postId'] ) )
-		? (int) $instance->context['postId']
-		: (int) get_the_ID();
-	static $cache = array();
-	if ( ! isset( $cache[ $id ] ) ) {
-		$content       = $id ? (string) get_post_field( 'post_content', $id ) : '';
-		$cache[ $id ] = false !== strpos( $content, '[er_frontpage_cover' ) ? parse_blocks( $content ) : array();
-	}
-	return $cache[ $id ];
-}
-
-
-function er_map_cover_js() {
-	return <<<'JS'
-(() => {
-	const root = document.querySelector('.er-cover');
-	const E = window.ERMap;
-	if (!root || !E) return;
-
-	const { W, f1, y } = E;
-	const st = E.stage(root);
-	const $ = (sel) => root.querySelector(sel);
-	const othersEl = $('.erc-others');
-	const clockEl = root.parentElement.querySelector(':scope > .erc-clock');
-
-	let config = {};
-	try { config = JSON.parse(root.dataset.config || '{}'); } catch (e) {}
-
-	const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-	const POLL_MS = (config.poll || 30) * 1000;
-	const HIGHLIGHT_MAX = 12;
-
-	/* ---- Night (engine) ---- */
-
-	const draw = () => st.drawNight();
-
-	/* ---- Framing ---- */
-
-	/* Vertical extent of .erc-land in map units. Must match ER_MAP_BOX_COVER. */
-	const LAND = { top: 101.1, bot: 1394 };
-
-	/* Cover the box with land: landscape crops latitude, portrait crops longitude. */
-	function fit(w, h) {
-		if (w === undefined) {
-			const r = root.getBoundingClientRect();
-			w = r.width;
-			h = r.height;
-		}
-		if (!w || !h) return;
-		const band = LAND;
-		const artH = band.bot - band.top;
-		const aspect = w / h;
-		const wide = aspect >= W / artH;
-		const vw = wide ? W : artH * aspect;
-		const vh = wide ? W / aspect : artH;
-		const cy = Math.min(Math.max(y(12), band.top + vh / 2), band.bot - vh / 2);
-		const x0 = (W - vw) / 2;
-		const y0 = cy - vh / 2;
-		/* With preserveAspectRatio slice, a full-width box of the same height renders
-		   exactly like [x0 y0 vw vh], so portrait and ordinary landscape boxes keep the
-		   printed viewBox and the SVGs are not laid out again. */
-		st.setView({ x0, y0, upp: vw / w }, '0 ' + f1(y0) + ' ' + W + ' ' + f1(vh));
-	}
-
-	/* ---- Other live visitors ---- */
-
-	let others = new Map();
-	let lastSig = '';
-	let lastList = [];
-	let firstPoll = true;
-	let pollTimer = 0;
-	const canPoll = Boolean(config.ajax && othersEl)
-		&& !(navigator.webdriver || /lighthouse|headlesschrome/i.test(navigator.userAgent));
-
-	/* The viewer: from this page view's tracking answer (event "er:visitor"),
-	   or from the previous page view of this tab. Rounded to the server's
-	   ~11 km cell (half away from zero, like MySQL ROUND) so the same place
-	   is never drawn twice. */
-	let me = window.ERVisitor || null;
-	if (!me) { try { me = JSON.parse(sessionStorage.getItem('er_visitor') || 'null'); } catch (e) {} }
-	const cell = (v) => Math.sign(v) * Math.round(Math.abs(v) * 10 + 1e-9) / 10;
-
-	function withMe(list) {
-		if (!me || !Number.isFinite(+me.lat) || !Number.isFinite(+me.lon)) return list;
-		const c = [cell(+me.lat), cell(+me.lon)];
-		const has = list.some((i) => Array.isArray(i) && +i[0] === c[0] && +i[1] === c[1]);
-		return has ? list : [c].concat(list);
-	}
-
-	function addOther(pt, arriving) {
-		const el = document.createElement('span');
-		el.className = 'erc-me';
-		el.innerHTML = '<span class="erc-ring"></span><span class="erc-ring erc-ring-2"></span><span class="erc-dot"></span>';
-		const offset = Math.random() * 2.4;
-		const rings = el.querySelectorAll('.erc-ring');
-		rings[0].style.animationDelay = (-offset).toFixed(2) + 's';
-		rings[1].style.animationDelay = (1.2 - offset).toFixed(2) + 's';
-		if (arriving && !reduce) {
-			const hello = document.createElement('span');
-			hello.className = 'erc-hello';
-			hello.addEventListener('animationend', () => hello.remove(), { once: true });
-			el.append(hello);
-		}
-		st.pin(el, pt);
-		othersEl.append(el);
-		return el;
-	}
-
-	function drawOthers(list, polled) {
-		if (polled) lastList = list;
-		list = withMe(list);
-		const sig = JSON.stringify(list);
-		if (sig === lastSig) return;
-		lastSig = sig;
-
-		const next = new Map();
-		const targets = [];
-		for (const item of list) {
-			if (!Array.isArray(item)) continue;
-			const pt = { lat: +item[0], lon: +item[1] };
-			if (!Number.isFinite(pt.lat) || !Number.isFinite(pt.lon)) continue;
-			const key = pt.lat + ',' + pt.lon;
-			if (next.has(key)) continue;
-			const el = others.get(key) || addOther(pt, !firstPoll);
-			el.classList.toggle('is-still', targets.length >= HIGHLIGHT_MAX);
-			next.set(key, el);
-			targets.push(pt);
-		}
-		others.forEach((el, key) => {
-			if (next.has(key)) return;
-			el.remove();
-			st.unpin(el);
-		});
-		others = next;
-		if (polled) firstPoll = false;
-	}
-
-	function fetchOthers() {
-		fetch(config.ajax + '?action=er_map_data&scope=live', { credentials: 'same-origin' })
-			.then((r) => (r.ok ? r.json() : null))
-			.then((j) => { if (j && Array.isArray(j.data)) drawOthers(j.data, true); })
-			.catch(() => {});
-	}
-
-	function startPolling() {
-		if (!canPoll || pollTimer) return;
-		fetchOthers();
-		pollTimer = setInterval(fetchOthers, POLL_MS);
-	}
-
-	function stopPolling() {
-		clearInterval(pollTimer);
-		pollTimer = 0;
-	}
-
-	/* ---- Clock ---- */
-
-	const localEl = clockEl && clockEl.querySelector('.erc-local');
-	const utcEl = clockEl && clockEl.querySelector('.erc-utc');
-	const pad = (n) => String(n).padStart(2, '0');
-	let clockTimer = 0;
-
-	function tick() {
-		if (!localEl || !utcEl) return;
-		const d = new Date();
-		localEl.textContent = 'Local ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
-		utcEl.textContent = 'UTC ' + d.toISOString().slice(11, 19);
-		clearTimeout(clockTimer);
-		clockTimer = setTimeout(tick, 1005 - d.getMilliseconds());
-	}
-
-	/* ---- Start ---- */
-
-	let live = false;
-
-	let resizeTimer = 0;
-	let fitted = false;
-	const onResize = (entries) => {
-		const cr = entries && entries[0] && entries[0].contentRect;
-		const run = () => (cr ? fit(cr.width, cr.height) : fit());
-		if (!fitted) {
-			fitted = true;
-			run();
-			return;
-		}
-		clearTimeout(resizeTimer);
-		resizeTimer = setTimeout(run, 120);
-	};
-	if ('ResizeObserver' in window) {
-		new ResizeObserver(onResize).observe(root);
-	} else {
-		onResize();
-		window.addEventListener('resize', () => onResize(), { passive: true });
-	}
-
-	/* The night bands are already drawn at first paint, sharp (er_map_cover_pre_js);
-	   after the first frame the blur comes back and the lights are added. */
-	requestAnimationFrame(() => setTimeout(() => {
-		try {
-			const blur = root.querySelector('.erc-shade g[data-filter]');
-			if (blur) blur.setAttribute('filter', blur.getAttribute('data-filter'));
-			draw();
-		} finally {
-			root.classList.add('is-ready');
-			live = true;
-			setInterval(draw, 60000);
-		}
-	}, 0));
-
-	document.addEventListener('visibilitychange', () => {
-		if (document.hidden) {
-			stopPolling();
-			return;
-		}
-		tick();
-		if (live) draw();
-		startPolling();
-	});
-
-	document.addEventListener('er:visitor', (e) => {
-		me = e.detail;
-		if (othersEl) drawOthers(lastList);
-	});
-
-	tick();
-	if (me && othersEl) drawOthers([]);
-	setTimeout(() => { if (!document.hidden) startPolling(); }, 2500);
-})();
-JS;
-}
-
-/* ============================================================================
- * 4  SITE REACH — [live_user_map], [currently_visited_pages], [past_visited_pages]
+ * 3  SITE REACH — [live_user_map], [currently_visited_pages], [past_visited_pages]
  *    Interactive map (drag, pinch, ctrl+wheel, +/− and double-click to zoom;
  *    tap a dot for details) plus two tables. One request every ER_MAP_POLL
  *    seconds feeds all three; polling pauses while the tab is hidden.
@@ -1074,7 +599,7 @@ function er_reach_map_shortcode() {
 	return er_map_base_assets()
 		. er_reach_assets()
 		. '<div class="er-reach erm" role="region" aria-label="World map of live and past visitors">'
-		. er_map_layers( 'reach' )
+		. er_map_layers()
 		. '</div>'
 		. '<div class="erm-stats">'
 		. '<span>Live Visitors: <strong id="live-count">0</strong><span class="erm-sep">·</span>Last Updated: <strong id="last-update">&ndash;</strong></span>'
