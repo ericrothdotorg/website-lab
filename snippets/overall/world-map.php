@@ -17,8 +17,6 @@
  *                      [currently_visited_pages]       (table)
  *                      [past_visited_pages]            (table)
  *
- *   The front-page cover [er_frontpage_cover] lives in "Frontpage Stuff".
- *
  * THE VIEWER
  *   The map draws the viewer at once from the answer of its own tracking
  *   request (event "er:visitor", see Visitor Tracking), instead of waiting
