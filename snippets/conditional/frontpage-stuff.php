@@ -340,7 +340,7 @@ function er_fp_styles_css() {
 @media (max-width: 781px) {.er-brand-frontpage {padding-top: 2.5rem;}}
 .er-brand-frontpage-logo img {width: clamp(45px, 9vw, 85px); aspect-ratio: 1 / 1; height: auto; animation: rotate3d 5s linear infinite; position: relative; top: 0.05em;}
 .er-brand-frontpage-logo img:hover {animation-play-state: paused;}
-.er-brand-frontpage-title {font-size: clamp(2rem, 6vw, 3.5rem); font-weight: var(--er-fw-bold); color: var(--color-8); line-height: 1; letter-spacing: 0.1em; -webkit-text-stroke: 0.025em var(--color-10); paint-order: stroke fill;}
+.er-brand-frontpage-title {font-size: clamp(2rem, 6vw, 3.5rem); font-weight: var(--er-fw-bold); color: var(--color-8); line-height: 1; letter-spacing: 0.1em; text-shadow: 0.10em 0.10em 0.15em rgba(0, 0, 0, 0.25);}
 .er-brand-frontpage-teaser {display: block; width: fit-content; margin: 0 auto; background: rgba(0, 0, 0, 0.65); border-radius: 25px;}
 
 /* Counter discs over the cover (Number Counter) */
