@@ -23,8 +23,14 @@ add_action( 'init', static function () {
  * 1  COVER — [er_frontpage_cover]
  *    Place first, as a direct child of a Group (Shortcode or Custom HTML block).
  *    First paint: CSS poster only (blurred opening frame, inline). After load +
- *    idle: image + WebGL (slow push-in, drift, passing stars; portrait turns
- *    the image upright). Bots, headless, software GL, any failure: poster stays.
+ *    idle: image + WebGL (push-in/out, drift, roll sway, passing stars; portrait
+ *    turns the image upright). Bots, headless, software GL, any failure: poster
+ *    stays.
+ *    Motion (all start at 0, so the opening frame matches the poster):
+ *      zoom   1.04–1.24×, 40 s each way      FS: float z=...
+ *      roll   ±3.5°, ~42 s per sway           FS: float r=...
+ *      drift  wide, never-repeating path      draw(): U.O
+ *      stars  passing layers                  FS: float ph=T*.1...
  *    Changing the image: upload it, set ER_FP_IMAGE, regenerate the two poster
  *    strings from a blurred ~48 × 29 / 24 × 50 WebP of the opening frame.
  * ========================================================================== */
@@ -127,9 +133,10 @@ float h(vec2 p){p=fract(p*vec2(233.34,851.73));p+=dot(p,p+23.45);return fract(p.
 vec3 tc(float t){return t<.5?mix(vec3(.66,.78,1.),vec3(1.,.97,.93),t*2.):mix(vec3(1.,.97,.93),vec3(1.,.8,.6),t*2.-1.);}
 void main(){
 vec2 u=(gl_FragCoord.xy*2.-R)/R.y;
+float r=.06*sin(T*.15);u=mat2(cos(r),sin(r),-sin(r),cos(r))*u;
 float as=R.x/R.y,px=2./R.y;
 float P=step(as,1.),S=mix(max(as/K,min(1.,as/(.72*K))),.7,P),a=-.94*P,ca=cos(a),sa=sin(a);
-float z=1.04+.08*(.5-.5*cos(T*.1047));
+float z=1.04+.20*(.5-.5*cos(T*.0785));
 vec2 iu=mat2(ca,sa,-sa,ca)*(u-O)/(S*z)+vec2(-.02,.13)*P,t=vec2(iu.x/K,iu.y)*.5+.5;
 vec3 bg=mix(vec3(.12,.13,.16),vec3(.08,.1,.15),gl_FragCoord.y/R.y);
 float m=smoothstep(0.,.1,t.y)*smoothstep(1.,.9,t.y)*smoothstep(0.,.05,t.x)*smoothstep(1.,.95,t.x);
@@ -137,7 +144,7 @@ if(m<1.){vec2 g=u*110.,c=floor(g),f=fract(g)-.5;float hs=h(c);
 if(hs<.06){vec2 sp=(vec2(h(c+1.3),h(c+7.1))-.5)*.6;float d=length(f-sp),e=h(c+4.2);
 bg+=tc(h(c+9.))*smoothstep(max(px*99.,.12),0.,d)*(.1+1.1*e*e*e*e);}}
 vec3 col=mix(bg,texture2D(I,clamp(t,0.,1.)).rgb,m);
-for(int i=0;i<4;i++){float ph=T*.04+float(i)*.25,zz=fract(ph),id=floor(ph)*4.+float(i);
+for(int i=0;i<4;i++){float ph=T*.1+float(i)*.25,zz=fract(ph),id=floor(ph)*4.+float(i);
 float sc=24.*max(1.-zz,.03);vec2 gg=u*sc+vec2(h(vec2(id,.3)),h(vec2(.7,id)))*97.;
 vec2 cc=floor(gg),ff=fract(gg)-.5;float s=h(cc+id);
 if(s<.06){vec2 sp=(vec2(h(cc+1.3+id),h(cc+7.1-id))-.5)*.62;float d=length(ff-sp),q=px*sc;
@@ -199,7 +206,7 @@ function start() {
 			const w = clock / 1000;
 			size();
 			gl.uniform2f(U.R, W, H);
-			gl.uniform2f(U.O, 0.02 * Math.sin(w * 0.07), 0.012 * Math.cos(w * 0.053));
+			gl.uniform2f(U.O, 0.05 * Math.sin(w * 0.15), 0.012 + 0.03 * Math.sin(w * 0.11));
 			gl.uniform1f(U.T, w);
 			gl.uniform1f(U.N, (now / 1000) % 1000);
 			gl.drawArrays(gl.TRIANGLES, 0, 3);
