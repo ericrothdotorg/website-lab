@@ -342,19 +342,30 @@ function er_fp_styles() {
 
 function er_fp_styles_css() {
 	return <<<'CSS'
-/* Brand header */
-.er-brand-frontpage {display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 1.75rem; padding-bottom: clamp(2.5rem, 4vw, 3.5rem);}
-@media (max-width: 781px) {.er-brand-frontpage {padding-top: 2.5rem;}}
-.er-brand-frontpage-logo img {width: clamp(45px, 9vw, 85px); aspect-ratio: 1 / 1; height: auto; animation: rotate3d 5s linear infinite; position: relative; top: 0.05em;}
-.er-brand-frontpage-logo img:hover {animation-play-state: paused;}
-.er-brand-frontpage-title {font-size: clamp(2rem, 6vw, 3.5rem); font-weight: var(--er-fw-bold); color: var(--color-8); line-height: 1; letter-spacing: 0.1em; text-shadow: 0.10em 0.10em 0.15em rgba(0, 0, 0, 0.25);}
-.er-brand-frontpage-teaser {display: block; width: fit-content; margin: 0 auto; background: rgba(0, 0, 0, 0.65); border-radius: 25px;}
+	/* Brand header */
+	.er-brand-frontpage {display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 1.75rem;}
+	.er-brand-frontpage-logo img {width: clamp(45px, 9vw, 85px); aspect-ratio: 1 / 1; height: auto; animation: rotate3d 5s linear infinite; position: relative; top: 0.05em;}
+	.er-brand-frontpage-logo img:hover {animation-play-state: paused;}
+	.er-brand-frontpage-title {font-size: clamp(2rem, 6vw, 3.5rem); font-weight: var(--er-fw-bold); color: var(--color-8); line-height: 1; letter-spacing: 0.1em; text-shadow: 0.10em 0.10em 0.15em rgba(0, 0, 0, 0.25);}
+	.er-brand-frontpage-teaser {display: block; width: 100%; max-width: 850px; box-sizing: border-box; margin: 0 auto; background: rgba(0, 0, 0, 0.65); border-radius: 25px;}
 
-/* Counter discs over the cover (Number Counter) */
-.page-id-179 .counter-card {background: rgba(0, 0, 0, 0.65) !important; border: none !important;}
-.page-id-179 .counter-card:hover {background: var(--color-6) !important;}
-.page-id-179 .counter-body {color: var(--color-5);}
-.page-id-179 .counter-value {color: #990033;}
-.page-id-179 .counter-body img {filter: brightness(0) invert(1) brightness(0.95) !important;}
+	/* Counter discs over the cover (Number Counter) */
+	.page-id-179 .counter-card {background: rgba(0, 0, 0, 0.65) !important; border: none !important;}
+	.page-id-179 .counter-card:hover {background: var(--color-6) !important;}
+	.page-id-179 .counter-body {color: var(--color-5);}
+	.page-id-179 .counter-value {color: #990033;}
+	.page-id-179 .counter-body img {filter: brightness(0) invert(1) brightness(0.95) !important;}
+
+	/* Stat tiles over the cover (Views & Like | Dislike Voting): front-page colours.
+	   Size, squares, centring and phone layout come from the Voting snippet. */
+	.page-id-179 .er-stat-line {background: rgba(0, 0, 0, 0.65) !important; border: none !important; color: var(--color-5) !important;}
+	.page-id-179 .er-stat-foot {border-top-color: var(--color-3) !important; color: var(--color-5) !important;}
+	.page-id-179 .er-stat-icon {filter: brightness(0) invert(1) brightness(0.95) !important;}
+
+	/* One even gap between all elements, same space above and below */
+	.wp-block-group.er-cover-host > .wp-block-group {padding-top: var(--wp--preset--spacing--large); padding-bottom: var(--wp--preset--spacing--large);}
+	.wp-block-group.er-cover-host > .wp-block-group > * {margin-top: 0 !important; margin-bottom: 0 !important;}
+	.wp-block-group.er-cover-host > .wp-block-group > * + * {margin-top: var(--wp--preset--spacing--large) !important;}
+	.wp-block-group.er-cover-host .counter-grid {margin-top: -10px;}
 CSS;
 }
