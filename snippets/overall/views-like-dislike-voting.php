@@ -16,6 +16,18 @@ function er_voting_counts($post_id) {
         : ['view' => 0, 'like' => 0, 'dislike' => 0];
 }
 
+// Icons for all tiles: SVG files in the Media Library, grey-blue. White in dark
+// mode (here) and on the front page (Frontpage Stuff), like the disc icons.
+function er_stat_icon($type) {
+    $files = [
+        'view'    => 'eye-solid-greyblue.svg',
+        'like'    => 'thumbs-up-solid-greyblue.svg',
+        'dislike' => 'thumbs-down-solid-greyblue.svg',
+    ];
+    if (!isset($files[$type])) return '';
+    return '<img class="er-stat-icon" src="' . esc_url('https://ericroth.org/wp-content/uploads/2026/10/' . $files[$type]) . '" width="16" height="16" alt="">';
+}
+
 // Styles for the post tiles - printed once per page. The tile look itself
 // comes from er_stat_tile_styles() (SITE-WIDE FIGURES); this adds the button
 // states for the vote tiles.
@@ -24,7 +36,7 @@ function er_voting_styles() {
     if ($done) return '';
     $done = true;
     return er_stat_tile_styles() . '<style>
-        button.er-stat-line {display: flex; flex-direction: column; justify-content: flex-start; font: inherit; line-height: 1.3; text-align: left; cursor: pointer; border-color: var(--color-1); transition: background 0.2s ease;}
+        button.er-stat-line {font: inherit; line-height: 1.3; text-align: left; cursor: pointer; border-color: var(--color-1); transition: background 0.2s ease;}
         button.er-stat-line:hover {background: var(--color-7);}
         button.er-stat-line:disabled {cursor: default;}
         button.er-stat-line:focus-visible {outline: 2px dashed var(--color-1); outline-offset: 3px;}
@@ -47,17 +59,18 @@ function er_voting_styles() {
 // POST VIEWS
 // ======================================
 
-// Tile with the total views of a post. 'before' + 'after' form the label.
+// Tile with the total views of a post. 'before' + 'after' form the label
+// (after the icon).
 function er_post_views_shortcode($atts) {
     $atts = shortcode_atts([
         'id' => get_the_ID(),
-        'before' => '👁️ ',
-        'after' => ' Views',
+        'before' => '',
+        'after' => 'Views',
     ], $atts, 'post_views');
     $views = er_voting_counts($atts['id'])['view'];
     return er_voting_styles()
          . '<span class="er-stat-line">'
-         . '<span class="er-stat-label">' . esc_html(trim($atts['before']) . ' ' . trim($atts['after'])) . '</span>'
+         . '<span class="er-stat-label">' . er_stat_icon('view') . esc_html(trim(trim($atts['before']) . ' ' . trim($atts['after']))) . '</span>'
          . '<strong class="er-stat-value">' . number_format_i18n($views) . '</strong>'
          . '<span class="er-stat-unit">total</span>'
          . '<span class="er-stat-foot">Thanks for reading</span>'
@@ -83,17 +96,17 @@ function custom_like_dislike_shortcode() {
     if (!has_action('wp_footer', 'er_voting_script')) {
         add_action('wp_footer', 'er_voting_script');
     }
-    $tile = function($type, $icon, $label) use ($post_id, $counts) {
+    $tile = function($type, $label) use ($post_id, $counts) {
         return '<button type="button" class="er-stat-line" id="' . $type . '-btn-' . $post_id . '" onclick="erVote(' . $post_id . ', \'' . $type . '\')" aria-label="' . $label . ' this post">'
-             . '<span class="er-stat-label">' . $icon . ' ' . $label . '</span>'
+             . '<span class="er-stat-label">' . er_stat_icon($type) . $label . '</span>'
              . '<strong class="er-stat-value" id="' . $type . '-count-' . $post_id . '" aria-live="polite">' . number_format_i18n($counts[$type]) . '</strong>'
              . '<span class="er-stat-unit">' . strtolower($label) . 's</span>'
              . '<span class="er-stat-foot">Click to ' . strtolower($label) . '</span>'
              . '</button>';
     };
     return er_voting_styles()
-         . $tile('like', '👍', 'Like')
-         . $tile('dislike', '👎', 'Dislike')
+         . $tile('like', 'Like')
+         . $tile('dislike', 'Dislike')
          . '<span id="vote-feedback-' . $post_id . '" class="visually-hidden" aria-live="assertive"></span>';
 }
 add_shortcode('like_dislike_buttons', 'custom_like_dislike_shortcode');
@@ -165,22 +178,32 @@ function er_stat_tile_styles() {
     if ($done) return '';
     $done = true;
     return '<style>
-        p:has(> .er-stat-line), body:has(> .er-stat-line) {container-type: inline-size; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 12px;}
+        p:has(> .er-stat-line), body:has(> .er-stat-line) {container-type: inline-size; display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-start; gap: 12px;}
         .er-stat-line + br {display: none;}
-        .er-stat-line {display: block; flex: 1 1 0; min-width: 0; box-sizing: border-box; padding: 14px 16px; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 12px; color: var(--color-3); line-height: 1.3;}
-        @container (max-width: 579px) {.er-stat-line {flex-basis: 100%;}}
-        .er-stat-label {display: block; margin-bottom: 6px; font-size: var(--er-fs-sm);}
+        /* All tiles: squares the size of the discs, content vertically centred, row centred */
+        .er-stat-line {flex: 0 1 var(--disc-size, 185px); aspect-ratio: 1 / 1; display: flex; flex-direction: column; justify-content: center; min-width: 0; box-sizing: border-box; padding: 14px 16px; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 25px; color: var(--color-3); line-height: 1.3;}
+        /* Phones: the squares stay side by side, a bit more compact */
+        @container (max-width: 579px) {
+            .er-stat-line {flex-basis: 0; flex-grow: 1; max-width: var(--disc-size, 160px); padding: 10px; justify-content: flex-start;}
+            .er-stat-line .er-stat-label {font-size: var(--er-fs-xs);}
+            .er-stat-line .er-stat-value {font-size: var(--er-fs-lg);}
+            .er-stat-line .er-stat-unit {margin-bottom: 6px;}
+            .er-stat-line .er-stat-foot {padding-top: 6px;}
+        }
+        .er-stat-label {display: flex; align-items: center; margin-bottom: 6px; font-size: var(--er-fs-sm);}
         .er-stat-value {display: block; font-size: var(--er-fs-xl); font-weight: var(--er-fw-bold); color: #990033; line-height: 1.1;}
         .er-stat-unit {display: block; margin: 2px 0 10px; font-size: var(--er-fs-xs); color: var(--color-9);}
         .er-stat-foot {display: block; padding-top: 8px; border-top: 1px solid var(--color-5); font-size: var(--er-fs-xs); color: var(--color-4);}
         .er-stat-total {font-weight: var(--er-fw-bold);}
+        .er-stat-icon {display: inline-block; width: 1.25em; height: 1.25em; margin-right: 0.35em;}
+        body.dark-mode .er-stat-icon {filter: brightness(0) invert(1) brightness(0.95);}
         body.dark-mode .er-stat-line {background: var(--color-10); border-color: var(--color-4); color: var(--color-5);}
         body.dark-mode .er-stat-value {color: #990033;}
         body.dark-mode .er-stat-foot {border-color: var(--color-4); color: var(--color-5);}
     </style>';
 }
 
-function er_render_stat_line($type, $icon, $label) {
+function er_render_stat_line($type, $label) {
     if (!function_exists('er_stats_snapshot')) return '';
     $s = er_stats_snapshot();
     $today = number_format_i18n($s[$type . 's_today']);
@@ -191,16 +214,16 @@ function er_render_stat_line($type, $icon, $label) {
     }
     return er_stat_tile_styles()
          . '<span class="er-stat-line" data-er-stat="' . esc_attr($type) . '">'
-         . '<span class="er-stat-label"><span class="er-stat-icon">' . $icon . '</span> ' . esc_html($label) . '</span>'
+         . '<span class="er-stat-label">' . er_stat_icon($type) . esc_html($label) . '</span>'
          . '<strong class="er-stat-value">' . $today . '</strong>'
          . '<span class="er-stat-unit">today</span>'
          . '<span class="er-stat-foot"><strong class="er-stat-total">' . $total . '</strong> total</span>'
          . '</span>';
 }
 
-add_shortcode('today_total_views',    fn() => er_render_stat_line('view',    '👁️', 'Views'));
-add_shortcode('today_total_likes',    fn() => er_render_stat_line('like',    '👍', 'Likes'));
-add_shortcode('today_total_dislikes', fn() => er_render_stat_line('dislike', '👎', 'Dislikes'));
+add_shortcode('today_total_views',    fn() => er_render_stat_line('view',    'Views'));
+add_shortcode('today_total_likes',    fn() => er_render_stat_line('like',    'Likes'));
+add_shortcode('today_total_dislikes', fn() => er_render_stat_line('dislike', 'Dislikes'));
 
 // AJAX action er_stats_live: current figures, formatted like the shortcodes.
 // Read-only, answered from the 5-minute snapshot cache. POST so neither
