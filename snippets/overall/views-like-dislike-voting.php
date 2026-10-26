@@ -166,19 +166,92 @@ function er_voting_script() {
 // SITE-WIDE FIGURES
 // ======================================
 
-// Shortcodes fuer die Frontend-Ausgabe.
-// Alle drei holen ihre Zahlen aus derselben Quelle wie das Dashboard,
-// damit vorne und hinten nie Unterschiedliches steht.
+// Shortcodes for the front end. All three take their numbers from the same
+// source as the dashboard (er_stats_snapshot), so front and back never differ.
+// The number in the HTML is the starting value; because pages are cached for
+// days (LiteSpeed + CDN), er_stats_live_script() replaces it with the current
+// figures after load.
 function er_render_stat_line($type, $icon, $label) {
     if (!function_exists('er_stats_snapshot')) return '';
     $s = er_stats_snapshot();
     $today = number_format_i18n($s[$type . 's_today']);
     $total = number_format_i18n($s[$type . 's_total']);
-    return '<p>' . $icon . ' ' . $label . ': '
-         . '<strong style="color: var(--color-2);">' . $today . '</strong> today / '
-         . '<strong>' . $total . '</strong> total</p>';
+    // Script once per page, in the footer, only where a shortcode is used
+    if (!has_action('wp_footer', 'er_stats_live_script')) {
+        add_action('wp_footer', 'er_stats_live_script');
+    }
+    return '<p class="er-stat-line" data-er-stat="' . esc_attr($type) . '">' . $icon . ' ' . $label . ': '
+         . '<strong class="er-stat-today" style="color: var(--color-2);">' . $today . '</strong> today / '
+         . '<strong class="er-stat-total">' . $total . '</strong> total</p>';
 }
 
 add_shortcode('today_total_views',    fn() => er_render_stat_line('view',    '👁️', 'Views'));
 add_shortcode('today_total_likes',    fn() => er_render_stat_line('like',    '👍', 'Likes'));
 add_shortcode('today_total_dislikes', fn() => er_render_stat_line('dislike', '👎', 'Dislikes'));
+
+// AJAX action er_stats_live: current figures, formatted like the shortcodes.
+// Read-only, answered from the 5-minute snapshot cache. POST so neither
+// LiteSpeed nor the CDN caches the answer; no nonce (cached pages outlive it).
+function er_stats_live() {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        wp_send_json_error(null, 405);
+    }
+    if (!function_exists('er_stats_snapshot')) {
+        wp_send_json_error(null, 503);
+    }
+    $s   = er_stats_snapshot();
+    $out = [];
+    foreach (['view', 'like', 'dislike'] as $type) {
+        $out[$type] = [
+            'today' => number_format_i18n($s[$type . 's_today']),
+            'total' => number_format_i18n($s[$type . 's_total']),
+        ];
+    }
+    nocache_headers();
+    wp_send_json_success($out);
+}
+add_action('wp_ajax_er_stats_live', 'er_stats_live');
+add_action('wp_ajax_nopriv_er_stats_live', 'er_stats_live');
+
+// After load, when the browser is idle: fetch the current figures once and
+// swap them into every stat line on the page. On any failure the cached
+// numbers simply stay. Bots (navigator.webdriver) keep the cached numbers.
+function er_stats_live_script() {
+    ?>
+    <script>
+    (function () {
+        var ajaxUrl = <?php echo wp_json_encode(admin_url('admin-ajax.php')); ?>;
+        function run() {
+            if (navigator.webdriver) return;
+            var lines = document.querySelectorAll('.er-stat-line[data-er-stat]');
+            if (!lines.length) return;
+            fetch(ajaxUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: "action=er_stats_live",
+                credentials: "same-origin"
+            })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (j) {
+                if (!j || !j.success) return;
+                lines.forEach(function (p) {
+                    var d = j.data[p.getAttribute('data-er-stat')];
+                    if (!d) return;
+                    var t = p.querySelector('.er-stat-today');
+                    var a = p.querySelector('.er-stat-total');
+                    if (t) t.textContent = d.today;
+                    if (a) a.textContent = d.total;
+                });
+            })
+            .catch(function () {});
+        }
+        function idle() {
+            if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 3000 });
+            else setTimeout(run, 1);
+        }
+        if (document.readyState === 'complete') idle();
+        else window.addEventListener('load', idle);
+    })();
+    </script>
+    <?php
+}
