@@ -363,6 +363,6 @@ function er_fp_styles_css() {
 	.page-id-179 .er-stat-icon {filter: brightness(0) invert(1) brightness(0.95) !important;}
 
 	/* Space above and below the content once the discs wrap (Number Counter: 1200px) and the page gets taller */
-	@media (max-width: 1200px) {.wp-block-group.er-cover-host > .wp-block-group {padding-top: var(--wp--preset--spacing--large); padding-bottom: var(--wp--preset--spacing--large);}}
+	@media (max-width: 1200px) {.wp-block-group.er-cover-host > .wp-block-group {padding-top: var(--wp--preset--spacing--x-large); padding-bottom: var(--wp--preset--spacing--x-large);}}
 CSS;
 }
