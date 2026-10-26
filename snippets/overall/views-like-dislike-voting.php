@@ -58,7 +58,7 @@ function er_post_views_shortcode($atts) {
     return er_voting_styles()
          . '<span class="er-stat-line">'
          . '<span class="er-stat-label">' . esc_html(trim($atts['before']) . ' ' . trim($atts['after'])) . '</span>'
-         . '<strong class="er-stat-today">' . number_format_i18n($views) . '</strong>'
+         . '<strong class="er-stat-value">' . number_format_i18n($views) . '</strong>'
          . '<span class="er-stat-unit">total</span>'
          . '<span class="er-stat-foot">Thanks for reading</span>'
          . '</span>';
@@ -86,7 +86,7 @@ function custom_like_dislike_shortcode() {
     $tile = function($type, $icon, $label) use ($post_id, $counts) {
         return '<button type="button" class="er-stat-line" id="' . $type . '-btn-' . $post_id . '" onclick="erVote(' . $post_id . ', \'' . $type . '\')" aria-label="' . $label . ' this post">'
              . '<span class="er-stat-label">' . $icon . ' ' . $label . '</span>'
-             . '<strong class="er-stat-today" id="' . $type . '-count-' . $post_id . '" aria-live="polite">' . number_format_i18n($counts[$type]) . '</strong>'
+             . '<strong class="er-stat-value" id="' . $type . '-count-' . $post_id . '" aria-live="polite">' . number_format_i18n($counts[$type]) . '</strong>'
              . '<span class="er-stat-unit">' . strtolower($label) . 's</span>'
              . '<span class="er-stat-foot">Click to ' . strtolower($label) . '</span>'
              . '</button>';
@@ -170,12 +170,12 @@ function er_stat_tile_styles() {
         .er-stat-line {display: block; flex: 1 1 0; min-width: 0; box-sizing: border-box; padding: 14px 16px; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 12px; color: var(--color-3); line-height: 1.3;}
         @container (max-width: 579px) {.er-stat-line {flex-basis: 100%;}}
         .er-stat-label {display: block; margin-bottom: 6px; font-size: var(--er-fs-sm);}
-        .er-stat-today {display: block; font-size: var(--er-fs-xl); font-weight: var(--er-fw-bold); color: #990033; line-height: 1.1;}
+        .er-stat-value {display: block; font-size: var(--er-fs-xl); font-weight: var(--er-fw-bold); color: #990033; line-height: 1.1;}
         .er-stat-unit {display: block; margin: 2px 0 10px; font-size: var(--er-fs-xs); color: var(--color-9);}
         .er-stat-foot {display: block; padding-top: 8px; border-top: 1px solid var(--color-5); font-size: var(--er-fs-xs); color: var(--color-4);}
         .er-stat-total {font-weight: var(--er-fw-bold);}
         body.dark-mode .er-stat-line {background: var(--color-10); border-color: var(--color-4); color: var(--color-5);}
-        body.dark-mode .er-stat-today {color: #990033;}
+        body.dark-mode .er-stat-value {color: #990033;}
         body.dark-mode .er-stat-foot {border-color: var(--color-4); color: var(--color-5);}
     </style>';
 }
@@ -192,7 +192,7 @@ function er_render_stat_line($type, $icon, $label) {
     return er_stat_tile_styles()
          . '<span class="er-stat-line" data-er-stat="' . esc_attr($type) . '">'
          . '<span class="er-stat-label"><span class="er-stat-icon">' . $icon . '</span> ' . esc_html($label) . '</span>'
-         . '<strong class="er-stat-today">' . $today . '</strong>'
+         . '<strong class="er-stat-value">' . $today . '</strong>'
          . '<span class="er-stat-unit">today</span>'
          . '<span class="er-stat-foot"><strong class="er-stat-total">' . $total . '</strong> total</span>'
          . '</span>';
@@ -250,7 +250,7 @@ function er_stats_live_script() {
                 lines.forEach(function (p) {
                     var d = j.data[p.getAttribute('data-er-stat')];
                     if (!d) return;
-                    var t = p.querySelector('.er-stat-today');
+                    var t = p.querySelector('.er-stat-value');
                     var a = p.querySelector('.er-stat-total');
                     if (t) t.textContent = d.today;
                     if (a) a.textContent = d.total;
