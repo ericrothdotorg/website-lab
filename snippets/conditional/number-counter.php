@@ -33,7 +33,7 @@ add_action('wp_head', function() use ($counter_pages) {
         .counter-label {padding-left: 10px; font-size: var(--er-fs-md); font-weight: var(--er-fw-normal);}
 
         @media (max-width: 1200px) {.counter-grid {grid-template-columns: repeat(auto-fit, minmax(var(--disc-size), 1fr));}}
-        @media (max-width: 600px) {:root {--disc-size: 160px;} .counter-grid {grid-template-columns: repeat(2, 1fr);} .counter-value {font-size: var(--er-fs-lg);} .counter-label {font-size: 1rem;}}
+        @media (max-width: 600px) {:root {--disc-size: 160px;} .counter-grid {grid-template-columns: repeat(2, 1fr);} .counter-value {font-size: var(--er-fs-xl);} .counter-label {font-size: 1rem;}}
 
         body.dark-mode .counter-card {border: 1px solid var(--color-4); background: var(--color-10);}
         body.dark-mode .counter-card:hover {background: var(--color-6);}
