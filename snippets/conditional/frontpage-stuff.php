@@ -362,10 +362,7 @@ function er_fp_styles_css() {
 	.page-id-179 .er-stat-foot {border-top-color: var(--color-3) !important; color: var(--color-5) !important;}
 	.page-id-179 .er-stat-icon {filter: brightness(0) invert(1) brightness(0.95) !important;}
 
-	/* One even gap between all elements, same space above and below */
-	.wp-block-group.er-cover-host > .wp-block-group {padding-top: var(--wp--preset--spacing--large); padding-bottom: var(--wp--preset--spacing--large);}
-	.wp-block-group.er-cover-host > .wp-block-group > * {margin-top: 0 !important; margin-bottom: 0 !important;}
-	.wp-block-group.er-cover-host > .wp-block-group > * + * {margin-top: var(--wp--preset--spacing--large) !important;}
-	.wp-block-group.er-cover-host .counter-grid {margin-top: -10px;}
+	/* Space above and below the content once the discs wrap (Number Counter: 1200px) and the page gets taller */
+	@media (max-width: 1200px) {.wp-block-group.er-cover-host > .wp-block-group {padding-top: var(--wp--preset--spacing--large); padding-bottom: var(--wp--preset--spacing--large);}}
 CSS;
 }
