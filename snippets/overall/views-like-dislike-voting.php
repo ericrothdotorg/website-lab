@@ -183,21 +183,25 @@ function er_stat_tile_styles() {
         p:has(> .er-stat-line) {display: flex; flex-wrap: wrap; width: fit-content; max-width: 100%; gap: 12px;}
         body:has(> .er-stat-line) {display: flex; flex-wrap: wrap; align-content: flex-start; gap: 12px;}
         .er-stat-line + br {display: none;}
-        /* All tiles: squares the size of the discs, content vertically centred */
-        .er-stat-line {flex: 0 1 auto; width: var(--disc-size, 185px); aspect-ratio: 1 / 1; display: flex; flex-direction: column; justify-content: center; min-width: 0; box-sizing: border-box; padding: 14px 16px; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 25px; color: var(--color-3); line-height: 1.3;}
+        /* All tiles: as wide as the discs, height follows the content (tiles in
+           one row still match each other). Label and foot take a full line each;
+           value and unit share one line, on the text baseline. If the unit does
+           not fit next to the value, it wraps below it. */
+        .er-stat-line {flex: 0 1 auto; width: var(--disc-size, 185px); aspect-ratio: auto; display: flex; flex-flow: row wrap; align-content: center; align-items: baseline; column-gap: 0.35em; min-width: 0; box-sizing: border-box; padding: 14px 16px; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 25px; color: var(--color-3); line-height: 1.3;}
         /* Phones: the three share the full width side by side, a bit more compact */
         @media (max-width: 600px) {
             p:has(> .er-stat-line) {width: auto;}
-            .er-stat-line {flex: 1 1 0; width: auto; padding: 10px; justify-content: flex-start;}
+            .er-stat-line {flex: 1 1 0; width: auto; padding: 10px; align-content: flex-start;}
             .er-stat-line .er-stat-label {font-size: var(--er-fs-xs);}
             .er-stat-line .er-stat-value {font-size: var(--er-fs-lg);}
+            .er-stat-line .er-stat-value,
             .er-stat-line .er-stat-unit {margin-bottom: 6px;}
             .er-stat-line .er-stat-foot {padding-top: 6px;}
         }
-        .er-stat-label {display: flex; align-items: center; margin-bottom: 6px; font-size: var(--er-fs-sm);}
-        .er-stat-value {display: block; font-size: var(--er-fs-xl); font-weight: var(--er-fw-bold); color: #990033; line-height: 1.1;}
-        .er-stat-unit {display: block; margin: 2px 0 10px; font-size: var(--er-fs-xs); color: var(--color-9);}
-        .er-stat-foot {display: block; padding-top: 8px; border-top: 1px solid var(--color-5); font-size: var(--er-fs-xs); color: var(--color-4);}
+        .er-stat-label {display: flex; flex: 0 0 100%; align-items: center; margin-bottom: 6px; font-size: var(--er-fs-sm);}
+        .er-stat-value {display: block; margin: 0 0 10px; font-size: var(--er-fs-xl); font-weight: var(--er-fw-bold); color: #990033; line-height: 1.1;}
+        .er-stat-unit {display: block; margin: 0 0 10px; font-size: var(--er-fs-xs); color: var(--color-9);}
+        .er-stat-foot {display: block; flex: 0 0 100%; padding-top: 8px; border-top: 1px solid var(--color-5); font-size: var(--er-fs-xs); color: var(--color-4);}
         .er-stat-total {font-weight: var(--er-fw-bold);}
         .er-stat-icon {display: inline-block; width: 1.25em; height: 1.25em; margin-right: 0.35em;}
         body.dark-mode .er-stat-icon {filter: brightness(0) invert(1) brightness(0.95);}
