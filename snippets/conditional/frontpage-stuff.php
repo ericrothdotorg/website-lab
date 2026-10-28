@@ -368,7 +368,7 @@ function er_fp_styles_css() {
 	/* Each value is a link: Same hover language as the portal cards, so it reads as clickable.
 	   text-box trims the fonts' built-in space (number: above the digits, link: below the
 	   baseline), so the padding looks even on all sides. */
-	.er-fp-values a {display: inline-block; padding: 0.65em 0.5em; line-height: 1.1; text-box: trim-end cap alphabetic; border-radius: 10px; transition: background 0.2s ease;}
+	.er-fp-values a {display: inline-block; padding: 0.65em 0.5em 0.70em 0.5em; line-height: 1.1; text-box: trim-end cap alphabetic; border-radius: 10px; transition: background 0.2s ease;}
 	.er-fp-values a:hover, .er-fp-values a:focus-visible {background: rgba(0, 0, 0, 0.65);}
 
 	/* Space above and below the content once it is taller than the screen, so it clears the fixed header */
