@@ -36,12 +36,13 @@ function er_voting_styles() {
     if ($done) return '';
     $done = true;
     return er_stat_tile_styles() . '<style>
-        button.er-stat-line {font: inherit; line-height: 1.3; text-align: left; cursor: pointer; border-color: var(--color-1); transition: background 0.2s ease;}
-        button.er-stat-line:hover {background: var(--color-7);}
+        button.er-stat-line {font: inherit; line-height: 1.3; text-align: left; cursor: pointer; border-color: var(--color-1); transition: transform 0.2s ease, background 0.2s ease;}
+        button.er-stat-line:hover:not(:disabled), button.er-stat-line:focus-visible {background: var(--color-7);}
+        @media (prefers-reduced-motion: no-preference) {button.er-stat-line:hover:not(:disabled), button.er-stat-line:focus-visible {transform: scale(1.05);}}
         button.er-stat-line:disabled {cursor: default;}
         button.er-stat-line:focus-visible {outline: 2px dashed var(--color-1); outline-offset: 3px;}
         body.dark-mode button.er-stat-line {border-color: var(--color-1);}
-        body.dark-mode button.er-stat-line:hover {background: var(--color-6);}
+        body.dark-mode button.er-stat-line:hover:not(:disabled), body.dark-mode button.er-stat-line:focus-visible {background: var(--color-6);}
         .visually-hidden {
             position: absolute !important;
             width: 1px;
