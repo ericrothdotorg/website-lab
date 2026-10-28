@@ -5,7 +5,9 @@
  * FRONTPAGE STUFF — front page only. Scope: front-end.
  *   1  Cover       [er_frontpage_cover]: WebGL image cover, CSS poster first
  *   2  Cover host  classes on the Group around the cover
- *   3  Styles      brand header, counter discs
+ *   3  Styles      brand header, stat tiles
+ *   4  Portals     hover of the cards (.er-portal)
+ *   5  Surprise    /surprise/ redirects to a random published entry
  * Feature code that merely also runs on the front page stays with its feature.
  * ========================================================================== */
 
@@ -327,8 +329,8 @@ function er_fp_cover_children( $block, $instance ) {
 }
 
 /* ============================================================================
- * 3  STYLES — after Number Counter's styles (wp_head 5), so equal specificity
- *    wins. rotate3d keyframe: Ollie Companion CSS.
+ * 3  STYLES — brand header and stat tiles. rotate3d keyframe: Ollie
+ *    Companion CSS.
  * ========================================================================== */
 
 add_action( 'wp_head', 'er_fp_styles', 10 );
@@ -347,14 +349,7 @@ function er_fp_styles_css() {
 	.er-brand-frontpage-logo img {width: clamp(45px, 9vw, 85px); aspect-ratio: 1 / 1; height: auto; animation: rotate3d 5s linear infinite; position: relative; top: 0.05em;}
 	.er-brand-frontpage-logo img:hover {animation-play-state: paused;}
 	.er-brand-frontpage-title {font-size: clamp(2rem, 6vw, 3.5rem); font-weight: var(--er-fw-bold); color: var(--color-8); line-height: 1; letter-spacing: 0.1em; text-shadow: 0.10em 0.10em 0.15em rgba(0, 0, 0, 0.25);}
-	.er-brand-frontpage-teaser {display: block; width: 100%; max-width: 850px; box-sizing: border-box; margin: 0 auto; background: rgba(0, 0, 0, 0.65); border-radius: 25px;}
-
-	/* Counter discs over the cover (Number Counter) */
-	.page-id-179 .counter-card {background: rgba(0, 0, 0, 0.65) !important; border: none !important;}
-	.page-id-179 .counter-card:hover {background: var(--color-6) !important;}
-	.page-id-179 .counter-body {color: var(--color-5);}
-	.page-id-179 .counter-value {color: #990033;}
-	.page-id-179 .counter-body img {filter: brightness(0) invert(1) brightness(0.95) !important;}
+	.er-brand-frontpage-teaser {display: block; width: 100%; max-width: 850px; box-sizing: border-box; margin: 0 auto; border-radius: 25px;}
 
 	/* Stat tiles over the cover (Views & Like | Dislike Voting): front-page colours.
 	   Size, squares, centring and phone layout come from the Voting snippet. */
@@ -362,7 +357,79 @@ function er_fp_styles_css() {
 	.page-id-179 .er-stat-foot {border-top-color: var(--color-3) !important; color: var(--color-5) !important;}
 	.page-id-179 .er-stat-icon {filter: brightness(0) invert(1) brightness(0.95) !important;}
 
-	/* Space above and below the content once the discs wrap (Number Counter: 1200px) and the page gets taller */
+	/* Counted values row (Number Counter). Each number reserves the width of its
+	   final value (hidden copy behind it), so the row does not shift while counting. */
+	.er-fp-values .er-num {display: inline-grid; font-size: var(--er-fs-xxl);}
+	.er-fp-values .er-num > * {grid-area: 1 / 1; text-align: center; text-box: trim-both cap alphabetic;}
+	.er-fp-values .er-num-final {visibility: hidden;}
+	.er-fp-values .counter-value {font-size: inherit; vertical-align: baseline; color: #FFFF00;}
+	@media (max-width: 600px) {.er-fp-values .er-num {font-size: var(--er-fs-xl);}}
+
+	/* Each value is a link: Same hover language as the portal cards, so it reads as clickable.
+	   text-box trims the fonts' built-in space (number: above the digits, link: below the
+	   baseline), so the padding looks even on all sides. */
+	.er-fp-values a {display: inline-block; padding: 0.65em 0.5em; line-height: 1.1; text-box: trim-end cap alphabetic; border-radius: 10px; transition: background 0.2s ease;}
+	.er-fp-values a:hover, .er-fp-values a:focus-visible {background: rgba(0, 0, 0, 0.65);}
+
+	/* Space above and below the content once it is taller than the screen, so it clears the fixed header */
 	@media (max-width: 1200px) {.wp-block-group.er-cover-host > .wp-block-group {padding-top: var(--wp--preset--spacing--x-large); padding-bottom: var(--wp--preset--spacing--x-large);}}
 CSS;
+}
+
+/* ============================================================================
+ * 4  PORTALS — the portal cards (.er-portal) in their grid (.er-portals).
+ *    Columns: 4 side by side, 2 × 2 below 1200px, stacked below 600px, so a
+ *    card never sits alone in a row (the editor's auto grid would go 4-3-2-1).
+ *    Hover: same values as the counter discs: scale 1.05, background
+ *    --color-6, 0.2 s. Whole-card click comes from the heading link +
+ *    .is-clickable-card (Ollie Companion PHP 9f).
+ * ========================================================================== */
+
+add_action( 'wp_head', 'er_fp_portals_styles', 10 );
+
+function er_fp_portals_styles() {
+	if ( ! is_front_page() ) {
+		return;
+	}
+	echo '<style id="er-portals-css">' . er_fp_portals_css() . '</style>' . "\n";
+}
+
+function er_fp_portals_css() {
+	return <<<'CSS'
+	.wp-block-group.er-portals {grid-template-columns: repeat(4, minmax(0, 1fr));}
+	@media (max-width: 1200px) {.wp-block-group.er-portals {grid-template-columns: repeat(2, minmax(0, 1fr));}}
+	@media (max-width: 600px) {.wp-block-group.er-portals {grid-template-columns: minmax(0, 1fr);}}
+	.er-portal {transition: transform 0.2s ease, background 0.2s ease;}
+	.er-portal:hover, .er-portal:focus-within {transform: scale(1.05); background: var(--color-6) !important;}
+CSS;
+}
+
+/* ============================================================================
+ * 5  SURPRISE — /surprise/ sends the visitor to a random published entry
+ *    (posts, pages, interests, quotes, traits; no password-protected ones).
+ *    Excluded IDs = the exclude list of the [display-posts] random slider.
+ *    Never cached, so every call picks anew.
+ * ========================================================================== */
+
+add_action( 'template_redirect', 'er_fp_surprise', 1 );
+
+function er_fp_surprise() {
+	global $wp;
+	if ( 'surprise' !== trim( (string) $wp->request, '/' ) ) {
+		return;
+	}
+	$ids = get_posts( array(
+		'post_type'      => array( 'post', 'page', 'my-interests', 'my-quotes', 'my-traits' ),
+		'post_status'    => 'publish',
+		'has_password'   => false,
+		'post__not_in'   => array( 14581, 179, 149904, 149998, 150200, 150120, 150034, 150233, 150223, 113713, 123635, 150455, 150449 ),
+		'posts_per_page' => 1,
+		'orderby'        => 'rand',
+		'fields'         => 'ids',
+		'no_found_rows'  => true,
+	) );
+	do_action( 'litespeed_control_set_nocache', 'er surprise redirect' );
+	nocache_headers();
+	wp_safe_redirect( $ids ? get_permalink( $ids[0] ) : home_url( '/' ), 302 );
+	exit;
 }
