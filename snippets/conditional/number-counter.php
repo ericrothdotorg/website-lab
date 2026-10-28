@@ -39,7 +39,7 @@ add_action('wp_head', function() use ($counter_pages) {
         body.dark-mode .counter-card:hover {background: var(--color-6);}
         body.dark-mode .counter-body {color: var(--color-5);}
 
-        /* White Icons: Dark Mode (front page: see Frontpage Stuff) */
+        /* White Icons: Dark Mode */
         body.dark-mode .counter-body img {filter: brightness(0) invert(1) brightness(0.95) !important;}
     </style>
     <?php
