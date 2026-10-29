@@ -181,8 +181,8 @@ function er_stat_tile_styles() {
     return '<style>
         /* The row is only as wide as its tiles, so the surrounding Group decides
            where it sits (left, centre, right: set in the editor). */
-        p:has(> .er-stat-line) {display: flex; flex-wrap: wrap; width: fit-content; max-width: 100%; gap: 24px;}
-        body:has(> .er-stat-line) {display: flex; flex-wrap: wrap; align-content: flex-start; gap: 24px;}
+        p:has(> .er-stat-line) {display: flex; flex-wrap: wrap; width: fit-content; max-width: 100%; gap: 20px;}
+        body:has(> .er-stat-line) {display: flex; flex-wrap: wrap; align-content: flex-start; gap: 20px;}
         .er-stat-line + br {display: none;}
         /* All tiles: as wide as the discs, height follows the content (tiles in
            one row still match each other). Label and foot take a full line each;
@@ -191,7 +191,7 @@ function er_stat_tile_styles() {
         .er-stat-line {flex: 0 1 auto; width: var(--disc-size, 185px); aspect-ratio: auto; display: flex; flex-flow: row wrap; align-content: center; align-items: baseline; column-gap: 0.35em; min-width: 0; box-sizing: border-box; padding: 14px 16px; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 25px; color: var(--color-3); line-height: 1.3;}
         /* Phones: the three share the full width side by side, a bit more compact */
         @media (max-width: 600px) {
-            p:has(> .er-stat-line) {width: auto; gap: 12px;}
+            p:has(> .er-stat-line) {width: auto; gap: 10px;}
             .er-stat-line {flex: 1 1 0; width: auto; padding: 10px; align-content: flex-start;}
             .er-stat-line .er-stat-label {font-size: var(--er-fs-xs);}
             .er-stat-line .er-stat-value {font-size: var(--er-fs-lg);}
