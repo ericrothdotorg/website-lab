@@ -353,6 +353,8 @@ function er_fp_styles_css() {
 
 	/* Stat tiles over the cover (Views & Like | Dislike Voting): front-page colours.
 	   Size, squares, centring and phone layout come from the Voting snippet. */
+	.page-id-179 p:has(> .er-stat-line) {gap: 35px;}
+	@media (max-width: 600px) {.page-id-179 p:has(> .er-stat-line) {gap: 10px;}}
 	.page-id-179 .er-stat-line {background: rgba(0, 0, 0, 0.65) !important; border: none !important; color: var(--color-5) !important;}
 	.page-id-179 .er-stat-foot {border-top-color: var(--color-3) !important; color: var(--color-5) !important;}
 	.page-id-179 .er-stat-icon {filter: brightness(0) invert(1) brightness(0.95) !important;}
