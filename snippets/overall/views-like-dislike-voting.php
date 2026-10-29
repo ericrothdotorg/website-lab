@@ -17,7 +17,7 @@ function er_voting_counts($post_id) {
 }
 
 // Icons for all tiles: SVG files in the Media Library, grey-blue. White in dark
-// mode (here) and on the front page (Frontpage Stuff), like the disc icons.
+// mode and on the front page (Frontpage Stuff).
 function er_stat_icon($type) {
     $files = [
         'view'    => 'eye-solid-greyblue.svg',
@@ -29,20 +29,20 @@ function er_stat_icon($type) {
 }
 
 // Styles for the post tiles - printed once per page. The tile look itself
-// comes from er_stat_tile_styles() (SITE-WIDE FIGURES); this adds the button
+// comes from er_stat_tile_styles() (see SITE-WIDE FIGURES below); this adds the button
 // states for the vote tiles.
 function er_voting_styles() {
     static $done = false;
     if ($done) return '';
     $done = true;
     return er_stat_tile_styles() . '<style>
-        button.er-stat-line {font: inherit; line-height: 1.3; text-align: left; cursor: pointer; border-color: var(--color-1); transition: transform 0.2s ease, background 0.2s ease;}
-        button.er-stat-line:hover:not(:disabled), button.er-stat-line:focus-visible {background: var(--color-7);}
+        button.er-stat-line {font: inherit; line-height: 1.3; text-align: left; cursor: pointer; border-color: var(--color-1); transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;}
+        button.er-stat-line:hover:not(:disabled), button.er-stat-line:focus-visible {background: var(--color-7); border-color: var(--color-2);}
         @media (prefers-reduced-motion: no-preference) {button.er-stat-line:hover:not(:disabled), button.er-stat-line:focus-visible {transform: scale(1.05);}}
         button.er-stat-line:disabled {cursor: default;}
-        button.er-stat-line:focus-visible {outline: 2px dashed var(--color-1); outline-offset: 3px;}
+        button.er-stat-line:focus-visible {outline: none;}
         body.dark-mode button.er-stat-line {border-color: var(--color-1);}
-        body.dark-mode button.er-stat-line:hover:not(:disabled), body.dark-mode button.er-stat-line:focus-visible {background: var(--color-6);}
+        body.dark-mode button.er-stat-line:hover:not(:disabled), body.dark-mode button.er-stat-line:focus-visible {background: var(--color-6); border-color: var(--color-2);}
         .visually-hidden {
             position: absolute !important;
             width: 1px;
@@ -181,15 +181,15 @@ function er_stat_tile_styles() {
     return '<style>
         /* The row is only as wide as its tiles, so the surrounding Group decides
            where it sits (left, centre, right: set in the editor). */
-        p:has(> .er-stat-line) {display: flex; flex-wrap: wrap; width: fit-content; max-width: 100%; gap: 20px;}
-        body:has(> .er-stat-line) {display: flex; flex-wrap: wrap; align-content: flex-start; gap: 20px;}
+        p:has(> .er-stat-line) {display: flex; flex-wrap: nowrap; width: fit-content; max-width: 100%; gap: 20px;}
+        body:has(> .er-stat-line) {display: flex; flex-wrap: nowrap; align-content: flex-start; gap: 20px;}
         .er-stat-line + br {display: none;}
         /* All tiles: as wide as the discs, height follows the content (tiles in
            one row still match each other). Label and foot take a full line each;
            value and unit share one line, on the text baseline. If the unit does
            not fit next to the value, it wraps below it. */
         .er-stat-line {flex: 0 1 auto; width: var(--disc-size, 185px); aspect-ratio: auto; display: flex; flex-flow: row wrap; align-content: center; align-items: baseline; column-gap: 0.35em; min-width: 0; box-sizing: border-box; padding: 14px 16px; background: var(--color-8); border: 1px solid var(--color-5); border-radius: 25px; color: var(--color-3); line-height: 1.3;}
-        /* Phones: the three share the full width side by side, a bit more compact */
+        /* Phones: The three share the full width side by side, a bit more compact */
         @media (max-width: 600px) {
             p:has(> .er-stat-line) {width: auto; gap: 10px;}
             .er-stat-line {flex: 1 1 0; width: auto; padding: 10px; align-content: flex-start;}
