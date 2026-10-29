@@ -380,8 +380,8 @@ CSS;
 
 /* ============================================================================
  * 4  PORTALS — the portal cards (.er-portal) in their grid (.er-portals).
- *    Columns: 4 side by side, 2 × 2 below 1200px, stacked below 600px, so a
- *    card never sits alone in a row (the editor's auto grid would go 4-3-2-1).
+ *    Columns: 4 side by side, 2 × 2 below 1200px, so a card never sits
+ *    alone in a row (the editor's auto grid would go 4-3-2-1).
  *    Hover: same values as the counter discs: scale 1.05, background
  *    --color-6, 0.2 s. Whole-card click comes from the heading link +
  *    .is-clickable-card (Ollie Companion PHP 9f).
