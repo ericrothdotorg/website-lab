@@ -400,7 +400,7 @@ function er_fp_portals_css() {
 	return <<<'CSS'
 	.wp-block-group.er-portals {grid-template-columns: repeat(4, minmax(0, 1fr));}
 	@media (max-width: 1200px) {.wp-block-group.er-portals {grid-template-columns: repeat(2, minmax(0, 1fr));}}
-	@media (max-width: 600px) {.wp-block-group.er-portals {grid-template-columns: minmax(0, 1fr);}}
+	@media (max-width: 600px) {.wp-block-group.er-portals {gap: 12px;}}
 	.er-portal {transition: transform 0.2s ease, background 0.2s ease;}
 	.er-portal:hover, .er-portal:focus-within {transform: scale(1.05); background: var(--color-6) !important;}
 CSS;
