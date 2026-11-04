@@ -13,7 +13,7 @@ The block theme (FSE): Templates, template parts, theme.json and plain CSS. No b
 
 **Eric Snippets:** [eric-snippets](https://github.com/ericrothdotorg/eric-snippets)
 
-Everything dynamic on the site: Shortcodes, header bar, custom post types, quotes, stats and more. Run with [Code Snippets  ↗](https://wordpress.org/plugins/code-snippets/).
+Everything dynamic on the site: Shortcodes, header bar, custom post types, quotes, stats and more.
 
 **Eric Slider:** [eric-slider](https://github.com/ericrothdotorg/eric-slider)
 
