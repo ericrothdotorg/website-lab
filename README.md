@@ -42,8 +42,6 @@ WordPress developers who want to see how a complete, real site fits together, no
 ## See it live
 
 - [ericroth.org](https://ericroth.org/)
-- [ericroth.org/this-site](https://ericroth.org/this-site/)
-- [ericroth.org/this-site/site-overview](https://ericroth.org/this-site/site-overview/)
 
 ---
 
