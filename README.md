@@ -3,7 +3,7 @@
 
 The code behind [ericroth.org](https://ericroth.org/), a personal WordPress site: One Human | Many Worlds. Shared as it is: Use it, take it apart, borrow what you like.
 
-**Tags:** wordpress, block-theme, eric-theme, eric-snippets, eric-slider
+**Tags:** wordpress, block-theme, eric-theme, eric-snippets, eric-slider, website-lab
 
 ---
 
