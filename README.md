@@ -25,7 +25,7 @@ WordPress developers who want to see how a complete, real site fits together, no
 | The block theme: templates, theme.json, CSS | [eric-theme](https://github.com/ericrothdotorg/eric-theme), installable zip under [Releases](https://github.com/ericrothdotorg/eric-theme/releases) |
 | The features: shortcodes, custom post types, stats, forms, admin dashboard | [eric-snippets](https://github.com/ericrothdotorg/eric-snippets) |
 | A lightweight slider / carousel for any site | [eric-slider](https://github.com/ericrothdotorg/eric-slider) |
-| How all the parts fit together | eric-theme [How the pieces fit](https://github.com/ericrothdotorg/eric-theme#how-the-pieces-fit) |
+| How all the parts fit together | eric-theme → [How the pieces fit](https://github.com/ericrothdotorg/eric-theme#how-the-pieces-fit) |
 
 ---
 
@@ -48,4 +48,4 @@ WordPress developers who want to see how a complete, real site fits together, no
 
 ## License
 
-Eric Theme and Eric Snippets: GPL v3 or later. Eric Slider: MIT.
+[eric-theme](https://github.com/ericrothdotorg/eric-theme) and [eric-snippets](https://github.com/ericrothdotorg/eric-snippets): GPL v3 or later. [eric-slider](https://github.com/ericrothdotorg/eric-slider): MIT.
